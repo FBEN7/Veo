@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport post-match — {{ match_label }}</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, sans-serif; max-width: 960px;
+         margin: 2rem auto; color: #1a1a1a; padding: 0 1rem; }
+  h1 { border-bottom: 3px solid #2d5a27; padding-bottom: .3rem; }
+  h2 { color: #2d5a27; margin-top: 2rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #ddd; padding: .5rem .7rem; text-align: right; }
+  th { background: #2d5a27; color: white; }
+  td:first-child, th:first-child { text-align: left; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid img { width: 100%; }
+  .warn { background: #fff3cd; border-left: 4px solid #e0a800;
+          padding: .7rem 1rem; margin: 1rem 0; }
+  .kpi { display: inline-block; background: #f4f4f4; border-radius: 8px;
+         padding: .8rem 1.4rem; margin: .3rem; text-align: center; }
+  .kpi b { display: block; font-size: 1.6rem; color: #2d5a27; }
+</style>
+</head>
+<body>
+<h1>Rapport post-match — {{ match_label }}</h1>
+
+{% if low_ball_quality %}
+<div class="warn"><b>⚠ Qualité de détection du ballon faible</b>
+(détecté sur {{ (ball_rate * 100) | round(1) }}% des frames).
+La possession affichée n'est pas fiable pour ce match.</div>
+{% endif %}
+
+<h2>Vue d'ensemble</h2>
+{% for t in team_totals %}
+<span class="kpi"><b>{{ t.distance_km }} km</b>{{ t.team }} — distance totale</span>
+<span class="kpi"><b>{{ t.sprints }}</b>{{ t.team }} — sprints</span>
+{% endfor %}
+{% if possession.team_A %}
+<span class="kpi"><b>{{ (possession.team_A * 100) | round }}%</b>possession team_A*</span>
+<span class="kpi"><b>{{ (possession.team_B * 100) | round }}%</b>possession team_B*</span>
+{% endif %}
+<p><small>* proxy basé sur le joueur le plus proche du ballon —
+approximatif. Field tilt (x moyen, m) :
+team_A {{ tilt.team_A }} / team_B {{ tilt.team_B }}.</small></p>
+
+<h2>Heatmaps</h2>
+<div class="grid">
+  <img src="data:image/png;base64,{{ heatmap_a }}" alt="Heatmap team A">
+  <img src="data:image/png;base64,{{ heatmap_b }}" alt="Heatmap team B">
+</div>
+
+<h2>Données physiques par joueur (track)</h2>
+<p><small>Un "track" peut couvrir une partie du match seulement
+(le tracking se casse sur les occlusions). Les distances sont donc des
+minimums par segment, pas des totaux par joueur.</small></p>
+<table>
+<tr><th>Track</th><th>Équipe</th><th>Min. suivi</th>
+    <th>Distance (m)</th><th>Vitesse max (km/h)</th><th>Sprints</th></tr>
+{% for r in phys_rows %}
+<tr><td>#{{ r.track_id }}</td><td>{{ r.team }}</td>
+    <td>{{ r.minutes_tracked | round(1) }}</td><td>{{ r.distance_m }}</td>
+    <td>{{ r.top_speed_kmh }}</td><td>{{ r.n_sprints }}</td></tr>
+{% endfor %}
+</table>
+</body>
+</html>
