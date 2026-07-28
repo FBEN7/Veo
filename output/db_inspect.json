@@ -1,0 +1,519 @@
+{
+  "db": "C:\\Users\\BERNARF\\OneDrive - National Bank of Belgium\\Documents\\Veo\\output\\match.db",
+  "table_count": 4,
+  "tables": [
+    "events",
+    "matches",
+    "player_stats",
+    "team_stats"
+  ],
+  "index_count": 5,
+  "indexes": [
+    "idx_events_match",
+    "idx_events_team",
+    "idx_events_type",
+    "idx_player_match",
+    "idx_team_match"
+  ],
+  "counts": {
+    "events": 52,
+    "matches": 3,
+    "player_stats": 2291,
+    "team_stats": 6
+  },
+  "schema": {
+    "events": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "match_id",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "event_type",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "timestamp_s",
+        "type": "REAL",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "team",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "player_track_id",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "location_x",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "location_y",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "end_location_x",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "end_location_y",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "outcome",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "attributes",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": "'{}'",
+        "pk": 0
+      }
+    ],
+    "matches": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "label",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "date",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "video_path",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "duration_s",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "created_at",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      }
+    ],
+    "player_stats": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "match_id",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "track_id",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "team",
+        "type": "TEXT",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "distance_m",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "top_speed_kmh",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "n_sprints",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "minutes_tracked",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "n_passes",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "n_shots",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 10,
+        "name": "n_goals",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 11,
+        "name": "possession_pct",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0.0",
+        "pk": 0
+      },
+      {
+        "cid": 12,
+        "name": "rating",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0.0",
+        "pk": 0
+      }
+    ],
+    "team_stats": [
+      {
+        "cid": 0,
+        "name": "id",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": null,
+        "pk": 1
+      },
+      {
+        "cid": 1,
+        "name": "match_id",
+        "type": "INTEGER",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 2,
+        "name": "team",
+        "type": "TEXT",
+        "notnull": 1,
+        "dflt_value": null,
+        "pk": 0
+      },
+      {
+        "cid": 3,
+        "name": "possession_pct",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0.0",
+        "pk": 0
+      },
+      {
+        "cid": 4,
+        "name": "total_distance_km",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0.0",
+        "pk": 0
+      },
+      {
+        "cid": 5,
+        "name": "total_sprints",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 6,
+        "name": "n_passes",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 7,
+        "name": "n_shots",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 8,
+        "name": "n_goals",
+        "type": "INTEGER",
+        "notnull": 0,
+        "dflt_value": "0",
+        "pk": 0
+      },
+      {
+        "cid": 9,
+        "name": "field_tilt_x",
+        "type": "REAL",
+        "notnull": 0,
+        "dflt_value": "0.0",
+        "pk": 0
+      }
+    ]
+  },
+  "samples": {
+    "events": [
+      {
+        "id": 1,
+        "match_id": 1,
+        "event_type": "shot",
+        "timestamp_s": 2.28,
+        "team": "team_A",
+        "player_track_id": 6,
+        "location_x": 51.03563908679945,
+        "location_y": 40.65796935525113,
+        "end_location_x": 83.80328326158121,
+        "end_location_y": 26.271862826971624,
+        "outcome": "off_target",
+        "attributes": "{\"ball_speed_kmh\": 120.0}"
+      },
+      {
+        "id": 2,
+        "match_id": 1,
+        "event_type": "shot",
+        "timestamp_s": 35.52,
+        "team": "team_A",
+        "player_track_id": 170,
+        "location_x": 40.78321716595144,
+        "location_y": 39.93148047147023,
+        "end_location_x": 30.56909946208829,
+        "end_location_y": 38.71380326209958,
+        "outcome": "off_target",
+        "attributes": "{\"ball_speed_kmh\": 51.4}"
+      },
+      {
+        "id": 3,
+        "match_id": 2,
+        "event_type": "shot",
+        "timestamp_s": 524.4,
+        "team": "team_B",
+        "player_track_id": 1664,
+        "location_x": 64.25385596046985,
+        "location_y": 41.258244166467186,
+        "end_location_x": 72.48753507372359,
+        "end_location_y": 46.56259656815808,
+        "outcome": "off_target",
+        "attributes": "{\"ball_speed_kmh\": 73.5}"
+      }
+    ],
+    "matches": [
+      {
+        "id": 1,
+        "label": "Test Match",
+        "date": "2026-07-15",
+        "video_path": "data/match.mp4",
+        "duration_s": 5698.68,
+        "created_at": "2026-07-15T14:08:15.203593+00:00"
+      },
+      {
+        "id": 2,
+        "label": "Chelsea U18 vs Arsenal U18",
+        "date": "2026-07-16",
+        "video_path": "data/match.mp4",
+        "duration_s": 5698.68,
+        "created_at": "2026-07-16T08:34:34.099449+00:00"
+      },
+      {
+        "id": 3,
+        "label": "Chelsea U18 vs Arsenal U18",
+        "date": "2026-07-16",
+        "video_path": "data/match.mp4",
+        "duration_s": 5698.68,
+        "created_at": "2026-07-16T08:41:08.270348+00:00"
+      }
+    ],
+    "player_stats": [
+      {
+        "id": 1,
+        "match_id": 1,
+        "track_id": 56,
+        "team": "team_A",
+        "distance_m": 58.0,
+        "top_speed_kmh": 39.3,
+        "n_sprints": 38,
+        "minutes_tracked": 0.23200000000000004,
+        "n_passes": 0,
+        "n_shots": 0,
+        "n_goals": 0,
+        "possession_pct": 0.019456521739130435,
+        "rating": 0.0
+      },
+      {
+        "id": 2,
+        "match_id": 1,
+        "track_id": 61,
+        "team": "team_B",
+        "distance_m": 43.7,
+        "top_speed_kmh": 39.1,
+        "n_sprints": 28,
+        "minutes_tracked": 0.158,
+        "n_passes": 0,
+        "n_shots": 0,
+        "n_goals": 0,
+        "possession_pct": 0.006176470588235294,
+        "rating": 0.0
+      },
+      {
+        "id": 3,
+        "match_id": 1,
+        "track_id": 181,
+        "team": "team_B",
+        "distance_m": 41.1,
+        "top_speed_kmh": 38.6,
+        "n_sprints": 27,
+        "minutes_tracked": 0.18000000000000008,
+        "n_passes": 0,
+        "n_shots": 0,
+        "n_goals": 0,
+        "possession_pct": 0.006176470588235294,
+        "rating": 0.0
+      }
+    ],
+    "team_stats": [
+      {
+        "id": 1,
+        "match_id": 1,
+        "team": "team_A",
+        "possession_pct": 0.895,
+        "total_distance_km": 0.7739,
+        "total_sprints": 480,
+        "n_passes": 0,
+        "n_shots": 2,
+        "n_goals": 0,
+        "field_tilt_x": 54.4
+      },
+      {
+        "id": 2,
+        "match_id": 1,
+        "team": "team_B",
+        "possession_pct": 0.105,
+        "total_distance_km": 0.29890000000000005,
+        "total_sprints": 185,
+        "n_passes": 0,
+        "n_shots": 0,
+        "n_goals": 0,
+        "field_tilt_x": 50.2
+      },
+      {
+        "id": 3,
+        "match_id": 2,
+        "team": "team_A",
+        "possession_pct": 0.475,
+        "total_distance_km": 14.3798,
+        "total_sprints": 2900,
+        "n_passes": 3,
+        "n_shots": 9,
+        "n_goals": 0,
+        "field_tilt_x": 52.5
+      }
+    ]
+  }
+}

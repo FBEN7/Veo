@@ -26,9 +26,10 @@ import pandas as pd
 
 POSSESSION_RADIUS_M = 4.4
 POSSESSION_GAP_FILL_S = 1.4
-MIN_PASS_DISTANCE_M = 1.2
+MIN_PASS_DISTANCE_M = 2.2
 MAX_PASS_INTERVAL_S = 4.5
 PASS_UNKNOWN_BRIDGE_S = 1.4
+MIN_POSSESSION_STABLE_S = 0.85
 SHOT_MIN_KMH = 16.0
 SHOT_MAX_DIST_FROM_GOAL_M = 40.0
 SHOT_COOLDOWN_S = 1.8
@@ -230,6 +231,23 @@ def _player_positions_by_frame(tracks: pd.DataFrame) -> dict[int, dict[int, tupl
     return out
 
 
+def _reset_transition_candidate() -> dict[str, Any]:
+    return {
+        "from_id": -1,
+        "from_team": "unknown",
+        "to_id": -1,
+        "to_team": "unknown",
+        "start_time": None,
+        "end_time": None,
+        "start_xy": None,
+        "end_xy": None,
+        "frame": -1,
+        "ball_speed_kmh": 0.0,
+        "inferred": False,
+        "stabilize_start": None,
+    }
+
+
 def _emit_possession_transition_event(
     events: list[dict[str, Any]],
     *,
@@ -374,6 +392,7 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
     pending_from_team: str = "unknown"
     pending_start_time: float | None = None
     pending_start_xy: tuple[float, float] | None = None
+    transition_candidate = _reset_transition_candidate()
 
     last_goal_time: float = -10.0
     last_shot_time: float = -10.0
@@ -489,6 +508,33 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
             loose_start_t = None
 
         # ---- Pass / Interception / Tackle proxy ---------------------------
+        if transition_candidate["to_id"] != -1:
+            if cur_possessor == transition_candidate["to_id"] and cur_team == transition_candidate["to_team"]:
+                stable_for = t - float(transition_candidate["stabilize_start"])
+                transition_candidate["end_xy"] = (bx, by)
+                transition_candidate["end_time"] = t
+                transition_candidate["frame"] = frame
+                transition_candidate["ball_speed_kmh"] = speed
+                if stable_for >= MIN_POSSESSION_STABLE_S:
+                    _emit_possession_transition_event(
+                        events,
+                        start_time=float(transition_candidate["start_time"]),
+                        end_time=float(transition_candidate["end_time"]),
+                        from_id=int(transition_candidate["from_id"]),
+                        from_team=str(transition_candidate["from_team"]),
+                        to_id=int(transition_candidate["to_id"]),
+                        to_team=str(transition_candidate["to_team"]),
+                        start_xy=transition_candidate["start_xy"],
+                        end_xy=transition_candidate["end_xy"],
+                        inferred=bool(transition_candidate["inferred"]),
+                        player_xy=player_xy,
+                        frame=int(transition_candidate["frame"]),
+                        ball_speed_kmh=float(transition_candidate["ball_speed_kmh"]),
+                    )
+                    transition_candidate = _reset_transition_candidate()
+            else:
+                transition_candidate = _reset_transition_candidate()
+
         if (
             cur_possessor != prev_possessor
             and cur_possessor != -1
@@ -496,21 +542,20 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
             and prev_bx is not None
             and prev_by is not None
         ):
-            _emit_possession_transition_event(
-                events,
-                start_time=prev_time,
-                end_time=t,
-                from_id=prev_possessor,
-                from_team=prev_team,
-                to_id=cur_possessor,
-                to_team=cur_team,
-                start_xy=(prev_bx, prev_by),
-                end_xy=(bx, by),
-                inferred=False,
-                player_xy=player_xy,
-                frame=frame,
-                ball_speed_kmh=speed,
-            )
+            transition_candidate = {
+                "from_id": prev_possessor,
+                "from_team": prev_team,
+                "to_id": cur_possessor,
+                "to_team": cur_team,
+                "start_time": prev_time,
+                "end_time": t,
+                "start_xy": (prev_bx, prev_by),
+                "end_xy": (bx, by),
+                "frame": frame,
+                "ball_speed_kmh": speed,
+                "inferred": False,
+                "stabilize_start": t,
+            }
 
         if prev_possessor != -1 and cur_possessor == -1 and pending_start_time is None and prev_bx is not None and prev_by is not None:
             pending_from_id = prev_possessor
@@ -522,21 +567,20 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
             if cur_possessor != -1 and cur_team != "unknown" and pending_from_id != -1:
                 bridge_dt = max(0.0, t - pending_start_time)
                 if bridge_dt <= PASS_UNKNOWN_BRIDGE_S and pending_start_xy is not None:
-                    _emit_possession_transition_event(
-                        events,
-                        start_time=pending_start_time,
-                        end_time=t,
-                        from_id=pending_from_id,
-                        from_team=pending_from_team,
-                        to_id=cur_possessor,
-                        to_team=cur_team,
-                        start_xy=pending_start_xy,
-                        end_xy=(bx, by),
-                        inferred=True,
-                        player_xy=player_xy,
-                        frame=frame,
-                        ball_speed_kmh=speed,
-                    )
+                    transition_candidate = {
+                        "from_id": pending_from_id,
+                        "from_team": pending_from_team,
+                        "to_id": cur_possessor,
+                        "to_team": cur_team,
+                        "start_time": pending_start_time,
+                        "end_time": t,
+                        "start_xy": pending_start_xy,
+                        "end_xy": (bx, by),
+                        "frame": frame,
+                        "ball_speed_kmh": speed,
+                        "inferred": True,
+                        "stabilize_start": t,
+                    }
                 pending_from_id = -1
                 pending_from_team = "unknown"
                 pending_start_time = None
