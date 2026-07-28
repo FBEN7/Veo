@@ -20,6 +20,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from . import ball_tracking
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -72,27 +74,20 @@ def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
 
     Columns: frame, time_s, bx, by, vel_x, vel_y, speed_kmh
     """
-    ball = (
-        tracks[tracks.cls == "ball"][["frame", "time_s", "x", "y"]]
-        .sort_values("frame")
-        .drop_duplicates("frame")
-        .reset_index(drop=True)
-    )
+    if tracks.empty or not (tracks.cls == "ball").any():
+        return pd.DataFrame(columns=["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"])
+
+    # Use improved ball tracking with Kalman filtering
+    ball = ball_tracking.extract_ball_tracking(tracks, smooth_window=3, fill_gaps=True)
     if ball.empty:
-        return ball.rename(columns={"x": "bx", "y": "by"})
+        return pd.DataFrame(columns=["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"])
 
-    ball["bx"] = _smooth_series(ball["x"])
-    ball["by"] = _smooth_series(ball["y"])
-
-    dt = ball["time_s"].diff().fillna(1.0 / 30.0)
-    dx = ball["bx"].diff().fillna(0.0)
-    dy = ball["by"].diff().fillna(0.0)
-
-    # Convert m/s to km/h; clamp implausible values (tracker noise)
-    raw_speed = np.sqrt(dx**2 + dy**2) / dt * 3.6
-    ball["vel_x"] = dx / dt
-    ball["vel_y"] = dy / dt
-    ball["speed_kmh"] = raw_speed.clip(upper=120.0)
+    # Rename columns and compute speed from velocity
+    ball["bx"] = ball["x"]
+    ball["by"] = ball["y"]
+    ball["vel_x"] = ball.get("vx", 0.0)
+    ball["vel_y"] = ball.get("vy", 0.0)
+    ball["speed_kmh"] = np.sqrt(ball["vel_x"]**2 + ball["vel_y"]**2) * 3.6
 
     return ball[["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]]
 
