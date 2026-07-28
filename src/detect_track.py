@@ -215,9 +215,16 @@ def reidentify_tracks(video_path: str, tracks: pd.DataFrame) -> pd.DataFrame:
         else:
             best_score, best_idx = float("inf"), None
 
-        # Strict enough to avoid collapsing unrelated teammates, but still
-        # permissive for exit/re-entry fragments from the same player.
-        if best_idx is not None and best_score <= 1.35:
+        # Adaptive threshold: more lenient in early frames when track instability is high
+        time_since_start = float(frag.start_time)
+        if time_since_start < 60.0:
+            threshold = 1.65
+        elif time_since_start < 300.0:
+            threshold = 1.50
+        else:
+            threshold = 1.35
+
+        if best_idx is not None and best_score <= threshold:
             pid = int(persistent_summaries[best_idx]["persistent_id"])
             summary = persistent_summaries[best_idx]
             summary["end_time"] = float(max(summary["end_time"], frag.end_time))
@@ -271,7 +278,7 @@ def reidentify_tracks(video_path: str, tracks: pd.DataFrame) -> pd.DataFrame:
 
 
 def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
-    conf_player: float = 0.25, conf_ball: float = 0.12,
+    conf_player: float = 0.25, conf_ball: float = 0.08,
     out_path: str = "output/tracks.parquet",
     max_seconds: int = 0, imgsz: int = 640) -> pd.DataFrame:
     model = YOLO(model_name)
