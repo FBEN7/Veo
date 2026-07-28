@@ -35,7 +35,7 @@ def main():
     p.add_argument("--model", default="yolov8m.pt")
     p.add_argument("--conf-player", type=float, default=0.25,
                    help="seuil confiance YOLO pour joueurs")
-    p.add_argument("--conf-ball", type=float, default=0.12,
+    p.add_argument("--conf-ball", type=float, default=0.08,
                    help="seuil confiance YOLO pour ballon")
     p.add_argument("--imgsz", type=int, default=640,
                    help="input image size for YOLO (default: 640)")
