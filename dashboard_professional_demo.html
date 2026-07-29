@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veo Professional - Match Analysis Demo</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a1f36;
+            --secondary: #3b82f6;
+            --accent: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --light: #f3f4f6;
+            --dark: #111827;
+            --border: #e5e7eb;
+            --text: #374151;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #2d3e50 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .logo p {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .demo-badge {
+            background: #f59e0b;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Match Header */
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .match-header h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .match-date {
+            font-size: 0.95rem;
+            color: var(--text);
+            opacity: 0.7;
+        }
+
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-box {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--secondary);
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text);
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: var(--secondary);
+        }
+
+        .tab.active {
+            color: var(--secondary);
+            border-bottom-color: var(--secondary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 1rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        /* Charts */
+        .chart {
+            min-height: 400px;
+            background: linear-gradient(135deg, var(--light) 0%, #ffffff 100%);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        /* Pitch */
+        .pitch-map {
+            min-height: 300px;
+            background: linear-gradient(135deg, #1a7c3b 0%, #2d9f4e 100%);
+            border-radius: 8px;
+            position: relative;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        /* Tables */
+        .professional-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .professional-table thead {
+            background: linear-gradient(135deg, var(--primary) 0%, #2d3e50 100%);
+            color: white;
+        }
+
+        .professional-table th {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .professional-table td {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .professional-table tbody tr:hover {
+            background: var(--light);
+        }
+
+        .player-id {
+            font-weight: 700;
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+
+        .team {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-defender {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--secondary);
+        }
+
+        .badge-midfielder {
+            background: rgba(245, 158, 11, 0.2);
+            color: #d97706;
+        }
+
+        .badge-forward {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent);
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .rating-excellent {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .rating-good {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--secondary);
+        }
+
+        .rating-average {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .success-rate {
+            text-align: center;
+            font-weight: 600;
+            color: var(--success);
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table thead {
+            background: var(--light);
+        }
+
+        .comparison-table th {
+            padding: 1.5rem;
+            text-align: center;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .comparison-table td {
+            padding: 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table .stat-name {
+            font-weight: 600;
+            color: var(--primary);
+            text-align: left;
+        }
+
+        .comparison-table .value {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--secondary);
+        }
+
+        /* Metrics */
+        .metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background: var(--light);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--text);
+            opacity: 0.7;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--primary);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .professional-table th,
+            .professional-table td {
+                padding: 0.75rem;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>⚽ VEO PROFESSIONAL</h1>
+                <p>Advanced Match Analytics Platform</p>
+            </div>
+            <div class="demo-badge">🎨 DEMO - Sample Data</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Match Header -->
+        <div class="match-header">
+            <div>
+                <h2>Team A vs Team B</h2>
+                <p class="match-date">July 28, 2024 • 90 minutes</p>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-box">
+                <span class="stat-value">58.2%</span>
+                <span class="stat-label">Team A Possession</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value">487</span>
+                <span class="stat-label">Total Passes</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value">18</span>
+                <span class="stat-label">Shots</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value">3</span>
+                <span class="stat-label">Goals</span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('overview')">📊 Overview</button>
+            <button class="tab" onclick="switchTab('players')">👥 Players</button>
+            <button class="tab" onclick="switchTab('passes')">⚽ Passing</button>
+            <button class="tab" onclick="switchTab('defense')">🛡️ Defense</button>
+            <button class="tab" onclick="switchTab('advanced')">📈 Advanced</button>
+        </div>
+
+        <!-- TAB 1: Overview -->
+        <div id="overview" class="tab-content active">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Possession Timeline</h3>
+                    <div id="possession-chart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <h3>Shot Locations</h3>
+                    <div id="shot-map" class="chart pitch-map"></div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Team A Heatmap</h3>
+                    <div class="chart pitch-map" style="background: linear-gradient(to right, rgba(59, 130, 246, 0), rgba(59, 130, 246, 0.5));"></div>
+                </div>
+                <div class="card">
+                    <h3>Team B Heatmap</h3>
+                    <div class="chart pitch-map" style="background: linear-gradient(to left, rgba(239, 68, 68, 0), rgba(239, 68, 68, 0.5));"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Players -->
+        <div id="players" class="tab-content">
+            <div class="card">
+                <h3>Player Performance Rankings</h3>
+                <table class="professional-table">
+                    <thead>
+                        <tr>
+                            <th>#ID</th>
+                            <th>Team</th>
+                            <th>Position</th>
+                            <th>Rating</th>
+                            <th>Distance (m)</th>
+                            <th>Speed (km/h)</th>
+                            <th>Passes</th>
+                            <th>Pass %</th>
+                            <th>Key Pass</th>
+                            <th>Shots</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="player-id">1</td>
+                            <td class="team">Team A</td>
+                            <td><span class="badge badge-defender">Defender</span></td>
+                            <td><span class="rating-badge rating-excellent">8.2</span></td>
+                            <td>11,247</td>
+                            <td>28.4</td>
+                            <td>52</td>
+                            <td class="success-rate">87%</td>
+                            <td>2</td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">7</td>
+                            <td class="team">Team A</td>
+                            <td><span class="badge badge-midfielder">Midfielder</span></td>
+                            <td><span class="rating-badge rating-good">7.6</span></td>
+                            <td>10,893</td>
+                            <td>27.1</td>
+                            <td>48</td>
+                            <td class="success-rate">82%</td>
+                            <td>5</td>
+                            <td>1</td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">9</td>
+                            <td class="team">Team A</td>
+                            <td><span class="badge badge-forward">Forward</span></td>
+                            <td><span class="rating-badge rating-good">7.4</span></td>
+                            <td>10,234</td>
+                            <td>26.8</td>
+                            <td>28</td>
+                            <td class="success-rate">71%</td>
+                            <td>8</td>
+                            <td>4</td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">3</td>
+                            <td class="team">Team B</td>
+                            <td><span class="badge badge-defender">Defender</span></td>
+                            <td><span class="rating-badge rating-good">7.1</span></td>
+                            <td>9,876</td>
+                            <td>25.3</td>
+                            <td>42</td>
+                            <td class="success-rate">79%</td>
+                            <td>1</td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">8</td>
+                            <td class="team">Team B</td>
+                            <td><span class="badge badge-midfielder">Midfielder</span></td>
+                            <td><span class="rating-badge rating-good">7.0</span></td>
+                            <td>9,542</td>
+                            <td>24.7</td>
+                            <td>38</td>
+                            <td class="success-rate">75%</td>
+                            <td>3</td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">11</td>
+                            <td class="team">Team B</td>
+                            <td><span class="badge badge-forward">Forward</span></td>
+                            <td><span class="rating-badge rating-average">6.8</span></td>
+                            <td>8,123</td>
+                            <td>23.2</td>
+                            <td>22</td>
+                            <td class="success-rate">68%</td>
+                            <td>2</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 3: Passing -->
+        <div id="passes" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Pass Completion by Player</h3>
+                    <div id="pass-completion-chart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <h3>Pass Types Distribution</h3>
+                    <div id="pass-types-chart" class="chart"></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Pass Success Rate Comparison</h3>
+                <table class="professional-table">
+                    <thead>
+                        <tr>
+                            <th>Team A</th>
+                            <th>Completion Rate</th>
+                            <th>Team B</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="team">Team A</td>
+                            <td class="value">82.4%</td>
+                            <td class="team">Team B</td>
+                        </tr>
+                        <tr>
+                            <td class="team">Short Passes</td>
+                            <td class="value">87%</td>
+                            <td class="team">Short Passes</td>
+                        </tr>
+                        <tr>
+                            <td class="team">Long Passes</td>
+                            <td class="value">68%</td>
+                            <td class="team">Long Passes</td>
+                        </tr>
+                        <tr>
+                            <td class="team">Forward Passes</td>
+                            <td class="value">74%</td>
+                            <td class="team">Forward Passes</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: Defense -->
+        <div id="defense" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <h3>Tackle Success Rate</h3>
+                    <div id="tackle-chart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <h3>Defensive Actions Breakdown</h3>
+                    <div id="defensive-chart" class="chart"></div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Defensive Performance</h3>
+                <table class="professional-table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Tackles</th>
+                            <th>Success Rate</th>
+                            <th>Interceptions</th>
+                            <th>Clearances</th>
+                            <th>Defensive Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="team">Team A</td>
+                            <td>28</td>
+                            <td class="success-rate">71%</td>
+                            <td>12</td>
+                            <td>8</td>
+                            <td>48</td>
+                        </tr>
+                        <tr>
+                            <td class="team">Team B</td>
+                            <td>22</td>
+                            <td class="success-rate">65%</td>
+                            <td>15</td>
+                            <td>11</td>
+                            <td>48</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 5: Advanced Analytics -->
+        <div id="advanced" class="tab-content">
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Expected Goals (xG)</h3>
+                    <div class="metric">
+                        <span class="metric-value">2.84</span>
+                        <span class="metric-label">Team A xG</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">1.42</span>
+                        <span class="metric-label">Team B xG</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Expected Assists (xA)</h3>
+                    <div class="metric">
+                        <span class="metric-value">1.87</span>
+                        <span class="metric-label">Team A xA</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">0.93</span>
+                        <span class="metric-label">Team B xA</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Ball Carry Distance</h3>
+                    <div class="metric">
+                        <span class="metric-value">3,847m</span>
+                        <span class="metric-label">Team A Total</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">2,943m</span>
+                        <span class="metric-label">Team B Total</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Player Positional Impact Scores (0-10)</h3>
+                <table class="professional-table">
+                    <thead>
+                        <tr>
+                            <th>Player ID</th>
+                            <th>Team</th>
+                            <th>Defensive Score</th>
+                            <th>Midfield Score</th>
+                            <th>Attacking Score</th>
+                            <th>Overall Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="player-id">1</td>
+                            <td class="team">Team A</td>
+                            <td><strong>9.2</strong></td>
+                            <td>3.1</td>
+                            <td>1.2</td>
+                            <td><span class="rating-badge rating-excellent">8.2</span></td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">7</td>
+                            <td class="team">Team A</td>
+                            <td>5.4</td>
+                            <td><strong>8.8</strong></td>
+                            <td>5.2</td>
+                            <td><span class="rating-badge rating-good">7.6</span></td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">9</td>
+                            <td class="team">Team A</td>
+                            <td>2.1</td>
+                            <td>4.3</td>
+                            <td><strong>9.1</strong></td>
+                            <td><span class="rating-badge rating-good">7.4</span></td>
+                        </tr>
+                        <tr>
+                            <td class="player-id">3</td>
+                            <td class="team">Team B</td>
+                            <td>8.7</td>
+                            <td>2.9</td>
+                            <td>1.4</td>
+                            <td><span class="rating-badge rating-good">7.1</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Head-to-Head Comparison -->
+        <div class="card">
+            <h3>Head-to-Head Team Statistics</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Team A</th>
+                        <th class="stat-name">Statistic</th>
+                        <th>Team B</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="value">58.2%</td>
+                        <td class="stat-name">Possession</td>
+                        <td class="value">41.8%</td>
+                    </tr>
+                    <tr>
+                        <td class="value">287</td>
+                        <td class="stat-name">Passes</td>
+                        <td class="value">200</td>
+                    </tr>
+                    <tr>
+                        <td class="value">82.4%</td>
+                        <td class="stat-name">Pass Completion</td>
+                        <td class="value">78.5%</td>
+                    </tr>
+                    <tr>
+                        <td class="value">12</td>
+                        <td class="stat-name">Shots</td>
+                        <td class="value">6</td>
+                    </tr>
+                    <tr>
+                        <td class="value">2.84</td>
+                        <td class="stat-name">Expected Goals</td>
+                        <td class="value">1.42</td>
+                    </tr>
+                    <tr>
+                        <td class="value">2</td>
+                        <td class="stat-name">Goals</td>
+                        <td class="value">1</td>
+                    </tr>
+                    <tr>
+                        <td class="value">28</td>
+                        <td class="stat-name">Tackles</td>
+                        <td class="value">22</td>
+                    </tr>
+                    <tr>
+                        <td class="value">71%</td>
+                        <td class="stat-name">Tackle Success</td>
+                        <td class="value">65%</td>
+                    </tr>
+                    <tr>
+                        <td class="value">108.5 km</td>
+                        <td class="stat-name">Total Distance</td>
+                        <td class="value">96.2 km</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Veo Professional Analytics • Advanced Match Analysis for Clubs & Academies</p>
+    </footer>
+
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(c => c.classList.remove('active'));
+
+            // Remove active from all buttons
+            const buttons = document.querySelectorAll('.tab');
+            buttons.forEach(b => b.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Render charts if first view
+            if (tabName === 'overview') {
+                renderOverviewCharts();
+            } else if (tabName === 'passes') {
+                renderPassCharts();
+            } else if (tabName === 'defense') {
+                renderDefenseCharts();
+            }
+        }
+
+        function renderOverviewCharts() {
+            // Possession Timeline
+            const times = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
+            const teamA = [45, 52, 58, 62, 60, 58, 65, 68, 62, 60, 58, 60, 62, 58, 56, 60, 58, 55, 58];
+            const teamB = [55, 48, 42, 38, 40, 42, 35, 32, 38, 40, 42, 40, 38, 42, 44, 40, 42, 45, 42];
+
+            const trace1 = {
+                x: times, y: teamA, name: 'Team A', type: 'scatter',
+                mode: 'lines', line: { color: '#3b82f6', width: 3 }
+            };
+            const trace2 = {
+                x: times, y: teamB, name: 'Team B', type: 'scatter',
+                mode: 'lines', line: { color: '#ef4444', width: 3 }
+            };
+
+            Plotly.newPlot('possession-chart', [trace1, trace2], {
+                title: '', xaxis: { title: 'Time (min)' }, yaxis: { title: 'Possession %' },
+                height: 400, hovermode: 'x unified'
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        function renderPassCharts() {
+            // Pass Completion
+            const players = ['P1', 'P7', 'P9', 'P3', 'P8'];
+            const completion = [87, 82, 71, 79, 75];
+            const trace = { x: players, y: completion, type: 'bar', marker: { color: '#3b82f6' } };
+            Plotly.newPlot('pass-completion-chart', [trace], {
+                title: '', yaxis: { title: 'Completion %' }, height: 350
+            }, { responsive: true, displayModeBar: false });
+
+            // Pass Types
+            const labels = ['Short Passes', 'Long Passes', 'Forward Passes'];
+            const values = [245, 31, 44];
+            const pieTrace = { labels, values, type: 'pie' };
+            Plotly.newPlot('pass-types-chart', [pieTrace], {
+                title: '', height: 350
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        function renderDefenseCharts() {
+            // Tackle Success
+            const teams = ['Team A', 'Team B'];
+            const tackles = [28, 22];
+            const trace = { x: teams, y: tackles, type: 'bar', marker: { color: '#ef4444' } };
+            Plotly.newPlot('tackle-chart', [trace], {
+                title: '', yaxis: { title: 'Tackles' }, height: 350
+            }, { responsive: true, displayModeBar: false });
+
+            // Defensive Actions
+            const actions = ['Tackles', 'Interceptions', 'Clearances'];
+            const teamA = [28, 12, 8];
+            const teamB = [22, 15, 11];
+            const trace1 = { x: actions, y: teamA, name: 'Team A', type: 'bar' };
+            const trace2 = { x: actions, y: teamB, name: 'Team B', type: 'bar' };
+            Plotly.newPlot('defensive-chart', [trace1, trace2], {
+                title: '', barmode: 'group', height: 350
+            }, { responsive: true, displayModeBar: false });
+        }
+
+        // Initial render
+        window.addEventListener('load', renderOverviewCharts);
+    </script>
+</body>
+</html>
