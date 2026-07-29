@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veo - Match Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>⚽ Veo</h1>
+                    <p>Match Analysis Platform</p>
+                </div>
+                <div class="header-status">
+                    <span v-if="health.status === 'ok'" class="status-badge ok">
+                        ✓ Database Ready
+                    </span>
+                    <span v-else class="status-badge error">
+                        ✗ No Database
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container">
+            <!-- Match Selector -->
+            <section class="match-selector">
+                <h2>Select Match</h2>
+                <div class="match-list">
+                    <div v-if="matches.length === 0" class="empty-state">
+                        <p>No matches found. Upload video to analyze.</p>
+                    </div>
+                    <div v-for="match in matches" :key="match.id"
+                         class="match-card"
+                         @click="selectMatch(match.id)"
+                         :class="{ active: selectedMatch?.id === match.id }">
+                        <div class="match-info">
+                            <h3>{{ match.label }}</h3>
+                            <p class="match-date">{{ formatDate(match.date) }}</p>
+                            <p class="match-duration">{{ formatDuration(match.duration_s) }}</p>
+                        </div>
+                        <div class="match-arrow">→</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Match Dashboard -->
+            <section v-if="selectedMatch" class="dashboard">
+                <!-- Match Header -->
+                <div class="match-header">
+                    <h2>{{ selectedMatch.label }}</h2>
+                    <div class="match-actions">
+                        <button @click="exportPDF" class="btn btn-primary">📄 Export PDF</button>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Possession</h3>
+                        <div class="possession-chart" id="possession-summary"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Events Summary</h3>
+                        <div class="events-summary">
+                            <div v-for="(count, type) in summary.events" :key="type" class="event-stat">
+                                <span class="event-label">{{ formatEventType(type) }}</span>
+                                <span class="event-count">{{ count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Possession Over Time -->
+                <div class="card full-width">
+                    <h3>Possession Over Time</h3>
+                    <div id="possession-timeline" class="chart-container"></div>
+                </div>
+
+                <!-- Team Stats -->
+                <div class="card full-width">
+                    <h3>Team Statistics</h3>
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Team</th>
+                                <th>Possession %</th>
+                                <th>Passes</th>
+                                <th>Shots</th>
+                                <th>Goals</th>
+                                <th>Distance (km)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="team in summary.team_stats" :key="team.team">
+                                <td><strong>{{ team.team }}</strong></td>
+                                <td>{{ (team.possession_pct || 0).toFixed(1) }}%</td>
+                                <td>{{ team.n_passes || 0 }}</td>
+                                <td>{{ team.n_shots || 0 }}</td>
+                                <td>{{ team.n_goals || 0 }}</td>
+                                <td>{{ (team.total_distance_km || 0).toFixed(1) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Player Stats -->
+                <div class="card full-width">
+                    <h3>Player Statistics</h3>
+                    <div class="player-filter">
+                        <label>
+                            <input v-model="playerFilter" type="text" placeholder="Filter by team...">
+                        </label>
+                    </div>
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Track ID</th>
+                                <th>Team</th>
+                                <th>Distance (m)</th>
+                                <th>Top Speed (km/h)</th>
+                                <th>Sprints</th>
+                                <th>Passes</th>
+                                <th>Shots</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="player in filteredPlayers" :key="`${selectedMatch.id}-${player.track_id}`">
+                                <td>{{ player.track_id }}</td>
+                                <td class="team-cell">{{ player.team }}</td>
+                                <td>{{ player.distance_m ? player.distance_m.toFixed(0) : '—' }}</td>
+                                <td>{{ player.top_speed_kmh ? player.top_speed_kmh.toFixed(1) : '—' }}</td>
+                                <td>{{ player.n_sprints || 0 }}</td>
+                                <td>{{ player.n_passes || 0 }}</td>
+                                <td>{{ player.n_shots || 0 }}</td>
+                                <td>
+                                    <span v-if="player.rating" class="rating" :class="ratingClass(player.rating)">
+                                        {{ player.rating.toFixed(1) }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Heatmaps -->
+                <div class="card full-width">
+                    <h3>Possession Heatmaps</h3>
+                    <div class="heatmap-grid">
+                        <div v-for="team in ['team_a', 'team_b']" :key="team" class="heatmap-container">
+                            <h4>{{ team === 'team_a' ? 'Team A' : 'Team B' }}</h4>
+                            <div :id="`heatmap-${team}`" class="heatmap"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- No Match Selected -->
+            <section v-else class="empty-section">
+                <div class="empty-content">
+                    <h2>👈 Select a match to get started</h2>
+                    <p>Choose a match from the list above to view detailed analysis</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Veo Match Analysis • Built for Coaches & Academies</p>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    health: { status: 'loading' },
+                    matches: [],
+                    selectedMatch: null,
+                    summary: { events: {}, team_stats: [], top_players: [] },
+                    playerStats: [],
+                    playerFilter: '',
+                    possessionData: []
+                }
+            },
+            computed: {
+                filteredPlayers() {
+                    if (!this.playerFilter) return this.playerStats;
+                    return this.playerStats.filter(p =>
+                        p.team.toLowerCase().includes(this.playerFilter.toLowerCase())
+                    );
+                }
+            },
+            methods: {
+                async checkHealth() {
+                    try {
+                        const response = await fetch('/api/health');
+                        this.health = await response.json();
+                    } catch (e) {
+                        this.health = { status: 'error', error: e.message };
+                    }
+                },
+                async loadMatches() {
+                    try {
+                        const response = await fetch('/api/matches');
+                        this.matches = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load matches:', e);
+                    }
+                },
+                async selectMatch(matchId) {
+                    this.selectedMatch = this.matches.find(m => m.id === matchId);
+                    this.playerFilter = '';
+                    await this.loadSummary();
+                    await this.loadPlayerStats();
+                    await this.loadPossessionTimeline();
+                    this.$nextTick(() => {
+                        this.renderCharts();
+                    });
+                },
+                async loadSummary() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/summary`);
+                        this.summary = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load summary:', e);
+                    }
+                },
+                async loadPlayerStats() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/player-stats`);
+                        this.playerStats = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load player stats:', e);
+                    }
+                },
+                async loadPossessionTimeline() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/possession-timeline`);
+                        this.possessionData = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load possession timeline:', e);
+                    }
+                },
+                renderCharts() {
+                    // Possession summary pie chart
+                    if (this.summary.team_stats.length > 0) {
+                        const teams = this.summary.team_stats.map(t => t.team);
+                        const possession = this.summary.team_stats.map(t => t.possession_pct || 0);
+
+                        const data = [{
+                            values: possession,
+                            labels: teams,
+                            type: 'pie'
+                        }];
+
+                        Plotly.newPlot('possession-summary', data, {
+                            height: 300,
+                            margin: { l: 0, r: 0, t: 0, b: 0 }
+                        }, { responsive: true, displayModeBar: false });
+                    }
+
+                    // Possession timeline
+                    if (this.possessionData.length > 0) {
+                        const times = this.possessionData.map(d => d.time_min);
+                        const teamA = this.possessionData.map(d => d.team_a_pct);
+                        const teamB = this.possessionData.map(d => d.team_b_pct);
+
+                        const trace1 = {
+                            x: times,
+                            y: teamA,
+                            name: 'Team A',
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#3498db', width: 2 }
+                        };
+
+                        const trace2 = {
+                            x: times,
+                            y: teamB,
+                            name: 'Team B',
+                            type: 'scatter',
+                            mode: 'lines',
+                            line: { color: '#e74c3c', width: 2 }
+                        };
+
+                        Plotly.newPlot('possession-timeline', [trace1, trace2], {
+                            title: '',
+                            xaxis: { title: 'Time (minutes)' },
+                            yaxis: { title: 'Possession %' },
+                            height: 400,
+                            hovermode: 'x unified'
+                        }, { responsive: true });
+                    }
+                },
+                exportPDF() {
+                    window.location.href = `/api/matches/${this.selectedMatch.id}/export/pdf`;
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '—';
+                    const date = new Date(dateStr + 'T00:00:00Z');
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                },
+                formatDuration(seconds) {
+                    if (!seconds) return '—';
+                    const mins = Math.round(seconds / 60);
+                    return `${mins} min`;
+                },
+                formatEventType(type) {
+                    return type
+                        .split('_')
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(' ');
+                },
+                ratingClass(rating) {
+                    if (rating >= 7.5) return 'rating-excellent';
+                    if (rating >= 6.5) return 'rating-good';
+                    if (rating >= 5.5) return 'rating-average';
+                    return 'rating-poor';
+                }
+            },
+            mounted() {
+                this.checkHealth();
+                this.loadMatches();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
