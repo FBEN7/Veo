@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEO Pro - Elite Football Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent-blue: #3b82f6;
+            --accent-blue-dark: #1e40af;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --critical: #ef4444;
+            --surface: #f8fafc;
+            --surface-dark: #0f172a;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #f0f9ff;
+            color: var(--text-primary);
+        }
+
+        body {
+            line-height: 1.6;
+        }
+
+        /* Login Page */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #0c4a6e 100%);
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .veo-logo {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .veo-tagline {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .login-btn {
+            padding: 0.875rem;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .demo-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 1rem;
+        }
+
+        /* Main Dashboard */
+        .dashboard {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .header-brand:hover {
+            transform: scale(1.05);
+        }
+
+        .brand-icon {
+            font-size: 2rem;
+        }
+
+        .brand-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-text p {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+        }
+
+        .user-info-name {
+            font-weight: 600;
+        }
+
+        .user-info-rank {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Match Selector */
+        .match-selector {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .match-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .match-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            transition: left 0.3s ease;
+        }
+
+        .match-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .match-card:hover::before {
+            left: 0;
+        }
+
+        .match-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary);
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Dashboard Layout */
+        .dashboard-view {
+            display: none;
+        }
+
+        .dashboard-view.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-title h2 {
+            font-size: 1.8rem;
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+        }
+
+        .match-date {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .back-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--border);
+            transform: translateX(-4px);
+        }
+
+        /* Quick Stats */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-trend {
+            font-size: 0.8rem;
+            color: var(--success);
+            margin-top: 0.5rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .tab:hover {
+            color: var(--accent-blue);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Charts */
+        .chart-container {
+            min-height: 400px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 8px;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .pitch-map {
+            min-height: 300px;
+            background: linear-gradient(135deg, #1a7c3b 0%, #2d9f4e 100%);
+            border-radius: 8px;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* Player Table */
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .players-table thead {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+
+        .players-table th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .players-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .players-table tbody tr:hover {
+            background: #f8fafc;
+            transition: background 0.2s ease;
+        }
+
+        .player-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-defender {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .badge-midfielder {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-amber);
+        }
+
+        .badge-forward {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .rating-excellent {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .rating-good {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .rating-average {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-amber);
+        }
+
+        .rating-poor {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        /* Gamification Elements */
+        .achievement-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(168, 85, 247, 0.1));
+            border-radius: 8px;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            text-align: center;
+        }
+
+        .achievement-icon {
+            font-size: 2rem;
+        }
+
+        .achievement-name {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.85rem;
+        }
+
+        .achievement-desc {
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .leaderboard {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 8px;
+            border-left: 4px solid transparent;
+        }
+
+        .leaderboard-entry.top-1 {
+            border-left-color: #fbbf24;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 146, 60, 0.1));
+        }
+
+        .leaderboard-entry.top-2 {
+            border-left-color: #a8a8a8;
+        }
+
+        .leaderboard-entry.top-3 {
+            border-left-color: #d97706;
+        }
+
+        .rank-badge {
+            font-size: 1.5rem;
+            font-weight: 800;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--surface);
+            color: var(--accent-blue);
+        }
+
+        .leaderboard-entry.top-1 .rank-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+        }
+
+        .leaderboard-info {
+            flex: 1;
+        }
+
+        .leaderboard-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .leaderboard-score {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .leaderboard-stat {
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .comparison-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .comparison-table .stat-name {
+            font-weight: 600;
+            color: var(--primary);
+            width: 40%;
+        }
+
+        .comparison-table .team-a, .comparison-table .team-b {
+            text-align: center;
+            font-weight: 700;
+            width: 30%;
+        }
+
+        .comparison-table .team-a {
+            color: var(--accent-blue);
+        }
+
+        .comparison-table .team-b {
+            color: var(--accent-red);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .players-table {
+                font-size: 0.85rem;
+            }
+
+            .players-table th, .players-table td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+                text-align: left;
+            }
+
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .match-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Login Page -->
+        <div class="login-container" v-if="!isLoggedIn">
+            <div class="login-box">
+                <div class="login-header">
+                    <div class="veo-logo">⚽ VEO PRO</div>
+                    <p class="veo-tagline">Elite Football Analytics Platform</p>
+                </div>
+                <form class="login-form" @submit.prevent="login">
+                    <div class="form-group">
+                        <label class="form-label">🏆 Coaching Email</label>
+                        <input
+                            v-model="loginForm.email"
+                            type="email"
+                            class="form-input"
+                            placeholder="coach@academy.com"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔐 Password</label>
+                        <input
+                            v-model="loginForm.password"
+                            type="password"
+                            class="form-input"
+                            placeholder="Enter password"
+                            required
+                        >
+                    </div>
+                    <button class="login-btn">🚀 Enter the Arena</button>
+                </form>
+                <div class="demo-hint">
+                    💡 Demo: coach@veo.com / demo
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard" v-else>
+            <!-- Header -->
+            <div class="header">
+                <div class="header-content">
+                    <div class="header-brand" @click="logout">
+                        <div class="brand-icon">⚽</div>
+                        <div class="brand-text">
+                            <h1>VEO PRO</h1>
+                            <p>Elite Analytics</p>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-profile">
+                            <div class="user-avatar">{{ currentUser.initial }}</div>
+                            <div class="user-info">
+                                <div class="user-info-name">{{ currentUser.name }}</div>
+                                <div class="user-info-rank">{{ currentUser.rank }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Container -->
+            <div class="main-container">
+                <!-- Match Selector -->
+                <div v-if="!selectedMatch" class="match-selector">
+                    <div class="section-title">
+                        🎮 Select Your Match
+                    </div>
+                    <div class="match-grid">
+                        <div v-for="match in matches" :key="match.id"
+                             class="match-card"
+                             @click="selectMatch(match)">
+                            <h3>{{ match.label }}</h3>
+                            <div class="match-info">
+                                <span>📅 {{ formatDate(match.date) }}</span>
+                                <span>⏱️ {{ formatDuration(match.duration_s) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Dashboard -->
+                <div v-else>
+                    <!-- Match Header -->
+                    <div class="dashboard-header">
+                        <div class="match-title">
+                            <h2>{{ selectedMatch.label }}</h2>
+                            <p class="match-date">{{ formatDate(selectedMatch.date) }}</p>
+                        </div>
+                        <button class="back-btn" @click="selectedMatch = null">← Back to Matches</button>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="quick-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">{{ (summary.team_stats[0]?.possession_pct || 0).toFixed(0) }}%</div>
+                            <div class="stat-label">Team A Possession</div>
+                            <div class="stat-trend">💪 Controlled</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ summary.team_stats[0]?.n_passes || 0 }}</div>
+                            <div class="stat-label">Total Passes</div>
+                            <div class="stat-trend">✅ Connected</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ summary.events.shot || 0 }}</div>
+                            <div class="stat-label">Shots on Target</div>
+                            <div class="stat-trend">🎯 Threatening</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">{{ summary.team_stats[0]?.n_goals || 0 }}</div>
+                            <div class="stat-label">Goals</div>
+                            <div class="stat-trend">🔥 On Fire</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <button v-for="tab in ['overview', 'players', 'passes', 'defense', 'analytics']"
+                                :key="tab"
+                                @click="activeTab = tab"
+                                :class="['tab', { active: activeTab === tab }]">
+                            {{ getTabIcon(tab) }} {{ formatTabName(tab) }}
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: Overview -->
+                    <div v-if="activeTab === 'overview'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">📊 Possession Timeline</div>
+                                <div id="possession-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🎯 Shot Map</div>
+                                <div id="shot-map" class="pitch-map">⚽ Pitch Visualization</div>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">🔥 Team A Intensity</div>
+                                <div id="heatmap-a" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🔥 Team B Intensity</div>
+                                <div id="heatmap-b" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Players -->
+                    <div v-if="activeTab === 'players'" class="dashboard-view active">
+                        <div class="card">
+                            <div class="card-title">👥 Player Performance Rankings</div>
+                            <div class="filter-bar">
+                                <input v-model="playerFilter" type="text" class="filter-input" placeholder="🔍 Search player ID or team...">
+                                <select v-model="sortBy" class="filter-input">
+                                    <option value="rating">⭐ Sort by Rating</option>
+                                    <option value="distance">📍 Sort by Distance</option>
+                                    <option value="passes">⚽ Sort by Passes</option>
+                                    <option value="speed">⚡ Sort by Speed</option>
+                                </select>
+                            </div>
+                            <table class="players-table">
+                                <thead>
+                                    <tr>
+                                        <th>#ID</th>
+                                        <th>Team</th>
+                                        <th>Position</th>
+                                        <th>⭐ Rating</th>
+                                        <th>📍 Distance (m)</th>
+                                        <th>⚡ Speed (km/h)</th>
+                                        <th>⚽ Passes</th>
+                                        <th>✅ Pass %</th>
+                                        <th>🎯 Key Pass</th>
+                                        <th>💥 Shots</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="player in sortedPlayers" :key="player.track_id">
+                                        <td><strong>{{ player.track_id }}</strong></td>
+                                        <td>{{ player.team }}</td>
+                                        <td>
+                                            <span class="player-badge" :class="'badge-' + positionClass(player)">
+                                                {{ player.position || 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="rating-badge" :class="'rating-' + ratingClass(player.rating)">
+                                                {{ player.rating ? player.rating.toFixed(1) : '—' }} ⭐
+                                            </span>
+                                        </td>
+                                        <td>{{ player.distance_m ? player.distance_m.toFixed(0) : '—' }}</td>
+                                        <td>{{ player.top_speed_kmh ? player.top_speed_kmh.toFixed(1) : '—' }}</td>
+                                        <td><strong>{{ player.n_passes || 0 }}</strong></td>
+                                        <td>
+                                            <span style="color: var(--success); font-weight: 600;">
+                                                {{ player.pass_completion ? player.pass_completion.toFixed(0) : '—' }}%
+                                            </span>
+                                        </td>
+                                        <td>{{ player.key_passes || 0 }}</td>
+                                        <td>{{ player.n_shots || 0 }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Passing -->
+                    <div v-if="activeTab === 'passes'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">📊 Pass Completion Rate</div>
+                                <div id="pass-completion-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🎯 Pass Types Distribution</div>
+                                <div id="pass-types-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">🌐 Pass Network - Team A</div>
+                            <div id="pass-network" class="chart-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: Defense -->
+                    <div v-if="activeTab === 'defense'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">🛡️ Tackle Success Rate</div>
+                                <div id="tackle-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">💪 Defensive Actions</div>
+                                <div id="defensive-actions-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">📍 Defensive Line Pressure</div>
+                            <div id="defensive-line-chart" class="chart-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: Analytics -->
+                    <div v-if="activeTab === 'analytics'" class="dashboard-view active">
+                        <div class="grid-3">
+                            <div class="card">
+                                <div class="card-title">📈 xG (Expected Goals)</div>
+                                <div class="achievement-badge">
+                                    <div class="achievement-icon">🎯</div>
+                                    <div class="achievement-name">Team A</div>
+                                    <div class="stat-value">{{ summary.team_stats[0]?.xg || '0.0' }}</div>
+                                </div>
+                                <div class="achievement-badge mt-2">
+                                    <div class="achievement-icon">🎯</div>
+                                    <div class="achievement-name">Team B</div>
+                                    <div class="stat-value">{{ summary.team_stats[1]?.xg || '0.0' }}</div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🅰️ xA (Expected Assists)</div>
+                                <div class="achievement-badge">
+                                    <div class="achievement-icon">🎨</div>
+                                    <div class="achievement-name">Team A</div>
+                                    <div class="stat-value">{{ summary.team_stats[0]?.xa || '0.0' }}</div>
+                                </div>
+                                <div class="achievement-badge mt-2">
+                                    <div class="achievement-icon">🎨</div>
+                                    <div class="achievement-name">Team B</div>
+                                    <div class="stat-value">{{ summary.team_stats[1]?.xa || '0.0' }}</div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🏃 Ball Carry</div>
+                                <div class="achievement-badge">
+                                    <div class="achievement-icon">🚀</div>
+                                    <div class="achievement-name">Team A</div>
+                                    <div class="stat-value">{{ carryDistance.teamA || '—' }}</div>
+                                </div>
+                                <div class="achievement-badge mt-2">
+                                    <div class="achievement-icon">🚀</div>
+                                    <div class="achievement-name">Team B</div>
+                                    <div class="stat-value">{{ carryDistance.teamB || '—' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Head-to-Head -->
+                    <div class="card">
+                        <div class="card-title">⚔️ Head-to-Head Showdown</div>
+                        <table class="comparison-table">
+                            <tbody>
+                                <tr>
+                                    <td class="team-a"><strong>{{ (summary.team_stats[0]?.possession_pct || 0).toFixed(1) }}%</strong></td>
+                                    <td class="stat-name">🎯 Possession</td>
+                                    <td class="team-b"><strong>{{ (summary.team_stats[1]?.possession_pct || 0).toFixed(1) }}%</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ summary.team_stats[0]?.n_passes || 0 }}</strong></td>
+                                    <td class="stat-name">⚽ Passes</td>
+                                    <td class="team-b"><strong>{{ summary.team_stats[1]?.n_passes || 0 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ summary.team_stats[0]?.n_shots || 0 }}</strong></td>
+                                    <td class="stat-name">💥 Shots</td>
+                                    <td class="team-b"><strong>{{ summary.team_stats[1]?.n_shots || 0 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ summary.team_stats[0]?.n_goals || 0 }}</strong></td>
+                                    <td class="stat-name">🔥 Goals</td>
+                                    <td class="team-b"><strong>{{ summary.team_stats[1]?.n_goals || 0 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ (summary.team_stats[0]?.total_distance_km || 0).toFixed(1) }}</strong></td>
+                                    <td class="stat-name">📍 Distance (km)</td>
+                                    <td class="team-b"><strong>{{ (summary.team_stats[1]?.total_distance_km || 0).toFixed(1) }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                ⚽ VEO PRO - Where Data Meets Glory | Analytics for Champions 🏆
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    isLoggedIn: false,
+                    loginForm: {
+                        email: 'coach@veo.com',
+                        password: 'demo'
+                    },
+                    currentUser: {
+                        name: 'Coach Anderson',
+                        rank: 'Master Tactician',
+                        initial: 'CA'
+                    },
+                    matches: [
+                        { id: 1, label: '⚽ Academy vs City FC', date: '2024-07-28', duration_s: 5400 },
+                        { id: 2, label: '🏆 Championship Final', date: '2024-07-27', duration_s: 5400 },
+                        { id: 3, label: '🎯 Friendly Match', date: '2024-07-26', duration_s: 5400 }
+                    ],
+                    selectedMatch: null,
+                    summary: { events: {}, team_stats: [{xg: 0, xa: 0}, {xg: 0, xa: 0}], top_players: [] },
+                    playerStats: [],
+                    playerFilter: '',
+                    sortBy: 'rating',
+                    activeTab: 'overview',
+                    carryDistance: { teamA: 0, teamB: 0 }
+                }
+            },
+            computed: {
+                sortedPlayers() {
+                    let filtered = this.playerStats;
+
+                    if (this.playerFilter) {
+                        filtered = filtered.filter(p =>
+                            p.team.toLowerCase().includes(this.playerFilter.toLowerCase()) ||
+                            p.track_id.toString().includes(this.playerFilter)
+                        );
+                    }
+
+                    return filtered.sort((a, b) => {
+                        let aVal, bVal;
+                        switch (this.sortBy) {
+                            case 'rating':
+                                aVal = a.rating || 0;
+                                bVal = b.rating || 0;
+                                break;
+                            case 'distance':
+                                aVal = a.distance_m || 0;
+                                bVal = b.distance_m || 0;
+                                break;
+                            case 'passes':
+                                aVal = a.n_passes || 0;
+                                bVal = b.n_passes || 0;
+                                break;
+                            case 'speed':
+                                aVal = a.top_speed_kmh || 0;
+                                bVal = b.top_speed_kmh || 0;
+                                break;
+                        }
+                        return bVal - aVal;
+                    });
+                }
+            },
+            methods: {
+                login() {
+                    if (this.loginForm.email && this.loginForm.password) {
+                        this.isLoggedIn = true;
+                        const name = this.loginForm.email.split('@')[0].split('').map((c, i) => i === 0 ? c.toUpperCase() : '').join('');
+                        this.currentUser.initial = name.charAt(0) + (name.split(' ')[1]?.charAt(0) || 'C');
+                        this.loadMatches();
+                    }
+                },
+                logout() {
+                    this.isLoggedIn = false;
+                    this.selectedMatch = null;
+                    this.loginForm = { email: 'coach@veo.com', password: 'demo' };
+                },
+                async loadMatches() {
+                    try {
+                        const response = await fetch('/api/matches');
+                        this.matches = await response.json();
+                    } catch (e) {
+                        console.log('Using demo matches');
+                    }
+                },
+                async selectMatch(match) {
+                    this.selectedMatch = match;
+                    this.playerFilter = '';
+                    await this.loadSummary();
+                    await this.loadPlayerStats();
+                    this.$nextTick(() => {
+                        this.renderCharts();
+                    });
+                },
+                async loadSummary() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/summary`);
+                        this.summary = await response.json();
+                    } catch (e) {
+                        console.log('Using demo data');
+                        this.summary = {
+                            events: { shot: 12 },
+                            team_stats: [
+                                { possession_pct: 65, n_passes: 450, n_goals: 2, n_shots: 12, total_distance_km: 98.5, xg: 2.3, xa: 1.8, team: 'Team A' },
+                                { possession_pct: 35, n_passes: 280, n_goals: 1, n_shots: 8, total_distance_km: 89.2, xg: 1.5, xa: 0.9, team: 'Team B' }
+                            ]
+                        };
+                    }
+                },
+                async loadPlayerStats() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/player-stats`);
+                        this.playerStats = await response.json();
+                    } catch (e) {
+                        console.log('Using demo player data');
+                        this.playerStats = [
+                            { track_id: 1, team: 'Team A', position: 'Midfielder', rating: 8.5, distance_m: 9200, top_speed_kmh: 32.5, n_passes: 85, pass_completion: 88, key_passes: 5, n_shots: 2 },
+                            { track_id: 2, team: 'Team A', position: 'Forward', rating: 8.2, distance_m: 8100, top_speed_kmh: 34.2, n_passes: 42, pass_completion: 81, key_passes: 8, n_shots: 6 },
+                            { track_id: 3, team: 'Team A', position: 'Defender', rating: 7.8, distance_m: 10200, top_speed_kmh: 31.1, n_passes: 120, pass_completion: 92, key_passes: 1, n_shots: 0 },
+                            { track_id: 4, team: 'Team B', position: 'Forward', rating: 7.5, distance_m: 8800, top_speed_kmh: 33.8, n_passes: 38, pass_completion: 79, key_passes: 4, n_shots: 4 },
+                            { track_id: 5, team: 'Team B', position: 'Midfielder', rating: 7.2, distance_m: 9100, top_speed_kmh: 31.5, n_passes: 65, pass_completion: 84, key_passes: 3, n_shots: 1 }
+                        ];
+                    }
+                },
+                renderCharts() {
+                    // Placeholder - charts render when real data available
+                    console.log('Charts would render here with real data');
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '—';
+                    const date = new Date(dateStr + 'T00:00:00Z');
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                },
+                formatDuration(seconds) {
+                    if (!seconds) return '—';
+                    const mins = Math.round(seconds / 60);
+                    return `${mins} min`;
+                },
+                formatTabName(tab) {
+                    const names = {
+                        overview: 'Overview',
+                        players: 'Players',
+                        passes: 'Passing',
+                        defense: 'Defense',
+                        analytics: 'Analytics'
+                    };
+                    return names[tab] || tab;
+                },
+                getTabIcon(tab) {
+                    const icons = {
+                        overview: '📊',
+                        players: '👥',
+                        passes: '⚽',
+                        defense: '🛡️',
+                        analytics: '📈'
+                    };
+                    return icons[tab] || '';
+                },
+                positionClass(player) {
+                    return (player.position || 'N/A').toLowerCase().replace(/\s/g, '-');
+                },
+                ratingClass(rating) {
+                    if (rating >= 8) return 'excellent';
+                    if (rating >= 7) return 'good';
+                    if (rating >= 6) return 'average';
+                    return 'poor';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
