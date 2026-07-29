@@ -28,10 +28,9 @@ from . import ball_tracking
 
 POSSESSION_RADIUS_M = 4.4
 POSSESSION_GAP_FILL_S = 1.4
-MIN_PASS_DISTANCE_M = 2.2
+MIN_PASS_DISTANCE_M = 1.2
 MAX_PASS_INTERVAL_S = 4.5
 PASS_UNKNOWN_BRIDGE_S = 1.4
-MIN_POSSESSION_STABLE_S = 0.85
 SHOT_MIN_KMH = 16.0
 SHOT_MAX_DIST_FROM_GOAL_M = 40.0
 SHOT_COOLDOWN_S = 1.8
@@ -66,28 +65,36 @@ VEL_SMOOTH_WINDOW = 5           # frames over which to smooth ball velocity
 # ---------------------------------------------------------------------------
 
 def _smooth_series(s: pd.Series, window: int = VEL_SMOOTH_WINDOW) -> pd.Series:
-    return s.rolling(window, min_periods=1, center=True).median()
+    # Use expanding window at edges to avoid NaN propagation early on
+    rolled = s.rolling(window, min_periods=1, center=True).median()
+    # For first few frames, use simpler 3-point smoothing
+    if len(s) > 0:
+        rolled_early = s.rolling(3, min_periods=1, center=True).median()
+        mask = s.index < min(window, 10)
+        rolled[mask] = rolled_early[mask]
+    return rolled
 
 
 def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
     """Return a DataFrame with one row per frame that has a ball detection.
 
     Columns: frame, time_s, bx, by, vel_x, vel_y, speed_kmh
-    """
-    if tracks.empty or not (tracks.cls == "ball").any():
-        return pd.DataFrame(columns=["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"])
 
-    # Use improved ball tracking with Kalman filtering
-    ball = ball_tracking.extract_ball_tracking(tracks, smooth_window=3, fill_gaps=True)
+    Uses Kalman filtering for smoothing (no gap-filling to keep frame consistency).
+    """
+    # Use improved ball tracking (Kalman filter + validation, NO gap-filling)
+    # Gap-filling creates frames that don't exist in player tracking, breaking possession detection
+    ball = ball_tracking.extract_ball_tracking(tracks, smooth_window=3, fill_gaps=False)
+
     if ball.empty:
         return pd.DataFrame(columns=["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"])
 
-    # Rename columns and compute speed from velocity
-    ball["bx"] = ball["x"]
-    ball["by"] = ball["y"]
-    ball["vel_x"] = ball.get("vx", 0.0)
-    ball["vel_y"] = ball.get("vy", 0.0)
-    ball["speed_kmh"] = np.sqrt(ball["vel_x"]**2 + ball["vel_y"]**2) * 3.6
+    # Rename columns for compatibility
+    ball = ball.rename(columns={"x": "bx", "y": "by", "vx": "vel_x", "vy": "vel_y"})
+
+    # Calculate speed from velocity components
+    speed = np.sqrt(ball["vel_x"]**2 + ball["vel_y"]**2) * 3.6  # m/s to km/h
+    ball["speed_kmh"] = speed.clip(upper=120.0)
 
     return ball[["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]]
 
@@ -103,7 +110,7 @@ def _possession_per_frame(
     players = tracks[
         (tracks.cls == "player")
         & (tracks.team.isin(["team_A", "team_B"]))
-    ][["frame", "track_id", "team", "x", "y"]]
+    ][["frame", "track_id", "team", "px", "py"]]
 
     if players.empty:
         return pd.DataFrame(
@@ -116,9 +123,10 @@ def _possession_per_frame(
             }
         )
 
-    merged = ball[["frame", "time_s", "bx", "by"]].merge(players, on="frame", how="left")
+    # Only compute distances for frames where we actually have player data
+    merged = ball[["frame", "time_s", "bx", "by"]].merge(players, on="frame", how="inner")
     merged["dist"] = np.sqrt(
-        (merged["x"] - merged["bx"]) ** 2 + (merged["y"] - merged["by"]) ** 2
+        (merged["px"] - merged["bx"]) ** 2 + (merged["py"] - merged["by"]) ** 2
     )
 
     valid = merged.dropna(subset=["dist"])
@@ -218,29 +226,12 @@ def _distance(a: tuple[float, float], b: tuple[float, float]) -> float:
 
 def _player_positions_by_frame(tracks: pd.DataFrame) -> dict[int, dict[int, tuple[float, float]]]:
     players = tracks[(tracks.cls == "player") & (tracks.team.isin(["team_A", "team_B"]))][
-        ["frame", "track_id", "x", "y"]
+        ["frame", "track_id", "px", "py"]
     ]
     out: dict[int, dict[int, tuple[float, float]]] = {}
     for frame, g in players.groupby("frame"):
-        out[int(frame)] = {int(r.track_id): (float(r.x), float(r.y)) for _, r in g.iterrows()}
+        out[int(frame)] = {int(r.track_id): (float(r.px), float(r.py)) for _, r in g.iterrows()}
     return out
-
-
-def _reset_transition_candidate() -> dict[str, Any]:
-    return {
-        "from_id": -1,
-        "from_team": "unknown",
-        "to_id": -1,
-        "to_team": "unknown",
-        "start_time": None,
-        "end_time": None,
-        "start_xy": None,
-        "end_xy": None,
-        "frame": -1,
-        "ball_speed_kmh": 0.0,
-        "inferred": False,
-        "stabilize_start": None,
-    }
 
 
 def _emit_possession_transition_event(
@@ -387,7 +378,6 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
     pending_from_team: str = "unknown"
     pending_start_time: float | None = None
     pending_start_xy: tuple[float, float] | None = None
-    transition_candidate = _reset_transition_candidate()
 
     last_goal_time: float = -10.0
     last_shot_time: float = -10.0
@@ -503,33 +493,6 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
             loose_start_t = None
 
         # ---- Pass / Interception / Tackle proxy ---------------------------
-        if transition_candidate["to_id"] != -1:
-            if cur_possessor == transition_candidate["to_id"] and cur_team == transition_candidate["to_team"]:
-                stable_for = t - float(transition_candidate["stabilize_start"])
-                transition_candidate["end_xy"] = (bx, by)
-                transition_candidate["end_time"] = t
-                transition_candidate["frame"] = frame
-                transition_candidate["ball_speed_kmh"] = speed
-                if stable_for >= MIN_POSSESSION_STABLE_S:
-                    _emit_possession_transition_event(
-                        events,
-                        start_time=float(transition_candidate["start_time"]),
-                        end_time=float(transition_candidate["end_time"]),
-                        from_id=int(transition_candidate["from_id"]),
-                        from_team=str(transition_candidate["from_team"]),
-                        to_id=int(transition_candidate["to_id"]),
-                        to_team=str(transition_candidate["to_team"]),
-                        start_xy=transition_candidate["start_xy"],
-                        end_xy=transition_candidate["end_xy"],
-                        inferred=bool(transition_candidate["inferred"]),
-                        player_xy=player_xy,
-                        frame=int(transition_candidate["frame"]),
-                        ball_speed_kmh=float(transition_candidate["ball_speed_kmh"]),
-                    )
-                    transition_candidate = _reset_transition_candidate()
-            else:
-                transition_candidate = _reset_transition_candidate()
-
         if (
             cur_possessor != prev_possessor
             and cur_possessor != -1
@@ -537,20 +500,21 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
             and prev_bx is not None
             and prev_by is not None
         ):
-            transition_candidate = {
-                "from_id": prev_possessor,
-                "from_team": prev_team,
-                "to_id": cur_possessor,
-                "to_team": cur_team,
-                "start_time": prev_time,
-                "end_time": t,
-                "start_xy": (prev_bx, prev_by),
-                "end_xy": (bx, by),
-                "frame": frame,
-                "ball_speed_kmh": speed,
-                "inferred": False,
-                "stabilize_start": t,
-            }
+            _emit_possession_transition_event(
+                events,
+                start_time=prev_time,
+                end_time=t,
+                from_id=prev_possessor,
+                from_team=prev_team,
+                to_id=cur_possessor,
+                to_team=cur_team,
+                start_xy=(prev_bx, prev_by),
+                end_xy=(bx, by),
+                inferred=False,
+                player_xy=player_xy,
+                frame=frame,
+                ball_speed_kmh=speed,
+            )
 
         if prev_possessor != -1 and cur_possessor == -1 and pending_start_time is None and prev_bx is not None and prev_by is not None:
             pending_from_id = prev_possessor
@@ -562,20 +526,21 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
             if cur_possessor != -1 and cur_team != "unknown" and pending_from_id != -1:
                 bridge_dt = max(0.0, t - pending_start_time)
                 if bridge_dt <= PASS_UNKNOWN_BRIDGE_S and pending_start_xy is not None:
-                    transition_candidate = {
-                        "from_id": pending_from_id,
-                        "from_team": pending_from_team,
-                        "to_id": cur_possessor,
-                        "to_team": cur_team,
-                        "start_time": pending_start_time,
-                        "end_time": t,
-                        "start_xy": pending_start_xy,
-                        "end_xy": (bx, by),
-                        "frame": frame,
-                        "ball_speed_kmh": speed,
-                        "inferred": True,
-                        "stabilize_start": t,
-                    }
+                    _emit_possession_transition_event(
+                        events,
+                        start_time=pending_start_time,
+                        end_time=t,
+                        from_id=pending_from_id,
+                        from_team=pending_from_team,
+                        to_id=cur_possessor,
+                        to_team=cur_team,
+                        start_xy=pending_start_xy,
+                        end_xy=(bx, by),
+                        inferred=True,
+                        player_xy=player_xy,
+                        frame=frame,
+                        ball_speed_kmh=speed,
+                    )
                 pending_from_id = -1
                 pending_from_team = "unknown"
                 pending_start_time = None

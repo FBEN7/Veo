@@ -202,7 +202,17 @@ def extract_ball_tracking(
 
     Returns ball DataFrame with improved tracking.
     """
-    ball = tracks[tracks.cls == "ball"][["frame", "time_s", "x", "y", "confidence"]].copy()
+    # Handle both raw (x, y) and pitch-projected (px, py) coordinate systems
+    if "px" in tracks.columns and "py" in tracks.columns:
+        cols = ["frame", "time_s", "px", "py"]
+    else:
+        cols = ["frame", "time_s", "x", "y"]
+
+    ball = tracks[tracks.cls == "ball"][cols].copy()
+
+    # Normalize column names to x, y for consistency
+    if "px" in ball.columns:
+        ball = ball.rename(columns={"px": "x", "py": "y"})
 
     if ball.empty:
         return ball
@@ -220,5 +230,22 @@ def extract_ball_tracking(
     # 3. Fill gaps with prediction
     if fill_gaps:
         ball = fill_ball_gaps(ball, max_gap=5)
+    else:
+        # Even without gap-filling, compute velocities for event detection
+        ball = ball.sort_values("frame").reset_index(drop=True)
+        tracker = BallKalmanTracker()
+        rows = []
+        for _, row in ball.iterrows():
+            x, y = row.get("x"), row.get("y")
+            x_est, y_est, vx_est, vy_est = tracker.update(x, y)
+            rows.append({
+                "frame": int(row["frame"]),
+                "time_s": float(row["time_s"]),
+                "x": x_est,
+                "y": y_est,
+                "vx": vx_est,
+                "vy": vy_est,
+            })
+        ball = pd.DataFrame(rows)
 
     return ball.drop_duplicates("frame").reset_index(drop=True)

@@ -44,6 +44,11 @@ def _minmax_norm(series: pd.Series) -> pd.Series:
     return (series - lo) / (hi - lo)
 
 
+def _get_event_count(track_id: int, events_per_player: dict, event_type: str) -> int:
+    """Extract count for a specific event type from events_per_player dict."""
+    return events_per_player.get(track_id, {}).get(event_type, 0)
+
+
 def compute(
     phys: pd.DataFrame,
     events_per_player: dict[int, dict[str, int]],
@@ -65,15 +70,14 @@ def compute(
     """
     df = phys.copy()
 
-    # ---- Merge event counts ------------------------------------------------
     df["n_passes"] = df["track_id"].map(
-        lambda tid: events_per_player.get(tid, {}).get("n_passes", 0)
+        lambda tid: _get_event_count(tid, events_per_player, "n_passes")
     )
     df["n_shots"] = df["track_id"].map(
-        lambda tid: events_per_player.get(tid, {}).get("n_shots", 0)
+        lambda tid: _get_event_count(tid, events_per_player, "n_shots")
     )
     df["n_goals"] = df["track_id"].map(
-        lambda tid: events_per_player.get(tid, {}).get("n_goals", 0)
+        lambda tid: _get_event_count(tid, events_per_player, "n_goals")
     )
 
     # ---- Possession per player (proportional share within team) ------------
