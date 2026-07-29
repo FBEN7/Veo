@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veo Professional - Match Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_professional.css') }}">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <h1>⚽ VEO PROFESSIONAL</h1>
+                    <p>Advanced Match Analytics Platform</p>
+                </div>
+                <div class="header-actions">
+                    <span v-if="health.status === 'ok'" class="status-badge ok">✓ Live</span>
+                    <button @click="exportPDF" v-if="selectedMatch" class="btn btn-primary">📄 Export Report</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <!-- Match Selector -->
+            <section class="match-selector" v-if="!selectedMatch">
+                <h2>Select Match</h2>
+                <div class="match-grid">
+                    <div v-for="match in matches" :key="match.id"
+                         class="match-card"
+                         @click="selectMatch(match.id)">
+                        <h3>{{ match.label }}</h3>
+                        <p class="date">{{ formatDate(match.date) }}</p>
+                        <p class="duration">{{ formatDuration(match.duration_s) }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Professional Dashboard -->
+            <section v-if="selectedMatch" class="dashboard">
+                <!-- Match Header -->
+                <div class="match-header">
+                    <div>
+                        <h2>{{ selectedMatch.label }}</h2>
+                        <p class="match-date">{{ formatDate(selectedMatch.date) }}</p>
+                    </div>
+                    <button @click="selectedMatch = null" class="btn btn-secondary">← Back</button>
+                </div>
+
+                <!-- Quick Stats Banner -->
+                <div class="quick-stats">
+                    <div class="stat-box">
+                        <span class="stat-value">{{ summary.team_stats[0]?.possession_pct || 0 }}%</span>
+                        <span class="stat-label">{{ summary.team_stats[0]?.team }} Possession</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">{{ summary.team_stats[0]?.n_passes || 0 }}</span>
+                        <span class="stat-label">Total Passes</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">{{ summary.events.shot || 0 }}</span>
+                        <span class="stat-label">Shots</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">{{ summary.team_stats[0]?.n_goals || 0 }}</span>
+                        <span class="stat-label">Goals</span>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button v-for="tab in ['overview', 'players', 'passes', 'defense', 'analytics']"
+                            :key="tab"
+                            @click="activeTab = tab"
+                            :class="['tab', { active: activeTab === tab }]">
+                        {{ formatTabName(tab) }}
+                    </button>
+                </div>
+
+                <!-- TAB 1: Overview -->
+                <div v-if="activeTab === 'overview'" class="tab-content">
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3>Possession Timeline</h3>
+                            <div id="possession-chart" class="chart"></div>
+                        </div>
+                        <div class="card">
+                            <h3>Shot Map</h3>
+                            <div id="shot-map" class="pitch-map"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3>Team A Heatmap</h3>
+                            <div id="heatmap-a" class="heatmap"></div>
+                        </div>
+                        <div class="card">
+                            <h3>Team B Heatmap</h3>
+                            <div id="heatmap-b" class="heatmap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Player Rankings -->
+                <div v-if="activeTab === 'players'" class="tab-content">
+                    <div class="card full-width">
+                        <h3>Player Performance Rankings</h3>
+                        <div class="filter-bar">
+                            <input v-model="playerFilter" type="text" placeholder="Filter by team or name...">
+                            <select v-model="sortBy">
+                                <option value="rating">Rating</option>
+                                <option value="distance">Distance</option>
+                                <option value="passes">Passes</option>
+                                <option value="speed">Speed</option>
+                            </select>
+                        </div>
+                        <table class="professional-table">
+                            <thead>
+                                <tr>
+                                    <th>#ID</th>
+                                    <th>Team</th>
+                                    <th>Position</th>
+                                    <th>Rating</th>
+                                    <th>Distance (m)</th>
+                                    <th>Speed (km/h)</th>
+                                    <th>Passes</th>
+                                    <th>Pass %</th>
+                                    <th>Key Pass</th>
+                                    <th>Shots</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="player in sortedPlayers" :key="player.track_id" class="player-row">
+                                    <td class="player-id">{{ player.track_id }}</td>
+                                    <td class="team">{{ player.team }}</td>
+                                    <td class="position">
+                                        <span class="badge" :class="'badge-' + positionClass(player)">
+                                            {{ player.position || 'N/A' }}
+                                        </span>
+                                    </td>
+                                    <td class="rating">
+                                        <span class="rating-badge" :class="'rating-' + ratingClass(player.rating)">
+                                            {{ player.rating ? player.rating.toFixed(1) : '—' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ player.distance_m ? player.distance_m.toFixed(0) : '—' }}</td>
+                                    <td>{{ player.top_speed_kmh ? player.top_speed_kmh.toFixed(1) : '—' }}</td>
+                                    <td>{{ player.n_passes || 0 }}</td>
+                                    <td class="success-rate">
+                                        {{ player.pass_completion ? player.pass_completion.toFixed(0) : '—' }}%
+                                    </td>
+                                    <td>{{ player.key_passes || 0 }}</td>
+                                    <td>{{ player.n_shots || 0 }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Passing Analytics -->
+                <div v-if="activeTab === 'passes'" class="tab-content">
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3>Pass Completion Rate</h3>
+                            <div id="pass-completion-chart" class="chart"></div>
+                        </div>
+                        <div class="card">
+                            <h3>Pass Types Distribution</h3>
+                            <div id="pass-types-chart" class="chart"></div>
+                        </div>
+                    </div>
+
+                    <div class="card full-width">
+                        <h3>Pass Network - Team A</h3>
+                        <p class="chart-subtitle">Line thickness = number of passes between players</p>
+                        <div id="pass-network" class="chart"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: Defensive Analytics -->
+                <div v-if="activeTab === 'defense'" class="tab-content">
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3>Tackle Success Rate</h3>
+                            <div id="tackle-chart" class="chart"></div>
+                        </div>
+                        <div class="card">
+                            <h3>Defensive Actions</h3>
+                            <div id="defensive-actions-chart" class="chart"></div>
+                        </div>
+                    </div>
+
+                    <div class="card full-width">
+                        <h3>Defensive Line (Pressure)</h3>
+                        <div id="defensive-line-chart" class="chart"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: Advanced Stats -->
+                <div v-if="activeTab === 'analytics'" class="tab-content">
+                    <div class="grid-3">
+                        <div class="card">
+                            <h3>xG (Expected Goals)</h3>
+                            <div class="metric">
+                                <span class="metric-value">{{ summary.team_stats[0]?.xg || '0.0' }}</span>
+                                <span class="metric-label">Team A</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-value">{{ summary.team_stats[1]?.xg || '0.0' }}</span>
+                                <span class="metric-label">Team B</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>xA (Expected Assists)</h3>
+                            <div class="metric">
+                                <span class="metric-value">{{ summary.team_stats[0]?.xa || '0.0' }}</span>
+                                <span class="metric-label">Team A</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-value">{{ summary.team_stats[1]?.xa || '0.0' }}</span>
+                                <span class="metric-label">Team B</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Ball Carry Distance</h3>
+                            <div class="metric">
+                                <span class="metric-value">{{ carryDistance.teamA || '—' }}</span>
+                                <span class="metric-label">Team A (m)</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-value">{{ carryDistance.teamB || '—' }}</span>
+                                <span class="metric-label">Team B (m)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card full-width">
+                        <h3>Positional Scores by Player</h3>
+                        <div id="positional-scores-chart" class="chart"></div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="card full-width">
+                    <h3>Head-to-Head Stats</h3>
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>{{ summary.team_stats[0]?.team }}</th>
+                                <th class="stat-name">Statistic</th>
+                                <th>{{ summary.team_stats[1]?.team }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="value">{{ summary.team_stats[0]?.possession_pct.toFixed(1) }}%</td>
+                                <td class="stat-name">Possession</td>
+                                <td class="value">{{ summary.team_stats[1]?.possession_pct.toFixed(1) }}%</td>
+                            </tr>
+                            <tr>
+                                <td class="value">{{ summary.team_stats[0]?.n_passes }}</td>
+                                <td class="stat-name">Passes</td>
+                                <td class="value">{{ summary.team_stats[1]?.n_passes }}</td>
+                            </tr>
+                            <tr>
+                                <td class="value">{{ summary.team_stats[0]?.n_shots }}</td>
+                                <td class="stat-name">Shots</td>
+                                <td class="value">{{ summary.team_stats[1]?.n_shots }}</td>
+                            </tr>
+                            <tr>
+                                <td class="value">{{ summary.team_stats[0]?.n_goals }}</td>
+                                <td class="stat-name">Goals</td>
+                                <td class="value">{{ summary.team_stats[1]?.n_goals }}</td>
+                            </tr>
+                            <tr>
+                                <td class="value">{{ (summary.team_stats[0]?.total_distance_km || 0).toFixed(1) }}</td>
+                                <td class="stat-name">Distance (km)</td>
+                                <td class="value">{{ (summary.team_stats[1]?.total_distance_km || 0).toFixed(1) }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Veo Professional Analytics • For Professional Clubs & Academies</p>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    health: { status: 'loading' },
+                    matches: [],
+                    selectedMatch: null,
+                    summary: { events: {}, team_stats: [], top_players: [] },
+                    playerStats: [],
+                    playerFilter: '',
+                    sortBy: 'rating',
+                    activeTab: 'overview',
+                    carryDistance: { teamA: 0, teamB: 0 }
+                }
+            },
+            computed: {
+                sortedPlayers() {
+                    let filtered = this.playerStats;
+
+                    if (this.playerFilter) {
+                        filtered = filtered.filter(p =>
+                            p.team.toLowerCase().includes(this.playerFilter.toLowerCase()) ||
+                            p.track_id.toString().includes(this.playerFilter)
+                        );
+                    }
+
+                    return filtered.sort((a, b) => {
+                        let aVal, bVal;
+
+                        switch (this.sortBy) {
+                            case 'rating':
+                                aVal = a.rating || 0;
+                                bVal = b.rating || 0;
+                                break;
+                            case 'distance':
+                                aVal = a.distance_m || 0;
+                                bVal = b.distance_m || 0;
+                                break;
+                            case 'passes':
+                                aVal = a.n_passes || 0;
+                                bVal = b.n_passes || 0;
+                                break;
+                            case 'speed':
+                                aVal = a.top_speed_kmh || 0;
+                                bVal = b.top_speed_kmh || 0;
+                                break;
+                        }
+
+                        return bVal - aVal;
+                    });
+                }
+            },
+            methods: {
+                async checkHealth() {
+                    try {
+                        const response = await fetch('/api/health');
+                        this.health = await response.json();
+                    } catch (e) {
+                        this.health = { status: 'error' };
+                    }
+                },
+                async loadMatches() {
+                    try {
+                        const response = await fetch('/api/matches');
+                        this.matches = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load matches:', e);
+                    }
+                },
+                async selectMatch(matchId) {
+                    this.selectedMatch = this.matches.find(m => m.id === matchId);
+                    this.playerFilter = '';
+                    await this.loadSummary();
+                    await this.loadPlayerStats();
+                    this.$nextTick(() => {
+                        this.renderCharts();
+                    });
+                },
+                async loadSummary() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/summary`);
+                        this.summary = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load summary:', e);
+                    }
+                },
+                async loadPlayerStats() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/player-stats`);
+                        this.playerStats = await response.json();
+                    } catch (e) {
+                        console.error('Failed to load player stats:', e);
+                    }
+                },
+                renderCharts() {
+                    // Placeholder for chart rendering
+                    // Charts will render when real data is available
+                },
+                exportPDF() {
+                    window.location.href = `/api/matches/${this.selectedMatch.id}/export/pdf`;
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '—';
+                    const date = new Date(dateStr + 'T00:00:00Z');
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                },
+                formatDuration(seconds) {
+                    if (!seconds) return '—';
+                    const mins = Math.round(seconds / 60);
+                    return `${mins} min`;
+                },
+                formatTabName(tab) {
+                    const names = {
+                        overview: '📊 Overview',
+                        players: '👥 Players',
+                        passes: '⚽ Passing',
+                        defense: '🛡️ Defense',
+                        analytics: '📈 Advanced'
+                    };
+                    return names[tab] || tab;
+                },
+                positionClass(player) {
+                    return (player.position || 'N/A').toLowerCase().replace(/\s/g, '-');
+                },
+                ratingClass(rating) {
+                    if (rating >= 8) return 'excellent';
+                    if (rating >= 7) return 'good';
+                    if (rating >= 6) return 'average';
+                    return 'poor';
+                }
+            },
+            mounted() {
+                this.checkHealth();
+                this.loadMatches();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
