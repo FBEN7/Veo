@@ -5,3 +5,5 @@ output/
 *.pt
 *.parquet
 *.npy
+*.log
+test_*.log
