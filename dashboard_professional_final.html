@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VEO PRO - Elite Football Analytics</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent-blue: #3b82f6;
+            --accent-blue-dark: #1e40af;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --critical: #ef4444;
+            --surface: #f8fafc;
+            --surface-dark: #0f172a;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-light: #94a3b8;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+            color: var(--text-primary);
+        }
+
+        body {
+            line-height: 1.6;
+        }
+
+        /* ===== LOGIN PAGE ===== */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e40af 50%, #0c4a6e 100%);
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .veo-logo {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            font-weight: 800;
+            letter-spacing: -1.2px;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .veo-tagline {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.625rem;
+            letter-spacing: 0.3px;
+        }
+
+        .form-input {
+            padding: 0.875rem 1.125rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: var(--surface);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: white;
+        }
+
+        .login-btn {
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-blue-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            letter-spacing: 0.5px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .demo-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--surface);
+            border-radius: 8px;
+        }
+
+        /* ===== MAIN DASHBOARD ===== */
+        .dashboard {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 1.75rem 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .header-brand:hover {
+            transform: scale(1.05);
+        }
+
+        .brand-icon {
+            font-size: 2.25rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .brand-text h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.6px;
+        }
+
+        .brand-text p {
+            font-size: 0.75rem;
+            opacity: 0.85;
+            margin: 2px 0 0 0;
+            letter-spacing: 0.4px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+        }
+
+        .user-info-name {
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .user-info-rank {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .logout-btn {
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* ===== MATCH SELECTOR ===== */
+        .match-selector {
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            letter-spacing: -0.5px;
+        }
+
+        .match-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.75rem;
+        }
+
+        .match-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.75rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .match-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-6px);
+        }
+
+        .match-card:hover::before {
+            left: 0;
+        }
+
+        .match-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            gap: 1rem;
+        }
+
+        /* ===== DASHBOARD HEADER ===== */
+        .dashboard-header {
+            background: white;
+            border-radius: 16px;
+            padding: 2.25rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .match-title h2 {
+            font-size: 2rem;
+            margin: 0 0 0.5rem 0;
+            color: var(--primary);
+            font-weight: 800;
+            letter-spacing: -0.6px;
+        }
+
+        .match-date {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .back-btn {
+            padding: 0.875rem 1.75rem;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        .back-btn:hover {
+            background: var(--border);
+            transform: translateX(-4px);
+            border-color: var(--accent-blue);
+        }
+
+        /* ===== QUICK STATS ===== */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.75rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-value {
+            font-size: 2.75rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin: 1rem 0 0.75rem 0;
+            letter-spacing: -0.6px;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .stat-trend {
+            font-size: 0.85rem;
+            color: var(--success);
+            margin-top: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1.25rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.875rem 1.75rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--text-secondary);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        .tab:hover {
+            color: var(--accent-blue);
+        }
+
+        .tab.active {
+            color: var(--accent-blue);
+            border-bottom-color: var(--accent-blue);
+        }
+
+        /* ===== CARDS ===== */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.25rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+            letter-spacing: -0.4px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        /* ===== CHARTS ===== */
+        .chart-container {
+            min-height: 420px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            padding: 1.25rem;
+            overflow: hidden;
+        }
+
+        /* ===== TABLES ===== */
+        .players-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .players-table thead {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+        }
+
+        .players-table th {
+            padding: 1.25rem;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .players-table td {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .players-table tbody tr:hover {
+            background: #f8fafc;
+            transition: background 0.2s ease;
+        }
+
+        .player-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .badge-defender {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .badge-midfielder {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-amber);
+        }
+
+        .badge-forward {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .rating-excellent {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .rating-good {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent-blue);
+        }
+
+        .rating-average {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--accent-amber);
+        }
+
+        .rating-poor {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        /* ===== FILTER BAR ===== */
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.75rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            padding: 0.875rem 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: var(--surface);
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            background: white;
+        }
+
+        /* ===== COMPARISON TABLE ===== */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .comparison-table td {
+            padding: 1.25rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        .comparison-table .stat-name {
+            font-weight: 700;
+            color: var(--primary);
+            width: 40%;
+            letter-spacing: 0.3px;
+        }
+
+        .comparison-table .team-a, .comparison-table .team-b {
+            text-align: center;
+            font-weight: 700;
+            width: 30%;
+            font-size: 1.1rem;
+        }
+
+        .comparison-table .team-a {
+            color: var(--accent-blue);
+        }
+
+        .comparison-table .team-b {
+            color: var(--accent-red);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .players-table {
+                font-size: 0.8rem;
+            }
+
+            .players-table th, .players-table td {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                width: 100%;
+                text-align: left;
+            }
+
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .match-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mt-2 {
+            margin-top: 1rem;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            margin-top: 3rem;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- LOGIN PAGE -->
+        <div class="login-container" v-if="!isLoggedIn">
+            <div class="login-box">
+                <div class="login-header">
+                    <div class="veo-logo">⚽ VEO PRO</div>
+                    <p class="veo-tagline">Elite Football Analytics Platform</p>
+                </div>
+                <form class="login-form" @submit.prevent="login">
+                    <div class="form-group">
+                        <label class="form-label">🏆 Coaching Email</label>
+                        <input
+                            v-model="loginForm.email"
+                            type="email"
+                            class="form-input"
+                            placeholder="coach@academy.com"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔐 Password</label>
+                        <input
+                            v-model="loginForm.password"
+                            type="password"
+                            class="form-input"
+                            placeholder="Enter password"
+                            required
+                        >
+                    </div>
+                    <button class="login-btn">🚀 Enter the Arena</button>
+                </form>
+                <div class="demo-hint">
+                    💡 Demo: coach@veo.com / demo
+                </div>
+            </div>
+        </div>
+
+        <!-- MAIN DASHBOARD -->
+        <div class="dashboard" v-else>
+            <!-- Header -->
+            <div class="header">
+                <div class="header-content">
+                    <div class="header-brand" @click="logout" title="Click to logout">
+                        <div class="brand-icon">⚽</div>
+                        <div class="brand-text">
+                            <h1>VEO PRO</h1>
+                            <p>Elite Analytics</p>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <div class="user-profile">
+                            <div class="user-avatar">{{ currentUser.initial }}</div>
+                            <div class="user-info">
+                                <div class="user-info-name">{{ currentUser.name }}</div>
+                                <div class="user-info-rank">{{ currentUser.rank }}</div>
+                            </div>
+                        </div>
+                        <button class="logout-btn" @click="logout">Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Container -->
+            <div class="main-container">
+                <!-- Match Selector -->
+                <div v-if="!selectedMatch" class="match-selector">
+                    <div class="section-title">🎮 Select Your Match</div>
+                    <div class="match-grid">
+                        <div v-for="match in matches" :key="match.id"
+                             class="match-card"
+                             @click="selectMatch(match)">
+                            <h3>{{ match.label }}</h3>
+                            <div class="match-info">
+                                <span>📅 {{ formatDate(match.date) }}</span>
+                                <span>⏱️ {{ formatDuration(match.duration_s) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Dashboard -->
+                <div v-else>
+                    <!-- Match Header -->
+                    <div class="dashboard-header">
+                        <div class="match-title">
+                            <h2>{{ selectedMatch.label }}</h2>
+                            <p class="match-date">{{ formatDate(selectedMatch.date) }}</p>
+                        </div>
+                        <button class="back-btn" @click="selectedMatch = null">← Back to Matches</button>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="quick-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Team A Possession</div>
+                            <div class="stat-value">{{ (summary.team_stats[0]?.possession_pct || 65).toFixed(0) }}%</div>
+                            <div class="stat-trend">💪 Controlled</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Passes</div>
+                            <div class="stat-value">{{ summary.team_stats[0]?.n_passes || 450 }}</div>
+                            <div class="stat-trend">✅ Connected</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Shots on Target</div>
+                            <div class="stat-value">{{ summary.events.shot || 12 }}</div>
+                            <div class="stat-trend">🎯 Threatening</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Goals</div>
+                            <div class="stat-value">{{ summary.team_stats[0]?.n_goals || 2 }}</div>
+                            <div class="stat-trend">🔥 On Fire</div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="tabs">
+                        <button v-for="tab in ['overview', 'players', 'passes', 'defense', 'analytics']"
+                                :key="tab"
+                                @click="activeTab = tab"
+                                :class="['tab', { active: activeTab === tab }]">
+                            {{ getTabIcon(tab) }} {{ formatTabName(tab) }}
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: Overview -->
+                    <div v-if="activeTab === 'overview'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">📊 Possession Timeline</div>
+                                <div id="possession-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">📈 Shot Distribution</div>
+                                <div id="shot-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">🔥 Team A - Pass Success Rate</div>
+                                <div id="pass-a-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🔥 Team B - Pass Success Rate</div>
+                                <div id="pass-b-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: Players -->
+                    <div v-if="activeTab === 'players'" class="dashboard-view active">
+                        <div class="card">
+                            <div class="card-title">👥 Player Performance Rankings</div>
+                            <div class="filter-bar">
+                                <input v-model="playerFilter" type="text" class="filter-input" placeholder="🔍 Search player ID or team...">
+                                <select v-model="sortBy" class="filter-input">
+                                    <option value="rating">⭐ Sort by Rating</option>
+                                    <option value="distance">📍 Sort by Distance</option>
+                                    <option value="passes">⚽ Sort by Passes</option>
+                                    <option value="speed">⚡ Sort by Speed</option>
+                                </select>
+                            </div>
+                            <table class="players-table">
+                                <thead>
+                                    <tr>
+                                        <th>#ID</th>
+                                        <th>Team</th>
+                                        <th>Position</th>
+                                        <th>⭐ Rating</th>
+                                        <th>📍 Distance (m)</th>
+                                        <th>⚡ Speed (km/h)</th>
+                                        <th>⚽ Passes</th>
+                                        <th>✅ Pass %</th>
+                                        <th>🎯 Key Pass</th>
+                                        <th>💥 Shots</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="player in sortedPlayers" :key="player.track_id">
+                                        <td><strong>{{ player.track_id }}</strong></td>
+                                        <td>{{ player.team }}</td>
+                                        <td>
+                                            <span class="player-badge" :class="'badge-' + positionClass(player)">
+                                                {{ player.position || 'N/A' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="rating-badge" :class="'rating-' + ratingClass(player.rating)">
+                                                {{ player.rating ? player.rating.toFixed(1) : '—' }} ⭐
+                                            </span>
+                                        </td>
+                                        <td>{{ player.distance_m ? player.distance_m.toFixed(0) : '—' }}</td>
+                                        <td>{{ player.top_speed_kmh ? player.top_speed_kmh.toFixed(1) : '—' }}</td>
+                                        <td><strong>{{ player.n_passes || 0 }}</strong></td>
+                                        <td style="color: var(--success); font-weight: 700;">{{ player.pass_completion ? player.pass_completion.toFixed(0) : '—' }}%</td>
+                                        <td>{{ player.key_passes || 0 }}</td>
+                                        <td>{{ player.n_shots || 0 }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: Passing -->
+                    <div v-if="activeTab === 'passes'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">📊 Pass Completion Rate by Player</div>
+                                <div id="pass-completion-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🎯 Pass Types Distribution</div>
+                                <div id="pass-types-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: Defense -->
+                    <div v-if="activeTab === 'defense'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">🛡️ Tackle Success Rate</div>
+                                <div id="tackle-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">💪 Defensive Actions</div>
+                                <div id="defensive-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 5: Analytics -->
+                    <div v-if="activeTab === 'analytics'" class="dashboard-view active">
+                        <div class="grid-2">
+                            <div class="card">
+                                <div class="card-title">📈 Expected Goals (xG)</div>
+                                <div id="xg-chart" class="chart-container"></div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">🎨 Expected Assists (xA)</div>
+                                <div id="xa-chart" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Head-to-Head -->
+                    <div class="card">
+                        <div class="card-title">⚔️ Head-to-Head Showdown</div>
+                        <table class="comparison-table">
+                            <tbody>
+                                <tr>
+                                    <td class="team-a"><strong>{{ (summary.team_stats[0]?.possession_pct || 65).toFixed(1) }}%</strong></td>
+                                    <td class="stat-name">🎯 Possession</td>
+                                    <td class="team-b"><strong>{{ (summary.team_stats[1]?.possession_pct || 35).toFixed(1) }}%</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ summary.team_stats[0]?.n_passes || 450 }}</strong></td>
+                                    <td class="stat-name">⚽ Passes</td>
+                                    <td class="team-b"><strong>{{ summary.team_stats[1]?.n_passes || 280 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ summary.team_stats[0]?.n_shots || 12 }}</strong></td>
+                                    <td class="stat-name">💥 Shots</td>
+                                    <td class="team-b"><strong>{{ summary.team_stats[1]?.n_shots || 8 }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="team-a"><strong>{{ summary.team_stats[0]?.n_goals || 2 }}</strong></td>
+                                    <td class="stat-name">🔥 Goals</td>
+                                    <td class="team-b"><strong>{{ summary.team_stats[1]?.n_goals || 1 }}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                ⚽ VEO PRO - Where Data Meets Glory | Analytics for Champions 🏆
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    isLoggedIn: false,
+                    loginForm: { email: 'coach@veo.com', password: 'demo' },
+                    currentUser: { name: 'Coach Anderson', rank: 'Master Tactician', initial: 'CA' },
+                    matches: [
+                        { id: 1, label: '⚽ Academy vs City FC', date: '2024-07-28', duration_s: 5400 },
+                        { id: 2, label: '🏆 Championship Final', date: '2024-07-27', duration_s: 5400 },
+                        { id: 3, label: '🎯 Friendly Match', date: '2024-07-26', duration_s: 5400 }
+                    ],
+                    selectedMatch: null,
+                    summary: {
+                        events: { shot: 12 },
+                        team_stats: [
+                            { possession_pct: 65, n_passes: 450, n_goals: 2, n_shots: 12, total_distance_km: 98.5, xg: 2.3, xa: 1.8, team: 'Team A' },
+                            { possession_pct: 35, n_passes: 280, n_goals: 1, n_shots: 8, total_distance_km: 89.2, xg: 1.5, xa: 0.9, team: 'Team B' }
+                        ]
+                    },
+                    playerStats: [
+                        { track_id: 1, team: 'Team A', position: 'Midfielder', rating: 8.5, distance_m: 9200, top_speed_kmh: 32.5, n_passes: 85, pass_completion: 88, key_passes: 5, n_shots: 2 },
+                        { track_id: 2, team: 'Team A', position: 'Forward', rating: 8.2, distance_m: 8100, top_speed_kmh: 34.2, n_passes: 42, pass_completion: 81, key_passes: 8, n_shots: 6 },
+                        { track_id: 3, team: 'Team A', position: 'Defender', rating: 7.8, distance_m: 10200, top_speed_kmh: 31.1, n_passes: 120, pass_completion: 92, key_passes: 1, n_shots: 0 },
+                        { track_id: 4, team: 'Team B', position: 'Forward', rating: 7.5, distance_m: 8800, top_speed_kmh: 33.8, n_passes: 38, pass_completion: 79, key_passes: 4, n_shots: 4 },
+                        { track_id: 5, team: 'Team B', position: 'Midfielder', rating: 7.2, distance_m: 9100, top_speed_kmh: 31.5, n_passes: 65, pass_completion: 84, key_passes: 3, n_shots: 1 }
+                    ],
+                    playerFilter: '',
+                    sortBy: 'rating',
+                    activeTab: 'overview'
+                }
+            },
+            computed: {
+                sortedPlayers() {
+                    let filtered = this.playerStats;
+                    if (this.playerFilter) {
+                        filtered = filtered.filter(p =>
+                            p.team.toLowerCase().includes(this.playerFilter.toLowerCase()) ||
+                            p.track_id.toString().includes(this.playerFilter)
+                        );
+                    }
+                    return filtered.sort((a, b) => {
+                        let aVal, bVal;
+                        switch (this.sortBy) {
+                            case 'rating': aVal = a.rating || 0; bVal = b.rating || 0; break;
+                            case 'distance': aVal = a.distance_m || 0; bVal = b.distance_m || 0; break;
+                            case 'passes': aVal = a.n_passes || 0; bVal = b.n_passes || 0; break;
+                            case 'speed': aVal = a.top_speed_kmh || 0; bVal = b.top_speed_kmh || 0; break;
+                        }
+                        return bVal - aVal;
+                    });
+                }
+            },
+            methods: {
+                login() {
+                    if (this.loginForm.email && this.loginForm.password) {
+                        this.isLoggedIn = true;
+                        this.loadMatches();
+                    }
+                },
+                logout() {
+                    this.isLoggedIn = false;
+                    this.selectedMatch = null;
+                },
+                async loadMatches() {
+                    try {
+                        const response = await fetch('/api/matches');
+                        this.matches = await response.json();
+                    } catch (e) {
+                        console.log('Using demo matches');
+                    }
+                },
+                async selectMatch(match) {
+                    this.selectedMatch = match;
+                    this.playerFilter = '';
+                    this.activeTab = 'overview';
+                    await this.loadSummary();
+                    await this.loadPlayerStats();
+                    this.$nextTick(() => {
+                        this.renderCharts();
+                    });
+                },
+                async loadSummary() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/summary`);
+                        this.summary = await response.json();
+                    } catch (e) {
+                        console.log('Using demo summary');
+                    }
+                },
+                async loadPlayerStats() {
+                    try {
+                        const response = await fetch(`/api/matches/${this.selectedMatch.id}/player-stats`);
+                        this.playerStats = await response.json();
+                    } catch (e) {
+                        console.log('Using demo player stats');
+                    }
+                },
+                renderCharts() {
+                    // Possession Timeline
+                    const possessionData = [
+                        { x: [0, 10, 20, 30, 40, 45, 45, 55, 65, 75, 85, 90], y: [50, 52, 55, 62, 68, 65, 65, 68, 70, 68, 65, 63], name: 'Team A', type: 'scatter', fill: 'tozeroy', fillcolor: 'rgba(59, 130, 246, 0.2)', line: { color: '#3b82f6', width: 3 } },
+                        { x: [0, 10, 20, 30, 40, 45, 45, 55, 65, 75, 85, 90], y: [50, 48, 45, 38, 32, 35, 35, 32, 30, 32, 35, 37], name: 'Team B', type: 'scatter', fill: 'tozeroy', fillcolor: 'rgba(239, 68, 68, 0.2)', line: { color: '#ef4444', width: 3 } }
+                    ];
+                    const possessionLayout = { title: 'Possession Over Time (%)', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 }, xaxis: { title: 'Minutes', gridcolor: '#e2e8f0' }, yaxis: { title: 'Possession %', gridcolor: '#e2e8f0' }, hovermode: 'x unified' };
+                    Plotly.newPlot('possession-chart', possessionData, possessionLayout, { responsive: true });
+
+                    // Shot Chart
+                    const shotData = [{ x: ['Team A', 'Team B'], y: [12, 8], type: 'bar', marker: { color: ['#3b82f6', '#ef4444'] }, text: [12, 8], textposition: 'outside', hovertemplate: '<b>%{x}</b><br>Shots: %{y}<extra></extra>' }];
+                    const shotLayout = { title: 'Shots Distribution', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 }, yaxis: { title: 'Number of Shots' }, xaxis: { title: '' } };
+                    Plotly.newPlot('shot-chart', shotData, shotLayout, { responsive: true });
+
+                    // Pass Completion A
+                    const passAData = [{ x: ['Player 1', 'Player 2', 'Player 3'], y: [88, 81, 92], type: 'bar', marker: { color: '#3b82f6' }, text: ['88%', '81%', '92%'], textposition: 'outside' }];
+                    const passLayout = { plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 30, b: 50 }, yaxis: { title: 'Pass %' } };
+                    Plotly.newPlot('pass-a-chart', passAData, passLayout, { responsive: true });
+
+                    // Pass Completion B
+                    const passBData = [{ x: ['Player 4', 'Player 5'], y: [79, 84], type: 'bar', marker: { color: '#ef4444' }, text: ['79%', '84%'], textposition: 'outside' }];
+                    Plotly.newPlot('pass-b-chart', passBData, passLayout, { responsive: true });
+
+                    // Pass Completion by Player
+                    const passCompData = [{ x: ['P1', 'P2', 'P3', 'P4', 'P5'], y: [88, 81, 92, 79, 84], type: 'bar', marker: { color: ['#3b82f6', '#3b82f6', '#3b82f6', '#ef4444', '#ef4444'] } }];
+                    Plotly.newPlot('pass-completion-chart', passCompData, { title: 'Pass Completion %', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 }, yaxis: { title: '%' } }, { responsive: true });
+
+                    // Pass Types
+                    const passTypesData = [{ labels: ['Short', 'Long', 'Forward'], values: [250, 150, 50], type: 'pie', marker: { colors: ['#3b82f6', '#a855f7', '#10b981'] } }];
+                    Plotly.newPlot('pass-types-chart', passTypesData, { title: 'Pass Type Distribution', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 } }, { responsive: true });
+
+                    // Tackle Success
+                    const tackleData = [{ x: ['P3', 'P5', 'P1'], y: [85, 78, 72], type: 'bar', marker: { color: '#10b981' } }];
+                    Plotly.newPlot('tackle-chart', tackleData, { title: 'Tackle Success Rate', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 }, yaxis: { title: 'Success %' } }, { responsive: true });
+
+                    // Defensive Actions
+                    const defData = [{ x: ['Tackles', 'Interceptions', 'Clearances'], y: [45, 32, 28], type: 'bar', marker: { color: '#f59e0b' } }];
+                    Plotly.newPlot('defensive-chart', defData, { title: 'Defensive Actions', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 } }, { responsive: true });
+
+                    // xG Chart
+                    const xgData = [{ x: ['Team A', 'Team B'], y: [2.3, 1.5], type: 'bar', marker: { color: ['#3b82f6', '#ef4444'] }, text: ['2.3', '1.5'], textposition: 'outside' }];
+                    Plotly.newPlot('xg-chart', xgData, { title: 'Expected Goals (xG)', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 }, yaxis: { title: 'xG' } }, { responsive: true });
+
+                    // xA Chart
+                    const xaData = [{ x: ['Team A', 'Team B'], y: [1.8, 0.9], type: 'bar', marker: { color: ['#3b82f6', '#ef4444'] }, text: ['1.8', '0.9'], textposition: 'outside' }];
+                    Plotly.newPlot('xa-chart', xaData, { title: 'Expected Assists (xA)', plot_bgcolor: 'rgba(248, 250, 252, 0.5)', paper_bgcolor: 'rgba(0,0,0,0)', font: { family: 'Inter, sans-serif', color: '#0f172a', size: 12 }, margin: { l: 50, r: 50, t: 50, b: 50 }, yaxis: { title: 'xA' } }, { responsive: true });
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '—';
+                    const date = new Date(dateStr + 'T00:00:00Z');
+                    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                },
+                formatDuration(seconds) {
+                    if (!seconds) return '—';
+                    return `${Math.round(seconds / 60)} min`;
+                },
+                formatTabName(tab) {
+                    const names = { overview: 'Overview', players: 'Players', passes: 'Passing', defense: 'Defense', analytics: 'Analytics' };
+                    return names[tab] || tab;
+                },
+                getTabIcon(tab) {
+                    const icons = { overview: '📊', players: '👥', passes: '⚽', defense: '🛡️', analytics: '📈' };
+                    return icons[tab] || '';
+                },
+                positionClass(player) {
+                    return (player.position || 'N/A').toLowerCase().replace(/\s/g, '-');
+                },
+                ratingClass(rating) {
+                    if (rating >= 8) return 'excellent';
+                    if (rating >= 7) return 'good';
+                    if (rating >= 6) return 'average';
+                    return 'poor';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
