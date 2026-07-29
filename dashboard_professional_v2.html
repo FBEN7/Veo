@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veo Pro - Football Analytics</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1e40af;
+            --primary-dark: #1e3a8a;
+            --secondary: #0f766e;
+            --accent: #dc2626;
+            --success: #059669;
+            --warning: #f59e0b;
+            --light: #f8fafc;
+            --lighter: #f1f5f9;
+            --dark: #0f172a;
+            --text: #475569;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --border-light: #cbd5e1;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.05);
+            --duration: 200ms;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #e0e7ff 100%);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Smooth animations */
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            animation: slideInDown 0.5s ease-out;
+        }
+
+        .header-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .logo-emoji {
+            font-size: 2.5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .badge-demo {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: slideUp 0.5s ease-out 0.1s backwards;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Match Header */
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 3rem;
+            animation: slideUp 0.5s ease-out 0.2s backwards;
+        }
+
+        .match-header h2 {
+            font-size: 2.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .match-date {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Quick Stats Grid */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            transition: all var(--duration) ease;
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            margin-bottom: 3rem;
+            animation: slideUp 0.5s ease-out 0.3s backwards;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: transparent;
+            border: 2px solid transparent;
+            color: var(--text);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--duration) ease;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: var(--lighter);
+            color: var(--primary);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            transition: all var(--duration) ease;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.4rem;
+            color: var(--primary);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-emoji {
+            font-size: 1.8rem;
+        }
+
+        /* Grids */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all var(--duration) ease;
+            font-family: inherit;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
+
+        .filter-select {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all var(--duration) ease;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+        }
+
+        /* Charts */
+        .chart {
+            min-height: 400px;
+            background: linear-gradient(135deg, var(--lighter) 0%, white 100%);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        /* Pitch */
+        .pitch-map {
+            min-height: 300px;
+            background: linear-gradient(135deg, #1a7c3b 0%, #2d9f4e 100%);
+            border-radius: 8px;
+            position: relative;
+            border: 3px dashed rgba(255, 255, 255, 0.3);
+        }
+
+        /* Professional Table */
+        .professional-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .professional-table thead {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .professional-table th {
+            padding: 1.25rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: all var(--duration) ease;
+        }
+
+        .professional-table th:hover {
+            background: var(--primary-dark);
+        }
+
+        .professional-table th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+            font-size: 0.9rem;
+        }
+
+        .professional-table th.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+            color: #fbbf24;
+        }
+
+        .professional-table th.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+            color: #fbbf24;
+        }
+
+        .professional-table td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem;
+            transition: background var(--duration) ease;
+        }
+
+        .professional-table tbody tr:hover {
+            background: var(--lighter);
+        }
+
+        .professional-table tbody tr:hover td {
+            background-color: rgba(30, 64, 175, 0.03);
+        }
+
+        .player-id {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.1rem;
+            min-width: 40px;
+        }
+
+        .team {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all var(--duration) ease;
+        }
+
+        .badge:hover {
+            transform: scale(1.05);
+        }
+
+        .badge-defender {
+            background: rgba(59, 130, 246, 0.15);
+            color: #1e40af;
+            border: 1px solid rgba(30, 64, 175, 0.3);
+        }
+
+        .badge-midfielder {
+            background: rgba(245, 158, 11, 0.15);
+            color: #92400e;
+            border: 1px solid rgba(180, 83, 9, 0.3);
+        }
+
+        .badge-forward {
+            background: rgba(239, 68, 68, 0.15);
+            color: #991b1b;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-align: center;
+            min-width: 50px;
+            transition: all var(--duration) ease;
+        }
+
+        .rating-badge:hover {
+            transform: scale(1.1);
+        }
+
+        .rating-excellent {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+            color: #065f46;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .rating-good {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+            color: #1e40af;
+            border: 1px solid rgba(30, 64, 175, 0.3);
+        }
+
+        .rating-average {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
+            color: #92400e;
+            border: 1px solid rgba(180, 83, 9, 0.3);
+        }
+
+        .success-rate {
+            text-align: center;
+            font-weight: 700;
+            color: var(--success);
+            font-size: 0.95rem;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .comparison-table thead {
+            background: var(--lighter);
+        }
+
+        .comparison-table th {
+            padding: 1.25rem;
+            text-align: center;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .comparison-table td {
+            padding: 1.25rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .comparison-table .stat-name {
+            font-weight: 700;
+            color: var(--primary);
+            text-align: left;
+        }
+
+        .comparison-table .value {
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--primary);
+        }
+
+        /* Metrics */
+        .metric {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--lighter) 0%, white 100%);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: all var(--duration) ease;
+        }
+
+        .metric:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Footer */
+        .footer {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            text-align: center;
+            padding: 2.5rem;
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Funny tooltips */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 1000;
+            animation: slideUp 0.2s ease-out;
+        }
+
+        /* No results message */
+        .no-results {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-light);
+        }
+
+        .no-results-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .tabs {
+                overflow-x: auto;
+            }
+
+            .professional-table th,
+            .professional-table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            .match-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-emoji">⚽</span>
+                <div>
+                    <h1>VEO PRO</h1>
+                    <p>Advanced Match Analytics</p>
+                </div>
+            </div>
+            <div class="badge-demo">🎨 PROFESSIONAL DEMO v2</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Match Header -->
+        <div class="match-header">
+            <div>
+                <h2>Team A vs Team B 🔥</h2>
+                <p class="match-date">July 28, 2024 • 90 minutes • An absolute thriller! 🎬</p>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-card">
+                <span class="stat-value">58.2%</span>
+                <span class="stat-label">💪 Possession</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">487</span>
+                <span class="stat-label">⚽ Total Passes</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">18</span>
+                <span class="stat-label">🎯 Shots</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-value">2:1</span>
+                <span class="stat-label">🏆 Final Score</span>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('overview')">📊 Overview</button>
+                <button class="tab" onclick="switchTab('players')">👥 Players</button>
+                <button class="tab" onclick="switchTab('passes')">⚽ Passing</button>
+                <button class="tab" onclick="switchTab('defense')">🛡️ Defense</button>
+                <button class="tab" onclick="switchTab('advanced')">📈 Advanced</button>
+            </div>
+        </div>
+
+        <!-- TAB 1: Overview -->
+        <div id="overview" class="tab-content active">
+            <div class="grid-2">
+                <div class="card">
+                    <h3><span class="card-emoji">📊</span>Possession Timeline</h3>
+                    <div id="possession-chart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-emoji">🎯</span>Shot Locations</h3>
+                    <div id="shot-map" class="chart pitch-map"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Players -->
+        <div id="players" class="tab-content">
+            <div class="card">
+                <h3><span class="card-emoji">👥</span>Player Performance Rankings</h3>
+
+                <div class="filter-bar">
+                    <div class="search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="playerSearch" placeholder="Search by ID or name..." onkeyup="filterPlayers()">
+                    </div>
+                    <select class="filter-select" id="teamFilter" onchange="filterPlayers()">
+                        <option value="">All Teams</option>
+                        <option value="Team A">Team A</option>
+                        <option value="Team B">Team B</option>
+                    </select>
+                    <select class="filter-select" id="positionFilter" onchange="filterPlayers()">
+                        <option value="">All Positions</option>
+                        <option value="Defender">Defenders</option>
+                        <option value="Midfielder">Midfielders</option>
+                        <option value="Forward">Forwards</option>
+                    </select>
+                </div>
+
+                <table class="professional-table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable(0)">#ID</th>
+                            <th class="sortable" onclick="sortTable(1)">Team</th>
+                            <th>Position</th>
+                            <th class="sortable" onclick="sortTable(3)">Rating</th>
+                            <th class="sortable" onclick="sortTable(4)">Distance (m)</th>
+                            <th class="sortable" onclick="sortTable(5)">Speed (km/h)</th>
+                            <th class="sortable" onclick="sortTable(6)">Passes</th>
+                            <th class="sortable" onclick="sortTable(7)">Pass %</th>
+                            <th class="sortable" onclick="sortTable(8)">Key Pass</th>
+                            <th class="sortable" onclick="sortTable(9)">Shots</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playerTable">
+                        <tr data-team="Team A" data-position="Defender">
+                            <td class="player-id">1</td>
+                            <td class="team">Team A</td>
+                            <td><span class="badge badge-defender">Defender</span></td>
+                            <td><span class="rating-badge rating-excellent">8.2</span></td>
+                            <td>11,247</td>
+                            <td>28.4</td>
+                            <td>52</td>
+                            <td class="success-rate">87%</td>
+                            <td>2</td>
+                            <td>0</td>
+                        </tr>
+                        <tr data-team="Team A" data-position="Midfielder">
+                            <td class="player-id">7</td>
+                            <td class="team">Team A</td>
+                            <td><span class="badge badge-midfielder">Midfielder</span></td>
+                            <td><span class="rating-badge rating-good">7.6</span></td>
+                            <td>10,893</td>
+                            <td>27.1</td>
+                            <td>48</td>
+                            <td class="success-rate">82%</td>
+                            <td>5</td>
+                            <td>1</td>
+                        </tr>
+                        <tr data-team="Team A" data-position="Forward">
+                            <td class="player-id">9</td>
+                            <td class="team">Team A</td>
+                            <td><span class="badge badge-forward">Forward</span></td>
+                            <td><span class="rating-badge rating-good">7.4</span></td>
+                            <td>10,234</td>
+                            <td>26.8</td>
+                            <td>28</td>
+                            <td class="success-rate">71%</td>
+                            <td>8</td>
+                            <td>4</td>
+                        </tr>
+                        <tr data-team="Team B" data-position="Defender">
+                            <td class="player-id">3</td>
+                            <td class="team">Team B</td>
+                            <td><span class="badge badge-defender">Defender</span></td>
+                            <td><span class="rating-badge rating-good">7.1</span></td>
+                            <td>9,876</td>
+                            <td>25.3</td>
+                            <td>42</td>
+                            <td class="success-rate">79%</td>
+                            <td>1</td>
+                            <td>0</td>
+                        </tr>
+                        <tr data-team="Team B" data-position="Midfielder">
+                            <td class="player-id">8</td>
+                            <td class="team">Team B</td>
+                            <td><span class="badge badge-midfielder">Midfielder</span></td>
+                            <td><span class="rating-badge rating-good">7.0</span></td>
+                            <td>9,542</td>
+                            <td>24.7</td>
+                            <td>38</td>
+                            <td class="success-rate">75%</td>
+                            <td>3</td>
+                            <td>0</td>
+                        </tr>
+                        <tr data-team="Team B" data-position="Forward">
+                            <td class="player-id">11</td>
+                            <td class="team">Team B</td>
+                            <td><span class="badge badge-forward">Forward</span></td>
+                            <td><span class="rating-badge rating-average">6.8</span></td>
+                            <td>8,123</td>
+                            <td>23.2</td>
+                            <td>22</td>
+                            <td class="success-rate">68%</td>
+                            <td>2</td>
+                            <td>2</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="noResults" class="no-results" style="display:none;">
+                    <div class="no-results-emoji">🤷</div>
+                    <p>No players found matching your filters</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Passing -->
+        <div id="passes" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <h3><span class="card-emoji">⚽</span>Pass Completion by Player</h3>
+                    <div id="pass-completion-chart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-emoji">📊</span>Pass Types Distribution</h3>
+                    <div id="pass-types-chart" class="chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Defense -->
+        <div id="defense" class="tab-content">
+            <div class="grid-2">
+                <div class="card">
+                    <h3><span class="card-emoji">🛡️</span>Tackle Success Rate</h3>
+                    <div id="tackle-chart" class="chart"></div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-emoji">⚔️</span>Defensive Actions Breakdown</h3>
+                    <div id="defensive-chart" class="chart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Advanced -->
+        <div id="advanced" class="tab-content">
+            <div class="grid-3">
+                <div class="card">
+                    <h3><span class="card-emoji">📊</span>Expected Goals</h3>
+                    <div class="metric">
+                        <span class="metric-value">2.84</span>
+                        <span class="metric-label">🔵 Team A xG</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">1.42</span>
+                        <span class="metric-label">🔴 Team B xG</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-emoji">🎯</span>Expected Assists</h3>
+                    <div class="metric">
+                        <span class="metric-value">1.87</span>
+                        <span class="metric-label">🔵 Team A xA</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">0.93</span>
+                        <span class="metric-label">🔴 Team B xA</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3><span class="card-emoji">🏃</span>Ball Carry Distance</h3>
+                    <div class="metric">
+                        <span class="metric-value">3,847m</span>
+                        <span class="metric-label">🔵 Team A</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">2,943m</span>
+                        <span class="metric-label">🔴 Team B</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Head-to-Head Comparison -->
+        <div class="card">
+            <h3><span class="card-emoji">⚖️</span>Head-to-Head Comparison</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>🔵 Team A</th>
+                        <th class="stat-name">Statistic</th>
+                        <th>🔴 Team B</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="value">58.2%</td>
+                        <td class="stat-name">Possession</td>
+                        <td class="value">41.8%</td>
+                    </tr>
+                    <tr>
+                        <td class="value">287</td>
+                        <td class="stat-name">Passes</td>
+                        <td class="value">200</td>
+                    </tr>
+                    <tr>
+                        <td class="value">82.4%</td>
+                        <td class="stat-name">Pass Completion</td>
+                        <td class="value">78.5%</td>
+                    </tr>
+                    <tr>
+                        <td class="value">12</td>
+                        <td class="stat-name">Shots</td>
+                        <td class="value">6</td>
+                    </tr>
+                    <tr>
+                        <td class="value">28</td>
+                        <td class="stat-name">Tackles</td>
+                        <td class="value">22</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>🚀 Veo Professional Analytics • Making Football Data Beautiful & Actionable 🎯</p>
+    </footer>
+
+    <script>
+        let sortDirection = {};
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'overview') renderOverviewCharts();
+            else if (tabName === 'passes') renderPassCharts();
+            else if (tabName === 'defense') renderDefenseCharts();
+        }
+
+        function filterPlayers() {
+            const search = document.getElementById('playerSearch').value.toLowerCase();
+            const team = document.getElementById('teamFilter').value;
+            const position = document.getElementById('positionFilter').value;
+
+            const rows = document.querySelectorAll('#playerTable tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const rowTeam = row.dataset.team;
+                const rowPosition = row.dataset.position;
+                const rowText = row.textContent.toLowerCase();
+
+                const matchSearch = !search || rowText.includes(search);
+                const matchTeam = !team || rowTeam === team;
+                const matchPosition = !position || rowPosition === position;
+
+                if (matchSearch && matchTeam && matchPosition) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById('playerTable');
+            const rows = Array.from(table.rows);
+            const header = document.querySelectorAll('th')[columnIndex];
+
+            sortDirection[columnIndex] = !sortDirection[columnIndex];
+
+            rows.sort((a, b) => {
+                let aVal = a.cells[columnIndex].textContent.trim();
+                let bVal = b.cells[columnIndex].textContent.trim();
+
+                // Try numeric sort
+                if (!isNaN(aVal) && !isNaN(bVal)) {
+                    aVal = parseFloat(aVal);
+                    bVal = parseFloat(bVal);
+                } else {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                return sortDirection[columnIndex] ? aVal > bVal ? 1 : -1 : aVal < bVal ? 1 : -1;
+            });
+
+            rows.forEach(row => table.appendChild(row));
+
+            // Update header indicators
+            document.querySelectorAll('th').forEach((th, idx) => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (idx === columnIndex) {
+                    th.classList.add(sortDirection[columnIndex] ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function renderOverviewCharts() {
+            const times = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90];
+            const teamA = [45, 52, 58, 62, 60, 58, 65, 68, 62, 60, 58, 60, 62, 58, 56, 60, 58, 55, 58];
+            const teamB = [55, 48, 42, 38, 40, 42, 35, 32, 38, 40, 42, 40, 38, 42, 44, 40, 42, 45, 42];
+
+            const trace1 = { x: times, y: teamA, name: '🔵 Team A', type: 'scatter', mode: 'lines+markers', line: { color: '#1e40af', width: 3 } };
+            const trace2 = { x: times, y: teamB, name: '🔴 Team B', type: 'scatter', mode: 'lines+markers', line: { color: '#dc2626', width: 3 } };
+
+            Plotly.newPlot('possession-chart', [trace1, trace2], { xaxis: { title: 'Time (min)' }, yaxis: { title: 'Possession %' }, height: 400, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(248,250,252,0.5)' }, { responsive: true, displayModeBar: false });
+        }
+
+        function renderPassCharts() {
+            const trace = { x: ['P1', 'P7', 'P9', 'P3', 'P8'], y: [87, 82, 71, 79, 75], type: 'bar', marker: { color: '#1e40af' } };
+            Plotly.newPlot('pass-completion-chart', [trace], { yaxis: { title: 'Completion %' }, height: 350, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(248,250,252,0.5)' }, { responsive: true, displayModeBar: false });
+
+            const pieTrace = { labels: ['Short Passes', 'Long Passes', 'Forward Passes'], values: [245, 31, 44], type: 'pie', marker: { colors: ['#1e40af', '#0f766e', '#dc2626'] } };
+            Plotly.newPlot('pass-types-chart', [pieTrace], { height: 350, paper_bgcolor: 'rgba(0,0,0,0)' }, { responsive: true, displayModeBar: false });
+        }
+
+        function renderDefenseCharts() {
+            const trace = { x: ['Team A', 'Team B'], y: [28, 22], type: 'bar', marker: { color: '#dc2626' } };
+            Plotly.newPlot('tackle-chart', [trace], { yaxis: { title: 'Tackles' }, height: 350, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(248,250,252,0.5)' }, { responsive: true, displayModeBar: false });
+
+            const trace1 = { x: ['Tackles', 'Interceptions', 'Clearances'], y: [28, 12, 8], name: 'Team A', type: 'bar', marker: { color: '#1e40af' } };
+            const trace2 = { x: ['Tackles', 'Interceptions', 'Clearances'], y: [22, 15, 11], name: 'Team B', type: 'bar', marker: { color: '#dc2626' } };
+            Plotly.newPlot('defensive-chart', [trace1, trace2], { barmode: 'group', height: 350, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(248,250,252,0.5)' }, { responsive: true, displayModeBar: false });
+        }
+
+        window.addEventListener('load', renderOverviewCharts);
+    </script>
+</body>
+</html>
