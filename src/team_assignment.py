@@ -33,38 +33,40 @@ def assign_teams(video_path: str, tracks: pd.DataFrame,
     players = tracks[tracks.cls == "player"]
     cap = cv2.VideoCapture(video_path)
 
-    feats, tids = [], []
-    for tid, g in players.groupby("track_id"):
-        if len(g) < 10:  # ignore les tracks trop courts
-            continue
-        sample = g.sample(min(samples_per_track, len(g)), random_state=0)
-        colors = []
-        for _, r in sample.iterrows():
-            cap.set(cv2.CAP_PROP_POS_FRAMES, r.frame)
-            ok, frame = cap.read()
-            if not ok:
+    try:
+        feats, tids = [], []
+        for tid, g in players.groupby("track_id"):
+            if len(g) < 10:
                 continue
-            c = _torso_color(frame, r.px, r.py, r.crop_h)
-            if c is not None:
-                colors.append(c)
-        if colors:
-            feats.append(np.mean(colors, axis=0))
-            tids.append(tid)
-    cap.release()
+            sample = g.sample(min(samples_per_track, len(g)), random_state=0)
+            colors = []
+            for _, r in sample.iterrows():
+                frame_idx = int(r.frame)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ok, frame = cap.read()
+                if not ok:
+                    continue
+                c = _torso_color(frame, r.px, r.py, r.crop_h)
+                if c is not None:
+                    colors.append(c)
+            if colors:
+                feats.append(np.mean(colors, axis=0))
+                tids.append(tid)
 
-    if len(feats) < 3:
-        raise RuntimeError("Pas assez de tracks pour le clustering.")
+        if len(feats) < 3:
+            raise RuntimeError("Pas assez de tracks pour le clustering.")
 
-    km = KMeans(n_clusters=3, n_init=10, random_state=0).fit(np.array(feats))
-    labels = km.labels_
-    # le cluster le plus petit = 'other' (arbitre, gardiens)
-    counts = np.bincount(labels, minlength=3)
-    other = int(np.argmin(counts))
-    team_ids = [c for c in range(3) if c != other]
-    mapping = {team_ids[0]: "team_A", team_ids[1]: "team_B", other: "other"}
+        km = KMeans(n_clusters=3, n_init=10, random_state=0).fit(np.array(feats))
+        labels = km.labels_
+        counts = np.bincount(labels, minlength=3)
+        other = int(np.argmin(counts))
+        team_ids = [c for c in range(3) if c != other]
+        mapping = {team_ids[0]: "team_A", team_ids[1]: "team_B", other: "other"}
 
-    team_map = {tid: mapping[l] for tid, l in zip(tids, labels)}
-    tracks = tracks.copy()
-    tracks["team"] = tracks.track_id.map(team_map)
-    tracks.loc[tracks.cls == "ball", "team"] = "ball"
-    return tracks
+        team_map = {tid: mapping[l] for tid, l in zip(tids, labels)}
+        tracks = tracks.copy()
+        tracks["team"] = tracks.track_id.map(team_map)
+        tracks.loc[tracks.cls == "ball", "team"] = "ball"
+        return tracks
+    finally:
+        cap.release()

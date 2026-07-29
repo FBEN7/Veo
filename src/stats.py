@@ -27,10 +27,10 @@ def to_pitch_coords(tracks: pd.DataFrame, H: np.ndarray) -> pd.DataFrame:
 
 
 def _smooth(g: pd.DataFrame, window: int = 5) -> pd.DataFrame:
-    g = g.sort_values("time_s").copy()
-    g["x"] = g.x.rolling(window, min_periods=1, center=True).median()
-    g["y"] = g.y.rolling(window, min_periods=1, center=True).median()
-    return g
+    g_sorted = g.sort_values("time_s").copy()
+    g_sorted["x"] = g_sorted.x.rolling(window, min_periods=1, center=True).median()
+    g_sorted["y"] = g_sorted.y.rolling(window, min_periods=1, center=True).median()
+    return g_sorted
 
 
 def physical_stats(tracks: pd.DataFrame) -> pd.DataFrame:

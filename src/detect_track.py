@@ -14,15 +14,22 @@ import supervision as sv
 from tqdm import tqdm
 from ultralytics import YOLO
 
-PERSON_CLS = 0
-BALL_CLS = 32  # "sports ball" dans COCO
+from .constants import (
+    PERSON_CLASS_ID, BALL_CLASS_ID,
+    TRACK_ACTIVATION_THRESHOLD, LOST_TRACK_BUFFER, MINIMUM_MATCHING_THRESHOLD,
+    GRASS_H_MIN, GRASS_H_MAX, GRASS_S_MIN, GRASS_S_MAX, GRASS_V_MIN, GRASS_V_MAX,
+    MIN_DETECTION_HEIGHT_PX, DEFAULT_FPS,
+)
 
 
 def _grass_mask(frame: np.ndarray) -> np.ndarray:
     """Return a loose pitch mask to reject crowd/stands false positives."""
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    # Broad green range for varying lighting conditions
-    mask = cv2.inRange(hsv, (28, 35, 25), (95, 255, 255))
+    mask = cv2.inRange(
+        hsv,
+        (GRASS_H_MIN, GRASS_S_MIN, GRASS_V_MIN),
+        (GRASS_H_MAX, GRASS_S_MAX, GRASS_V_MAX)
+    )
     kernel = np.ones((5, 5), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
@@ -73,8 +80,9 @@ def _torso_signature(frame: np.ndarray, row: pd.Series) -> np.ndarray | None:
         return None
 
     half_w = max(8.0, h * 0.22)
+    frame_h, frame_w = frame.shape[:2]
     x1 = int(max(0, round(px - half_w)))
-    x2 = int(min(frame.shape[1], round(px + half_w)))
+    x2 = int(min(frame_w, round(px + half_w)))
     y2 = int(max(0, round(py)))
     y1 = int(max(0, round(py - h)))
     torso_y1 = y1 + int(h * 0.18)
@@ -84,9 +92,9 @@ def _torso_signature(frame: np.ndarray, row: pd.Series) -> np.ndarray | None:
         return None
 
     hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
-    # Mean + std gives a crude but useful appearance descriptor.
-    mean = hsv.reshape(-1, 3).mean(axis=0)
-    std = hsv.reshape(-1, 3).std(axis=0)
+    reshaped = hsv.reshape(-1, 3)
+    mean = reshaped.mean(axis=0)
+    std = reshaped.std(axis=0)
     return np.concatenate([mean, std, np.array([h], dtype=np.float32)])
 
 
@@ -96,70 +104,91 @@ def _fragment_features(video_path: str, tracks: pd.DataFrame, samples_per_track:
         return pd.DataFrame()
 
     cap = cv2.VideoCapture(video_path)
-    rows = []
-    for tid, g in players.groupby("track_id"):
-        g = g.sort_values("frame")
-        if len(g) == 0:
-            continue
-        sample = g.iloc[np.linspace(0, len(g) - 1, num=min(samples_per_track, len(g)), dtype=int)]
-        signatures = []
-        for _, r in sample.iterrows():
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(r.frame))
-            ok, frame = cap.read()
-            if not ok:
+    try:
+        rows = []
+        for tid, g in players.groupby("track_id"):
+            g = g.sort_values("frame")
+            if len(g) == 0:
                 continue
-            sig = _torso_signature(frame, r)
-            if sig is not None:
-                signatures.append(sig)
+            sample = g.iloc[np.linspace(0, len(g) - 1, num=min(samples_per_track, len(g)), dtype=int)]
+            signatures = []
+            for _, r in sample.iterrows():
+                frame_idx = int(r.frame)
+                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+                ok, frame = cap.read()
+                if not ok:
+                    continue
+                sig = _torso_signature(frame, r)
+                if sig is not None:
+                    signatures.append(sig)
 
-        if not signatures:
-            continue
+            if not signatures:
+                continue
 
-        sig = np.mean(signatures, axis=0)
-        rows.append(
-            {
-                "track_id": int(tid),
-                "start_frame": int(g.frame.min()),
-                "end_frame": int(g.frame.max()),
-                "start_time": float(g.time_s.min()),
-                "end_time": float(g.time_s.max()),
-                "mean_px": float(g.px.mean()),
-                "mean_py": float(g.py.mean()),
-                "mean_h": float(g.crop_h.mean()),
-                "n_rows": int(len(g)),
-                "sig_h": float(sig[0]),
-                "sig_s": float(sig[1]),
-                "sig_v": float(sig[2]),
-                "sig_h_std": float(sig[3]),
-                "sig_s_std": float(sig[4]),
-                "sig_v_std": float(sig[5]),
-                "sig_h_px": float(sig[6]),
-                "team": g["team"].mode().iat[0] if "team" in g.columns and not g["team"].mode().empty else "unknown",
-            }
-        )
-
-    cap.release()
-    return pd.DataFrame(rows).sort_values(["start_time", "track_id"]).reset_index(drop=True)
+            sig = np.mean(signatures, axis=0)
+            rows.append(
+                {
+                    "track_id": int(tid),
+                    "start_frame": int(g.frame.min()),
+                    "end_frame": int(g.frame.max()),
+                    "start_time": float(g.time_s.min()),
+                    "end_time": float(g.time_s.max()),
+                    "mean_px": float(g.px.mean()),
+                    "mean_py": float(g.py.mean()),
+                    "mean_h": float(g.crop_h.mean()),
+                    "n_rows": int(len(g)),
+                    "sig_h": float(sig[0]),
+                    "sig_s": float(sig[1]),
+                    "sig_v": float(sig[2]),
+                    "sig_h_std": float(sig[3]),
+                    "sig_s_std": float(sig[4]),
+                    "sig_v_std": float(sig[5]),
+                    "sig_h_px": float(sig[6]),
+                    "team": g["team"].mode().iat[0] if "team" in g.columns and not g["team"].mode().empty else "unknown",
+                }
+            )
+        return pd.DataFrame(rows).sort_values(["start_time", "track_id"]).reset_index(drop=True)
+    finally:
+        cap.release()
 
 
 def _feature_distance(a: pd.Series, b: pd.Series) -> float:
-    # Hue wraps around 180 in OpenCV HSV.
-    hue_delta = abs(float(a.sig_h) - float(b.sig_h))
-    hue_delta = min(hue_delta, 180.0 - hue_delta)
-    hue_delta /= 180.0
+    a_h = float(a.sig_h)
+    b_h = float(b.sig_h)
+    a_s = float(a.sig_s)
+    b_s = float(b.sig_s)
+    a_v = float(a.sig_v)
+    b_v = float(b.sig_v)
+    a_h_std = float(a.sig_h_std)
+    b_h_std = float(b.sig_h_std)
+    a_s_std = float(a.sig_s_std)
+    b_s_std = float(b.sig_s_std)
+    a_v_std = float(a.sig_v_std)
+    b_v_std = float(b.sig_v_std)
+    a_h_px = float(a.sig_h_px)
+    b_h_px = float(b.sig_h_px)
+    a_mean_h = float(a.mean_h)
+    b_mean_h = float(b.mean_h)
+    a_mean_px = float(a.mean_px)
+    b_mean_px = float(b.mean_px)
+    a_mean_py = float(a.mean_py)
+    b_mean_py = float(b.mean_py)
 
-    sat_delta = abs(float(a.sig_s) - float(b.sig_s)) / 255.0
-    val_delta = abs(float(a.sig_v) - float(b.sig_v)) / 255.0
+    hue_delta = abs(a_h - b_h)
+    hue_delta = min(hue_delta, 180.0 - hue_delta) / 180.0
+
+    sat_delta = abs(a_s - b_s) / 255.0
+    val_delta = abs(a_v - b_v) / 255.0
     std_delta = (
-        abs(float(a.sig_h_std) - float(b.sig_h_std)) / 90.0
-        + abs(float(a.sig_s_std) - float(b.sig_s_std)) / 90.0
-        + abs(float(a.sig_v_std) - float(b.sig_v_std)) / 90.0
+        abs(a_h_std - b_h_std) / 90.0
+        + abs(a_s_std - b_s_std) / 90.0
+        + abs(a_v_std - b_v_std) / 90.0
     ) / 3.0
-    height_delta = abs(float(a.sig_h_px) - float(b.sig_h_px)) / max(float(a.sig_h_px), float(b.sig_h_px), 1.0)
-    size_delta = abs(float(a.mean_h) - float(b.mean_h)) / max(float(a.mean_h), float(b.mean_h), 1.0)
-    spatial_delta = np.hypot(float(a.mean_px) - float(b.mean_px), float(a.mean_py) - float(b.mean_py)) / 300.0
+    height_delta = abs(a_h_px - b_h_px) / max(a_h_px, b_h_px, 1.0)
+    size_delta = abs(a_mean_h - b_mean_h) / max(a_mean_h, b_mean_h, 1.0)
+    spatial_delta = np.hypot(a_mean_px - b_mean_px, a_mean_py - b_mean_py) / 300.0
 
-    return float(
+    return (
         2.3 * hue_delta
         + 1.1 * sat_delta
         + 0.8 * val_delta
@@ -215,7 +244,7 @@ def reidentify_tracks(video_path: str, tracks: pd.DataFrame) -> pd.DataFrame:
         else:
             best_score, best_idx = float("inf"), None
 
-        # Adaptive threshold: more lenient in early frames when track instability is high
+        # Tolerance increases with time gap (more lenient early on when appearance model unstable)
         time_since_start = float(frag.start_time)
         if time_since_start < 60.0:
             threshold = 1.65
@@ -278,19 +307,19 @@ def reidentify_tracks(video_path: str, tracks: pd.DataFrame) -> pd.DataFrame:
 
 
 def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
-    conf_player: float = 0.25, conf_ball: float = 0.08,
+    conf_player: float = 0.25, conf_ball: float = 0.12,
     out_path: str = "output/tracks.parquet",
     max_seconds: int = 0, imgsz: int = 640) -> pd.DataFrame:
     model = YOLO(model_name)
 
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
+    fps = cap.get(cv2.CAP_PROP_FPS) or DEFAULT_FPS
     effective_fps = max(1.0, fps / max(1, stride))
     tracker = sv.ByteTrack(
         frame_rate=effective_fps,
-        track_activation_threshold=0.08,
-        lost_track_buffer=180,
-        minimum_matching_threshold=0.78,
+        track_activation_threshold=TRACK_ACTIVATION_THRESHOLD,
+        lost_track_buffer=LOST_TRACK_BUFFER,
+        minimum_matching_threshold=MINIMUM_MATCHING_THRESHOLD,
     )
 
     n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -306,11 +335,11 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
         if frame_idx % stride == 0:
             conf_min = min(conf_player, conf_ball)
             res = model(frame, verbose=False, conf=conf_min, imgsz=imgsz,
-                        classes=[PERSON_CLS, BALL_CLS])[0]
+                        classes=[PERSON_CLASS_ID, BALL_CLASS_ID])[0]
             det = sv.Detections.from_ultralytics(res)
             pitch_mask = _grass_mask(frame)
 
-            players = det[det.class_id == PERSON_CLS]
+            players = det[det.class_id == PERSON_CLASS_ID]
             if len(players) > 0:
                 players = players[players.confidence >= conf_player]
             players = tracker.update_with_detections(players)
@@ -319,7 +348,7 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 px = float((x1 + x2) / 2)
                 py = float(y2)
                 h_px = float(y2 - y1)
-                if h_px < 16.0:
+                if h_px < MIN_DETECTION_HEIGHT_PX:
                     continue
                 if not _on_pitch(pitch_mask, px, py):
                     continue
@@ -328,7 +357,7 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                                  px=px, py=py,
                                  crop_h=h_px))
 
-            balls = det[det.class_id == BALL_CLS]
+            balls = det[det.class_id == BALL_CLASS_ID]
             if len(balls) > 0:
                 balls = balls[balls.confidence >= conf_ball]
             if len(balls) > 0:  # garde la détection la plus confiante

@@ -82,11 +82,88 @@ CREATE TABLE IF NOT EXISTS team_stats (
     field_tilt_x     REAL    DEFAULT 0.0
 );
 
+CREATE TABLE IF NOT EXISTS player_period_stats (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id          INTEGER NOT NULL REFERENCES matches(id),
+    player_track_id   INTEGER NOT NULL,
+    team              TEXT,
+    passes_total      INTEGER DEFAULT 0,
+    passes_completed  INTEGER DEFAULT 0,
+    pass_completion_rate REAL DEFAULT 0.0,
+    passes_forward    INTEGER DEFAULT 0,
+    passes_backward   INTEGER DEFAULT 0,
+    passes_lateral    INTEGER DEFAULT 0,
+    distance_m        REAL,
+    avg_speed_kmh     REAL,
+    max_speed_kmh     REAL,
+    sprints           INTEGER DEFAULT 0,
+    touches           INTEGER DEFAULT 0,
+    shots             INTEGER DEFAULT 0,
+    shots_on_target   INTEGER DEFAULT 0,
+    shots_off_target  INTEGER DEFAULT 0,
+    goals             INTEGER DEFAULT 0,
+    dribbles          INTEGER DEFAULT 0,
+    tackles           INTEGER DEFAULT 0,
+    interceptions     INTEGER DEFAULT 0,
+    clearances        INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS possessions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id      INTEGER NOT NULL REFERENCES matches(id),
+    team          TEXT    NOT NULL,
+    start_time_s  REAL    NOT NULL,
+    end_time_s    REAL    NOT NULL,
+    duration_s    REAL,
+    n_passes      INTEGER DEFAULT 0,
+    n_players     INTEGER DEFAULT 0,
+    possession_value REAL DEFAULT 0.0
+);
+
+CREATE TABLE IF NOT EXISTS duels (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id      INTEGER NOT NULL REFERENCES matches(id),
+    timestamp_s   REAL    NOT NULL,
+    player1_id    INTEGER,
+    player2_id    INTEGER,
+    team1         TEXT,
+    team2         TEXT,
+    winner_id     INTEGER,
+    location_x    REAL,
+    location_y    REAL
+);
+
+CREATE TABLE IF NOT EXISTS pass_sequences (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id      INTEGER NOT NULL REFERENCES matches(id),
+    team          TEXT    NOT NULL,
+    start_time_s  REAL    NOT NULL,
+    end_time_s    REAL,
+    n_passes      INTEGER DEFAULT 0,
+    completion_rate REAL  DEFAULT 0.0
+);
+
+CREATE TABLE IF NOT EXISTS zone_stats (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id      INTEGER NOT NULL REFERENCES matches(id),
+    team          TEXT    NOT NULL,
+    zone_id       INTEGER NOT NULL,
+    zone_name     TEXT,
+    possession_events INTEGER DEFAULT 0,
+    shots         INTEGER DEFAULT 0,
+    tackles       INTEGER DEFAULT 0
+);
+
 CREATE INDEX IF NOT EXISTS idx_events_match    ON events(match_id);
 CREATE INDEX IF NOT EXISTS idx_events_type     ON events(event_type);
 CREATE INDEX IF NOT EXISTS idx_events_team     ON events(team);
 CREATE INDEX IF NOT EXISTS idx_player_match    ON player_stats(match_id);
 CREATE INDEX IF NOT EXISTS idx_team_match      ON team_stats(match_id);
+CREATE INDEX IF NOT EXISTS idx_player_period_match ON player_period_stats(match_id);
+CREATE INDEX IF NOT EXISTS idx_possessions_match ON possessions(match_id);
+CREATE INDEX IF NOT EXISTS idx_duels_match     ON duels(match_id);
+CREATE INDEX IF NOT EXISTS idx_pass_seq_match  ON pass_sequences(match_id);
+CREATE INDEX IF NOT EXISTS idx_zone_match      ON zone_stats(match_id);
 """
 
 
@@ -229,6 +306,152 @@ class MatchDatabase:
                 rows,
             )
         print(f"[DB] Inserted team stats for {len(rows)} teams")
+
+    def insert_player_period_stats(
+        self, match_id: int, player_stats: list[dict[str, Any]]
+    ) -> None:
+        """Insert advanced per-player statistics."""
+        rows = [
+            (
+                match_id,
+                int(s.get("player_track_id", 0)),
+                s.get("team"),
+                int(s.get("passes_total", 0)),
+                int(s.get("passes_completed", 0)),
+                float(s.get("pass_completion_rate", 0.0)),
+                int(s.get("passes_forward", 0)),
+                int(s.get("passes_backward", 0)),
+                int(s.get("passes_lateral", 0)),
+                s.get("distance_m"),
+                s.get("avg_speed_kmh"),
+                s.get("max_speed_kmh"),
+                int(s.get("sprints", 0)),
+                int(s.get("touches", 0)),
+                int(s.get("shots", 0)),
+                int(s.get("shots_on_target", 0)),
+                int(s.get("shots_off_target", 0)),
+                int(s.get("goals", 0)),
+                int(s.get("dribbles", 0)),
+                int(s.get("tackles", 0)),
+                int(s.get("interceptions", 0)),
+                int(s.get("clearances", 0)),
+            )
+            for s in player_stats
+        ]
+        with self._connect() as conn:
+            conn.executemany(
+                "INSERT INTO player_period_stats "
+                "(match_id, player_track_id, team, passes_total, passes_completed,"
+                " pass_completion_rate, passes_forward, passes_backward, passes_lateral,"
+                " distance_m, avg_speed_kmh, max_speed_kmh, sprints, touches, shots,"
+                " shots_on_target, shots_off_target, goals, dribbles, tackles,"
+                " interceptions, clearances)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                rows,
+            )
+        print(f"[DB] Inserted advanced stats for {len(rows)} players")
+
+    def insert_possessions(
+        self, match_id: int, possessions: list[dict[str, Any]]
+    ) -> None:
+        """Insert possession chain data."""
+        rows = [
+            (
+                match_id,
+                p.get("team"),
+                float(p.get("start_time_s", 0.0)),
+                float(p.get("end_time_s", 0.0)),
+                float(p.get("end_time_s", 0.0)) - float(p.get("start_time_s", 0.0)),
+                int(p.get("n_passes", 0)),
+                int(p.get("n_players", 0)),
+                float(p.get("possession_value", 0.0)),
+            )
+            for p in possessions
+        ]
+        with self._connect() as conn:
+            conn.executemany(
+                "INSERT INTO possessions "
+                "(match_id, team, start_time_s, end_time_s, duration_s, n_passes,"
+                " n_players, possession_value) VALUES (?,?,?,?,?,?,?,?)",
+                rows,
+            )
+        print(f"[DB] Inserted {len(rows)} possessions")
+
+    def insert_duels(
+        self, match_id: int, duels: list[dict[str, Any]]
+    ) -> None:
+        """Insert duel data (contested events)."""
+        rows = [
+            (
+                match_id,
+                float(d.get("timestamp_s", 0.0)),
+                d.get("player1_id"),
+                d.get("player2_id"),
+                d.get("team1"),
+                d.get("team2"),
+                d.get("winner_id"),
+                d.get("location_x"),
+                d.get("location_y"),
+            )
+            for d in duels
+        ]
+        with self._connect() as conn:
+            conn.executemany(
+                "INSERT INTO duels "
+                "(match_id, timestamp_s, player1_id, player2_id, team1, team2,"
+                " winner_id, location_x, location_y) VALUES (?,?,?,?,?,?,?,?,?)",
+                rows,
+            )
+        print(f"[DB] Inserted {len(rows)} duels")
+
+    def insert_pass_sequences(
+        self, match_id: int, sequences: list[dict[str, Any]]
+    ) -> None:
+        """Insert pass sequence data."""
+        rows = [
+            (
+                match_id,
+                s.get("team"),
+                float(s.get("start_time_s", 0.0)),
+                s.get("end_time_s"),
+                int(s.get("n_passes", 0)),
+                float(s.get("completion_rate", 0.0)),
+            )
+            for s in sequences
+        ]
+        with self._connect() as conn:
+            conn.executemany(
+                "INSERT INTO pass_sequences "
+                "(match_id, team, start_time_s, end_time_s, n_passes, completion_rate)"
+                " VALUES (?,?,?,?,?,?)",
+                rows,
+            )
+        print(f"[DB] Inserted {len(rows)} pass sequences")
+
+    def insert_zone_stats(
+        self, match_id: int, zones: list[dict[str, Any]]
+    ) -> None:
+        """Insert zone-based statistics."""
+        rows = [
+            (
+                match_id,
+                z.get("team"),
+                int(z.get("zone_id", 0)),
+                z.get("zone_name"),
+                int(z.get("possession_events", 0)),
+                int(z.get("shots", 0)),
+                int(z.get("tackles", 0)),
+            )
+            for z in zones
+        ]
+        with self._connect() as conn:
+            conn.executemany(
+                "INSERT INTO zone_stats "
+                "(match_id, team, zone_id, zone_name, possession_events, shots, tackles)"
+                " VALUES (?,?,?,?,?,?,?)",
+                rows,
+            )
+        print(f"[DB] Inserted zone stats for {len(rows)} zones")
 
     # ------------------------------------------------------------------
     # Queries

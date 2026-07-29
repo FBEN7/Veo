@@ -15,6 +15,7 @@ Téléchargement d'une vidéo de test :
 import argparse
 from pathlib import Path
 
+import cv2
 import numpy as np
 import pandas as pd
 
@@ -23,6 +24,8 @@ from src.team_assignment import assign_teams
 from src import events as ev_module
 from src import quality
 from src import player_rating
+from src import advanced_events
+from src import advanced_metrics
 from src.database import MatchDatabase
 from src.auto_calibrate import auto_calibrate
 
@@ -51,6 +54,8 @@ def main():
                    help="détection automatique des coins du terrain (pas de clic manuel)")
     p.add_argument("--homography", default="",
                    help="chemin vers un fichier .npy d'homographie à utiliser")
+    p.add_argument("--debug", action="store_true",
+                   help="affiche les statistiques détaillées de détection")
     args = p.parse_args()
 
     # ------------------------------------------------------------------ #
@@ -82,6 +87,20 @@ def main():
                                   max_seconds=args.max_seconds,
                                   imgsz=args.imgsz)
 
+        if args.debug:
+            first_2min = tracks[tracks.time_s <= 120.0]
+            if not first_2min.empty:
+                print("\n[DEBUG] First 2 minutes analysis:")
+                players_2m = first_2min[first_2min.cls == "player"]
+                print(f"  Total detections: {len(first_2min)}")
+                print(f"  Player detections: {len(players_2m)}")
+                print(f"  Unique track IDs: {players_2m['track_id'].nunique()}")
+                if 'team' in players_2m.columns:
+                    print(f"  Unique teams: {players_2m['team'].nunique()}")
+                if len(players_2m) > 0:
+                    by_frame = players_2m.groupby('frame').size()
+                    print(f"  Players/frame: mean={by_frame.mean():.1f}, min={by_frame.min()}, max={by_frame.max()}")
+
     # ------------------------------------------------------------------ #
     # 3. Assignation des équipes                                           #
     # ------------------------------------------------------------------ #
@@ -89,14 +108,16 @@ def main():
     tracks = assign_teams(args.video, tracks)
     print("Ré-identification des joueurs...")
     tracks = detect_track.reidentify_tracks(args.video, tracks)
-    tracks.to_parquet("output/tracks.parquet")
-    tracks.to_parquet("output/tracks_teams.parquet")
 
     # ------------------------------------------------------------------ #
     # 4. Projection terrain + statistiques physiques                       #
     # ------------------------------------------------------------------ #
     print("Projection terrain + stats physiques...")
     tracks = stats.to_pitch_coords(tracks, H)
+
+    # Save tracks AFTER pitch transformation so coordinates are in meters
+    tracks.to_parquet("output/tracks.parquet")
+    tracks.to_parquet("output/tracks_teams.parquet")
     phys = stats.physical_stats(tracks)
     tilt = stats.field_tilt(tracks)
     poss = stats.possession_proxy(tracks)
@@ -109,6 +130,23 @@ def main():
     events = ev_module.detect_events(tracks)
     epp = ev_module.events_per_player(events)
     tet = ev_module.team_event_totals(events)
+
+    # Advanced event detection
+    print("Détection avancée des événements...")
+    events = advanced_events.enhance_events_with_advanced_detection(events, tracks)
+
+    if args.debug:
+        first_2min_events = [e for e in events if e.get('timestamp_s', 0) <= 120.0]
+        if first_2min_events:
+            print(f"\n[DEBUG] First 2 minutes events: {len(first_2min_events)}")
+            event_types = {}
+            for e in first_2min_events:
+                et = e.get('event_type', 'unknown')
+                event_types[et] = event_types.get(et, 0) + 1
+            for et, count in sorted(event_types.items()):
+                print(f"  {et}: {count}")
+        else:
+            print(f"\n[DEBUG] ⚠️  No events detected in first 2 minutes!")
 
     # ------------------------------------------------------------------ #
     # 6. Évaluation des joueurs                                            #
@@ -124,7 +162,6 @@ def main():
     db = MatchDatabase(args.db)
     db.init()
 
-    import cv2
     cap = cv2.VideoCapture(args.video)
     duration_s = (
         cap.get(cv2.CAP_PROP_FRAME_COUNT) / max(cap.get(cv2.CAP_PROP_FPS), 1)
@@ -146,6 +183,12 @@ def main():
     )
     db.insert_events(match_id, events)
     db.insert_player_stats(match_id, rated_phys.to_dict("records"))
+
+    # Advanced player metrics
+    print("Calcul des métriques avancées...")
+    adv_metrics = advanced_metrics.compute_advanced_metrics(events, tracks)
+    if not adv_metrics.empty:
+        db.insert_player_period_stats(match_id, adv_metrics.to_dict("records"))
 
     # Build team-level rows for DB
     team_stat_rows = []
