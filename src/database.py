@@ -23,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import math
+
 
 # ---------------------------------------------------------------------------
 # DDL
@@ -184,6 +186,29 @@ class MatchDatabase:
         conn.execute("PRAGMA foreign_keys=ON")
         return conn
 
+    @staticmethod
+    def _safe_int(value: Any, default: int = 0) -> int:
+        try:
+            if value is None:
+                return default
+            if isinstance(value, float) and math.isnan(value):
+                return default
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _safe_float(value: Any, default: float = 0.0) -> float:
+        try:
+            if value is None:
+                return default
+            out = float(value)
+            if math.isnan(out):
+                return default
+            return out
+        except (TypeError, ValueError):
+            return default
+
     # ------------------------------------------------------------------
     # Schema
     # ------------------------------------------------------------------
@@ -314,27 +339,27 @@ class MatchDatabase:
         rows = [
             (
                 match_id,
-                int(s.get("player_track_id", 0)),
+                self._safe_int(s.get("player_track_id", 0)),
                 s.get("team"),
-                int(s.get("passes_total", 0)),
-                int(s.get("passes_completed", 0)),
-                float(s.get("pass_completion_rate", 0.0)),
-                int(s.get("passes_forward", 0)),
-                int(s.get("passes_backward", 0)),
-                int(s.get("passes_lateral", 0)),
-                s.get("distance_m"),
-                s.get("avg_speed_kmh"),
-                s.get("max_speed_kmh"),
-                int(s.get("sprints", 0)),
-                int(s.get("touches", 0)),
-                int(s.get("shots", 0)),
-                int(s.get("shots_on_target", 0)),
-                int(s.get("shots_off_target", 0)),
-                int(s.get("goals", 0)),
-                int(s.get("dribbles", 0)),
-                int(s.get("tackles", 0)),
-                int(s.get("interceptions", 0)),
-                int(s.get("clearances", 0)),
+                self._safe_int(s.get("passes_total", 0)),
+                self._safe_int(s.get("passes_completed", 0)),
+                self._safe_float(s.get("pass_completion_rate", 0.0)),
+                self._safe_int(s.get("passes_forward", 0)),
+                self._safe_int(s.get("passes_backward", 0)),
+                self._safe_int(s.get("passes_lateral", 0)),
+                self._safe_float(s.get("distance_m"), 0.0),
+                self._safe_float(s.get("avg_speed_kmh"), 0.0),
+                self._safe_float(s.get("max_speed_kmh"), 0.0),
+                self._safe_int(s.get("sprints", 0)),
+                self._safe_int(s.get("touches", 0)),
+                self._safe_int(s.get("shots", 0)),
+                self._safe_int(s.get("shots_on_target", 0)),
+                self._safe_int(s.get("shots_off_target", 0)),
+                self._safe_int(s.get("goals", 0)),
+                self._safe_int(s.get("dribbles", 0)),
+                self._safe_int(s.get("tackles", 0)),
+                self._safe_int(s.get("interceptions", 0)),
+                self._safe_int(s.get("clearances", 0)),
             )
             for s in player_stats
         ]
