@@ -132,11 +132,11 @@ def create_ball_detector_professional(model, target_detection_rate: float = 0.70
     Returns:
         Configured BallDetectionPro instance
     """
-    # Adaptive confidence based on target - ultra-aggressive for 70%+
+    # Adaptive confidence based on target - maximum for 70%+
     if target_detection_rate >= 0.75:
-        conf = 0.02  # Ultra-aggressive
+        conf = 0.01  # Absolute maximum detection
     elif target_detection_rate >= 0.70:
-        conf = 0.05  # Very permissive, high recall
+        conf = 0.01  # Maximum permissive, absolute high recall
     elif target_detection_rate >= 0.60:
         conf = 0.08
     elif target_detection_rate >= 0.50:

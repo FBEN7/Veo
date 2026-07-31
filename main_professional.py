@@ -92,12 +92,12 @@ def main():
 
     # Use extreme ball detection for 70%+ target
     if args.target_ball_detection >= 0.70:
-        conf_ball = 0.02  # Extreme - detect nearly everything
-        conf_player_adj = 0.20  # Also lower player threshold
-        print(f"  Extreme mode: conf_ball={conf_ball}, conf_player={conf_player_adj}")
+        conf_ball = 0.01  # Maximum extreme - detect absolutely everything
+        conf_player_adj = 0.15  # Ultra-low player threshold
+        print(f"  Maximum extreme mode: conf_ball={conf_ball}, conf_player={conf_player_adj}")
         args.conf_player = conf_player_adj
     else:
-        conf_ball = 0.05
+        conf_ball = 0.02
 
     # Run standard detection with aggressive ball threshold
     tracks = detect_track.run(
