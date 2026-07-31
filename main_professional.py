@@ -90,13 +90,20 @@ def main():
     print(f"  Ball detector calibrated for {args.target_ball_detection*100:.0f}% detection")
     print(f"  Processing with stride={args.stride}...")
 
-    # Run standard detection (will integrate ball_detector later)
+    # Use ultra-aggressive ball detection for 70%+ target
+    if args.target_ball_detection >= 0.70:
+        conf_ball = 0.05  # Ultra-permissive for maximum recall
+        print(f"  Ultra-aggressive mode: conf_ball={conf_ball}")
+    else:
+        conf_ball = 0.10
+
+    # Run standard detection with aggressive ball threshold
     tracks = detect_track.run(
         args.video,
         stride=args.stride,
         model_name=args.model,
         conf_player=args.conf_player,
-        conf_ball=0.10,  # Very permissive for high recall
+        conf_ball=conf_ball,  # Ultra-permissive for high recall
         max_seconds=args.max_seconds,
         imgsz=args.imgsz
     )

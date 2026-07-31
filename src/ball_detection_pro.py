@@ -16,7 +16,7 @@ from typing import Optional
 class BallDetectionPro:
     """Professional-grade ball detector with high recall."""
 
-    def __init__(self, model, conf_threshold: float = 0.10, size_range: tuple = (8, 100)):
+    def __init__(self, model, conf_threshold: float = 0.05, size_range: tuple = (4, 150)):
         """Initialize ball detector.
 
         Args:
@@ -56,10 +56,10 @@ class BallDetectionPro:
             if not (self.min_size <= h <= self.max_size):
                 continue
 
-            # Filter by aspect ratio (ball should be roughly circular)
+            # Relax aspect ratio filter - allow elongated objects too (partially visible balls)
             w = x2 - x1
             aspect = w / (h + 1e-6)
-            if not (0.6 <= aspect <= 1.4):
+            if not (0.4 <= aspect <= 2.5):  # Much more lenient
                 continue
 
             cx = (x1 + x2) / 2
@@ -85,7 +85,7 @@ class BallDetectionPro:
         self.frame_idx += 1
         return detections
 
-    def _is_temporal_outlier(self, pos: tuple, max_jump: float = 100.0) -> bool:
+    def _is_temporal_outlier(self, pos: tuple, max_jump: float = 200.0) -> bool:
         """Check if detection is temporally consistent.
 
         Args:
@@ -98,20 +98,15 @@ class BallDetectionPro:
         if not self.detection_history or len(self.detection_history[-1]) == 0:
             return False
 
-        # Compare to previous detections
+        # Very lenient temporal check - allow large jumps
         prev_detections = self.detection_history[-1]
         closest_dist = min(
             np.sqrt((d['x'] - pos[0])**2 + (d['y'] - pos[1])**2)
             for d in prev_detections
         ) if prev_detections else 0
 
-        # Allow large jumps for long balls, but validate
-        if closest_dist > max_jump:
-            # Check if velocity is plausible
-            # Conservative: allow 1 second of motion (30 pixels @ 25fps typical)
-            return closest_dist > max_jump * 2
-
-        return False
+        # Only reject if distance is unreasonably large (allow up to 3x normal max_jump)
+        return closest_dist > max_jump * 3
 
     def get_statistics(self) -> dict:
         """Get detection statistics."""
@@ -137,17 +132,19 @@ def create_ball_detector_professional(model, target_detection_rate: float = 0.70
     Returns:
         Configured BallDetectionPro instance
     """
-    # Adaptive confidence based on target
-    if target_detection_rate >= 0.70:
-        conf = 0.10  # Very permissive, high recall
+    # Adaptive confidence based on target - ultra-aggressive for 70%+
+    if target_detection_rate >= 0.75:
+        conf = 0.02  # Ultra-aggressive
+    elif target_detection_rate >= 0.70:
+        conf = 0.05  # Very permissive, high recall
     elif target_detection_rate >= 0.60:
-        conf = 0.12
+        conf = 0.08
     elif target_detection_rate >= 0.50:
-        conf = 0.15
+        conf = 0.12
     else:
-        conf = 0.20
+        conf = 0.15
 
-    return BallDetectionPro(model, conf_threshold=conf)
+    return BallDetectionPro(model, conf_threshold=conf, size_range=(4, 150))
 
 
 def validate_ball_trajectory(detections: list, max_speed_kmh: float = 50.0, fps: float = 25.0) -> list:
