@@ -28,6 +28,7 @@ from src.database import MatchDatabase
 from src.auto_calibrate import auto_calibrate
 from src.dynamic_homography import create_dynamic_homography_loader, detect_camera_motion
 from src.ball_detection_pro import create_ball_detector_professional
+from src.ball_interpolation import interpolate_ball_track, get_ball_detection_continuity
 from ultralytics import YOLO
 
 
@@ -111,6 +112,21 @@ def main():
     )
 
     print(f"  ✓ Tracked {tracks['track_id'].nunique()} unique entities")
+
+    # Apply ball interpolation to fill gaps for better event detection
+    print(f"\n🔄 Ball Interpolation")
+    continuity_before = get_ball_detection_continuity(tracks)
+    print(f"  Before interpolation:")
+    print(f"    Detection rate: {continuity_before['detection_rate']*100:.1f}%")
+    print(f"    Average gap: {continuity_before['avg_gap_size']:.1f} frames")
+
+    tracks = interpolate_ball_track(tracks, max_gap_frames=5)
+
+    continuity_after = get_ball_detection_continuity(tracks)
+    print(f"  After interpolation:")
+    print(f"    Detection rate: {continuity_after['detection_rate']*100:.1f}%")
+    print(f"    Average gap: {continuity_after['avg_gap_size']:.1f} frames")
+    print(f"  ✓ Ball trajectory interpolated ({continuity_after['frames_with_detection']} frames)")
 
     # ====================================================================== #
     # 3. Team Assignment & Re-identification                                 #
