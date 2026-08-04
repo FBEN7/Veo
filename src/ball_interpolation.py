@@ -18,23 +18,23 @@ def interpolate_ball_track(tracks: pd.DataFrame, max_gap_frames: int = 5) -> pd.
     """Fill ball detection gaps through interpolation.
 
     Args:
-        tracks: DataFrame with columns [frame_id, track_id, x, y, class, ...]
+        tracks: DataFrame with columns [frame, track_id, x, y, cls, ...]
         max_gap_frames: Maximum gap to interpolate (frames)
 
     Returns:
         DataFrame with interpolated ball positions
     """
-    # Filter to ball detections only (class 32)
-    ball_tracks = tracks[tracks['class'] == 32].copy()
+    # Filter to ball detections only (cls="ball")
+    ball_tracks = tracks[tracks['cls'] == 'ball'].copy()
 
     if len(ball_tracks) < 2:
         return tracks
 
     # Sort by frame
-    ball_tracks = ball_tracks.sort_values('frame_id').reset_index(drop=True)
+    ball_tracks = ball_tracks.sort_values('frame').reset_index(drop=True)
 
     # Find gaps
-    frames = sorted(ball_tracks['frame_id'].unique())
+    frames = sorted(ball_tracks['frame'].unique())
     all_frames = set(frames)
 
     # Get frame range
@@ -50,16 +50,16 @@ def interpolate_ball_track(tracks: pd.DataFrame, max_gap_frames: int = 5) -> pd.
 
         if gap_size > 0 and gap_size <= max_gap_frames:
             # Get positions at boundaries
-            pos_a = ball_tracks[ball_tracks['frame_id'] == frame_a]
-            pos_b = ball_tracks[ball_tracks['frame_id'] == frame_b]
+            pos_a = ball_tracks[ball_tracks['frame'] == frame_a]
+            pos_b = ball_tracks[ball_tracks['frame'] == frame_b]
 
             if len(pos_a) > 0 and len(pos_b) > 0:
                 # Use first detection at each frame
                 row_a = pos_a.iloc[0]
                 row_b = pos_b.iloc[0]
 
-                x_a, y_a = row_a['x'], row_a['y']
-                x_b, y_b = row_b['x'], row_b['y']
+                x_a, y_a = row_a['px'], row_a['py']
+                x_b, y_b = row_b['px'], row_b['py']
 
                 # Linear interpolation
                 for gap_idx in range(1, gap_size + 1):
@@ -70,9 +70,9 @@ def interpolate_ball_track(tracks: pd.DataFrame, max_gap_frames: int = 5) -> pd.
 
                     # Create interpolated row
                     interp_row = row_a.copy()
-                    interp_row['frame_id'] = frame_a + gap_idx
-                    interp_row['x'] = x_interp
-                    interp_row['y'] = y_interp
+                    interp_row['frame'] = frame_a + gap_idx
+                    interp_row['px'] = x_interp
+                    interp_row['py'] = y_interp
                     interp_row['confidence'] = 0.5  # Mark as interpolated
                     interp_row['interpolated'] = True
 
@@ -82,7 +82,7 @@ def interpolate_ball_track(tracks: pd.DataFrame, max_gap_frames: int = 5) -> pd.
         # Combine original and interpolated
         interp_df = pd.DataFrame(interpolated_rows)
         tracks_combined = pd.concat([tracks, interp_df], ignore_index=True)
-        tracks_combined = tracks_combined.sort_values(['frame_id', 'track_id']).reset_index(drop=True)
+        tracks_combined = tracks_combined.sort_values(['frame', 'track_id']).reset_index(drop=True)
         return tracks_combined
 
     return tracks
@@ -99,20 +99,20 @@ def smooth_ball_trajectory(tracks: pd.DataFrame, window_size: int = 3) -> pd.Dat
         DataFrame with smoothed positions
     """
     tracks = tracks.copy()
-    ball_mask = tracks['class'] == 32
+    ball_mask = tracks['cls'] == 'ball'
 
     if ball_mask.sum() < window_size:
         return tracks
 
-    ball_frames = tracks[ball_mask].sort_values('frame_id')
+    ball_frames = tracks[ball_mask].sort_values('frame')
 
     # Apply moving average smoothing
-    for col in ['x', 'y']:
+    for col in ['px', 'py']:
         ball_frames[col] = ball_frames[col].rolling(
             window=window_size, center=True, min_periods=1
         ).mean()
 
-    tracks.loc[ball_mask, ['x', 'y']] = ball_frames[['x', 'y']].values
+    tracks.loc[ball_mask, ['px', 'py']] = ball_frames[['px', 'py']].values
     return tracks
 
 
@@ -125,7 +125,7 @@ def get_ball_detection_continuity(tracks: pd.DataFrame) -> dict:
     Returns:
         Dict with continuity metrics
     """
-    ball_tracks = tracks[tracks['class'] == 32]
+    ball_tracks = tracks[tracks['cls'] == 'ball']
 
     if len(ball_tracks) == 0:
         return {
@@ -136,15 +136,15 @@ def get_ball_detection_continuity(tracks: pd.DataFrame) -> dict:
             'max_gap_size': 0
         }
 
-    min_frame = tracks['frame_id'].min()
-    max_frame = tracks['frame_id'].max()
+    min_frame = tracks['frame'].min()
+    max_frame = tracks['frame'].max()
     total_frames = int(max_frame - min_frame + 1)
 
-    detected_frames = len(ball_tracks['frame_id'].unique())
+    detected_frames = len(ball_tracks['frame'].unique())
     detection_rate = detected_frames / total_frames if total_frames > 0 else 0
 
     # Analyze gaps
-    frames = sorted(ball_tracks['frame_id'].unique())
+    frames = sorted(ball_tracks['frame'].unique())
     gaps = []
     for i in range(len(frames) - 1):
         gap = frames[i + 1] - frames[i] - 1
