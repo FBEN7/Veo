@@ -1,5 +1,19 @@
 # Limited Field-of-View Event Detection Optimizations
 
+## Critical Finding (Post-Analysis Update)
+
+**User Observation:** "35 players tracked + 97% ball interpolation but only 1 event doesn't make sense"
+
+**Investigation Result:** Database contained **139 events**, but **138 were false positives** created by overly aggressive inferred shot detection. The console correctly filtered these out.
+
+**Root Cause:** Inferred ball movement detection (`_detect_ball_movement_events()`) was flagging every high-speed ball movement as a shot, regardless of player involvement (69 shots/minute - unrealistic).
+
+**Fix Applied:** Disabled inferred event detection until proper player validation is implemented.
+
+**Lesson Learned:** Event detection requires linking ball movement to visible players, not just ball kinematics alone.
+
+---
+
 ## Problem Identified
 Your 2-minute (and 90-minute) video has limited camera coverage (~60% of pitch visible, only ~6 players per frame). Standard event detection thresholds were designed for full-view broadcasts with all 22 players visible.
 

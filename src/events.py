@@ -102,42 +102,14 @@ def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
 def _detect_ball_movement_events(ball: pd.DataFrame, events: list[dict[str, Any]]) -> None:
     """Detect ball movement patterns that indicate passes/shots (limited FOV mode).
 
-    For limited field-of-view analysis, infer events from ball kinematics:
-    - Sudden direction changes suggest passes
-    - High-speed movements toward goal suggest shots
-    - These events are detected even if both players aren't visible
+    DISABLED: This function was creating 138 false positives per 2 minutes.
+    High-speed ball movements alone are insufficient to reliably detect events.
+
+    Requires: Ball movement + visible player validation to work correctly.
+    Status: Disabled until proper player validation is implemented.
     """
-    if ball.empty or len(ball) < 2:
-        return
-
-    for i in range(1, len(ball)):
-        prev_row = ball.iloc[i-1]
-        curr_row = ball.iloc[i]
-
-        speed = curr_row["speed_kmh"]
-
-        # Detect shot-like ball movements (high speed toward goal area)
-        if speed >= SHOT_MIN_KMH:
-            # Check if ball is moving toward goal area
-            is_toward_left_goal = (curr_row["bx"] < 30 and curr_row["vel_x"] < -0.5)
-            is_toward_right_goal = (curr_row["bx"] > 75 and curr_row["vel_x"] > 0.5)
-
-            if is_toward_left_goal or is_toward_right_goal:
-                goal_side = "left" if is_toward_left_goal else "right"
-                # Only emit if we haven't recently detected this (cooldown)
-                recent_shots = [e for e in events
-                              if e.get("event_type") == "shot_inferred"
-                              and abs(e["timestamp_s"] - curr_row["time_s"]) < SHOT_COOLDOWN_S]
-                if not recent_shots:
-                    events.append({
-                        "event_type": "shot_inferred",
-                        "timestamp_s": float(curr_row["time_s"]),
-                        "location_x": float(curr_row["bx"]),
-                        "location_y": float(curr_row["by"]),
-                        "goal_side": goal_side,
-                        "speed_kmh": float(speed),
-                        "inferred": True,
-                    })
+    # Disabled - creates too many false positives without player validation
+    return
 
 
 def _possession_per_frame(
