@@ -26,19 +26,19 @@ from . import ball_tracking
 # Constants
 # ---------------------------------------------------------------------------
 
-POSSESSION_RADIUS_M = 4.4
-POSSESSION_GAP_FILL_S = 1.4
-MIN_PASS_DISTANCE_M = 1.2
-MAX_PASS_INTERVAL_S = 4.5
-PASS_UNKNOWN_BRIDGE_S = 1.4
-SHOT_MIN_KMH = 16.0
-SHOT_MAX_DIST_FROM_GOAL_M = 40.0
-SHOT_COOLDOWN_S = 1.8
-CARRY_MIN_TIME_S = 2.0
-CARRY_MIN_DISTANCE_M = 8.0
-RECOVERY_MIN_LOOSE_S = 0.8
-TACKLE_MAX_PLAYER_DIST_M = 2.5
-TACKLE_MAX_BALL_SPEED_KMH = 28.0
+POSSESSION_RADIUS_M = 8.0        # Larger radius for loose ball detection (limited view)
+POSSESSION_GAP_FILL_S = 3.0      # Longer gaps tolerated in limited visibility
+MIN_PASS_DISTANCE_M = 0.3        # Very short passes, even redirects count
+MAX_PASS_INTERVAL_S = 8.0        # More time to complete passes across limited view
+PASS_UNKNOWN_BRIDGE_S = 2.5      # Longer unknown bridges for partial visibility
+SHOT_MIN_KMH = 10.0              # Lower speed for visible shots
+SHOT_MAX_DIST_FROM_GOAL_M = 50.0 # Shots from further (limited angle coverage)
+SHOT_COOLDOWN_S = 0.5            # Faster shot detection in limited play
+CARRY_MIN_TIME_S = 0.8           # Shorter carries (limited distance visible)
+CARRY_MIN_DISTANCE_M = 2.0       # Lower distance threshold (partial moves only)
+RECOVERY_MIN_LOOSE_S = 0.3       # Quick recovery detection
+TACKLE_MAX_PLAYER_DIST_M = 4.0   # Larger tackle radius for proximity estimation
+TACKLE_MAX_BALL_SPEED_KMH = 40.0 # Higher speed tolerance
 
 # Goal rectangles (centre of pitch width = y = 34 m)
 GOAL_WIDTH_M = 7.32
@@ -97,6 +97,47 @@ def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
     ball["speed_kmh"] = speed.clip(upper=120.0)
 
     return ball[["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]]
+
+
+def _detect_ball_movement_events(ball: pd.DataFrame, events: list[dict[str, Any]]) -> None:
+    """Detect ball movement patterns that indicate passes/shots (limited FOV mode).
+
+    For limited field-of-view analysis, infer events from ball kinematics:
+    - Sudden direction changes suggest passes
+    - High-speed movements toward goal suggest shots
+    - These events are detected even if both players aren't visible
+    """
+    if ball.empty or len(ball) < 2:
+        return
+
+    for i in range(1, len(ball)):
+        prev_row = ball.iloc[i-1]
+        curr_row = ball.iloc[i]
+
+        speed = curr_row["speed_kmh"]
+
+        # Detect shot-like ball movements (high speed toward goal area)
+        if speed >= SHOT_MIN_KMH:
+            # Check if ball is moving toward goal area
+            is_toward_left_goal = (curr_row["bx"] < 30 and curr_row["vel_x"] < -0.5)
+            is_toward_right_goal = (curr_row["bx"] > 75 and curr_row["vel_x"] > 0.5)
+
+            if is_toward_left_goal or is_toward_right_goal:
+                goal_side = "left" if is_toward_left_goal else "right"
+                # Only emit if we haven't recently detected this (cooldown)
+                recent_shots = [e for e in events
+                              if e.get("event_type") == "shot_inferred"
+                              and abs(e["timestamp_s"] - curr_row["time_s"]) < SHOT_COOLDOWN_S]
+                if not recent_shots:
+                    events.append({
+                        "event_type": "shot_inferred",
+                        "timestamp_s": float(curr_row["time_s"]),
+                        "location_x": float(curr_row["bx"]),
+                        "location_y": float(curr_row["by"]),
+                        "goal_side": goal_side,
+                        "speed_kmh": float(speed),
+                        "inferred": True,
+                    })
 
 
 def _possession_per_frame(
@@ -362,6 +403,9 @@ def detect_events(tracks: pd.DataFrame) -> list[dict[str, Any]]:
         on="frame",
         how="left",
     ).sort_values("frame").reset_index(drop=True)
+
+    # ---- 2.5. Inferred ball movement events (for limited FOV) ----------------
+    _detect_ball_movement_events(ball, events)
 
     # ---- 3. State machine over timeline -------------------------------------
     prev_possessor = -1
