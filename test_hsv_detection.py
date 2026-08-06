@@ -87,8 +87,8 @@ def main():
     db.init()
     match_id = db.insert_match("HSV Test - Second Video", VIDEO_PATH)
 
-    # Extract events
-    events = ev_module.detect_events(tracks)
+    # Extract events (with homography projection to pitch coordinates)
+    events = ev_module.detect_events(tracks, H=H_initial)
     print(f"  Total events detected: {len(events)}")
 
     # Breakdown by type

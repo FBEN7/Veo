@@ -86,9 +86,9 @@ def main():
     db = MatchDatabase(str(OUTPUT_DIR / "match_hsv_better.db"))
     db.init()
     match_id = db.insert_match("HSV Test - Better Camera Angle", VIDEO_PATH)
-    
-    # Extract events
-    events = ev_module.detect_events(tracks)
+
+    # Extract events (with homography projection to pitch coordinates)
+    events = ev_module.detect_events(tracks, H=H_initial)
     print(f"  Total events detected: {len(events)}")
     
     # Breakdown by type
