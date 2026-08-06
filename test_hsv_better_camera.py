@@ -65,7 +65,11 @@ def main():
     tracks = assign_teams(VIDEO_PATH, tracks)
     tracks = reidentify_tracks(VIDEO_PATH, tracks)
     print(f"  ✓ Teams assigned & players re-identified")
-    
+
+    # Save final tracks WITH team information
+    tracks.to_parquet(str(OUTPUT_DIR / "tracks_hsv_with_teams.parquet"))
+    print(f"  ✓ Saved final tracks with teams")
+
     # ====================================================================== #
     # 4. Pitch Projection                                                     #
     # ====================================================================== #
