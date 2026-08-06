@@ -137,9 +137,33 @@ def main():
     print(f"  ✓ Teams assigned & players re-identified")
 
     # ====================================================================== #
-    # 4. Dynamic Homography Projection                                        #
+    # 4. Event Detection (BEFORE Pitch Projection)                            #
     # ====================================================================== #
-    print(f"\n📐 Phase 4: Dynamic Pitch Projection")
+    print(f"\n📍 Phase 4: Event Detection (Pixel Coordinates)")
+
+    # CRITICAL FIX: Event detection must use pixel coordinates (x,y), not
+    # pitch coordinates (px,py). The homography matrix may be singular or
+    # corrupt pitch projections. We detect events in pixel space first,
+    # then project other data later.
+    tracks_for_events = tracks.copy()
+    if 'px' in tracks_for_events.columns:
+        # Remove any pre-existing pitch coordinates to force extraction from pixel space
+        tracks_for_events = tracks_for_events.drop(columns=['px', 'py'], errors='ignore')
+
+    phys = stats.physical_stats(tracks_for_events)
+    tilt = stats.field_tilt(tracks_for_events)
+    poss = stats.possession_proxy(tracks_for_events)
+    ball_rate = stats.ball_detection_rate(tracks_for_events)
+
+    print(f"  Ball detection rate: {ball_rate*100:.1f}%")
+    print(f"  Detecting events in pixel coordinate space (accurate HSV detections)...")
+
+    events = ev_module.detect_events(tracks_for_events)
+
+    # ====================================================================== #
+    # 5. Dynamic Homography Projection                                       #
+    # ====================================================================== #
+    print(f"\n📐 Phase 5: Dynamic Pitch Projection")
     print(f"  Applying dynamic homography calibration...")
 
     # Project each detection with appropriate homography
@@ -173,19 +197,6 @@ def main():
 
     # Save tracks with pitch coordinates
     tracks.to_parquet("output/tracks_pro.parquet")
-
-    # ====================================================================== #
-    # 5. Event Detection                                                     #
-    # ====================================================================== #
-    print(f"\n📍 Phase 5: Event Detection")
-    phys = stats.physical_stats(tracks)
-    tilt = stats.field_tilt(tracks)
-    poss = stats.possession_proxy(tracks)
-    ball_rate = stats.ball_detection_rate(tracks)
-
-    print(f"  Ball detection rate: {ball_rate*100:.1f}%")
-
-    events = ev_module.detect_events(tracks)
     epp = ev_module.events_per_player(events)
     tet = ev_module.team_event_totals(events)
 
@@ -204,7 +215,7 @@ def main():
     # ====================================================================== #
     # 6. Player Ratings & Database                                           #
     # ====================================================================== #
-    print(f"\n⭐ Phase 6: Player Ratings & Database")
+    print(f"\n⭐ Phase 6: Player Ratings & Database (Using Pitch Coordinates)")
     rated_phys = player_rating.compute(phys, epp, poss)
     bw = player_rating.best_worst(rated_phys)
 
