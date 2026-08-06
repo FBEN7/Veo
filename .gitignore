@@ -2,6 +2,8 @@
 __pycache__/
 data/
 output/
+output_hsv_test/
 *.pt
 *.parquet
 *.npy
+*.db
