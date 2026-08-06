@@ -88,7 +88,7 @@ def main():
     match_id = db.insert_match("HSV Test - Second Video", VIDEO_PATH)
 
     # Extract events
-    events = ev_module.extract_all_events(tracks)
+    events = ev_module.detect_events(tracks)
     print(f"  Total events detected: {len(events)}")
 
     # Breakdown by type
