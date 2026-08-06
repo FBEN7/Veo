@@ -84,8 +84,8 @@ def main():
     print(f"\n⚽ Phase 5: Event Detection")
 
     db = MatchDatabase(str(DB_PATH))
-    db.init_schema()
-    match_id = db.create_match("HSV Test - Second Video", VIDEO_PATH)
+    db.init()
+    match_id = db.insert_match("HSV Test - Second Video", VIDEO_PATH)
 
     # Extract events
     events = ev_module.extract_all_events(tracks)
@@ -104,8 +104,7 @@ def main():
     print(f"  " + "-"*40)
 
     # Store events
-    for event in events:
-        db.add_event(match_id, event)
+    db.insert_events(match_id, events)
 
     print(f"\n  ✓ Events stored to {DB_PATH}")
 
