@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""HSV detection test on video with better camera angle."""
+"""HSV detection test on video with better camera angle - FIXED EVENT DETECTION.
+
+This version detects events BEFORE applying the pitch coordinate projection,
+to avoid corruption from the singular homography matrix.
+"""
 
 import shutil
 from pathlib import Path
@@ -16,17 +20,17 @@ from src.dynamic_homography import create_dynamic_homography_loader
 
 # Use the better camera angle video
 VIDEO_PATH = "/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b/a382328e-08fd33_4.mp4"
-OUTPUT_DIR = Path("output_hsv_better_camera")
+OUTPUT_DIR = Path("output_hsv_better_camera_fixed")
 
 def main():
     OUTPUT_DIR.mkdir(exist_ok=True)
-    
+
     print("\n" + "="*80)
-    print("HSV DETECTION TEST - BETTER CAMERA ANGLE VIDEO")
+    print("HSV DETECTION TEST - BETTER CAMERA ANGLE VIDEO (FIXED)")
     print("="*80)
     print(f"\nVideo: {VIDEO_PATH}")
     print(f"Output: {OUTPUT_DIR}")
-    
+
     # ====================================================================== #
     # 1. Calibration                                                         #
     # ====================================================================== #
@@ -36,14 +40,14 @@ def main():
         print("  Auto-calibrating initial homography...")
         auto_calibrate(VIDEO_PATH, str(h_path), debug=False)
     print(f"  ✓ Homography ready")
-    
+
     # ====================================================================== #
     # 2. Detection with HSV Ball Detection                                   #
     # ====================================================================== #
     print(f"\n🤖 Phase 2: Detection & Tracking (HSV Method)")
     print(f"  Ball detection: HSV color-based (v2 with circularity filtering)")
     print(f"  Processing...")
-    
+
     tracks = run_hybrid_detection(
         VIDEO_PATH,
         stride=1,
@@ -55,9 +59,9 @@ def main():
         imgsz=640,
         ball_detection_method="hsv"  # <-- HSV detection!
     )
-    
+
     print(f"  ✓ Tracked {tracks['track_id'].nunique()} unique entities")
-    
+
     # ====================================================================== #
     # 3. Team Assignment & Re-identification                                 #
     # ====================================================================== #
@@ -71,75 +75,79 @@ def main():
     print(f"  ✓ Saved final tracks with teams")
 
     # ====================================================================== #
-    # 4. Event Detection (BEFORE pitch projection)                            #
+    # 4. Event Detection (BEFORE pitch projection to avoid homography corruption)
     # ====================================================================== #
-    print(f"\n⚽ Phase 4: Event Detection")
+    print(f"\n⚽ Phase 4: Event Detection (Pixel Coordinates)")
 
     db = MatchDatabase(str(OUTPUT_DIR / "match_hsv_better.db"))
     db.init()
     match_id = db.insert_match("HSV Test - Better Camera Angle", VIDEO_PATH)
 
-    # Extract events from pixel-space coordinates (before pitch projection)
+    # Extract events from PIXEL-SPACE coordinates (before pitch projection)
+    # The extract_ball_tracking() function is smart about coordinate systems
+    # and will use x,y (pixel) if px,py (pitch) are not available
     events = ev_module.detect_events(tracks)
     print(f"  Total events detected: {len(events)}")
 
-    # ====================================================================== #
-    # 5. Pitch Projection                                                     #
-    # ====================================================================== #
-    print(f"\n📐 Phase 5: Pitch Projection")
-    H_initial = np.load(str(h_path))
-    tracks = stats.to_pitch_coords(tracks, H_initial)
-    print(f"  ✓ Projected to pitch coordinates")
-    
     # Breakdown by type
     event_counts = {}
     for event in events:
         etype = event.get('event_type', 'unknown')
         event_counts[etype] = event_counts.get(etype, 0) + 1
-    
+
     if len(events) > 0:
         print(f"\n  Event Breakdown:")
         print(f"  " + "-"*40)
         for etype, count in sorted(event_counts.items(), key=lambda x: -x[1]):
             print(f"    {etype:25s}: {count:4d}")
         print(f"  " + "-"*40)
-    
+
     # Store events
     db.insert_events(match_id, events)
-    
+
     print(f"\n  ✓ Events stored to {OUTPUT_DIR / 'match_hsv_better.db'}")
-    
+
+    # ====================================================================== #
+    # 5. Pitch Projection (AFTER event detection)                            #
+    # ====================================================================== #
+    print(f"\n📐 Phase 5: Pitch Projection")
+    H_initial = np.load(str(h_path))
+    # Note: This step corrupts the coordinates due to singular homography
+    # For this video, we skip it and only project players
+    player_tracks = tracks[tracks['cls'] == 'player'].copy()
+    player_tracks = stats.to_pitch_coords(player_tracks, H_initial)
+    print(f"  ✓ Players projected to pitch coordinates")
+
     # ====================================================================== #
     # Summary & Comparison                                                    #
     # ====================================================================== #
     print(f"\n" + "="*80)
     print("COMPARISON: YOLO vs HSV Detection")
     print("="*80)
-    
+
     # Get ball detection stats
     ball_detections = tracks[tracks['cls'] == 'ball']
     ball_frames = len(set(ball_detections['frame']))
     total_frames = len(set(tracks['frame']))
     hsv_detection_rate = ball_frames / total_frames * 100 if total_frames > 0 else 0
-    
+
     print(f"\nBall Detection:")
     print(f"  YOLO (previous): 42.8% (321/750 frames)")
     print(f"  HSV (this run):  {hsv_detection_rate:.1f}% ({ball_frames}/{total_frames} frames)")
     print(f"  Improvement:     +{hsv_detection_rate - 42.8:.1f}%")
-    
+
     print(f"\nEvent Detection:")
-    print(f"  YOLO (previous): 139 events (138 false positives, 1 real)")
+    print(f"  YOLO (previous): 139 events")
+    print(f"    - 138 false positives (shot_inferred)")
+    print(f"    - 1 real event (out_of_play)")
     print(f"  HSV (this run):  {len(events)} events")
-    if len(events) > 0:
-        for etype, count in sorted(event_counts.items(), key=lambda x: -x[1]):
-            print(f"    - {count} {etype}")
-    else:
-        print(f"    - 0 false positives (perfect accuracy)")
-    
-    print(f"\nCamera Angle:")
-    print(f"  Limited FOV:     High false positive rate (99.3%)")
-    print(f"  Better angle:    Improved event detection expected")
-    
+    for etype, count in sorted(event_counts.items(), key=lambda x: -x[1]):
+        print(f"    - {count} {etype}")
+
+    print(f"\nCoordinate System:")
+    print(f"  Events detected in: PIXEL COORDINATES (not affected by homography)")
+    print(f"  Note: Homography matrix is singular for this video")
+
     print(f"\n" + "="*80)
     print("✓ Test Complete")
     print("="*80 + "\n")

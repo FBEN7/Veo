@@ -21,7 +21,6 @@ import numpy as np
 import pandas as pd
 
 from . import ball_tracking
-from . import ball_projection
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -355,11 +354,11 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None) -> list[dic
     tracks : pd.DataFrame
         Must contain columns: frame, time_s, cls ('player'/'ball'), track_id,
         team, x, y  (all in pitch metres after homography projection).
+        Note: extract_ball_tracking() will use px,py (pitch coords) if available.
 
     H : np.ndarray, optional
-        Homography matrix (3x3) to project ball coordinates from pixel space to pitch space.
-        If provided, ball coordinates are automatically projected. If not provided,
-        assumes ball coordinates are already in pitch metres.
+        Homography matrix (3x3). Currently unused, kept for API compatibility.
+        Ball coordinates are expected to be in pitch metres from stats.to_pitch_coords().
 
     Returns
     -------
@@ -373,13 +372,6 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None) -> list[dic
     if ball.empty:
         print("[Events] No ball detections — cannot detect events.")
         return events
-
-    # ---- 1.5. Project ball coordinates if homography provided ---------------
-    if H is not None:
-        ball = ball_projection.project_ball_kinematics_to_pitch(ball, H)
-        if ball.empty:
-            print("[Events] No in-pitch ball detections after projection — cannot detect events.")
-            return events
 
     # ---- 2. Possession timeline ---------------------------------------------
     poss = _possession_per_frame(ball, tracks)
