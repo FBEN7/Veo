@@ -196,6 +196,17 @@ def _possession_per_frame(
     if "speed_kmh" not in full.columns:
         full["speed_kmh"] = np.nan
 
+    # Every player's distance to the ball, per frame. The nearest player is
+    # not enough: hysteresis has to compare a challenger against where the
+    # *incumbent* is now, and an incumbent who has drifted away is no longer
+    # the nearest, so their current distance would otherwise be unavailable.
+    dist_by_frame: dict[int, dict[int, tuple[float, str]]] = {}
+    for frame, group in valid.groupby("frame", sort=False):
+        dist_by_frame[int(frame)] = {
+            int(tid): (float(d), str(tm))
+            for tid, d, tm in zip(group.track_id, group.dist, group.team)
+        }
+
     poss_ids: list[int] = []
     poss_teams: list[str] = []
     poss_dist: list[float] = []
@@ -203,7 +214,6 @@ def _possession_per_frame(
     current_id = -1
     current_team = "unknown"
     gap_time = 0.0
-    last_dist = np.nan
     prev_t: float | None = None
 
     for _, row in full.iterrows():
@@ -220,24 +230,31 @@ def _possession_per_frame(
         in_flight = (pd.notna(row.get("speed_kmh"))
                      and float(row["speed_kmh"]) > POSSESSION_MAX_BALL_SPEED_KMH)
 
-        # Hysteresis: an incumbent keeps the ball unless a challenger is
-        # clearly closer, so two players running together stop trading it.
+        # Where the incumbent is *now*, not where they were when they gained
+        # the ball. Holding the distance at which possession was taken lets a
+        # player who has run twenty metres away keep it, because a challenger
+        # has to beat a stale number.
+        here = dist_by_frame.get(int(row["frame"]), {})
+        incumbent_dist = here.get(current_id, (np.nan, ""))[0] if current_id != -1 else np.nan
+        incumbent_holding = (pd.notna(incumbent_dist)
+                             and incumbent_dist <= POSSESSION_RADIUS_M)
+
+        # Hysteresis: an incumbent still near the ball keeps it unless a
+        # challenger is clearly closer, so two players running together stop
+        # trading it frame by frame.
         takes_over = (
             rid != -1 and pd.notna(rdist) and rdist <= POSSESSION_RADIUS_M
             and (rid == current_id
                  or current_id == -1
-                 or not pd.notna(last_dist)
-                 or rdist <= last_dist - POSSESSION_MARGIN_M)
+                 or not incumbent_holding
+                 or rdist <= incumbent_dist - POSSESSION_MARGIN_M)
         )
 
         if takes_over and not in_flight:
             current_id = rid
             current_team = rteam
             gap_time = 0.0
-            last_dist = rdist
-        elif (not in_flight and rid == current_id and pd.notna(rdist)
-              and rdist <= POSSESSION_RADIUS_M):
-            last_dist = rdist
+        elif not in_flight and incumbent_holding:
             gap_time = 0.0
         else:
             gap_time += dt
@@ -246,7 +263,6 @@ def _possession_per_frame(
             else:
                 current_id = -1
                 current_team = "unknown"
-                last_dist = np.nan
 
         poss_ids.append(current_id)
         poss_teams.append(current_team)
@@ -419,28 +435,36 @@ def _emit_possession_transition_event(
             location_y=start_xy[1],
             end_location_x=end_xy[0],
             end_location_y=end_xy[1],
-            outcome="failed",
+            outcome="intercepted",
             receiver_track_id=int(to_id),
+            intercepted_by_track_id=int(to_id),
+            intercepting_team=to_team,
             pass_distance_m=round(travel, 1),
             pass_interval_s=round(dt_change, 2),
             inferred_from_unknown_bridge=bool(inferred),
         )
     )
-    events.append(
-        dict(
-            event_type="interception",
-            timestamp_s=end_time,
-            team=to_team,
-            player_track_id=to_id,
-            location_x=end_xy[0],
-            location_y=end_xy[1],
-            end_location_x=end_xy[0],
-            end_location_y=end_xy[1],
-            outcome="won",
-            from_player_track_id=from_id,
-            from_team=from_team,
+    # One turnover is one event. Emitting the failed pass and an interception
+    # separately counts the same moment twice: every failed pass inflates the
+    # event total, and any per-minute rate computed from it. The interception
+    # is recorded as the pass's outcome and the player who made it, which
+    # carries the same information without the double count.
+    if EMIT_INTERCEPTION_AS_SEPARATE_EVENT:
+        events.append(
+            dict(
+                event_type="interception",
+                timestamp_s=end_time,
+                team=to_team,
+                player_track_id=to_id,
+                location_x=end_xy[0],
+                location_y=end_xy[1],
+                end_location_x=end_xy[0],
+                end_location_y=end_xy[1],
+                outcome="won",
+                from_player_track_id=from_id,
+                from_team=from_team,
+            )
         )
-    )
 
     pmap = player_xy.get(frame, {})
     p_old = pmap.get(from_id)
