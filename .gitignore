@@ -1,9 +1,6 @@
 .venv/
 __pycache__/
 data/
-output/
-output_hsv_test/
 *.pt
-*.parquet
-*.npy
+output_hsv_test/
 *.db
