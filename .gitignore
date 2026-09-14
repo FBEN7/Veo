@@ -4,3 +4,5 @@ data/
 *.pt
 output_hsv_test/
 *.db
+
+detection_accuracy.json
