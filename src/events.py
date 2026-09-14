@@ -59,6 +59,36 @@ PITCH_Y_MIN, PITCH_Y_MAX = -1.0, 69.0
 
 VEL_SMOOTH_WINDOW = 5           # frames over which to smooth ball velocity
 
+# --- Possession quality -----------------------------------------------------
+# Nearest-player assignment flickers between two players standing close
+# together, and every flicker used to emit a pass. These three rules make
+# possession something a player holds rather than something the geometry
+# reassigns frame by frame.
+
+# A possession spell shorter than this is assignment noise, not control.
+MIN_POSSESSION_HOLD_S = 0.20
+
+# A challenger must be this much closer than the incumbent to take possession.
+# Without hysteresis two players a few centimetres apart trade the ball back
+# and forth for as long as they run together.
+POSSESSION_MARGIN_M = 0.5
+
+# Nobody controls a ball travelling this fast; it is in flight, and whoever
+# happens to be nearest to its path does not possess it. Without this the
+# nearest player to a moving ball "possesses" it at every frame of its
+# trajectory, turning one pass into a chain of them.
+POSSESSION_MAX_BALL_SPEED_KMH = 60.0
+
+# The ball is under control, rather than still arriving, below this speed.
+BALL_CONTROL_SPEED_KMH = 20.0
+
+# How long after a pass to wait before deciding who received it.
+RECEIVER_SETTLE_WINDOW_S = 1.5
+
+# A failed pass is one event with an outcome, not a pass plus an interception.
+# Emitting both double-counts every turnover.
+EMIT_INTERCEPTION_AS_SEPARATE_EVENT = False
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -159,7 +189,12 @@ def _possession_per_frame(
         columns={"track_id": "raw_id", "team": "raw_team", "dist": "raw_dist"}
     )
 
-    full = ball[["frame", "time_s"]].merge(nearest, on=["frame", "time_s"], how="left")
+    ball_cols = ["frame", "time_s"]
+    if "speed_kmh" in ball.columns:
+        ball_cols.append("speed_kmh")
+    full = ball[ball_cols].merge(nearest, on=["frame", "time_s"], how="left")
+    if "speed_kmh" not in full.columns:
+        full["speed_kmh"] = np.nan
 
     poss_ids: list[int] = []
     poss_teams: list[str] = []
@@ -168,6 +203,7 @@ def _possession_per_frame(
     current_id = -1
     current_team = "unknown"
     gap_time = 0.0
+    last_dist = np.nan
     prev_t: float | None = None
 
     for _, row in full.iterrows():
@@ -178,9 +214,30 @@ def _possession_per_frame(
         rteam = str(row["raw_team"]) if pd.notna(row["raw_team"]) else "unknown"
         rdist = float(row["raw_dist"]) if pd.notna(row["raw_dist"]) else np.nan
 
-        if rid != -1 and pd.notna(rdist) and rdist <= POSSESSION_RADIUS_M:
+        # A ball in flight belongs to nobody. Whoever is nearest to its path
+        # is not in control of it, and treating them as the possessor turns a
+        # single pass into a chain of handovers along its trajectory.
+        in_flight = (pd.notna(row.get("speed_kmh"))
+                     and float(row["speed_kmh"]) > POSSESSION_MAX_BALL_SPEED_KMH)
+
+        # Hysteresis: an incumbent keeps the ball unless a challenger is
+        # clearly closer, so two players running together stop trading it.
+        takes_over = (
+            rid != -1 and pd.notna(rdist) and rdist <= POSSESSION_RADIUS_M
+            and (rid == current_id
+                 or current_id == -1
+                 or not pd.notna(last_dist)
+                 or rdist <= last_dist - POSSESSION_MARGIN_M)
+        )
+
+        if takes_over and not in_flight:
             current_id = rid
             current_team = rteam
+            gap_time = 0.0
+            last_dist = rdist
+        elif (not in_flight and rid == current_id and pd.notna(rdist)
+              and rdist <= POSSESSION_RADIUS_M):
+            last_dist = rdist
             gap_time = 0.0
         else:
             gap_time += dt
@@ -189,6 +246,7 @@ def _possession_per_frame(
             else:
                 current_id = -1
                 current_team = "unknown"
+                last_dist = np.nan
 
         poss_ids.append(current_id)
         poss_teams.append(current_team)
@@ -199,7 +257,70 @@ def _possession_per_frame(
     out["possessor_id"] = poss_ids
     out["possessor_team"] = poss_teams
     out["dist"] = poss_dist
+    if "speed_kmh" in full.columns:
+        out["speed_kmh"] = full["speed_kmh"].to_numpy()
+    return _stabilise_possession(out)
+
+
+def _stabilise_possession(poss: pd.DataFrame) -> pd.DataFrame:
+    """Erase possession spells too short to be control.
+
+    Nearest-player assignment produces one- and two-frame spells whenever two
+    players converge on the ball, and each one reads downstream as a change of
+    possession -- which is to say, as a pass. Requiring a spell to last
+    MIN_POSSESSION_HOLD_S before it counts removes the flicker without
+    touching genuine quick touches, which last several frames at 25 fps.
+
+    A spell that is dropped becomes unassigned rather than being handed to a
+    neighbour: the honest statement is that nobody was in control, not that
+    somebody else was.
+    """
+    if poss.empty:
+        return poss
+
+    out = poss.copy()
+    ids = out.possessor_id.to_numpy()
+    times = out.time_s.to_numpy(dtype=float)
+
+    start = 0
+    for i in range(1, len(ids) + 1):
+        if i < len(ids) and ids[i] == ids[start]:
+            continue
+        if ids[start] != -1:
+            duration = times[i - 1] - times[start]
+            if duration < MIN_POSSESSION_HOLD_S:
+                out.iloc[start:i, out.columns.get_loc("possessor_id")] = -1
+                out.iloc[start:i, out.columns.get_loc("possessor_team")] = "unknown"
+        start = i
+
     return out
+
+
+def _settled_possessor(poss: pd.DataFrame, after_time: float,
+                       window_s: float = RECEIVER_SETTLE_WINDOW_S) -> tuple[int, str]:
+    """Who holds the ball once it settles after a pass.
+
+    Crediting the receiver to whoever is nearest at the instant the ball
+    leaves credits whoever the ball happened to pass close to -- often an
+    opponent it went by at speed. The receiver is whoever is in possession
+    once the ball is under control again.
+    """
+    window = poss[(poss.time_s > after_time)
+                  & (poss.time_s <= after_time + window_s)]
+    if window.empty:
+        return -1, "unknown"
+
+    if "speed_kmh" in window.columns:
+        settled = window[window.speed_kmh.fillna(0.0) <= BALL_CONTROL_SPEED_KMH]
+        if not settled.empty:
+            window = settled
+
+    held = window[window.possessor_id != -1]
+    if held.empty:
+        return -1, "unknown"
+
+    row = held.iloc[0]
+    return int(row.possessor_id), str(row.possessor_team)
 
 
 def _in_goal(bx: float, by: float) -> str | None:
@@ -346,19 +467,34 @@ def _emit_possession_transition_event(
 # Main detection function
 # ---------------------------------------------------------------------------
 
-def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None) -> list[dict[str, Any]]:
-    """Detect football events from pitch-coordinate tracking data.
+def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
+                  absolute_pitch: bool = True) -> list[dict[str, Any]]:
+    """Detect football events from tracking data in metres.
 
     Parameters
     ----------
     tracks : pd.DataFrame
         Must contain columns: frame, time_s, cls ('player'/'ball'), track_id,
-        team, x, y  (all in pitch metres after homography projection).
-        Note: extract_ball_tracking() will use px,py (pitch coords) if available.
+        team, x, y -- in metres. Use ``pixel_scale.prepare_tracks_for_events``
+        to produce them, with or without a homography.
 
     H : np.ndarray, optional
-        Homography matrix (3x3). Currently unused, kept for API compatibility.
-        Ball coordinates are expected to be in pitch metres from stats.to_pitch_coords().
+        Homography matrix, kept for API compatibility. Projection happens
+        upstream.
+
+    absolute_pitch : bool
+        Whether those metres sit on a known pitch. ``True`` means a position
+        can be compared against the goal line, so goals, shots and
+        out-of-play are decidable. ``False`` means the coordinates are metric
+        but float freely -- distances, speeds and possession are still right,
+        but nothing about *where* the ball is can be trusted.
+
+        This is the flag that keeps the pipeline honest without a working
+        homography. The alternative is to run the goal test against a pitch
+        whose origin is wherever the scale estimate happened to put it, which
+        produces goals and throw-ins at arbitrary moments and no way to tell
+        them from real ones. Emitting nothing is a worse product and a
+        truthful one.
 
     Returns
     -------
@@ -418,7 +554,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None) -> list[dic
         cur_team = str(brow["possessor_team"]) if pd.notna(brow["possessor_team"]) else "unknown"
 
         # ---- Goal detection ------------------------------------------------
-        goal_side = _in_goal(bx, by)
+        goal_side = _in_goal(bx, by) if absolute_pitch else None
         if goal_side and (t - last_goal_time) > GOAL_COOLDOWN_S:
             last_goal_time = t
             # Scoring team: the team that last possessed before the goal
@@ -439,7 +575,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None) -> list[dic
             )
 
         # ---- Out-of-play detection -----------------------------------------
-        if _out_of_pitch(bx, by):
+        if absolute_pitch and _out_of_pitch(bx, by):
             if not was_out:
                 events.append(
                     dict(
@@ -462,7 +598,8 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None) -> list[dic
 
         # ---- Shot detection ------------------------------------------------
         if (
-            speed >= SHOT_MIN_KMH
+            absolute_pitch
+            and speed >= SHOT_MIN_KMH
             and prev_team != "unknown"
             and (t - last_shot_time) >= SHOT_COOLDOWN_S
             and _toward_goal(vx, vy, bx, by)

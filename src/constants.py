@@ -19,7 +19,17 @@ DEFAULT_CONF_BALL = 0.08
 # Tracking parameters
 TRACK_ACTIVATION_THRESHOLD = 0.08
 LOST_TRACK_BUFFER = 180
-MINIMUM_MATCHING_THRESHOLD = 0.78
+# ByteTrack's minimum_matching_threshold is a *maximum* (1 - IoU) distance, so
+# a higher value is MORE permissive, not less. Reading it the other way round
+# is what made 0.78 look conservative when it was in fact halving the number
+# of tracks by refusing to associate detections that belonged together.
+# Lowering it, the intuitive "fix", is catastrophic: at 0.30 a two-minute clip
+# produced 2346 track ids with a median length of one frame.
+#
+# 0.95 was chosen by sweeping this parameter in August 2026. That sweep was
+# lost with the working container and has not yet been re-run, so treat this
+# value as inherited rather than currently verified.
+MINIMUM_MATCHING_THRESHOLD = 0.95
 MIN_DETECTION_HEIGHT_PX = 16.0
 
 # ============================================================================
