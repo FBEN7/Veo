@@ -17,6 +17,44 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
+## Replication: carry holds, pass does not
+
+Two independent 90-second windows of the same match, one in each half.
+Window 1 is 30:20-31:50 (60 labels), window 2 is 66:50-68:20 (43 scored
+labels). Permutation p-values, 2000 draws:
+
+| group | tolerance | window 1 | window 2 |
+|---|---|---|---|
+| carry | 0.25 s | 0.568 | **0.009** |
+| carry | 0.50 s | 0.207 | **0.009** |
+| **carry** | **1.00 s** | **0.001** | **0.026** |
+| carry | 2.00 s | 0.087 | **0.011** |
+| pass | 0.25 s | 0.414 | 0.792 |
+| pass | 0.50 s | **0.026** | 0.198 |
+| pass | 1.00 s | **0.019** | 0.203 |
+| pass | 2.00 s | 0.089 | 0.138 |
+
+**Carry detection is established.** Above chance in both windows, and in
+window 2 at every tolerance tested -- a broader result than window 1 gave.
+
+**Pass detection is not.** It cleared chance in window 1 at p = 0.019 and
+0.026, neither of which survived Bonferroni correction across the eight
+tests, and it reaches p = 0.198 at best in window 2. A result that fails its
+first replication attempt is most likely a false positive. Pass detection is
+unproven, not merely weak, and the earlier description of it as a real finding
+was premature.
+
+The mechanism is visible in the counts: window 2 emits 56 passes against 23
+real, for a precision of 0.09 at +/-0.25 s rising to 0.39 at +/-2 s. Recall
+reaches 0.96. High recall with precision that low is close to what emitting
+events indiscriminately produces, which is what the chance control exists to
+catch.
+
+`recovery` was tested for the first time in window 2, which contains one
+BALL PLAYER BLOCK. Six events were emitted; one matched, only at +/-3 s
+tolerance and with a 2.24 s timing error. A single label establishes nothing,
+but nothing here suggests it works.
+
 ## The chance control is the result
 
 These labels are dense: one every 1.5 seconds. A detector emitting roughly the
@@ -103,8 +141,16 @@ wired up.
 
 ## Scope
 
-One 90-second window of one match, 720p broadcast. Replication on a second
-window and a second match is the next measurement, and it matters: p = 0.019
-on a single sample is exactly the kind of figure that fails to replicate.
+Two 90-second windows of one 720p broadcast match. That tests whether a
+result holds across different passages of play; it does not test whether it
+holds across different footage. Same teams, stadium, camera hardware and
+production. A second match -- Reading vs Fulham, in the same SoccerNet
+archive -- is the next measurement worth making.
+
 Nothing here transfers to 640x360 fixed-angle footage, where the resolution
 gap has already been shown to break detection thresholds.
+
+The replication did what replication is for. Pass detection at p = 0.019 on
+one sample was exactly the kind of figure that fails to reproduce, and it
+failed. Carry detection survived, and survived more broadly than it first
+appeared.
