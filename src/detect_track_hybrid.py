@@ -54,6 +54,29 @@ def _on_pitch(mask: np.ndarray, x: float, y: float) -> bool:
     return bool(mask[yi, xi] > 0)
 
 
+def _near_pitch(mask: np.ndarray, x: float, y: float, radius: int = 12) -> bool:
+    """Is there pitch anywhere in a neighbourhood of this point?
+
+    `_on_pitch` samples one pixel, which is the wrong question for anything
+    that sits *on* the grass rather than being grass. A white ball is never
+    green, and the single-pixel test rejected 96.7% of genuine ball
+    detections. A player's feet land on a boot, a shadow or a painted line
+    often enough to matter too.
+
+    Asking whether the point is surrounded by pitch keeps the property that
+    actually distinguishes play from the crowd -- the stands have no grass
+    anywhere near them -- without requiring the object itself to be green.
+    """
+    h, w = mask.shape[:2]
+    xi = int(np.clip(round(x), 0, w - 1))
+    yi = int(np.clip(round(y), 0, h - 1))
+    r = max(1, int(radius))
+    x0, x1 = max(0, xi - r), min(w, xi + r + 1)
+    y0, y1 = max(0, yi - r), min(h, yi + r + 1)
+    window = mask[y0:y1, x0:x1]
+    return bool(window.size and window.max() > 0)
+
+
 def _tracking_summary(df: pd.DataFrame) -> None:
     players = df[df.cls == "player"] if not df.empty else df
     if players.empty:
@@ -387,7 +410,7 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 h_px = float(y2 - y1)
                 if h_px < MIN_DETECTION_HEIGHT_PX:
                     continue
-                if not _on_pitch(pitch_mask, px, py):
+                if not _near_pitch(pitch_mask, px, py, 12):
                     continue
                 rows.append(dict(frame=frame_idx, time_s=frame_idx / fps,
                                  track_id=int(tid), cls="player",
@@ -407,14 +430,25 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 balls = det[det.class_id == BALL_CLASS_ID]
                 if len(balls) > 0:
                     balls = balls[balls.confidence >= conf_ball]
-                if len(balls) > 0:
-                    i = int(np.argmax(balls.confidence))
-                    x1, y1, x2, y2 = balls.xyxy[i]
+                # Every on-pitch candidate, not just the most confident one.
+                # Taking the argmax here decides which detection is the ball
+                # from a single frame, where confidence is a poor guide: a
+                # distant player's head outscores the real ball often enough
+                # to break the track. Emitting all of them lets the selection
+                # step choose the sequence that moves like a ball, which is
+                # information no single frame contains.
+                for box, cf in zip(balls.xyxy, balls.confidence):
+                    x1, y1, x2, y2 = box
+                    bx = float((x1 + x2) / 2)
+                    by = float((y1 + y2) / 2)
+                    if not _near_pitch(pitch_mask, bx, by,
+                                       max(12, int(y2 - y1))):
+                        continue
                     rows.append(dict(frame=frame_idx, time_s=frame_idx / fps,
                                      track_id=-1, cls="ball",
-                                     px=float((x1 + x2) / 2),
-                                     py=float((y1 + y2) / 2),
+                                     px=bx, py=by,
                                      crop_h=float(y2 - y1),
+                                     confidence=float(cf),
                                      detection_method="yolo"))
         frame_idx += 1
         pbar.update(1)
