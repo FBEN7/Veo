@@ -2,3 +2,15 @@
 __pycache__/
 data/
 *.pt
+output_hsv_test/
+*.db
+
+detection_accuracy.json
+
+# Run outputs. output_soccernet* holds artefacts derived from SoccerNet
+# frames, which are under a non-commercial NDA and must not be committed.
+output_soccernet*/
+pass_threshold_sweep.json
+merge_window_sweep.json
+carry_threshold_sweep.json
+output_veo/
