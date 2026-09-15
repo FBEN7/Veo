@@ -165,12 +165,36 @@ def _detect_ball_movement_events(ball: pd.DataFrame, events: list[dict[str, Any]
 
 
 def _possession_per_frame(
-    ball: pd.DataFrame, tracks: pd.DataFrame
+    ball: pd.DataFrame, tracks: pd.DataFrame,
+    release_on_flight: bool = False,
 ) -> pd.DataFrame:
-    """Return frame-wise possession with short-gap filling.
+    """Return frame-wise possession.
 
-    Nearest-player assignment is used first. When the ball is briefly unassigned,
-    the previous possessor is carried for a short period to reduce flicker.
+    Nearest-player assignment is used first, with hysteresis so two players
+    running together do not trade the ball, and a minimum hold so assignment
+    flicker does not read as control.
+
+    ``release_on_flight`` decides what happens while the ball is travelling
+    too fast for anyone to control, and the two answers are both right for
+    different questions:
+
+      False  the holder keeps the ball through its flight. Possession spells
+             stay unbroken, which is what carry detection needs -- a carry is
+             a continuous spell of 0.8 s or more, and a ball that briefly
+             exceeds the speed gate mid-dribble would otherwise chop it in
+             two. Ball speed is noisy enough that 21.6% of frames cross the
+             gate, so the fragmentation is severe: carry detection drops from
+             p 0.001 to p 0.179 on one window and p 0.026 to p 0.896 on the
+             other.
+
+      True   possession ends where the ball was struck. The spell boundary is
+             then the pass itself rather than the moment the ball arrives, so
+             a pass is measured from the passer to the receiver instead of
+             from the receiver's feet to the receiver's feet. Median measured
+             travel goes from 0.6 m to 1.3 and 4.6 m on the two windows.
+
+    Passes and carries therefore want opposite timelines, which is why
+    ``detect_events`` builds both rather than compromising on one.
     """
     players = tracks[
         (tracks.cls == "player")
@@ -277,6 +301,10 @@ def _possession_per_frame(
             current_team = rteam
             gap_time = 0.0
         elif not in_flight and incumbent_holding:
+            gap_time = 0.0
+        elif in_flight and release_on_flight:
+            current_id = -1
+            current_team = "unknown"
             gap_time = 0.0
         else:
             gap_time += dt
@@ -565,10 +593,29 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
         print("[Events] No ball detections — cannot detect events.")
         return events
 
-    # ---- 2. Possession timeline ---------------------------------------------
-    poss = _possession_per_frame(ball, tracks)
+    # ---- 2. Possession timelines --------------------------------------------
+    # Two of them, because passes and carries need opposite answers to the
+    # same question: does a player still possess the ball while it is in
+    # flight? For a carry, yes -- the spell must stay whole or an 0.8 s
+    # dribble is chopped in two by a noisy speed estimate. For a pass, no --
+    # the spell has to end where the ball was struck, or the pass is measured
+    # from the receiver's feet to the receiver's feet.
+    #
+    # Trying to serve both from one timeline was the fault behind every failed
+    # attempt at pass precision: each fix that corrected the pass geometry
+    # destroyed carry detection, and each that preserved carries left passes
+    # measuring 0.6 m.
+    poss_hold = _possession_per_frame(ball, tracks, release_on_flight=False)
+    poss_flight = _possession_per_frame(ball, tracks, release_on_flight=True)
+
     timeline = ball.merge(
-        poss[["frame", "possessor_id", "possessor_team", "dist"]],
+        poss_hold[["frame", "possessor_id", "possessor_team", "dist"]],
+        on="frame",
+        how="left",
+    ).merge(
+        poss_flight[["frame", "possessor_id", "possessor_team"]].rename(
+            columns={"possessor_id": "flight_possessor_id",
+                     "possessor_team": "flight_possessor_team"}),
         on="frame",
         how="left",
     ).sort_values("frame").reset_index(drop=True)
@@ -579,6 +626,8 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
     # ---- 3. State machine over timeline -------------------------------------
     prev_possessor = -1
     prev_team = "unknown"
+    prev_flight = -1
+    prev_flight_team = "unknown"
     prev_bx: float | None = None
     prev_by: float | None = None
     prev_time = 0.0
@@ -617,6 +666,15 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
         cur_possessor = int(brow["possessor_id"]) if pd.notna(brow["possessor_id"]) else -1
         cur_team = str(brow["possessor_team"]) if pd.notna(brow["possessor_team"]) else "unknown"
 
+        # The flight-aware view, used only where a pass is decided. Everything
+        # else -- carries, recoveries, goal and shot attribution -- reads the
+        # held view above, where a spell survives the ball leaving the ground.
+        cur_flight = (int(brow["flight_possessor_id"])
+                      if pd.notna(brow["flight_possessor_id"]) else -1)
+        cur_flight_team = (str(brow["flight_possessor_team"])
+                           if pd.notna(brow["flight_possessor_team"])
+                           else "unknown")
+
         # Where the ball sat before it was struck. The mark follows the ball
         # while it is slow, and freezes the moment it is not: everything after
         # that is flight, and the point of interest is where the flight began.
@@ -627,7 +685,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
         # receiver is slow while still attributed to the passer. Requiring
         # proximity does not help either -- `dist` is the distance to the
         # nearest player, and on a crowded pitch someone is near the path.
-        if cur_possessor != prev_possessor:
+        if cur_flight != prev_flight:
             # Hand the outgoing spell's mark to the transition handling below,
             # which runs later in this same iteration -- resetting in place
             # would wipe it before the pass that needs it is emitted.
@@ -635,7 +693,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
             release_time, release_xy, ball_struck = None, None, False
         if speed > BALL_CONTROL_SPEED_KMH:
             ball_struck = True
-        elif cur_possessor != -1 and not ball_struck:
+        elif cur_flight != -1 and not ball_struck:
             release_time, release_xy = t, (bx, by)
 
         # ---- Goal detection ------------------------------------------------
@@ -675,6 +733,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                 )
             was_out = True
             prev_possessor, prev_team = cur_possessor, cur_team
+            prev_flight, prev_flight_team = cur_flight, cur_flight_team
             prev_bx, prev_by = bx, by
             prev_time = t
             continue
@@ -737,9 +796,9 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
 
         # ---- Pass / Interception / Tackle proxy ---------------------------
         if (
-            cur_possessor != prev_possessor
-            and cur_possessor != -1
-            and prev_possessor != -1
+            cur_flight != prev_flight
+            and cur_flight != -1
+            and prev_flight != -1
             and prev_bx is not None
             and prev_by is not None
         ):
@@ -763,10 +822,10 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                 events,
                 start_time=start_time,
                 end_time=t,
-                from_id=prev_possessor,
-                from_team=prev_team,
-                to_id=cur_possessor,
-                to_team=cur_team,
+                from_id=prev_flight,
+                from_team=prev_flight_team,
+                to_id=cur_flight,
+                to_team=cur_flight_team,
                 start_xy=start_xy,
                 end_xy=(bx, by),
                 inferred=False,
@@ -775,14 +834,14 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                 ball_speed_kmh=speed,
             )
 
-        if prev_possessor != -1 and cur_possessor == -1 and pending_start_time is None and prev_bx is not None and prev_by is not None:
-            pending_from_id = prev_possessor
-            pending_from_team = prev_team
+        if prev_flight != -1 and cur_flight == -1 and pending_start_time is None and prev_bx is not None and prev_by is not None:
+            pending_from_id = prev_flight
+            pending_from_team = prev_flight_team
             pending_start_time = prev_time
             pending_start_xy = (prev_bx, prev_by)
 
         if pending_start_time is not None:
-            if cur_possessor != -1 and cur_team != "unknown" and pending_from_id != -1:
+            if cur_flight != -1 and cur_flight_team != "unknown" and pending_from_id != -1:
                 bridge_dt = max(0.0, t - pending_start_time)
                 if bridge_dt <= PASS_UNKNOWN_BRIDGE_S and pending_start_xy is not None:
                     _emit_possession_transition_event(
@@ -791,8 +850,8 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                         end_time=t,
                         from_id=pending_from_id,
                         from_team=pending_from_team,
-                        to_id=cur_possessor,
-                        to_team=cur_team,
+                        to_id=cur_flight,
+                        to_team=cur_flight_team,
                         start_xy=pending_start_xy,
                         end_xy=(bx, by),
                         inferred=True,
@@ -845,6 +904,8 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
 
         prev_possessor = cur_possessor
         prev_team = cur_team
+        prev_flight = cur_flight
+        prev_flight_team = cur_flight_team
         prev_bx = bx
         prev_by = by
         prev_time = t

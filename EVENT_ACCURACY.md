@@ -17,7 +17,56 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
-## Replication: carry holds, pass does not
+## Both event types clear chance on both windows
+
+After separating the possession timelines (see below), permutation p-values
+over 2000 draws:
+
+| group | tolerance | window 1 | window 2 |
+|---|---|---|---|
+| pass | 0.25 s | **0.013** | 0.081 |
+| pass | 0.50 s | 0.051 | 0.123 |
+| **pass** | **1.00 s** | **0.001** | **0.011** |
+| pass | 2.00 s | **0.000** | **0.022** |
+| carry | 0.25 s | 0.557 | **0.010** |
+| carry | 0.50 s | 0.210 | **0.006** |
+| **carry** | **1.00 s** | **0.001** | **0.030** |
+| carry | 2.00 s | 0.079 | **0.009** |
+
+At +/-1 s, the tolerance where this measurement has usable resolution, all
+four are significant. Both window-1 results survive Bonferroni correction
+across the eight tests (0.05/8 = 0.006).
+
+At +/-1 s the detector emits 37 passes against 35 real on window 1 (precision
+0.70, recall 0.74) and 45 against 23 on window 2 (precision 0.42, recall
+0.83). Precision on window 2 remains the weak point.
+
+### Why two possession timelines
+
+Passes and carries need opposite answers to the same question: does a player
+still possess the ball while it is in flight?
+
+A carry is a continuous possession spell of 0.8 s or more, so the spell must
+survive the ball leaving the ground -- ball speed is noisy enough that 21.6%
+of frames cross the control gate, and releasing possession on each one chops
+a dribble into fragments. A pass is the opposite: the spell has to *end*
+where the ball was struck, or the pass is measured from the moment the ball
+arrives, which puts both endpoints at the receiver's feet.
+
+Serving both from one timeline was the fault behind every failed attempt at
+pass precision. Releasing possession during flight fixed the pass geometry
+(median travel 0.6 m -> 1.3 and 4.6 m) and took carry detection from p 0.001
+to p 0.179 and from p 0.026 to p 0.896. Gap-filling preserved carries and left
+passes measuring 0.6 m. Threshold changes could not resolve it because it was
+not a threshold problem.
+
+`detect_events` now builds both. Carries, recoveries, and goal and shot
+attribution read the held timeline; passes and interceptions read the
+flight-aware one. Pass precision moved from 0.54 to 0.70 on window 1 and 0.32
+to 0.42 on window 2, emitted passes from 54 to 37 against 35 real, and carry
+detection is unchanged -- which is the point.
+
+## Earlier: carry holds, pass does not
 
 Two independent 90-second windows of the same match, one in each half.
 Window 1 is 30:20-31:50 (60 labels), window 2 is 66:50-68:20 (43 scored
