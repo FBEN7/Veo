@@ -17,6 +17,40 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
+## Merging near-duplicate detections
+
+Every false positive the detector produced sat within five seconds of a real
+labelled event and most within one -- 44 of 71 inside a second, none beyond
+five (see `analyse_errors.py`). The detector was not inventing football that
+did not happen; it was reporting one action twice. Collapsing near-duplicates
+of the same type therefore attacks the fault that is actually present.
+
+The window was swept on both windows with the value chosen on one reported
+against the other, and the two event types want different answers:
+
+| | window | evidence |
+|---|---|---|
+| carry | 1.0 s | chosen independently by both windows, improving both with no recall cost -- F1 0.66 to 0.67 and 0.54 to 0.58, recall unchanged at 0.84 and 0.68 |
+| pass | 0.8 s | chosen by window 2, neutral on window 1. At 1.0 s window 2 recall falls 0.83 to 0.65, which is genuine quick exchanges being merged away |
+
+A carry is an extended action, so its fragments sit further apart than a
+pass's. One window for both types could not express that.
+
+Result at +/-1 s, against the same measurement before merging:
+
+| | before | after |
+|---|---|---|
+| w1 pass | P 0.70, F1 0.72, p 0.001 | **P 0.75, F1 0.72, p 0.001** |
+| w1 carry | P 0.54, F1 0.66, p 0.001 | **P 0.55, F1 0.67, p 0.000** |
+| w2 pass | P 0.42, F1 0.56, p 0.011 | **P 0.47, F1 0.60, p 0.002** |
+| w2 carry | P 0.45, F1 0.54, p 0.030 | **P 0.50, F1 0.58, p 0.008** |
+
+Precision improves by 0.05 on all four with recall untouched, and every
+p-value strengthens. Events emitted fall from 80 to 74 and from 79 to 71.
+
+Two values fitted against two windows is close to the limit of what this data
+can justify. A third window should be used to check them, not to add a third.
+
 ## Both event types clear chance on both windows
 
 After separating the possession timelines (see below), permutation p-values

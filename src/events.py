@@ -111,6 +111,38 @@ RECEIVER_SETTLE_WINDOW_S = 1.5
 # Emitting both double-counts every turnover.
 EMIT_INTERCEPTION_AS_SEPARATE_EVENT = False
 
+# Detections of the same type closer together than this describe one action.
+#
+# Measured against the annotated windows, every false positive the detector
+# produces sits within five seconds of a real labelled event and most within
+# one -- 44 of 71 inside a second, none beyond five. The detector is not
+# inventing football that did not happen; it is reporting a single action
+# twice, so collapsing near-duplicates addresses the fault actually present.
+#
+# The danger is the mirror image: football contains genuine quick exchanges,
+# and a window set too wide deletes them. Swept against both windows rather
+# than chosen by eye (sweep_merge_window.py), and the two event types want
+# different answers, which is what a single window could not express:
+#
+#   carry  1.0 s  chosen independently by both windows, improving both with
+#                 no recall cost at all -- F1 0.66 -> 0.67 and 0.54 -> 0.58,
+#                 recall unchanged at 0.84 and 0.68. A carry is an extended
+#                 action, so fragments of one sit further apart.
+#
+#   pass   0.8 s  chosen by window 2, neutral on window 1. At 1.0 s window 2
+#                 recall falls 0.83 -> 0.65: that is the failure mode above,
+#                 genuine quick exchanges being merged away. A pass is a
+#                 shorter action and tolerates less collapsing.
+#
+# Two values fitted against two windows is close to the limit of what this
+# data can justify, and the carry figure is the better supported of the pair.
+# A third window should be used to check them rather than to add a third.
+MERGE_WINDOW_S = 0.8
+
+MERGE_WINDOW_BY_TYPE = {
+    "carry": 1.0,
+}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -387,6 +419,60 @@ def _settled_possessor(poss: pd.DataFrame, after_time: float,
 
     row = held.iloc[0]
     return int(row.possessor_id), str(row.possessor_team)
+
+
+def _merge_adjacent_events(events: list[dict[str, Any]],
+                           window_s: float = MERGE_WINDOW_S) -> list[dict[str, Any]]:
+    """Collapse detections of the same type that describe one action.
+
+    Only events of the same type are candidates: a pass and a carry at the
+    same instant are two different claims about the same moment, and one of
+    them being wrong is not fixed by deleting the other.
+
+    Clusters chain -- A merges with B, B with C, so A, B and C become one --
+    which is the right shape for a single action smeared across several
+    detections, and the wrong shape for a genuine rapid exchange. The window
+    is what separates those two cases, and it is swept rather than chosen.
+
+    Within a cluster the survivor is the most substantial member: the pass
+    that travelled furthest, the carry that lasted longest. Keeping the first
+    would keep whichever fragment happened to fire earliest, which on a
+    smeared detection is usually the least complete one.
+    """
+    if len(events) < 2:
+        return events
+
+    def substance(e: dict) -> float:
+        if e.get("event_type") == "pass":
+            return float(e.get("pass_distance_m") or 0.0)
+        if e.get("event_type") == "carry":
+            return float(e.get("carry_duration_s")
+                         or e.get("carry_distance_m") or 0.0)
+        return 0.0
+
+    by_type: dict[str, list[dict]] = {}
+    for e in events:
+        by_type.setdefault(e.get("event_type", "?"), []).append(e)
+
+    kept: list[dict] = []
+    for event_type, group in by_type.items():
+        # An extended action's fragments sit further apart than a brief one's,
+        # so the window is per type.
+        w = MERGE_WINDOW_BY_TYPE.get(event_type, window_s)
+        if w <= 0:
+            kept.extend(group)
+            continue
+        group = sorted(group, key=lambda e: e["timestamp_s"])
+        cluster = [group[0]]
+        for e in group[1:]:
+            if e["timestamp_s"] - cluster[-1]["timestamp_s"] <= w:
+                cluster.append(e)
+            else:
+                kept.append(max(cluster, key=substance))
+                cluster = [e]
+        kept.append(max(cluster, key=substance))
+
+    return sorted(kept, key=lambda e: e["timestamp_s"])
 
 
 def _in_goal(bx: float, by: float) -> str | None:
@@ -937,7 +1023,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                 )
             )
 
-    clean = events
+    clean = _merge_adjacent_events(events, MERGE_WINDOW_S)
     clean.sort(key=lambda e: e["timestamp_s"])
 
     _summarize(clean)
