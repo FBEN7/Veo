@@ -57,7 +57,24 @@ SHOT_MIN_KMH = 10.0              # Lower speed for visible shots
 SHOT_MAX_DIST_FROM_GOAL_M = 50.0 # Shots from further (limited angle coverage)
 SHOT_COOLDOWN_S = 0.5            # Faster shot detection in limited play
 CARRY_MIN_TIME_S = 0.8           # Shorter carries (limited distance visible)
-CARRY_MIN_DISTANCE_M = 2.0       # Lower distance threshold (partial moves only)
+
+# No distance requirement. Swept over 0 to 12 m on four windows across two
+# matches, and the result is monotonic: every increase costs mean F1
+# (0.568, 0.553, 0.552, 0.503, 0.394, 0.285, 0.146 at 0.5, 1, 2, 3, 5, 8,
+# 12 m). Values of 0.0 and 0.5 m give identical output, so the gate does
+# nothing below a metre -- which is why this is zero rather than 0.5, since
+# 0.5 would imply it still filters something.
+#
+# The mechanism is that a 2 m requirement excluded short drives SoccerNet
+# still labels DRIVE: removing it lifts recall 0.72 -> 0.80 at unchanged
+# precision (0.45 -> 0.44), and takes carry from two windows above chance to
+# three, including the independent match (p 0.059 -> 0.027).
+#
+# One window moves the other way, w2 from p 0.026 to 0.058. Carry sits near
+# the 0.05 line on most windows whatever this value is, so it remains
+# suggestive rather than established; this is the best available setting for
+# it, not a fix for it.
+CARRY_MIN_DISTANCE_M = 0.0
 RECOVERY_MIN_LOOSE_S = 0.3       # Quick recovery detection
 TACKLE_MAX_PLAYER_DIST_M = 4.0   # Larger tackle radius for proximity estimation
 TACKLE_MAX_BALL_SPEED_KMH = 40.0 # Higher speed tolerance

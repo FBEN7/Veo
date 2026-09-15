@@ -17,6 +17,50 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
+## Carry: the distance gate was the fault, partly
+
+Carry was over-producing on every window -- 26 to 39 events against 16 to 25
+real -- and neither merging near-duplicates nor re-timestamping helped. What
+was left was the definition. SoccerNet's DRIVE is purposeful progression;
+our carry was any possession spell of 0.8 s covering 2 m. Those two constants
+are the whole of the distinction and neither had been swept.
+
+Swept over 0 to 12 m on all four windows, the result is monotonic -- every
+increase costs mean F1:
+
+| CARRY_MIN_DISTANCE_M | mean F1 | windows above chance |
+|---|---|---|
+| **0.0 / 0.5 m** | **0.568** | **3/4** |
+| 1.0 m | 0.553 | 3/4 |
+| 2.0 m (was) | 0.552 | 2/4 |
+| 3.0 m | 0.503 | 1/4 |
+| 5.0 m | 0.394 | 0/4 |
+| 12.0 m | 0.146 | 0/4 |
+
+0.0 and 0.5 m produce identical output, so the gate does nothing below a
+metre; the constant is therefore zero rather than 0.5, which would imply it
+still filtered something. A 2 m requirement was excluding short drives that
+SoccerNet still labels DRIVE, and removing it lifts recall from 0.72 to 0.80
+at unchanged precision.
+
+Carry at +/-1 s with the gate removed:
+
+| window | n | P | R | F1 | p |
+|---|---|---|---|---|---|
+| w1 30:20 | 42 | 0.57 | 0.96 | 0.72 | **0.000** |
+| w2 66:50 | 36 | 0.39 | 0.74 | 0.51 | 0.058 |
+| w3 05:20 | 35 | 0.43 | 0.75 | 0.55 | **0.024** |
+| Reading | 32 | 0.38 | 0.75 | 0.50 | **0.027** |
+
+Three of four, including the independent match, which moved from 0.059 to
+0.027. One window moves the other way: w2 from 0.026 to 0.058.
+
+Carry remains **suggestive rather than established**. It sits near the 0.05
+line on most windows whatever this constant is, and precision stays at
+0.38-0.57. This is the best available setting for carry, not a fix for it.
+Three other hypotheses -- merging, re-timestamping, and a minimum interval --
+were measured and rejected before this one.
+
 ## Generalisation: a second match
 
 Four 90-second windows now, three from Stoke City vs Huddersfield Town and one
