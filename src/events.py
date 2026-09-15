@@ -28,7 +28,29 @@ from . import ball_tracking
 
 POSSESSION_RADIUS_M = 8.0        # Larger radius for loose ball detection (limited view)
 POSSESSION_GAP_FILL_S = 3.0      # Longer gaps tolerated in limited visibility
-MIN_PASS_DISTANCE_M = 0.3        # Very short passes, even redirects count
+# How far the ball must travel to count as a pass.
+#
+# This looked like the obvious place to fix pass precision: the emitted passes
+# had a median travel of 0.6 m over 0.12 s, which is not a pass. Raising the
+# gate was measured and rejected -- at 3.0 m, precision on the first window
+# reached 1.00 but only five passes survived, F1 falling from 0.64 to 0.25,
+# because the gate deleted the true passes along with the false ones.
+#
+# That is what identified the real fault. The distance was not a pass length
+# at all: possession was gap-filled through the ball's flight, so it only
+# changed once the ball had arrived and both endpoints were measured at the
+# receiver's feet. With that fixed (see _possession_per_frame), the median
+# travel is 1.3 m on one window and 4.6 m on the other, and 0.3 m is once
+# again the right floor -- a sweep over 0.3 to 8.0 m on both windows puts the
+# best cross-window result at this value.
+MIN_PASS_DISTANCE_M = 0.3
+
+# Kept at zero deliberately. A minimum interval is a plausible-sounding filter
+# and it measured as a straight loss: raising it to 0.1 s cost F1 0.70 -> 0.62
+# on one window and 0.55 -> 0.51 on the other. Real short passes complete
+# quickly, so the interval does not separate them from noise.
+MIN_PASS_INTERVAL_S = 0.0
+
 MAX_PASS_INTERVAL_S = 8.0        # More time to complete passes across limited view
 PASS_UNKNOWN_BRIDGE_S = 2.5      # Longer unknown bridges for partial visibility
 SHOT_MIN_KMH = 10.0              # Lower speed for visible shots
@@ -402,7 +424,17 @@ def _emit_possession_transition_event(
 ) -> None:
     travel = _distance(start_xy, end_xy)
     dt_change = max(0.0, end_time - start_time)
-    if travel < MIN_PASS_DISTANCE_M or dt_change > MAX_PASS_INTERVAL_S:
+
+    # A player cannot pass to themselves. This fires when a track is lost and
+    # reissued to the same player, or when re-identification rejoins two
+    # fragments across the moment possession was recomputed -- neither is a
+    # pass, and both were being emitted as one.
+    if from_id == to_id:
+        return
+
+    if (travel < MIN_PASS_DISTANCE_M
+            or dt_change > MAX_PASS_INTERVAL_S
+            or dt_change < MIN_PASS_INTERVAL_S):
         return
 
     if to_team == from_team:
@@ -566,6 +598,14 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
     was_out: bool = False
     player_xy = _player_positions_by_frame(tracks)
 
+    # Where and when the ball was last under control during the current
+    # possession spell -- i.e. where it was struck from, once it leaves.
+    release_time: float | None = None
+    release_xy: tuple[float, float] | None = None
+    ball_struck: bool = False
+    last_release_time: float | None = None
+    last_release_xy: tuple[float, float] | None = None
+
     for _, brow in timeline.iterrows():
         frame = int(brow["frame"])
         t = float(brow["time_s"])
@@ -576,6 +616,27 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
         vy = float(brow["vel_y"])
         cur_possessor = int(brow["possessor_id"]) if pd.notna(brow["possessor_id"]) else -1
         cur_team = str(brow["possessor_team"]) if pd.notna(brow["possessor_team"]) else "unknown"
+
+        # Where the ball sat before it was struck. The mark follows the ball
+        # while it is slow, and freezes the moment it is not: everything after
+        # that is flight, and the point of interest is where the flight began.
+        #
+        # Freezing is what makes this work. Marking every slow frame instead
+        # tracks the ball all the way down its trajectory, because possession
+        # is carried through the flight and a ball decelerating into its
+        # receiver is slow while still attributed to the passer. Requiring
+        # proximity does not help either -- `dist` is the distance to the
+        # nearest player, and on a crowded pitch someone is near the path.
+        if cur_possessor != prev_possessor:
+            # Hand the outgoing spell's mark to the transition handling below,
+            # which runs later in this same iteration -- resetting in place
+            # would wipe it before the pass that needs it is emitted.
+            last_release_time, last_release_xy = release_time, release_xy
+            release_time, release_xy, ball_struck = None, None, False
+        if speed > BALL_CONTROL_SPEED_KMH:
+            ball_struck = True
+        elif cur_possessor != -1 and not ball_struck:
+            release_time, release_xy = t, (bx, by)
 
         # ---- Goal detection ------------------------------------------------
         goal_side = _in_goal(bx, by) if absolute_pitch else None
@@ -682,15 +743,31 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
             and prev_bx is not None
             and prev_by is not None
         ):
+            # A pass starts where the ball was struck, not at the frame before
+            # possession changed hands. Possession is carried through the
+            # ball's flight -- deliberately, because releasing it fragments
+            # the spells that carry detection depends on -- so it only changes
+            # once the ball has arrived, and the previous frame's position is
+            # at the receiver's feet. Measured that way the median "pass"
+            # travelled 0.6 m in 0.12 s.
+            #
+            # The last moment the ball was under control during the passer's
+            # spell is where it left them. Using that as the start gives a
+            # median travel of 1.3 and 4.6 m on the two test windows, without
+            # touching the possession timeline.
+            start_time = (last_release_time if last_release_time is not None
+                          else prev_time)
+            start_xy = (last_release_xy if last_release_xy is not None
+                        else (prev_bx, prev_by))
             _emit_possession_transition_event(
                 events,
-                start_time=prev_time,
+                start_time=start_time,
                 end_time=t,
                 from_id=prev_possessor,
                 from_team=prev_team,
                 to_id=cur_possessor,
                 to_team=cur_team,
-                start_xy=(prev_bx, prev_by),
+                start_xy=start_xy,
                 end_xy=(bx, by),
                 inferred=False,
                 player_xy=player_xy,
