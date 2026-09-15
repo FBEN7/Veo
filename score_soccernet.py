@@ -120,6 +120,92 @@ def chance_control(events, labels, tolerance, duration_s,
     return out
 
 
+def probe_clip(path: str) -> dict:
+    """Identify the clip, or refuse to run.
+
+    Every stage of this pipeline is cached, which makes a mismatch between
+    cache and input silent rather than loud. The failure that prompted this:
+    passing --clip /dev/null to reuse cached detections left every cached
+    stage valid, but camera motion validation could not read the video, so it
+    reported the estimate as unusable and the run continued without
+    compensation. The output was plausible -- carry detection simply looked
+    weak again -- and only contradicted a result measured minutes earlier.
+
+    A measurement tool that quietly downgrades is worse than one that breaks:
+    the numbers still look like numbers.
+    """
+    import cv2
+
+    p = Path(path)
+    if not p.is_file():
+        raise SystemExit(f"clip not found: {path}")
+
+    cap = cv2.VideoCapture(str(p))
+    ok, frame = cap.read()
+    if not ok or frame is None:
+        cap.release()
+        raise SystemExit(
+            f"cannot decode video frames from {path}. "
+            "Cached stages would still load and the run would produce "
+            "believable but wrong numbers, so this is fatal rather than a "
+            "warning.")
+    info = dict(
+        path=str(p.resolve()),
+        size_bytes=p.stat().st_size,
+        width=int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        height=int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        fps=round(float(cap.get(cv2.CAP_PROP_FPS)) or 25.0, 3),
+        n_frames=int(cap.get(cv2.CAP_PROP_FRAME_COUNT)),
+    )
+    cap.release()
+    return info
+
+
+def check_cache_provenance(out_dir: Path, clip_info: dict) -> None:
+    """Refuse to mix cached stages with a different clip.
+
+    Output directories get reused -- and during development a camera motion
+    estimate was once copied between them by hand. Nothing downstream would
+    notice: the arrays have the right shape and the numbers come out looking
+    ordinary.
+    """
+    manifest = out_dir / "clip.json"
+    cached_stages = [p.name for p in (
+        out_dir / "tracks.parquet", out_dir / "tracks_teams.parquet",
+        out_dir / "tracks_grass.parquet", out_dir / "camera_motion.npy",
+        out_dir / "profile.json") if p.exists()]
+
+    if not manifest.exists() and cached_stages:
+        # A directory holding cached stages but no record of what produced
+        # them cannot be verified. Writing the manifest here would adopt
+        # whatever clip happened to be passed -- which is exactly the mistake
+        # this function exists to catch, and it fired on the first attempt to
+        # test it.
+        raise SystemExit(
+            f"{out_dir} holds cached stages ({', '.join(cached_stages)}) but "
+            "no clip.json recording which clip built them, so they cannot be "
+            "checked against the clip given.\n"
+            "Delete the directory to rebuild, or use a different --out.")
+
+    if manifest.exists():
+        previous = json.loads(manifest.read_text())
+        differing = {k: (previous.get(k), clip_info.get(k))
+                     for k in ("size_bytes", "width", "height", "n_frames")
+                     if previous.get(k) != clip_info.get(k)}
+        if differing:
+            detail = ", ".join(f"{k}: cached {a} vs given {b}"
+                               for k, (a, b) in differing.items())
+            raise SystemExit(
+                f"{out_dir} holds cached stages built from a different clip "
+                f"({detail}).\n"
+                f"  cached: {previous.get('path')}\n"
+                f"  given : {clip_info['path']}\n"
+                "Use a different --out, or delete the directory to rebuild.")
+    else:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        manifest.write_text(json.dumps(clip_info, indent=2))
+
+
 def run_pipeline(clip: str, out_dir: Path):
     """Detect, track and emit events for the clip, caching each stage."""
     from src.detect_track_hybrid import run as run_detection
@@ -128,11 +214,20 @@ def run_pipeline(clip: str, out_dir: Path):
                      ball_pitch_filter, player_filter, camera_motion)
     from src import events as ev_module
 
-    out_dir.mkdir(parents=True, exist_ok=True)
+    clip_info = probe_clip(clip)
+    check_cache_provenance(out_dir, clip_info)
+    print(f"clip: {clip_info['width']}x{clip_info['height']} @ "
+          f"{clip_info['fps']:.0f} fps, {clip_info['n_frames']} frames "
+          f"({clip_info['size_bytes'] / 1e6:.1f} MB)")
 
     profile_path = out_dir / "profile.json"
     if profile_path.exists():
         profile = auto_tune.VideoProfile.load(profile_path)
+        if profile.n_frames != clip_info["n_frames"]:
+            raise SystemExit(
+                f"cached profile describes {profile.n_frames} frames, the "
+                f"clip has {clip_info['n_frames']}. Delete {profile_path} "
+                "to re-derive.")
         print(f"cached profile:\n{profile.summary()}")
     else:
         print("deriving parameters from the clip...")
@@ -177,16 +272,39 @@ def run_pipeline(clip: str, out_dir: Path):
         motion_path = out_dir / "camera_motion.npy"
         if motion_path.exists():
             motion = np.load(motion_path)
+            # A motion array of the wrong length is the signature of one
+            # copied from another clip, which nothing downstream would notice:
+            # compensate() clips the index and returns ordinary-looking
+            # positions.
+            if abs(len(motion) - clip_info["n_frames"]) > 2:
+                raise SystemExit(
+                    f"{motion_path} has {len(motion)} entries for a "
+                    f"{clip_info['n_frames']}-frame clip. Delete it to "
+                    "re-estimate.")
         else:
             print("estimating camera motion...")
             motion = camera_motion.estimate_camera_motion(clip)
             np.save(motion_path, motion)
+
         usable, why = camera_motion.validate_motion(clip, motion)
         if usable:
             filtered = camera_motion.compensate(filtered, motion)
             print(f"camera: compensated ({why})")
+        elif "could not measure" in why or "no motion estimated" in why:
+            # The validator could not run, as distinct from running and
+            # rejecting the estimate. Carrying on uncompensated here is what
+            # produced a full set of wrong numbers once already: carry
+            # detection depends on compensation, so the run would report it as
+            # weak rather than as unmeasured.
+            raise SystemExit(
+                f"camera motion could not be validated ({why}). "
+                "Refusing to continue uncompensated: carry detection depends "
+                "on compensation, so the run would report weak results rather "
+                "than absent ones.")
         else:
-            print(f"camera: NOT compensated - {why}")
+            # A genuine rejection is a real finding, not an error.
+            print(f"camera: NOT compensated - validator rejected the "
+                  f"estimate - {why}")
     else:
         print("camera: static, not compensated")
 
@@ -222,6 +340,20 @@ def main():
     labels = load_window(args.labels, args.offset, duration)
     scored = [l for l in labels if l["group"]]
     skipped = [l for l in labels if not l["group"]]
+
+    # An offset that misses the clip yields an empty window, and every
+    # precision and recall below would then be 0.00 -- which reads as a
+    # detector that found nothing rather than as a window containing nothing.
+    if not scored:
+        raise SystemExit(
+            f"no scorable labels between {args.offset:.0f} and "
+            f"{args.offset + duration:.0f} s of the match. Check --offset: it "
+            "is the match time of the clip's FIRST FRAME, and getting it "
+            "wrong misaligns every label against every detection.")
+    if len(scored) < 10:
+        print(f"\n!! only {len(scored)} scorable labels in this window. "
+              "Precision and recall will be dominated by single events, and "
+              "the permutation test has little power.")
 
     print("\n" + "=" * 74)
     print(f"EVENTS vs SOCCERNET BALL ACTIONS  ({duration:.0f} s clip, "
