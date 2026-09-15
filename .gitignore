@@ -12,3 +12,4 @@ detection_accuracy.json
 output_soccernet*/
 pass_threshold_sweep.json
 merge_window_sweep.json
+carry_threshold_sweep.json
