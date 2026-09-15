@@ -33,6 +33,7 @@ from src import events as ev
 WINDOWS = {
     "w1 (30:20)": dict(dir="output_soccernet", offset=1820.0),
     "w2 (66:50)": dict(dir="output_soccernet_w2", offset=4010.0),
+    "w3 (05:20)": dict(dir="output_soccernet_w3", offset=320.0),
 }
 
 LABELS = ("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b/"

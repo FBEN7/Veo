@@ -111,37 +111,37 @@ RECEIVER_SETTLE_WINDOW_S = 1.5
 # Emitting both double-counts every turnover.
 EMIT_INTERCEPTION_AS_SEPARATE_EVENT = False
 
-# Detections of the same type closer together than this describe one action.
+# Merging near-duplicate detections of the same type. Measured and rejected.
 #
-# Measured against the annotated windows, every false positive the detector
-# produces sits within five seconds of a real labelled event and most within
-# one -- 44 of 71 inside a second, none beyond five. The detector is not
-# inventing football that did not happen; it is reporting a single action
-# twice, so collapsing near-duplicates addresses the fault actually present.
+# The reasoning was sound and the evidence looked strong. Every false positive
+# the detector produced sat within five seconds of a real labelled event and
+# most within one -- 44 of 71 inside a second, none beyond five -- so it was
+# reporting one action twice rather than inventing football. Collapsing
+# near-duplicates addressed exactly that, and on the two windows available at
+# the time it improved precision by 0.05 on all four measurements with recall
+# untouched and every p-value strengthening.
 #
-# The danger is the mirror image: football contains genuine quick exchanges,
-# and a window set too wide deletes them. Swept against both windows rather
-# than chosen by eye (sweep_merge_window.py), and the two event types want
-# different answers, which is what a single window could not express:
+# A third window, held out and scored only after these values were fixed,
+# withdrew it. Mean F1 over all three windows:
 #
-#   carry  1.0 s  chosen independently by both windows, improving both with
-#                 no recall cost at all -- F1 0.66 -> 0.67 and 0.54 -> 0.58,
-#                 recall unchanged at 0.84 and 0.68. A carry is an extended
-#                 action, so fragments of one sit further apart.
+#   merge      pass    carry   windows above chance
+#   0.0 s      0.642   0.576   3/3 and 3/3
+#   0.8 s      0.635   0.576   3/3 and 3/3
+#   1.0 s      0.637   0.585   3/3 and 2/3
+#   1.5 s      0.593   0.590   2/3 and 3/3
 #
-#   pass   0.8 s  chosen by window 2, neutral on window 1. At 1.0 s window 2
-#                 recall falls 0.83 -> 0.65: that is the failure mode above,
-#                 genuine quick exchanges being merged away. A pass is a
-#                 shorter action and tolerates less collapsing.
+# Pass is best with merging off. Carry's gain at 1.0 s is +0.009 mean F1 --
+# noise across three samples -- and costs a window its significance. On the
+# held-out window alone, merging took pass from p 0.001 to p 0.029 and carry
+# from p 0.059 to p 0.094.
 #
-# Two values fitted against two windows is close to the limit of what this
-# data can justify, and the carry figure is the better supported of the pair.
-# A third window should be used to check them rather than to add a third.
-MERGE_WINDOW_S = 0.8
+# So the two values were fitted to two windows, which is what the commit
+# adding them warned they might be. Merging stays in the code because the
+# diagnosis behind it still stands and a larger sample may yet support it;
+# it is off because three windows say it does not help.
+MERGE_WINDOW_S = 0.0
 
-MERGE_WINDOW_BY_TYPE = {
-    "carry": 1.0,
-}
+MERGE_WINDOW_BY_TYPE: dict[str, float] = {}
 
 
 # ---------------------------------------------------------------------------

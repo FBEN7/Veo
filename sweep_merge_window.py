@@ -75,7 +75,7 @@ def main():
                   if l["group"]]
         prepared[name] = (tracks, absolute, labels, duration)
 
-    original = ev.MERGE_WINDOW_S
+    original = (ev.MERGE_WINDOW_S, dict(ev.MERGE_WINDOW_BY_TYPE))
     results = {}
 
     for group in ("pass", "carry"):
@@ -88,7 +88,11 @@ def main():
               + " | ".join(f"{'n':>4} {'P':>5} {'R':>5} {'F1':>5} {'p':>6} "
                            for _ in sw.WINDOWS))
         for w in WINDOW_GRID:
+            # Clear the per-type override as well, or the swept value never
+            # reaches the type that has one -- which silently pinned carry at
+            # 1.0 s through an entire sweep and produced identical rows.
             ev.MERGE_WINDOW_S = w
+            ev.MERGE_WINDOW_BY_TYPE.clear()
             row = []
             for name, (tracks, absolute, labels, duration) in prepared.items():
                 r = score(tracks, absolute, labels, duration, group,
@@ -98,13 +102,25 @@ def main():
                            f"{r['recall']:>5.2f} {r['f1']:>5.2f} {r['p']:>6.3f} ")
             print(f"{w:>7.1f} | " + " | ".join(row))
 
-    ev.MERGE_WINDOW_S = original
+    ev.MERGE_WINDOW_S = original[0]
+    ev.MERGE_WINDOW_BY_TYPE.clear()
+    ev.MERGE_WINDOW_BY_TYPE.update(original[1])
 
     print("\n" + "=" * 78)
     print("CROSS-CHECK  (a window fitted to one 90 seconds is not a fix)")
     print("=" * 78)
     names = list(sw.WINDOWS)
     for group in ("pass", "carry"):
+        # Mean F1 across every window: a value is only worth having if it
+        # helps on average, not if it wins on the two it was chosen from.
+        print(f"\n  {group}: mean F1 across all {len(names)} windows")
+        for w in WINDOW_GRID:
+            f1s = [results[(group, w, n)]["f1"] for n in names]
+            ps = [results[(group, w, n)]["p"] for n in names]
+            n_sig = sum(1 for x in ps if x < 0.05)
+            print(f"    merge {w:>4.1f}s  mean F1 {np.mean(f1s):.3f}  "
+                  f"({', '.join(f'{x:.2f}' for x in f1s)})  "
+                  f"{n_sig}/{len(names)} above chance")
         for tune_on in names:
             test_on = [n for n in names if n != tune_on][0]
             best = max(WINDOW_GRID,
