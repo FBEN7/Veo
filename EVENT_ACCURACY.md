@@ -17,6 +17,42 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
+## Generalisation: a second match
+
+Four 90-second windows now, three from Stoke City vs Huddersfield Town and one
+from Reading vs Fulham. The Reading window was scored after every parameter
+was fixed, on a different match, stadium, kit and camera crew.
+
+Permutation p-values at +/-1 s, 2000 draws:
+
+| | w1 30:20 | w2 66:50 | w3 05:20 | Reading 85:15 | combined |
+|---|---|---|---|---|---|
+| **pass** | 0.001 | 0.011 | 0.001 | **0.001** | 4/4, Fisher 3e-08 |
+| carry | 0.001 | 0.030 | 0.059 | **0.060** | 2/4, Fisher 9e-05 |
+
+**Pass detection is established.** It clears chance on every window including
+the independent match, where precision is 0.66 and recall 0.68, and it also
+clears at +/-0.25 s and +/-0.5 s there.
+
+**Carry detection is not.** It failed at +/-1 s on the last two windows with
+almost identical values, 0.059 and 0.060, and its precision on the Reading
+window is 0.37 -- thirty events emitted against sixteen real, the worst of the
+four. The combined Fisher statistic is significant, but that reading flatters
+it: the two clear results share a match with a window that is marginal, so the
+four samples are not independent. Carry is suggestive and unestablished, and
+describing it as established after its first replication was premature.
+
+Its weakness is timing rather than detection. On both failing windows it
+clears comfortably at +/-2 s (p 0.000 on w3), and its absolute timing error is
+0.48 s against 0.32 s for pass.
+
+**Team attribution generalises.** 0.81, 0.76 and 0.73 on the three windows
+with balanced possession, against 0.50 for no information. The Reading figure
+matters most: team assignment clusters torso colour, so a different match
+means different kit colours, and transferring to them is a real test rather
+than a repeat. Window 1 cannot measure this -- 59 of its 60 labels belong to
+one team.
+
 ## Merging near-duplicate detections
 
 Every false positive the detector produced sat within five seconds of a real
