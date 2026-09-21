@@ -17,6 +17,51 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
+## Pass outcomes are close to a coin flip
+
+The model reports 50%, 61%, 51% and 55% of passes as intercepted across the
+four windows. SoccerNet's own team labels give the truth: consecutive ball
+actions change team only 3%, 23%, 16% and 7% of the time, about 12% on
+average. Turnovers are over-reported four to five fold.
+
+This matters differently from the timing results. Pass detection being above
+chance means the *moments* are roughly right; this says the *labels attached
+to them* carry little information. A coach reading "19 completed, 19
+intercepted" is reading fiction, and unlike a timing error it is obvious to
+anyone who knows football.
+
+Two candidate causes are ruled out:
+
+* **Team does not flicker within a track.** Zero of 646 tracks across the four
+  windows ever change team.
+* **It is not fragmentation.** Zero intercepted passes involve a passer and
+  receiver whose tracks never coexist, so they are genuinely distinct players,
+  6 to 11 m apart.
+
+Team assignment error is a major contributor but provably not the whole story.
+If each end of a pass is assigned correctly with probability a, the reported
+turnover rate is
+
+    0.88 * 2a(1-a)  +  0.12 * (a^2 + (1-a)^2)
+
+which peaks at 50% when a = 0.5. Three of the four windows exceed that, so
+something beyond team assignment is inflating the rate.
+
+The requirement this sets is worth stating plainly: for the reported rate to
+fall below 20% against a true 12%, per-end team accuracy must reach about
+0.95. It currently measures 0.73 to 0.81. That is a different order of
+problem from a threshold.
+
+The remaining contribution is not isolated. Intercepted passes coincide with
+two to three times higher ball speed on three windows (112 against 35 km/h on
+w1) and the reverse on the fourth, and the test is compromised because
+`_ball_kinematics` clips speed at 120 km/h, hiding exactly the spikes measured
+elsewhere. Suggestive, not shown.
+
+Until per-end team accuracy is far higher, the honest options are to suppress
+the outcome field rather than publish a coin flip, or to report only the
+aggregate with its measured error. Neither is done yet.
+
 ## Carry: the distance gate was the fault, partly
 
 Carry was over-producing on every window -- 26 to 39 events against 16 to 25
