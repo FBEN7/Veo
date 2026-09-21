@@ -38,7 +38,7 @@ Two candidate causes are ruled out:
   receiver whose tracks never coexist, so they are genuinely distinct players,
   6 to 11 m apart.
 
-Team assignment error is a major contributor but provably not the whole story.
+Team assignment error is a contributor but provably not the main one.
 If each end of a pass is assigned correctly with probability a, the reported
 turnover rate is
 
@@ -51,6 +51,30 @@ The requirement this sets is worth stating plainly: for the reported rate to
 fall below 20% against a true 12%, per-end team accuracy must reach about
 0.95. It currently measures 0.73 to 0.81. That is a different order of
 problem from a threshold.
+
+### The outcome field is independent of the outcome
+
+Comparing rates is a weak test: two rates can agree while every individual
+call is wrong. The labels support the strong test as well, because the team
+of the *next* ball action says whether a pass kept possession. Scoring our
+call against that truth, pooled over the four windows
+(`python analyse_pass_outcome.py`):
+
+|  | we said success | we said intercepted |
+|---|---|---|
+| pass kept the ball | 34 | 44 |
+| pass lost the ball | 7 | 9 |
+
+We call "intercepted" on **56%** of the passes that kept the ball and on
+**56%** of the passes that lost it. Fisher exact p = 1.00. The field is not
+merely inaccurate; it is statistically independent of the thing it names.
+
+Restricting to the passes whose passer's team we did attribute correctly
+barely moves it -- 46% against 62%, p = 0.37, on 13 genuinely lost passes.
+Per-window outcome accuracy rises from 45% to 54% under that restriction,
+against a baseline of 82%. **Perfect team assignment would not fix this.**
+That rules out the hypothesis the rate comparison above suggested, and moves
+the fault into how possession transfer itself is decided.
 
 The remaining contribution is not isolated. Intercepted passes coincide with
 two to three times higher ball speed on three windows (112 against 35 km/h on
@@ -71,12 +95,13 @@ where a second of error costs nothing:
 Recall is good: almost everything is found. Precision is the fault, at roughly
 two events emitted per event that exists.
 
-Outcome accuracy on the passes that match a real pass is **53%, 55%, 44% and
-32%**. The trivial baseline of always answering "success" would score **93%,
-68%, 76% and 89%** on the same passes. The field is about 35 points worse than
-a constant: it carries negative information.
+Outcome accuracy on the passes that match a real pass is **52%, 55%, 43% and
+30%** (`analyse_pass_outcome.py`, matching passes at +/-2 s). The trivial
+baseline of always answering "success" would score **94%, 65%, 78% and 90%**
+on the same passes. The field is about 37 points worse than a constant: it
+carries negative information.
 
-### Five hypotheses eliminated, cause not found
+### Six hypotheses eliminated, cause not found
 
 * **Team flicker within a track** -- zero of 646 tracks ever change team.
 * **Fragmentation** -- zero intercepted passes involve a passer and receiver
@@ -90,10 +115,21 @@ a constant: it carries negative information.
 * **Ball position unreliability at the event** -- team accuracy is 0.79 when
   the ball is slow at the event and 0.78 when fast, pooled over 175 events.
 
+A sixth is now eliminated too: **team assignment is not the binding
+constraint**. Conditioning on a correctly attributed passer leaves the call
+independent of the truth (above). Fixing the kit clustering would raise
+outcome accuracy from 45% to at most about 54%, still 28 points below
+answering "success" every time.
+
 What remains untested is whether the possessor is the right player at all.
 Possession is nearest-player, and a nearby opponent would produce exactly this
-signature; ruling it out needs ground truth for who holds the ball, which
-SoccerNet does not provide.
+signature. SoccerNet's ball-action file has five fields -- gameTime, label,
+position, team, visibility -- and no player identity, so it can say whether
+the *team* is right (it does, above) but not whether the *player* is. Note
+that the player question only reaches the outcome through the team: picking
+the wrong player on the right team leaves the outcome unchanged. Player-level
+ground truth exists in SoccerNet's Game State Reconstruction set, which is a
+separate download from the ball-action spotting set used here.
 
 Until then the outcome field should not be published. Reporting no outcome is
 honest; reporting one that is worse than a constant is not. That change is a
