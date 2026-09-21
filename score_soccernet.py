@@ -206,8 +206,14 @@ def check_cache_provenance(out_dir: Path, clip_info: dict) -> None:
         manifest.write_text(json.dumps(clip_info, indent=2))
 
 
-def run_pipeline(clip: str, out_dir: Path):
-    """Detect, track and emit events for the clip, caching each stage."""
+def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False):
+    """Detect, track and emit events for the clip, caching each stage.
+
+    ``return_tracks`` also hands back the metric tracks the events were
+    derived from, so a diagnostic can look at the possession timeline that
+    produced a given event rather than reconstructing the pipeline and
+    drifting out of step with it.
+    """
     from src.detect_track_hybrid import run as run_detection
     from src.team_assignment import assign_teams
     from src import (auto_tune, pixel_scale, ball_selection, track_reid,
@@ -321,6 +327,8 @@ def run_pipeline(clip: str, out_dir: Path):
     diag = ball_selection.ball_track_diagnostics(merged, scale, fps=profile.fps)
     print(f"\nball coverage {diag['coverage_pct']:.1f}%, "
           f"{len(events)} events, scale {scale:.1f} px/m")
+    if return_tracks:
+        return events, profile, metric
     return events, profile
 
 

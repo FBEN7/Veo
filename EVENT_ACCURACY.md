@@ -131,9 +131,83 @@ the wrong player on the right team leaves the outcome unchanged. Player-level
 ground truth exists in SoccerNet's Game State Reconstruction set, which is a
 separate download from the ball-action spotting set used here.
 
-Until then the outcome field should not be published. Reporting no outcome is
-honest; reporting one that is worse than a constant is not. That change is a
-product decision and has not been made unilaterally.
+### The rebuild: deciding the receiver once the ball settles
+
+The fault was in *when* the receiver was read. Possession changed hands the
+instant the ball came near somebody, so the receiver was whoever the ball
+travelled past -- on the wrong calls, an opponent 2.1 m away with the nearest
+teammate at 3.7 m. The right calls are the mirror image (teammate 2.8 m,
+opponent 4.3 m), so the two are symmetric and no threshold on that separation
+separates them. `diagnose_transfer.py` measures this; the receiver is the
+nearest player 100% of the time.
+
+`src/events.py` had a `_settled_possessor` whose docstring described the fix
+exactly -- read the receiver once the ball is under control -- and which was
+never called from anywhere. It is now `_settled_receiver`, wired in, with
+three gates: read the geometry at the first controlled frame within
+`RECEIVER_SETTLE_WINDOW_S`; require the player to be within
+`RECEIVER_MAX_DIST_M`; require them to be clear of the nearest opponent by
+`RECEIVER_TEAM_MARGIN_M`. Failing a gate emits the pass with outcome
+`"unknown"` rather than a guess.
+
+**A trap worth naming.** The truth here is the team of the *next* labelled
+ball action, and the next action follows a pass after a median of 1.08-1.40 s,
+with 52-69% inside 1.5 s. A rule that waits 1.5 s and reads off who has the
+ball is therefore reading the answer. It scored balanced accuracy **0.89 on a
+held-out match**, better than anything defensible, and it means nothing. The
+settle window is capped at 0.6 s for this reason, not because 0.6 s measured
+best. At that cap only 0-5% of next actions have occurred.
+
+Swept over settle, radius and margin, fitted on the three Stoke windows and
+checked on the unseen Reading match (`experiment_receiver.py`). Balanced
+accuracy is the measure -- 17% of these passes lost the ball, so a constant
+"success" scores 83% accuracy and 0.50 balanced:
+
+| | tuning windows | held-out match |
+|---|---|---|
+| current behaviour | 0.59 | — |
+| settle 0.3 s, 6 m, 1 m margin | **0.80** | **0.83** |
+
+That is with the passer's team taken from SoccerNet. With our own team
+assignment the same rule gives 0.71 on the tuning windows and **0.28** held
+out -- worse than chance. The held-out window is the one where team
+attribution measures 0.55, which is a coin flip, so both ends of the pass are
+noise there.
+
+**Both ends have to be right, and that reconciles the earlier result.**
+Conditioning on a correct passer did not help while the receiver logic was
+broken; fixing the receiver does not help where the passer's team is random.
+Neither fix shows on its own.
+
+End to end, pooled over the four windows, the rebuild moves:
+
+| | before | after |
+|---|---|---|
+| turnovers called (truth ~17%) | 56% | 43% |
+| outcome accuracy | 45% | 56% |
+| ... on correct-passer passes | 54% | 70% |
+| on kept vs lost, correct passer | 46% vs 62%, p=0.37 | **31% vs 62%, p=0.13** |
+
+The separation is now 31 points in the right direction where it was 16, and
+pooled over everything the call is no longer identical on the two classes
+(43% vs 50%, p=0.74, against 56% vs 56%, p=1.00). None of this is
+significant: there are 10 genuinely lost passes among the decided ones, which
+is too few to reach p<0.05 at any effect size worth having. The mechanism is
+established; the end-to-end result is not.
+
+Detection is unaffected, which was the constraint: pass stays above chance on
+4/4 windows at +/-0.5 s and +/-1 s (p 0.000-0.039), and precision/recall at
++/-2 s move only on w3, 0.64 to 0.62.
+
+About 62% of matched passes now get a verdict; the rest say `"unknown"`.
+Downstream counts completed passes as `outcome == "success"` and turnovers as
+`"intercepted"`, so an unknown pass is counted as neither.
+
+**The outcome field still should not be published as a number a coach reads.**
+It is better than it was and it is no longer worse than a constant on the
+passes it decides, but it is not yet shown to carry information. The gating
+factor is now team assignment at 0.55-0.81, not the transfer logic. That
+remains a product decision and has not been made unilaterally.
 
 ## Carry: the distance gate was the fault, partly
 

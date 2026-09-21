@@ -121,8 +121,44 @@ POSSESSION_MAX_BALL_SPEED_KMH = 60.0
 # The ball is under control, rather than still arriving, below this speed.
 BALL_CONTROL_SPEED_KMH = 20.0
 
-# How long after a pass to wait before deciding who received it.
-RECEIVER_SETTLE_WINDOW_S = 1.5
+# --- Deciding who received the pass ----------------------------------------
+# Crediting the receiver to whoever is nearest at the instant possession
+# changes reads the geometry while the ball is still arriving, and on these
+# windows that gave an outcome field statistically independent of the outcome
+# (Fisher p = 1.00; see EVENT_ACCURACY.md). The receiver is instead read once
+# the ball is under control.
+#
+# How long to wait. Swept 0 to 0.6 s on four windows across two matches; the
+# cap of 0.6 s is a validity constraint rather than a measurement, because the
+# ground truth is the team of the *next* labelled ball action and that action
+# follows a pass after a median of 1.08-1.40 s. A rule that waits 1.5 s and
+# reads who has the ball is reading the answer: it scored balanced accuracy
+# 0.89 on a held-out match and means nothing. At 0.6 s only 0-5% of next
+# actions have occurred.
+RECEIVER_SETTLE_WINDOW_S = 0.3
+
+# How close the settled player must be to the ball to have received it. The
+# possession radius proper is 8 m, which is not possession -- it is merely
+# "on this part of the pitch" -- and using it to decide a receiver credits
+# whoever the ball travelled past.
+RECEIVER_MAX_DIST_M = 6.0
+
+# How much clearer the nearest player must be than the nearest player of the
+# other team. Below this the two candidates are separated by less than the
+# error in a position derived from a bounding-box base without homography,
+# so the honest answer is that the receiving team is unknown.
+#
+# On the wrong calls the credited opponent sat 2.1 m from the ball with the
+# nearest teammate at 3.7 m; on the right calls the teammate sat 2.8 m with
+# the nearest opponent at 4.3 m. The two are symmetric, which is why this
+# gate abstains rather than choosing.
+RECEIVER_TEAM_MARGIN_M = 1.0
+
+# What the outcome field says when the gates above decline to decide.
+# Downstream counts completed passes as outcome == "success" and turnovers as
+# "intercepted", so an unknown outcome is counted as neither, which is the
+# intended behaviour.
+OUTCOME_UNKNOWN = "unknown"
 
 # A failed pass is one event with an outcome, not a pass plus an interception.
 # Emitting both double-counts every turnover.
@@ -411,31 +447,60 @@ def _stabilise_possession(poss: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def _settled_possessor(poss: pd.DataFrame, after_time: float,
-                       window_s: float = RECEIVER_SETTLE_WINDOW_S) -> tuple[int, str]:
-    """Who holds the ball once it settles after a pass.
+def _settled_receiver(
+    timeline: pd.DataFrame,
+    player_xy: dict[int, dict[int, tuple[float, float]]],
+    team_by_track: dict[int, str],
+    arrive_time: float,
+    window_s: float = RECEIVER_SETTLE_WINDOW_S,
+) -> tuple[int, str, bool]:
+    """Who received the pass, once the ball is under control.
 
-    Crediting the receiver to whoever is nearest at the instant the ball
-    leaves credits whoever the ball happened to pass close to -- often an
-    opponent it went by at speed. The receiver is whoever is in possession
-    once the ball is under control again.
+    Returns ``(track_id, team, decided)``. ``decided`` is False when the
+    geometry does not support a call -- nobody near enough, or two candidates
+    from opposing teams too close together to separate. An undecided transfer
+    still produces a pass; it produces one without a verdict on its outcome.
+
+    Reading at the first controlled frame rather than the last one in the
+    window is deliberate. The last is later, and later is closer to the next
+    action, which is what the ground truth is derived from -- a rule that
+    drifts into the next action scores well without having identified
+    anything.
     """
-    window = poss[(poss.time_s > after_time)
-                  & (poss.time_s <= after_time + window_s)]
+    window = timeline[(timeline.time_s >= arrive_time)
+                      & (timeline.time_s <= arrive_time + window_s)]
     if window.empty:
-        return -1, "unknown"
+        return -1, "unknown", False
 
     if "speed_kmh" in window.columns:
-        settled = window[window.speed_kmh.fillna(0.0) <= BALL_CONTROL_SPEED_KMH]
-        if not settled.empty:
-            window = settled
+        calm = window[window.speed_kmh.fillna(0.0) <= BALL_CONTROL_SPEED_KMH]
+        if not calm.empty:
+            window = calm
 
-    held = window[window.possessor_id != -1]
-    if held.empty:
-        return -1, "unknown"
+    row = window.iloc[0]
+    here = player_xy.get(int(row["frame"]))
+    if not here:
+        return -1, "unknown", False
 
-    row = held.iloc[0]
-    return int(row.possessor_id), str(row.possessor_team)
+    bx, by = float(row["bx"]), float(row["by"])
+    ranked = sorted(
+        ((_distance(xy, (bx, by)), tid) for tid, xy in here.items()
+         if team_by_track.get(tid) in ("team_A", "team_B")),
+    )
+    if not ranked:
+        return -1, "unknown", False
+
+    best_dist, best_id = ranked[0]
+    best_team = team_by_track[best_id]
+    if best_dist > RECEIVER_MAX_DIST_M:
+        return best_id, best_team, False
+
+    rival = next((d for d, tid in ranked
+                  if team_by_track.get(tid) != best_team), None)
+    if rival is None or (rival - best_dist) < RECEIVER_TEAM_MARGIN_M:
+        return best_id, best_team, False
+
+    return best_id, best_team, True
 
 
 def _merge_adjacent_events(events: list[dict[str, Any]],
@@ -552,6 +617,7 @@ def _emit_possession_transition_event(
     player_xy: dict[int, dict[int, tuple[float, float]]],
     frame: int,
     ball_speed_kmh: float,
+    outcome_decided: bool = True,
 ) -> None:
     travel = _distance(start_xy, end_xy)
     dt_change = max(0.0, end_time - start_time)
@@ -566,6 +632,29 @@ def _emit_possession_transition_event(
     if (travel < MIN_PASS_DISTANCE_M
             or dt_change > MAX_PASS_INTERVAL_S
             or dt_change < MIN_PASS_INTERVAL_S):
+        return
+
+    # A pass whose receiver could not be established is still a pass. Only its
+    # verdict is withheld -- detection and outcome are separate claims, and
+    # the detection is the one this pipeline has evidence for.
+    if not outcome_decided:
+        events.append(
+            dict(
+                event_type="pass",
+                timestamp_s=start_time,
+                team=from_team,
+                player_track_id=from_id,
+                location_x=start_xy[0],
+                location_y=start_xy[1],
+                end_location_x=end_xy[0],
+                end_location_y=end_xy[1],
+                outcome=OUTCOME_UNKNOWN,
+                receiver_track_id=int(to_id),
+                pass_distance_m=round(travel, 1),
+                pass_interval_s=round(dt_change, 2),
+                inferred_from_unknown_bridge=bool(inferred),
+            )
+        )
         return
 
     if to_team == from_team:
@@ -750,6 +839,28 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
     was_out: bool = False
     player_xy = _player_positions_by_frame(tracks)
 
+    # Team is a property of a track, not of a frame: zero of 646 tracks across
+    # the four labelled windows ever change team, so one lookup per track is
+    # both correct and far cheaper than a per-frame join.
+    team_by_track = (
+        tracks[tracks.cls == "player"]
+        .drop_duplicates("track_id")
+        .set_index("track_id")["team"]
+        .to_dict()
+    )
+
+    def decide_receiver(arrive_time: float, passer_id: int,
+                        fallback_id: int, fallback_team: str):
+        """The settled receiver, or the transition's own guess undecided."""
+        sid, steam, decided = _settled_receiver(
+            timeline, player_xy, team_by_track, arrive_time)
+        # The ball coming to rest with the player who struck it is not a pass
+        # completed to anyone, and saying so is better than naming them as
+        # their own receiver.
+        if decided and sid != passer_id:
+            return sid, steam, True
+        return fallback_id, fallback_team, False
+
     # Where and when the ball was last under control during the current
     # possession spell -- i.e. where it was struck from, once it leaves.
     release_time: float | None = None
@@ -921,20 +1032,23 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                           else prev_time)
             start_xy = (last_release_xy if last_release_xy is not None
                         else (prev_bx, prev_by))
+            to_id, to_team, decided = decide_receiver(
+                t, prev_flight, cur_flight, cur_flight_team)
             _emit_possession_transition_event(
                 events,
                 start_time=start_time,
                 end_time=t,
                 from_id=prev_flight,
                 from_team=prev_flight_team,
-                to_id=cur_flight,
-                to_team=cur_flight_team,
+                to_id=to_id,
+                to_team=to_team,
                 start_xy=start_xy,
                 end_xy=(bx, by),
                 inferred=False,
                 player_xy=player_xy,
                 frame=frame,
                 ball_speed_kmh=speed,
+                outcome_decided=decided,
             )
 
         if prev_flight != -1 and cur_flight == -1 and pending_start_time is None and prev_bx is not None and prev_by is not None:
@@ -947,20 +1061,23 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
             if cur_flight != -1 and cur_flight_team != "unknown" and pending_from_id != -1:
                 bridge_dt = max(0.0, t - pending_start_time)
                 if bridge_dt <= PASS_UNKNOWN_BRIDGE_S and pending_start_xy is not None:
+                    to_id, to_team, decided = decide_receiver(
+                        t, pending_from_id, cur_flight, cur_flight_team)
                     _emit_possession_transition_event(
                         events,
                         start_time=pending_start_time,
                         end_time=t,
                         from_id=pending_from_id,
                         from_team=pending_from_team,
-                        to_id=cur_flight,
-                        to_team=cur_flight_team,
+                        to_id=to_id,
+                        to_team=to_team,
                         start_xy=pending_start_xy,
                         end_xy=(bx, by),
                         inferred=True,
                         player_xy=player_xy,
                         frame=frame,
                         ball_speed_kmh=speed,
+                        outcome_decided=decided,
                     )
                 pending_from_id = -1
                 pending_from_team = "unknown"
