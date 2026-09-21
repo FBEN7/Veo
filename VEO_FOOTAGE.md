@@ -55,24 +55,38 @@ compensation was expected to matter. This window measures 0.28 px/frame and
 compensation is skipped. Camera motion on this footage varies by passage
 rather than being a property of the camera.
 
-## The finding: ball speed is impossible
+## The ball track teleports -- everywhere, not here
 
-A p95 of 332 km/h means the selected ball track teleports. The Viterbi
-selection step is choosing a chain that jumps between different objects, and
-high coverage does not contradict that -- coverage counts frames with a
-selected candidate, not frames where the candidate is the ball. This is the
-same trap as before, in a new place.
+A p95 of 332 km/h means the selected ball track jumps between objects. Two
+claims were made about it here and both were wrong.
 
-It plausibly explains the event over-production. A ball that jumps between
-objects manufactures possession changes, and a possession change is what the
-pipeline emits as a pass. 24.7 passes per minute against a real 8-12 is the
-size of error that a jumping ball would produce.
+**It is not a Veo problem.** Measured with the same diagnostic, the 720p
+broadcast footage is worse:
 
-MAX_BALL_SPEED_KMH is 130 with a tolerance of 1.5, so the selector already
-penalises implausible movement. Either the penalty is too weak at this scale,
-or the candidates are so sparse in places that every available chain is
-implausible and it picks the least bad one. Distinguishing those is the next
-measurement, not a guess.
+| | Veo 640x360 | SoccerNet w1 720p |
+|---|---|---|
+| ball speed p95 | 332 km/h | **649** |
+| max | 1368 | **2164** |
+| p95 at consecutive frames | 299 | **626** |
+
+**It does not explain the event over-production.** The broadcast windows have
+worse ball speeds and pass detection above chance at p 0.001 on all four. A
+teleporting ball evidently does not prevent pass detection from working.
+
+The cause is detection, not selection. In 54% of Veo frames and 64% of
+broadcast frames there is exactly one ball candidate, so the selector has
+nothing to choose between: when that candidate is the wrong object, no
+selection rule can repair it. Of the steps that exceed the speed budget,
+about 57% arrive at a frame with a single candidate.
+
+Raising the motion penalty confirms it. From MOTION_WEIGHT 4 to 150 the p95
+is unchanged on every window -- 649, 811, 682, 288 km/h throughout. A 37-fold
+increase in the penalty moves nothing, because the frames that produce the
+spikes never offered an alternative.
+
+The sweep did improve events slightly, by a different route: pass mean F1
+rises 0.648 to 0.668 across the four labelled windows, on a broad plateau
+from weight 10 upward. That is adopted. It is not a fix for the ball track.
 
 ## What this run cannot tell us
 

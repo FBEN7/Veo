@@ -31,9 +31,24 @@ MAX_BALL_SPEED_KMH = 130.0
 # their own error, so the limit is enforced with slack rather than as a wall.
 SPEED_TOLERANCE = 1.5
 
-# Weight on the movement penalty relative to detection confidence. High enough
-# that confidence cannot buy an impossible jump.
-MOTION_WEIGHT = 4.0
+# Weight on the movement penalty relative to detection confidence.
+#
+# Swept against the four labelled windows across two matches, measuring pass
+# and carry F1 rather than anything about the ball track itself:
+#
+#     weight      1      4     10     25     60    150    400
+#     pass F1  0.642  0.648  0.661  0.668  0.661  0.661  0.663
+#
+# It rises to a broad plateau: anything from 10 upward is within 0.007 of the
+# best, so the exact value is not delicate and 25 is not a fitted peak. The
+# gain is modest and comes from two of the four windows.
+#
+# What it does NOT fix is the implausible speeds in the selected track. Raising
+# this from 4 to 150 leaves the p95 unchanged at 649, 811, 682 and 288 km/h on
+# the four windows. That is because 54-64% of frames offer exactly one ball
+# candidate, so there is nothing to choose between and no penalty can help;
+# the spikes are wrong detections, not wrong selections. See VEO_FOOTAGE.md.
+MOTION_WEIGHT = 25.0
 
 
 def _candidate_frames(balls: pd.DataFrame):
