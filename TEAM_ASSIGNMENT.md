@@ -180,11 +180,55 @@ that survive are the ones standing nearest the play, so they are
 over-represented in events relative to their number. Purity on Stoke is 0.89,
 meaning one kept track in nine is a steward.
 
-The remaining route is the one not taken here: this is a classification
-problem, not a clustering one. A detector that distinguishes a footballer in
-kit from a steward in hi-vis would settle it outright, and Roboflow's
-football datasets are CC BY 4.0 with player, referee and goalkeeper classes --
-usable commercially, unlike SoccerNet.
+## The Roboflow route: prepared, and blocked on the data
+
+The distance rule is *relative* -- it knows only that a steward looks unlike
+both kits. A model trained on labelled football would know something
+absolute: hi-vis is never a kit, an overcoat is never a kit. Roboflow's
+football-players-detection set labels player, goalkeeper, referee and ball,
+and is CC BY 4.0, so unlike SoccerNet it could ship.
+
+**A colour classifier is not that model**, which is worth knowing before
+fetching anything. Trained on one match's hand-read labels and tested on the
+other's (`experiment_player_classifier.py`):
+
+| trained on | tested on | classifier | distance rule |
+|---|---|---|---|
+| Reading | Stoke | 0.65 | **0.91** |
+| Stoke | Reading | 0.87 | **0.97** |
+
+It fits its own training match at AUC 1.00 and transfers worse than the
+incumbent on both. Absolute colour memorises kits. Whatever is trained has to
+see the crop and learn shape and texture, not a histogram -- and that is the
+argument for real labelled data rather than against it.
+
+**This container cannot reach roboflow.com.** Every subdomain is refused by
+the egress proxy under organisation policy, as is huggingface.co; github.com
+and pypi.org are allowed. The export is also far larger than the 30 MB upload
+limit.
+
+Neither blocks the work, because what is being trained is a filter over
+*crops*, and crops are small. Two scripts split the job:
+
+    prepare_player_crops.py   runs where Roboflow is reachable; writes a few
+                              megabytes of 32x64 crops, small enough to upload
+    train_player_filter.py    runs here; trains, and scores transfer onto the
+                              hand-read kit labels
+
+The negatives are mined rather than sampled, which is the part that matters.
+A random background box is grass, and separating footballers from grass
+teaches nothing -- the pipeline never asks about grass, it asks about a
+person-shaped detection that might be a steward. So `prepare_player_crops.py`
+runs the same COCO detector the pipeline deploys over the dataset's images
+and keeps every `person` detection that matches no annotation. Roboflow's
+annotators labelled the participants and ignored everyone else, so what is
+left is exactly the contaminating population: touchline staff, substitutes,
+stewards, ballboys, crowd. It also matches the deployment condition, since
+the filter will see COCO person detections in use.
+
+Both paths are tested end to end on a synthetic archive: training, weight
+saving, and the transfer evaluation all run, with the distance-rule baseline
+reading 0.97 and 0.91 as it should. Only the data is missing.
 
 ## Reproducing
 
@@ -193,6 +237,7 @@ usable commercially, unlike SoccerNet.
     python sweep_nonplayer_rejection.py    # feature and k sweep on kit labels
     python sweep_team_variants.py          # the compound metric, for contrast
     python experiment_teams.py             # feature variants and their ceiling
+    python experiment_player_classifier.py # why a colour classifier is not it
 
 The hand-read kit labels live in `output_soccernet*/kit_labels.json`, which is
 gitignored: they are derived from SoccerNet video and stay out of the
