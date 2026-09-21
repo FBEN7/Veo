@@ -41,26 +41,24 @@ labelled by eye from crop montages -- the same variants separate cleanly:
 
 Two further changes come from the same labels. Roughly a quarter of the
 tracks the pipeline calls players are not players: stewards in hi-vis, staff
-in black coats, crowd, and in one case an advertising hoarding. The shipped
-rule -- k=3, discard the smallest cluster -- allows exactly one non-team
-group where there are several, so k is raised and the two *largest* clusters
-are taken as the teams, letting any number of smaller ones fall out
-together. And green pixels are discarded before the colour is measured, since
-a torso box on a football pitch is part grass whatever else it contains.
+in dark coats, spectators, and in one case an advertising hoarding. Green
+pixels are now discarded before the colour is measured, since a torso box on
+a football pitch is part grass whatever else it contains; and a track sitting
+further than `RESIDUAL_CUT` from the nearer kit centre is refused a team.
 
-Measured against those labels, fitted on Reading and checked on Stoke, whose
-kits are entirely different:
+Measured against the hand-read labels on both windows:
 
                         purity   coverage   kit accuracy
-    shipped, Reading      0.84       1.00           0.93
-    this,    Reading      0.99       1.00           0.99
-    shipped, Stoke        0.83       1.00           0.97
-    this,    Stoke        0.85       1.00           0.98   (held out)
+    before, Reading       0.77       1.00           0.93
+    now,    Reading       0.96       0.98           0.99
+    before, Stoke         0.73       1.00           0.97
+    now,    Stoke         0.89       0.97           0.98
 
-The purity gain does not transfer -- 0.84 to 0.99 on the window it was fitted
-on, 0.83 to 0.85 on the one it was not. Non-player rejection is therefore
-improved on one match and barely on the other. Nothing regresses on either,
-which is why it is adopted; it is not a solved problem.
+Non-players given a team fall from 16 of 25 to 3 of 25 on Reading, and the
+share of passer/receiver slots on matched passes that land on one falls from
+22% to 15%. It is reduced, not solved: the few that survive are the ones
+standing nearest the play, so they are over-represented in events relative to
+their number.
 """
 
 from __future__ import annotations
@@ -69,6 +67,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 # Frames sampled per track. The original took five; a track of 200 frames can
 # afford far more, and the cost is one sequential read of the video either way.
@@ -112,10 +111,36 @@ GRASS_HUE_LO, GRASS_HUE_HI, GRASS_MIN_SAT = 30, 90, 40
 # feature change, which improves kit accuracy on both labelled windows
 # (0.93 -> 0.99 and 0.97 -> 0.98) and costs nothing anywhere.
 #
-# Rejecting non-players is therefore still unsolved. A quarter of tracks are
-# stewards, staff, crowd and hoardings; clustering can be made to exclude
-# them on one match and not on another.
+# Non-players are excluded by distance instead -- see RESIDUAL_CUT.
 N_CLUSTERS = 3
+
+# How far a track may sit from the nearer kit centre and still be a player,
+# as a multiple of the median distance among tracks inside the two kit
+# clusters.
+#
+# A quarter of the tracks the detector calls players are stewards in hi-vis,
+# staff in dark coats, spectators and one advertising hoarding. Counting
+# clusters does not remove them -- that assumes the teams are the two biggest
+# groups, and it collapsed when a team fragmented. Distance does not assume
+# anything about how many other groups exist, and because it is expressed
+# relative to the spread of the kits themselves it does not depend on what
+# colours they are.
+#
+# It separates strongly and, unlike everything else tried, it transfers:
+# area under the ROC curve 0.97 on one match and 0.91 on the other, against
+# 0.48 for how much a track's colour varies and 0.33-0.60 for how isolated it
+# is on the pitch.
+#
+# Swept and validated both directions on hand-read kit labels. Choosing the
+# cut on one match and applying it to the other:
+#
+#     fitted on Reading (cut 2.00) -> Stoke   purity 0.73 -> 0.91
+#     fitted on Stoke   (cut 2.50) -> Reading purity 0.77 -> 0.96
+#
+# 2.5 rather than 2.0 because it keeps coverage at 0.97 and 0.98 on the two
+# windows where 2.0 drops a tenth of the real players on one of them, and a
+# dropped player loses their events outright.
+RESIDUAL_CUT = 2.5
 
 
 def _torso_feature(frame: np.ndarray, px: float, py: float, h: float):
@@ -218,7 +243,12 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
         out.loc[out.cls == "ball", "team"] = "ball"
         return out
 
-    feats = np.array([np.median(by_track[t], axis=0) for t in tids])
+    raw_feats = np.array([np.median(by_track[t], axis=0) for t in tids])
+    # Standardised so that hue, saturation and brightness contribute on
+    # comparable scales; the distances below are otherwise dominated by
+    # whichever happens to have the widest raw range.
+    scaler = StandardScaler().fit(raw_feats)
+    feats = scaler.transform(raw_feats)
     km = KMeans(n_clusters=n_clusters, n_init=10, random_state=0).fit(feats)
     labels = km.labels_
 
@@ -240,6 +270,28 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
         mapping = {0: "team_A", 1: "team_B"}
 
     team_map = {t: mapping[l] for t, l in zip(tids, labels)}
+
+    # Reject by distance to the nearer kit centre. A track inside a team
+    # cluster can still be a steward standing where k-means had nowhere
+    # better to put them; what marks them out is sitting far from both kits.
+    team_centres = np.array(
+        [km.cluster_centers_[c] for c in sorted(mapping)
+         if mapping[c] != "other"])
+    if len(team_centres) == 2:
+        dist = np.linalg.norm(
+            feats[:, None, :] - team_centres[None, :, :], axis=2).min(axis=1)
+        inside = np.array([team_map[t] != "other" for t in tids])
+        scale = np.median(dist[inside]) if inside.any() else np.median(dist)
+        rejected = 0
+        if scale > 1e-9:
+            for t, d in zip(tids, dist / scale):
+                if d > RESIDUAL_CUT and team_map[t] != "other":
+                    team_map[t] = "other"
+                    rejected += 1
+        if verbose:
+            print(f"  [teams] {rejected} tracks rejected as non-players "
+                  f"(> {RESIDUAL_CUT}x the kit spread from either kit)")
+
     out = tracks.copy()
     out["team"] = out.track_id.map(team_map)
     out.loc[out.cls == "ball", "team"] = "ball"

@@ -118,9 +118,10 @@ carries negative information.
 * **Thin evidence on short tracks** -- essentially every matched event comes
   from a track of 100+ frames (median 190-220), where accuracy is still
   0.71-0.83.
-* **How the colour is measured** -- a rebuild fixing circular hue, seek-based
-  sampling and whole-crop averaging scores 0.775 against the original's 0.778.
-  See `src/team_assignment_v2.py`.
+* ~~**How the colour is measured**~~ -- withdrawn. The rebuild was scored at
+  0.775 against 0.778 on the compound metric. Against hand-read kit labels it
+  is 0.98-0.99 against 0.93-0.97, so it was better all along and the metric
+  hid it. See `TEAM_ASSIGNMENT.md`.
 * **Ball position unreliability at the event** -- team accuracy is 0.79 when
   the ball is slow at the event and 0.78 when fast, pooled over 175 events.
 
@@ -231,7 +232,12 @@ receiver slots on matched passes**. Those slots cannot be right. Grass
 underfoot, movement and size all fail to separate them.
 
 See `TEAM_ASSIGNMENT.md`. Roster contamination, not colour clustering, is the
-binding constraint.
+binding constraint. Rejecting tracks that sit far from both kit centres --
+kit-agnostic, so it transfers -- cuts the contaminated event slots from 22%
+to 15% and lifts purity from 0.77/0.73 to 0.96/0.89 on the two hand-labelled
+windows. Pooled, the outcome call now fires on 46% of passes that kept the
+ball against 70% of those that lost it, where it began at 56% against 56%.
+Still short of significance on 10 lost passes, and still not solved.
 
 ## Carry: the distance gate was the fault, partly
 

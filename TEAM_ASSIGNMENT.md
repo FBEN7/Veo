@@ -95,7 +95,7 @@ recorded "it is no more accurate" -- 0.775 against 0.778. **That conclusion
 was wrong**, and wrong because of the compound metric, not because the
 measurement was sloppy.
 
-**Raising k was measured and rejected.** The shipped rule is k=3 with the
+**Raising k was measured and rejected.** The rule was k=3 with the
 smallest cluster discarded, which allows exactly one non-team group where
 there are several. Taking the two largest of more clusters lets any number
 fall out, and on the window it was chosen on it works well -- purity 0.84 to
@@ -112,33 +112,84 @@ teams are the two biggest colour groups fails whenever a team fragments into
 several, and nothing detects that. k stays at 3, where "two largest" and "all
 but the smallest" are the same rule, so only the feature changed.
 
-## What this bought, honestly
+## What the feature change alone bought
 
 On the only uncontaminated measurement, kit accuracy rises 0.93 to 0.99 and
-0.97 to 0.98. End to end it is a wash: mean outcome accuracy 56% before and
-after, pass detection F1 at +/-2 s moving -0.02, +0.02, +0.02, 0.00 across
-the four windows, still above chance on 4/4 at +/-1 s and 3/4 at +/-2 s.
+0.97 to 0.98. End to end, taken by itself, it is a wash: mean outcome
+accuracy 56% before and after, pass detection F1 at +/-2 s moving -0.02,
++0.02, +0.02, 0.00 across the four windows, still above chance on 4/4 at
++/-1 s and 3/4 at +/-2 s.
 
-That is the expected result. Team assignment was not the binding constraint;
-the measurement said it was because the measurement was compound.
+That is the expected result, and it is the point. Team assignment was not the
+binding constraint; the measurement said it was because the measurement was
+compound. What *is* binding follows.
 
-## What is actually binding
+## Roster contamination: rejecting by distance instead of by counting
 
-**Roster contamination.** A quarter of tracks are not players, they take 22%
-of event slots, and none of grass, movement, size or clustering removes them
-reliably across two matches. This is unsolved and it is now the first thing
-to fix -- it corrupts possession, team shape and any per-player statistic,
-not only pass outcome.
+Counting clusters failed because it assumes the two teams are the two
+*biggest* colour groups, and a team that fragments into several breaks it
+silently. The fix does not count clusters at all.
 
-The signal that would work is the one not tried: these are people whose
-*appearance class* differs, and a detector that distinguishes a footballer in
-kit from a steward in hi-vis is a classification problem, not a clustering
-one. Roboflow's football datasets are CC BY 4.0 and carry player, referee and
-goalkeeper classes.
+Both kits form a tight group each, whatever colours they happen to be. A
+steward in hi-vis is far from both; so is a figure in a dark coat; so is a
+hoarding. **Distance to the nearer kit centre** is therefore kit-agnostic,
+which is what a rule has to be to survive a change of match. It is expressed
+as a multiple of the median distance among tracks inside the kit clusters, so
+it does not depend on how far apart two particular kits sit in colour space.
+
+Measured against two alternatives, on the hand-read labels:
+
+| signal | AUC, Reading | AUC, Stoke |
+|---|---|---|
+| **distance to nearer kit centre** | **0.97** | **0.91** |
+| how much a track's own colour varies | 0.48 | 0.33 |
+| how isolated it is from other tracks | 0.60 | 0.47 |
+
+The cut was chosen on one window and applied to the other, both directions:
+
+| fitted on | cut | held-out purity |
+|---|---|---|
+| Reading | 2.00 | Stoke 0.73 → **0.91** |
+| Stoke | 2.50 | Reading 0.77 → **0.96** |
+
+2.5 is shipped: at 2.0 coverage falls to 0.90 on Stoke, and a dropped player
+loses their events outright.
+
+### What it bought
+
+| | before | after |
+|---|---|---|
+| purity, Reading | 0.77 | **0.96** |
+| purity, Stoke | 0.73 | **0.89** |
+| coverage | 1.00 | 0.98 / 0.97 |
+| kit accuracy | 0.93 / 0.97 | 0.99 / 0.98 |
+| non-players given a team (Reading) | 16/25 | **3/25** |
+| player-frames they carry (Reading) | 16% | **6%** |
+| event slots landing on one (Reading) | 22% | **15%** |
+
+End to end, pass detection improves slightly -- F1 at +/-2 s moves +0.02,
+-0.01, +0.01, +0.03 across the four windows, still above chance on 4/4 at
++/-1 s -- and the outcome call separates the classes further: pooled, we call
+"intercepted" on 46% of passes that kept the ball against **70%** of those
+that lost it, where at the start of this work it was 56% against 56%.
+
+### It is reduced, not solved
+
+15% of event slots still land on someone who is not a player, and the ones
+that survive are the ones standing nearest the play, so they are
+over-represented in events relative to their number. Purity on Stoke is 0.89,
+meaning one kept track in nine is a steward.
+
+The remaining route is the one not taken here: this is a classification
+problem, not a clustering one. A detector that distinguishes a footballer in
+kit from a steward in hi-vis would settle it outright, and Roboflow's
+football datasets are CC BY 4.0 with player, referee and goalkeeper classes --
+usable commercially, unlike SoccerNet.
 
 ## Reproducing
 
-    python score_team_assignment.py        # the decomposition, Reading window
+    python score_team_assignment.py        # the decomposition, both windows
+    python sweep_roster_rejection.py       # the rejection rule and its cut
     python sweep_nonplayer_rejection.py    # feature and k sweep on kit labels
     python sweep_team_variants.py          # the compound metric, for contrast
     python experiment_teams.py             # feature variants and their ceiling

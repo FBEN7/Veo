@@ -40,7 +40,7 @@ from analyse_pass_outcome import (UPLOADS, WINDOWS, TOLERANCE_S, match,
                                   truth_passes)
 from score_soccernet import run_pipeline
 
-WINDOW = "reading 5115"
+WINDOWS_LABELLED = ("reading 5115", "w1 stoke 1820")
 
 
 def best_mapping_accuracy(assigned: dict[int, str],
@@ -59,9 +59,9 @@ def best_mapping_accuracy(assigned: dict[int, str],
     return best / len(shared), len(shared)
 
 
-def main():
+def report(window):
     name, out_dir, labels_name, offset = next(
-        w for w in WINDOWS if w[0] == WINDOW)
+        w for w in WINDOWS if w[0] == window)
     out = Path(out_dir)
     labels = json.loads((out / "kit_labels.json").read_text())
 
@@ -77,63 +77,47 @@ def main():
     frames = players.groupby("track_id").size().to_dict()
 
     labelled = set(kit) | nonplayers
-    print(f"{name}: {len(labelled)} tracks of >=15 frames read off the crops "
-          f"-- {len(labels['red'])} maroon, {len(labels['blue'])} hooped, "
-          f"{len(nonplayers)} not players")
-
-    # --- 1. kit clustering, on the tracks that are actually players ---------
-    real = {t: k for t, k in kit.items() if t in assigned
-            and assigned[t] in ("team_A", "team_B")}
-    acc, n = best_mapping_accuracy(assigned, real)
-    print(f"\n1. kit clustering on real players only   {acc:.2f}  (n={n})")
-    print("   the same tracks scored through possession at matched passes: "
-          "0.55")
-
-    # Which way each kit went.
-    cross = pd.crosstab(
-        pd.Series({t: kit[t] for t in real}, name="kit"),
-        pd.Series({t: assigned[t] for t in real}, name="assigned"))
-    print(cross.to_string().replace("\n", "\n   ").rjust(3))
-
-    # --- 2. what happens to the non-players ---------------------------------
-    placed = [t for t in nonplayers
+    placed = [t for t in labelled
               if assigned.get(t) in ("team_A", "team_B")]
-    print(f"\n2. non-player tracks given a team: {len(placed)}/"
-          f"{len(nonplayers)}")
-    total_frames = sum(frames.get(t, 0) for t in labelled)
-    np_frames = sum(frames.get(t, 0) for t in placed)
-    print(f"   they carry {np_frames} of {total_frames} labelled player-frames "
-          f"({np_frames / total_frames:.0%})")
-    got = {}
-    for t in placed:
-        got[assigned[t]] = got.get(assigned[t], 0) + 1
-    print(f"   split across the two teams: {got}")
+    real = [t for t in placed if t in kit]
 
-    # --- 3. do they take possession? ----------------------------------------
+    acc, n = best_mapping_accuracy(assigned, {t: kit[t] for t in real})
+    purity = len(real) / len(placed) if placed else float("nan")
+    coverage = len(real) / len(kit)
+
+    print(f"\n{name}: {len(labelled)} tracks read off the crops -- "
+          f"{len(labels['red'])} one kit, {len(labels['blue'])} the other, "
+          f"{len(nonplayers)} not players")
+    print(f"  kit accuracy on the players it keeps   {acc:.2f}  (n={n})")
+    print(f"  purity   -- kept tracks that are players   {purity:.2f}")
+    print(f"  coverage -- players it keeps               {coverage:.2f}")
+
+    kept_bad = [t for t in nonplayers if t in placed]
+    total_frames = sum(frames.get(t, 0) for t in labelled)
+    bad_frames = sum(frames.get(t, 0) for t in kept_bad)
+    print(f"  non-players still given a team: {len(kept_bad)}/"
+          f"{len(nonplayers)}, carrying {bad_frames}/{total_frames} "
+          f"player-frames ({bad_frames / total_frames:.0%})")
+
     events, _ = run_pipeline(
         json.loads((out / "clip.json").read_text())["path"], out)
     truth = truth_passes(UPLOADS / labels_name, offset, True)
     ours = [e for e in events if e.get("event_type") == "pass"]
     pairs = match([e["timestamp_s"] for e in ours],
                   [t["t"] for t in truth], TOLERANCE_S)
-
-    actors = [int(ours[pi].get("player_track_id", -1)) for pi, _ in pairs]
-    actors += [int(ours[pi].get("receiver_track_id", -1)) for pi, _ in pairs]
+    actors = [int(ours[pi].get(k, -1)) for pi, _ in pairs
+              for k in ("player_track_id", "receiver_track_id")]
     actors = [a for a in actors if a != -1]
     bad = [a for a in actors if a in nonplayers]
-    unknown = [a for a in actors if a not in labelled]
-    print(f"\n3. of {len(actors)} passer/receiver slots on matched passes:")
-    print(f"   {len(bad)} ({len(bad) / len(actors):.0%}) are tracks the crops "
-          "show are not players")
-    print(f"   {len(unknown)} ({len(unknown) / len(actors):.0%}) are tracks "
-          "too short to have been labelled")
+    if actors:
+        print(f"  of {len(actors)} passer/receiver slots on matched passes, "
+              f"{len(bad)} ({len(bad) / len(actors):.0%}) land on a "
+              "non-player")
 
-    # --- 4. the decomposition ------------------------------------------------
-    scored = [(a, kit.get(a)) for a in actors if a in kit]
-    print(f"\n4. {len(scored)} slots land on a track whose kit is known, so "
-          f"{len(actors) - len(scored)} of {len(actors)} "
-          f"({1 - len(scored) / len(actors):.0%}) cannot be right by kit at "
-          "all")
+
+def main():
+    for w in WINDOWS_LABELLED:
+        report(w)
 
 
 if __name__ == "__main__":
