@@ -58,9 +58,46 @@ w1) and the reverse on the fourth, and the test is compromised because
 `_ball_kinematics` clips speed at 120 km/h, hiding exactly the spikes measured
 elsewhere. Suggestive, not shown.
 
-Until per-end team accuracy is far higher, the honest options are to suppress
-the outcome field rather than publish a coin flip, or to report only the
-aggregate with its measured error. Neither is done yet.
+### Measured on the terms that matter to a user
+
+Timing precision is not what this field is judged on, so scored at +/-2 s
+where a second of error costs nothing:
+
+| | recall | precision |
+|---|---|---|
+| pass | 0.89 / 1.00 / 0.93 / 0.71 | 0.82 / 0.52 / 0.64 / 0.69 |
+| carry | 0.96 / 0.95 / 1.00 / 0.88 | 0.57 / 0.53 / 0.56 / 0.45 |
+
+Recall is good: almost everything is found. Precision is the fault, at roughly
+two events emitted per event that exists.
+
+Outcome accuracy on the passes that match a real pass is **53%, 55%, 44% and
+32%**. The trivial baseline of always answering "success" would score **93%,
+68%, 76% and 89%** on the same passes. The field is about 35 points worse than
+a constant: it carries negative information.
+
+### Five hypotheses eliminated, cause not found
+
+* **Team flicker within a track** -- zero of 646 tracks ever change team.
+* **Fragmentation** -- zero intercepted passes involve a passer and receiver
+  whose tracks never coexist; they are distinct players 6-11 m apart.
+* **Thin evidence on short tracks** -- essentially every matched event comes
+  from a track of 100+ frames (median 190-220), where accuracy is still
+  0.71-0.83.
+* **How the colour is measured** -- a rebuild fixing circular hue, seek-based
+  sampling and whole-crop averaging scores 0.775 against the original's 0.778.
+  See `src/team_assignment_v2.py`.
+* **Ball position unreliability at the event** -- team accuracy is 0.79 when
+  the ball is slow at the event and 0.78 when fast, pooled over 175 events.
+
+What remains untested is whether the possessor is the right player at all.
+Possession is nearest-player, and a nearby opponent would produce exactly this
+signature; ruling it out needs ground truth for who holds the ball, which
+SoccerNet does not provide.
+
+Until then the outcome field should not be published. Reporting no outcome is
+honest; reporting one that is worse than a constant is not. That change is a
+product decision and has not been made unilaterally.
 
 ## Carry: the distance gate was the fault, partly
 
