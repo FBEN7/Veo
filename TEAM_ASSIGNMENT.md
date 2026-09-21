@@ -230,6 +230,31 @@ Both paths are tested end to end on a synthetic archive: training, weight
 saving, and the transfer evaluation all run, with the distance-rule baseline
 reading 0.97 and 0.91 as it should. Only the data is missing.
 
+### The payoff is unproven, and worth saying before anyone fetches anything
+
+The argument for the dataset is that a model seeing the crop -- shape,
+posture, texture -- generalises where one seeing a colour histogram does not.
+That assumption is testable now, because the hand-read labels say which
+tracks are players. `experiment_crop_cnn.py` trains the same `SmallNet` on one
+match's tracks and tests it on the other's:
+
+| trained on | tested on | crop CNN | colour histogram | distance rule |
+|---|---|---|---|---|
+| Reading | Stoke | 0.47 | 0.65 | **0.91** |
+| Stoke | Reading | 0.68 | 0.87 | **0.97** |
+
+Both learned models fit their own match at AUC 1.00 and lose to the rule they
+were meant to replace. The CNN is *worse* than the histogram, and one of its
+scores is below chance.
+
+This does not show that the Roboflow route fails. 186 tracks across two
+matches is far too little to train a network that generalises, and the
+dataset is roughly forty times the images across many matches. What it does
+show is that **the payoff cannot be demonstrated with what is here**, and
+that "learned appearance beats the distance rule" is currently an assumption
+rather than a result. The distance rule is at purity 0.96 and 0.89 and costs
+nothing to run.
+
 ## Reproducing
 
     python score_team_assignment.py        # the decomposition, both windows
@@ -238,6 +263,7 @@ reading 0.97 and 0.91 as it should. Only the data is missing.
     python sweep_team_variants.py          # the compound metric, for contrast
     python experiment_teams.py             # feature variants and their ceiling
     python experiment_player_classifier.py # why a colour classifier is not it
+    python experiment_crop_cnn.py         # nor, at this data scale, a crop CNN
 
 The hand-read kit labels live in `output_soccernet*/kit_labels.json`, which is
 gitignored: they are derived from SoccerNet video and stay out of the
