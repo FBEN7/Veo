@@ -30,13 +30,21 @@ to them* carry little information. A coach reading "19 completed, 19
 intercepted" is reading fiction, and unlike a timing error it is obvious to
 anyone who knows football.
 
-Two candidate causes are ruled out:
+One candidate cause is ruled out:
 
-* **Team does not flicker within a track.** Zero of 646 tracks across the four
-  windows ever change team.
 * **It is not fragmentation.** Zero intercepted passes involve a passer and
   receiver whose tracks never coexist, so they are genuinely distinct players,
   6 to 11 m apart.
+
+A second was reported as ruled out and was not. "Team does not flicker within
+a track -- zero of 646 tracks ever change team" is **true by construction and
+proves nothing**: `team_assignment.py` ends with
+`tracks["team"] = tracks.track_id.map(team_map)`, one team per track id, so a
+track cannot change team whatever the video shows. The test could only ever
+return zero. It also gave false confidence, because a track *can* change
+player -- see `TEAM_ASSIGNMENT.md`, where one track visibly switches from a
+red-striped player to a navy one mid-track, which a single per-track label has
+no way to express.
 
 Team assignment error is a contributor but provably not the main one.
 If each end of a pass is assigned correctly with probability a, the reported
@@ -103,7 +111,8 @@ carries negative information.
 
 ### Six hypotheses eliminated, cause not found
 
-* **Team flicker within a track** -- zero of 646 tracks ever change team.
+* ~~**Team flicker within a track**~~ -- withdrawn. The test was vacuous: team
+  is assigned once per track id, so zero was the only possible answer.
 * **Fragmentation** -- zero intercepted passes involve a passer and receiver
   whose tracks never coexist; they are distinct players 6-11 m apart.
 * **Thin evidence on short tracks** -- essentially every matched event comes
@@ -205,9 +214,24 @@ Downstream counts completed passes as `outcome == "success"` and turnovers as
 
 **The outcome field still should not be published as a number a coach reads.**
 It is better than it was and it is no longer worse than a constant on the
-passes it decides, but it is not yet shown to carry information. The gating
-factor is now team assignment at 0.55-0.81, not the transfer logic. That
-remains a product decision and has not been made unilaterally.
+passes it decides, but it is not yet shown to carry information. That remains
+a product decision and has not been made unilaterally.
+
+### The 0.55-0.81 was not team assignment
+
+This section previously named team assignment as the gating factor. It is
+not. That figure was scored at matched passes, which measures kit clustering
+*and* whether the event was attributed to the right player at once, and the
+second factor dominates. Read off the kits by eye, clustering is **0.93**.
+
+What the same exercise found instead: **a quarter of the tracks the pipeline
+calls players are not players** -- stewards in hi-vis, staff in dark coats,
+crowd, one advertising hoarding -- and they take **22% of the passer and
+receiver slots on matched passes**. Those slots cannot be right. Grass
+underfoot, movement and size all fail to separate them.
+
+See `TEAM_ASSIGNMENT.md`. Roster contamination, not colour clustering, is the
+binding constraint.
 
 ## Carry: the distance gate was the fault, partly
 

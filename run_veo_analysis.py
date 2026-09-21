@@ -36,7 +36,7 @@ def main():
                      ball_pitch_filter, player_filter, camera_motion, stats)
     from src import events as ev_module
     from src.detect_track_hybrid import run as run_detection
-    from src.team_assignment import assign_teams
+    from src.team_assignment_v2 import assign_teams_v2 as assign_teams
 
     out_dir = Path(args.out)
     clip_info = sc.probe_clip(args.clip)

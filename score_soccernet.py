@@ -206,16 +206,25 @@ def check_cache_provenance(out_dir: Path, clip_info: dict) -> None:
         manifest.write_text(json.dumps(clip_info, indent=2))
 
 
-def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False):
+def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
+                 team_override: dict[int, str] | None = None):
     """Detect, track and emit events for the clip, caching each stage.
 
     ``return_tracks`` also hands back the metric tracks the events were
     derived from, so a diagnostic can look at the possession timeline that
     produced a given event rather than reconstructing the pipeline and
     drifting out of step with it.
+
+    ``team_override`` replaces the team of each track after the cached stages
+    are loaded, so an alternative team assignment can be measured end to end
+    without re-running detection. Nothing between detection and events reads
+    the team column, so substituting it here is equivalent to having assigned
+    teams differently in the first place. Tracks absent from the mapping keep
+    no team, which is how an assignment declining to place a track is
+    expressed.
     """
     from src.detect_track_hybrid import run as run_detection
-    from src.team_assignment import assign_teams
+    from src.team_assignment_v2 import assign_teams_v2 as assign_teams
     from src import (auto_tune, pixel_scale, ball_selection, track_reid,
                      ball_pitch_filter, player_filter, camera_motion)
     from src import events as ev_module
@@ -267,6 +276,12 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False):
         print("annotating grass fraction...")
         tracks = ball_pitch_filter.annotate_grass_fraction(tracks, clip)
         tracks.to_parquet(grass)
+
+    if team_override is not None:
+        tracks = tracks.copy()
+        is_player = tracks.cls == "player"
+        tracks.loc[is_player, "team"] = (
+            tracks.loc[is_player, "track_id"].map(team_override))
 
     filtered = ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=True)
     scale = pixel_scale.estimate_px_per_m(filtered)
