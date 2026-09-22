@@ -175,10 +175,73 @@ that lost it, where at the start of this work it was 56% against 56%.
 
 ### It is reduced, not solved
 
-15% of event slots still land on someone who is not a player, and the ones
-that survive are the ones standing nearest the play, so they are
-over-represented in events relative to their number. Purity on Stoke is 0.89,
-meaning one kept track in nine is a steward.
+15% of event slots still land on someone who is not a player. Purity on Stoke
+is 0.89, meaning one kept track in nine is a steward. (The claim that the
+survivors are over-represented because they stand nearest the play is
+withdrawn below -- measured, it is 1.2x, 0.6x and 1.9x across three windows,
+and the figure here falls to 5-8% once re-identification stops undoing the
+rejection.)
+
+## A third window, and the bug it found
+
+A third window was hand-labelled -- Stoke at 40:10, 98 tracks: 36 striped, 47
+navy, 15 not players. It was chosen because it is the window where the
+rejected k=5 rule collapsed, and because `RESIDUAL_CUT` had never seen it.
+
+It holds, and is the best of the three:
+
+| window | purity | coverage | kit accuracy |
+|---|---|---|---|
+| Reading (fitted) | 0.96 | 0.98 | 0.99 |
+| Stoke 18:20 (fitted) | 0.89 | 0.97 | 0.98 |
+| **Stoke 40:10 (unseen)** | **0.98** | **0.95** | **0.99** |
+
+Its 36-to-47 split also settles the earlier failure: the two kits really are
+balanced in this window, so k=5's 103-against-38 was the rule breaking, not
+the match being lopsided.
+
+### The claim about survivors was wrong
+
+`TEAM_ASSIGNMENT.md` previously said the surviving non-players "are the ones
+standing nearest the play, so they are over-represented in events relative to
+their number". Measured across three windows, the ratio of their share of
+event slots to their share of player-frames is **1.2x, 0.6x and 1.9x**. On one
+window they are *under*-represented. There is no systematic effect; the
+earlier claim came from comparing two quantities that were not counting the
+same thing.
+
+### Re-identification was undoing the rejection
+
+Chasing that discrepancy found a real bug. `track_reid.merge_fragments` joins
+fragments on geometry alone and never looks at the team, so a rejected
+non-player's fragment could be relabelled with an accepted player's id, and
+its rows -- carrying `team_A` or `team_B` -- went straight back into
+possession after team assignment had excluded them.
+
+| | mixed-team merged tracks | spliced a rejected fragment into an accepted one |
+|---|---|---|
+| Reading | 15 of 89 | 8 |
+| Stoke 18:20 | 33 of 128 | 15 |
+| Stoke 40:10 | 24 of 111 | 14 |
+
+Two fragments of one player wear one kit, so `_best_match` now refuses
+candidates whose team differs. Measured across the three labelled windows:
+
+| | before | after |
+|---|---|---|
+| merged tracks carrying two team labels | 15 / 33 / 24 | **0 / 0 / 0** |
+| event slots landing on a non-player | 15% / 10% / 11% | **8% / 8% / 5%** |
+
+Pass and carry detection is unchanged to the second decimal on all four
+windows, and the outcome call moves within noise (pooled 48% against 67%,
+p = 0.33, against 46% and 70% before).
+
+**The cost is fewer merges**: 89 tracks become 98 on Reading, 128 become 143,
+111 become 126. Those are genuine same-player joins now refused because one
+fragment's kit was misread. Nothing scored here depends on them, but distance
+covered and top speed are computed per track and would be split across the
+extra fragments. That is untested, and it is the thing to watch if those
+numbers are ever published.
 
 ## The Roboflow route: prepared, and blocked on the data
 

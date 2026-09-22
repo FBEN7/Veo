@@ -58,7 +58,7 @@ from experiment_teams import VARIANTS, _drop_grass, _top_saturated, _circular
 from score_team_assignment import best_mapping_accuracy
 from sweep_team_variants import pixels_for
 
-LABELLED = ("reading 5115", "w1 stoke 1820")
+LABELLED = ("reading 5115", "w1 stoke 1820", "w2 stoke 4010")
 
 # Thresholds swept, in units of the median distance of tracks to their own
 # team centre -- a ratio rather than an absolute, so it does not depend on

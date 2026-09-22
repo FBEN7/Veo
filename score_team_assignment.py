@@ -40,7 +40,7 @@ from analyse_pass_outcome import (UPLOADS, WINDOWS, TOLERANCE_S, match,
                                   truth_passes)
 from score_soccernet import run_pipeline
 
-WINDOWS_LABELLED = ("reading 5115", "w1 stoke 1820")
+WINDOWS_LABELLED = ("reading 5115", "w1 stoke 1820", "w2 stoke 4010")
 
 
 def best_mapping_accuracy(assigned: dict[int, str],

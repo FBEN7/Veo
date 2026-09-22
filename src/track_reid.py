@@ -54,6 +54,9 @@ class _Fragments:
         starts, ends = [], []
         sx, sy, ex, ey = [], [], [], []
         vx, vy = [], []
+        teams: list = []
+
+        has_team = "team" in players.columns
 
         for tid, group in players.groupby("track_id", sort=False):
             g = group.sort_values("frame")
@@ -62,6 +65,7 @@ class _Fragments:
             y = g.py.to_numpy(dtype=float) / px_per_m
 
             self.ids.append(tid)
+            teams.append(str(g.team.iloc[0]) if has_team else "")
             starts.append(f[0])
             ends.append(f[-1])
             sx.append(x[0]); sy.append(y[0])
@@ -86,6 +90,7 @@ class _Fragments:
         self.ey = np.array(ey)[order]
         self.vx = np.array(vx)[order]
         self.vy = np.array(vy)[order]
+        self.team = np.array(teams, dtype=object)[order]
         self._start_list = self.start.tolist()
 
     def __len__(self):
@@ -119,7 +124,12 @@ def _best_match(frag: _Fragments, i: int, max_gap_frames: float,
     dist = np.hypot(frag.sx[cand] - pred_x, frag.sy[cand] - pred_y)
     reach = MAX_PLAYER_SPEED_MS * gap_s + POSITION_MARGIN_M
 
-    feasible = dist <= reach
+    # Two fragments of one player wear one kit. Joining across kits was
+    # relabelling a rejected non-player's fragment with an accepted player's
+    # id, which put its rows back into possession after team assignment had
+    # excluded them: 17-26% of merged tracks carried more than one team label,
+    # and 8 to 15 per window spliced a rejected fragment into an accepted one.
+    feasible = (dist <= reach) & (frag.team[cand] == frag.team[i])
     if not feasible.any():
         return -1, np.inf
 
