@@ -136,7 +136,9 @@ def project_with_homography(tracks: pd.DataFrame, H) -> pd.DataFrame:
 
 
 def prepare_tracks_for_events(tracks: pd.DataFrame, H=None,
-                              verbose: bool = True) -> tuple[pd.DataFrame, bool]:
+                              verbose: bool = True,
+                              px_per_m: float | None = None,
+                              ) -> tuple[pd.DataFrame, bool]:
     """Return tracks in metres, and whether the pitch frame is absolute.
 
     The second value is the one that matters for correctness. `True` means
@@ -145,6 +147,13 @@ def prepare_tracks_for_events(tracks: pd.DataFrame, H=None,
     and speeds are meaningful, absolute positions are not, and every event
     type that depends on where the goal is must be disabled rather than
     allowed to guess.
+
+    `px_per_m` overrides the scale estimated from player height. It exists
+    for `ground_plane.effective_px_per_m`, which measures how much the height
+    estimate overstates the scale and hands back a corrected number. Nothing
+    else about the coordinate system changes: this is deliberately a scalar
+    override rather than a different map, because the map that is
+    geometrically right measures worse. See that function.
     """
     usable, reason = is_homography_usable(H)
 
@@ -153,7 +162,11 @@ def prepare_tracks_for_events(tracks: pd.DataFrame, H=None,
             print(f"  [scale] homography {reason}; pitch coordinates absolute")
         return project_with_homography(tracks, H), True
 
-    px_per_m = estimate_px_per_m(tracks)
+    source = "from player height"
+    if px_per_m is None:
+        px_per_m = estimate_px_per_m(tracks)
+    else:
+        source = "calibrated against the ground plane"
     if not np.isfinite(px_per_m) or px_per_m <= 0:
         raise ValueError(
             "no usable homography and no player detections to estimate scale "
@@ -162,7 +175,7 @@ def prepare_tracks_for_events(tracks: pd.DataFrame, H=None,
 
     if verbose:
         print(f"  [scale] homography {reason}; "
-              f"using {px_per_m:.1f} px/m from player height. "
+              f"using {px_per_m:.1f} px/m {source}. "
               "Pitch coordinates are relative: goals, shots and out-of-play "
               "stay disabled.")
     return to_metric_coords(tracks, px_per_m), False

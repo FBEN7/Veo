@@ -184,13 +184,17 @@ a Veo mast and a television gantry, which is a good sign. But R^2 is 0.14 to
 0.39: youth players differ in height and a bounding box changes with pose and
 occlusion, so the relation holds for the population and not for a detection.
 
-**The focal length cannot be recovered from the motion.** The plane model
-leaves one unknown, and without it lateral and depth distances scale
+**The focal length cannot be recovered from the players' motion.** The plane
+model leaves one unknown, and without it lateral and depth distances scale
 differently. Choosing it to make player speed independent of running
 direction is appealing and does not survive contact: the lateral-to-depth
 p90 ratio is 1.49 on broadcast and 0.78 on Veo, where perspective alone
 requires it to exceed 1 on both. Footballers run along the pitch more than
 across it, and that confound is larger than the effect.
+
+It can be recovered from the *camera's* motion, which is a different thing
+and took a while to notice. See "The focal length, and what it was worth"
+below.
 
 **Chaining homographies between frames collapses.** The physical camera is
 fixed and only pans and zooms, so every pair of frames is related by an exact
@@ -220,6 +224,109 @@ Until then the honest statement is that distances and speeds are
 **proportional** measurements, good for comparing players and passages within
 a clip, and not metric. The per-90 kilometre figures should carry that
 caveat wherever they are shown.
+
+That last paragraph was written before the focal length was measured, and it
+is now too pessimistic for broadcast and exactly right for Veo. What
+changed is below.
+
+## The focal length, and what it was worth
+
+The missing number turned out to be obtainable, and obtaining it turned out
+not to matter nearly as much as this document assumed.
+
+**Where it comes from.** A camera that rotates about its own centre and does
+not travel relates any two frames by `H = K R K^-1`. Requiring `R` to be a
+rotation pins `f` from `H` alone -- the classic constraint that the first and
+third columns of `K^-1 H K` are orthogonal. A broadcast camera on a gantry
+and a Veo virtual camera panning across its panorama both qualify. The
+homographies come from ORB matches on the same background mask the motion
+estimator uses, graphics excluded.
+
+The first implementation returned zero on every clip. That was not the data:
+handed a frame warped by a rotation of *known* focal length it also returned
+zero, because both constraints had numerator and denominator inverted.
+Corrected, it recovers a known f to within a few percent whenever the pan
+exceeds about two degrees. The equal-norm constraint is an order of
+magnitude noisier and is not used.
+
+On real footage, measured at four baselines from 15 to 120 frames:
+
+| clip | 15f | 30f | 60f | 120f | spread | implied FOV |
+|---|---|---|---|---|---|---|
+| SoccerNet w1 | 1673 | 1685 | 1629 | 1766 | 0.18 | 42 deg |
+| SoccerNet w2 | 1606 | 1589 | 1690 | 1593 | 0.16 | 43 deg |
+| SoccerNet w3 | 1719 | 1776 | 1951 | 1790 | 0.27 | 39 deg |
+| reading | 1757 | 1801 | 1789 | 1803 | 0.19 | 39 deg |
+| **Veo** | 1434 | 2068 | 1637 | 2082 | **0.74** | refused |
+
+Agreement across an eight-fold range of baselines is the evidence: the
+projective part of the homography grows with the rotation while the noise
+does not, so a spurious f drifts with the baseline. Broadcast holds. Veo
+does not, and is refused rather than used.
+
+With f, the whole ground plane follows. Camera heights come out at 21 to 33 m
+on broadcast and 6.6 m on Veo -- a television gantry and a mast -- horizons
+sit well above the frame, and players land 31 to 74 m away. Three
+independent measurements agreeing on one geometry.
+
+**And it does not help.** Projecting onto that plane was measured end to end
+against the single scale, with the possession radius re-tuned separately
+under each so the comparison is not just measuring thresholds:
+
+| | pass F1, tuned on w1-w3 | held out on Reading |
+|---|---|---|
+| single scale | **0.793** | **0.706** |
+| ground plane | 0.728 | 0.655 |
+| ground plane, ball depth from nearest player | 0.757 | 0.667 |
+
+Split-half speed reliability is unchanged on three windows and collapses
+from 0.57 to 0.19 on Reading. Distance-rate reliability is equal or worse on
+all four and goes negative on Reading. The one thing that improves is the
+plausibility of km per 90 -- which is the weak test this document opens by
+warning about.
+
+The reason is not subtle. Depth goes as `1 / (row - horizon)`, so the map
+multiplies vertical position noise, and at these resolutions that costs more
+than the geometry gains. Two attempts to reduce that noise are recorded in
+`src/ground_plane.py`: reading depth from the box centre rather than the box
+bottom, which keeps `crop_h` jitter out of position and recovered three of
+the four windows; and measuring the horizon per window instead of inferring
+it from the camera-motion estimate, which is right in principle -- a row
+1068 px off-axis moves 36% further under tilt than the centre does -- and in
+practice injects enough jitter of its own to halve w3's reliability.
+
+**What does help is the number, not the map.** A scale taken from player
+height is the scale for motion *across* the view. Motion *into* it covers
+fewer pixels per metre, by roughly (rows below horizon) / f. So one number
+from heights overstates pixels per metre, and every distance divided by it
+comes out short -- by 9%, 9%, 17% and 26% on the four windows, always in the
+same direction. Correcting a single scalar is free where replacing the map
+is not, because a uniform rescale cannot move a correlation.
+
+| clip | pass F1 | carry F1 | km/90 | speed r | sprints/min |
+|---|---|---|---|---|---|
+| w1 | 0.849 -> **0.886** | 0.716 -> 0.687 | 9.6 -> **10.5** | 0.44 -> 0.45 | 0.54 -> 0.58 |
+| w2 | 0.698 -> 0.698 | 0.692 -> **0.731** | 11.4 -> 12.5 | 0.58 -> 0.57 | 1.07 -> 1.55 |
+| w3 | 0.781 -> 0.767 | 0.714 -> 0.702 | 10.6 -> 12.2 | 0.48 -> 0.47 | 0.39 -> 0.77 |
+| reading | 0.727 -> 0.679 | 0.571 -> **0.625** | 8.5 -> **10.5** | 0.57 -> 0.51 | 0.36 -> 0.47 |
+
+Every measured instrument is flat: pass F1 -0.007, carry F1 +0.013,
+split-half speed -0.02, averaged over four windows. What moves is the level,
+and the level can only be judged by plausibility -- where **the two available
+anchors disagree**. Distance per 90 improves on all four, from 8.5-11.4 into
+10.5-12.5 against football's 10-12. The sprint rate gets worse, from
+0.36-1.07 to 0.47-1.55 against football's 0.3-0.7, because the 20 km/h
+threshold is absolute and every speed just rose by a sixth.
+
+It is shipped anyway, on the grounds that the bias is established by
+geometry rather than fitted to a target, and knowingly keeping a scale
+proven 9-26% too large is worse than correcting it and saying what the
+correction does not settle. The correction inherits the focal length's own
+uncertainty, so call it 10-25% with a few points either way.
+
+**None of this reaches the Veo clip.** Its focal length is refused, so it
+keeps the uncalibrated scale and the "proportional, not metric" caveat above
+applies to it in full. `run_veo_analysis.py` prints which of the two it got.
 
 ## The ball track teleports -- everywhere, not here
 

@@ -226,7 +226,8 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     from src.detect_track_hybrid import run as run_detection
     from src.team_assignment_v2 import assign_teams_v2 as assign_teams
     from src import (auto_tune, pixel_scale, ball_selection, track_reid,
-                     ball_pitch_filter, player_filter, camera_motion)
+                     ball_pitch_filter, player_filter, camera_motion,
+                     ground_plane)
     from src import events as ev_module
 
     clip_info = probe_clip(clip)
@@ -335,8 +336,19 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     merged = track_reid.merge_fragments(
         selected, scale, fps=profile.fps, verbose=True)
 
+    # A scale taken from player height is the scale for motion across the
+    # view, not into it, so it overstates pixels per metre and every distance
+    # comes out short. The ground plane measures by how much. It does not
+    # replace the coordinate system -- see ground_plane.effective_px_per_m for
+    # why the geometrically correct map measures worse than this scalar.
+    plane = ground_plane.load_or_build(
+        clip, merged, clip_info["width"], clip_info["height"],
+        out_dir / "ground_plane.json")
+    calibrated = (ground_plane.effective_px_per_m(merged, plane, verbose=True)
+                  if plane is not None else None)
+
     metric, absolute = pixel_scale.prepare_tracks_for_events(
-        merged, None, verbose=True)
+        merged, None, verbose=True, px_per_m=calibrated)
     events = ev_module.detect_events(metric, absolute_pitch=absolute)
 
     diag = ball_selection.ball_track_diagnostics(merged, scale, fps=profile.fps)

@@ -33,7 +33,8 @@ def main():
     args = ap.parse_args()
 
     from src import (auto_tune, pixel_scale, ball_selection, track_reid,
-                     ball_pitch_filter, player_filter, camera_motion, stats)
+                     ball_pitch_filter, player_filter, camera_motion, stats,
+                     ground_plane)
     from src import events as ev_module
     from src.detect_track_hybrid import run as run_detection
     from src.team_assignment_v2 import assign_teams_v2 as assign_teams
@@ -118,8 +119,14 @@ def main():
     merged = track_reid.merge_fragments(selected, scale, fps=profile.fps)
     n_after = merged[merged.cls == "player"].track_id.nunique()
 
+    plane = ground_plane.load_or_build(
+        args.clip, merged, clip_info["width"], clip_info["height"],
+        out_dir / "ground_plane.json")
+    calibrated = (ground_plane.effective_px_per_m(merged, plane, verbose=True)
+                  if plane is not None else None)
+
     metric, absolute = pixel_scale.prepare_tracks_for_events(
-        merged, None, verbose=True)
+        merged, None, verbose=True, px_per_m=calibrated)
     events = ev_module.detect_events(metric, absolute_pitch=absolute)
     counts = Counter(e["event_type"] for e in events)
 
@@ -130,6 +137,13 @@ def main():
     print(f"\nSCALE & CAMERA")
     print(f"  scale        : {scale:.1f} px/m "
           f"(a 1.75 m player is {scale * 1.75:.0f} px tall)")
+    if calibrated:
+        print(f"  calibrated   : {calibrated:.1f} px/m from the ground plane "
+              f"-- every distance below is {scale / calibrated:.2f}x what the "
+              "height estimate alone gives")
+    else:
+        print("  calibrated   : NO -- the focal length could not be measured "
+              "on this footage, so distances keep the height estimate's bias")
     print(f"  camera       : {cam_note}")
 
     print(f"\nBALL   (expect: exactly one, always)")

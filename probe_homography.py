@@ -1,5 +1,14 @@
 """What a homography would need here, and why it is not yet possible.
 
+Partly superseded. The focal length this probe concludes is unobtainable is
+obtainable -- not from the players' motion, which is what is tested below,
+but from the camera's own rotation. `src/ground_plane.py` does it, and the
+ground plane that follows is measurably worse than the single scale it would
+replace; only the corrected scale *value* is shipped. VEO_FOOTAGE.md has the
+numbers. What stands unchanged is everything here about *absolute* pitch
+coordinates: there are still no markings to anchor to, so there is still no
+goal line, and goals, shots and out-of-play stay disabled.
+
 Every metric figure this pipeline reports -- distance covered, top speed,
 sprint counts, pass length -- divides pixels by a single `px_per_m` taken
 from the median player height. A homography would replace that with a proper
@@ -120,6 +129,13 @@ def speed_anisotropy():
           "everywhere.\n  It is 1.49 on broadcast and 0.78 on Veo. Footballers "
           "also run along the\n  pitch more than across it, and that confound "
           "is large enough to sink\n  the idea. No focal length from this.")
+    print("\n  It does come from the CAMERA's motion rather than the players':"
+          "\n  `src/ground_plane.estimate_focal` recovers it from the "
+          "rotation between\n  frames, stable across baselines on broadcast "
+          "and refused on Veo. What\n  that was worth is a separate question, "
+          "answered in VEO_FOOTAGE.md --\n  briefly, the map it enables "
+          "measures worse than the single scale, and\n  only the corrected "
+          "scale value is shipped.")
 
 
 def marking_visibility(clip: str, frames=(1400, 2600, 3800, 4300)):

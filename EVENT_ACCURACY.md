@@ -539,3 +539,35 @@ The replication did what replication is for. Pass detection at p = 0.019 on
 one sample was exactly the kind of figure that fails to reproduce, and it
 failed. Carry detection survived, and survived more broadly than it first
 appeared.
+
+## The metre scale was recalibrated, and these figures moved
+
+Every threshold in this document is in metres, reached by dividing pixels by
+a scale taken from median player height. That scale has since been shown to
+be biased: it is the scale for motion *across* the view, and motion *into*
+the view covers fewer pixels per metre, so the single number overstates
+pixels per metre and every distance divided by it came out short. Measured
+against a ground plane built from the camera's own rotation, by 9%, 9%, 17%
+and 26% on the four windows. `src/ground_plane.py` has the derivation and
+VEO_FOOTAGE.md the evidence.
+
+The scale is now corrected, which shifts every metre threshold by that much
+in effect. Re-derived at +/-2 s tolerance:
+
+| window | pass F1 | carry F1 |
+|---|---|---|
+| w1 stoke | 0.849 -> **0.886** | 0.716 -> 0.687 |
+| w2 stoke | 0.698 -> 0.698 | 0.692 -> **0.731** |
+| w3 stoke | 0.781 -> 0.767 | 0.714 -> 0.702 |
+| reading | 0.727 -> 0.679 | 0.571 -> **0.625** |
+
+Mean pass F1 falls 0.007 and mean carry F1 rises 0.013 -- neither is a real
+change, which is the expected result for a uniform rescale against
+thresholds sitting on a broad plateau. The possession radius was swept from
+3 to 12 m under both scales and the tuning-window mean varies by less than
+0.02 across 4 to 12 m, so nothing here is balanced on the exact value.
+
+The figures at +/-1 s elsewhere in this document have not been re-derived
+and predate the recalibration. They are directionally intact -- the change
+is smaller than the differences they report -- but the exact decimals are
+stale.
