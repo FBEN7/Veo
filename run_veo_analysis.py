@@ -181,6 +181,16 @@ def main():
         print(f"  speed trust  : split-half r {rel['r']:.2f} over "
               f"{rel['n']} tracks -- {verdict}")
 
+        spr = stats.sprint_reliability(metric)
+        plausible = 0.2 <= spr["per_min"] <= 1.2
+        print(f"  sprints      : {ph.n_sprints.sum()} total, "
+              f"{spr['per_min']:.2f} per tracked minute "
+              f"({'in range' if plausible else 'OUTSIDE'} the 0.3-0.7 "
+              "football produces)")
+        print(f"  sprint trust : split-half r {spr['r']:.2f} over "
+              f"{spr['n']} tracks of 10 s+ -- per-player counts are not "
+              "reliable anywhere yet")
+
     print("\n" + "-" * 74)
     print("These are plausibility checks, not measurements. They catch a")
     print("pipeline that is badly wrong; they cannot tell a good detector from")

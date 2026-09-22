@@ -41,6 +41,7 @@ connected to the video.
 | carries | 19.0/min | — | over-produced |
 | distance per 90 | 12.3 / 10.8 km | 10-12 | plausible |
 | top speed | median 22.5, max 39.4 | 30-36 | **carries no signal -- see below** |
+| sprints | 0.45 per tracked min | 0.3-0.7 | plausible in aggregate, not per player |
 
 ## Two predictions that were wrong
 
@@ -140,6 +141,39 @@ statistics one.
 Distance survives the same scrutiny, because it sums displacements rather
 than taking an extreme: 12.3 km per 90 across all tracks and 10.8 for those
 followed at least 15 s, against the 10-12 football expects.
+
+### Sprints had the same fault and three more
+
+`n_sprints` counted *frames* whose frame-to-frame speed exceeded 20 km/h. At
+25 fps one second of sprinting scored 25, the threshold was applied to the
+same noisy per-frame signal, and nothing was normalised by how long the track
+was followed. It reported a mean of **70 per minute** where football produces
+0.3 to 0.7.
+
+A sprint is now a contiguous run above the threshold lasting at least a
+second, with speed measured across a 0.4 s centred span. Both constants were
+swept (`sweep_sprints.py`), as rate per minute:
+
+| hold | 0.0 | 0.2 | 0.4 | 0.6 | 0.8 | 1.0 |
+|---|---|---|---|---|---|---|
+| per-frame speed | 37.85 | 1.34 | 0.43 | 0.21 | 0.13 | 0.13 |
+| 0.4 s span | 4.82 | 1.88 | 1.19 | 0.97 | 0.80 | **0.71** |
+
+The per-frame row collapses to nothing: almost every stretch it finds above
+the threshold is a blip one or two frames long, which is the signature of
+noise. The 0.4 s row falls and then plateaus, which is what a population of
+genuine sustained runs looks like. One second is also the conventional
+definition in sport science.
+
+Counts per window fall from 1594, 2259, 1143 and 556 *frames* to 16, 22, 7
+and 3 *sprints*, at 0.36-1.04 per tracked minute. On this Veo clip: 10
+sprints, 0.45 per minute -- in range, and notably more robust than top speed
+was, because a second of sustained running is not something jitter produces.
+
+**The per-player count is still not reliable.** Split-half agreement on
+tracks of ten seconds or more is 0.26 on broadcast and -0.04 here. The
+aggregate rate is worth reporting; attributing sprints to individuals is not.
+`run_veo_analysis.py` prints both figures and says so.
 
 ## What this run cannot tell us
 

@@ -43,6 +43,35 @@ MAX_SPEED_KMH = 40.0  # au-delà = erreur de tracking, on filtre
 # second, which is close to what "top speed" is meant to mean.
 TOP_SPEED_PERCENTILE = 95.0
 
+# --- Sprints ----------------------------------------------------------------
+# `n_sprints` counted *frames* whose frame-to-frame speed exceeded 20 km/h,
+# which was wrong three times over: at 25 fps one second of sprinting scored
+# 25, the threshold was applied to the same noisy per-frame signal whose tail
+# made the old top-speed statistic unusable, and nothing was normalised by how
+# long the track was followed. It reported a mean of 70 per minute where
+# football produces roughly 0.3 to 0.7.
+#
+# A sprint is now a contiguous stretch of running above the threshold, lasting
+# at least SPRINT_MIN_DURATION_S, with speed measured over a centred span
+# rather than between consecutive frames.
+#
+# Both constants were swept on 320 broadcast tracks (`sweep_sprints.py`),
+# reported as rate per minute:
+#
+#     hold            0.0    0.2    0.4    0.5    0.6    0.8    1.0
+#     per-frame     37.85   1.34   0.43   0.29   0.21   0.13   0.13
+#     0.4 s span     4.82   1.88   1.19   1.02   0.97   0.80   0.71
+#
+# The per-frame column collapses to nothing, because almost every stretch it
+# finds above the threshold is a blip one or two frames long -- the signature
+# of noise. The 0.4 s column falls and then plateaus, which is what a
+# population of genuine sustained runs looks like.
+#
+# One second is also the conventional definition in sport science, and it puts
+# the rate at 0.71 per minute against the 0.3-0.7 football produces.
+SPRINT_SPEED_SPAN_S = 0.4
+SPRINT_MIN_DURATION_S = 1.0
+
 
 def to_pitch_coords(tracks: pd.DataFrame, H: np.ndarray) -> pd.DataFrame:
     pts = tracks[["px", "py"]].to_numpy(dtype=np.float64)
@@ -54,6 +83,50 @@ def to_pitch_coords(tracks: pd.DataFrame, H: np.ndarray) -> pd.DataFrame:
     # rejette ce qui tombe hors terrain (marge 5m) : spectateurs, bancs
     mask = out.x.between(-5, PITCH_X + 5) & out.y.between(-5, PITCH_Y + 5)
     return out[mask].reset_index(drop=True)
+
+
+def _span_speed(g: pd.DataFrame, span_s: float):
+    """Speed at each sample, measured across a centred span of `span_s`.
+
+    Displacement over the span divided by the time it took, so a single
+    mis-placed frame contributes its error spread over the span instead of
+    over one frame interval.
+    """
+    t = g.time_s.to_numpy(dtype=float)
+    x, y = g.x.to_numpy(dtype=float), g.y.to_numpy(dtype=float)
+    if len(t) < 3:
+        return np.array([]), np.array([])
+
+    half = span_s / 2.0
+    lo = np.searchsorted(t, t - half, side="left")
+    hi = np.searchsorted(t, t + half, side="right") - 1
+    ok = hi > lo
+    if not ok.any():
+        return np.array([]), np.array([])
+
+    lo, hi, tt = lo[ok], hi[ok], t[ok]
+    dt = t[hi] - t[lo]
+    good = dt > 0
+    if not good.any():
+        return np.array([]), np.array([])
+    speed = np.hypot(x[hi] - x[lo], y[hi] - y[lo])[good] / dt[good] * 3.6
+    return speed, tt[good]
+
+
+def count_sprints(g: pd.DataFrame) -> int:
+    """Runs above the sprint threshold held for at least the minimum time."""
+    speed, tt = _span_speed(g, SPRINT_SPEED_SPAN_S)
+    if speed.size == 0:
+        return 0
+    over = (speed > SPRINT_KMH) & (speed < MAX_SPEED_KMH)
+    if not over.any():
+        return 0
+
+    edges = np.diff(np.concatenate(([0], over.astype(np.int8), [0])))
+    starts = np.nonzero(edges == 1)[0]
+    ends = np.nonzero(edges == -1)[0] - 1
+    return int(sum(1 for s, e in zip(starts, ends)
+                   if (tt[e] - tt[s]) >= SPRINT_MIN_DURATION_S))
 
 
 def _smooth(g: pd.DataFrame, window: int = 5) -> pd.DataFrame:
@@ -87,12 +160,7 @@ def physical_stats(tracks: pd.DataFrame) -> pd.DataFrame:
             minutes_tracked=float((g.time_s.max() - g.time_s.min()) / 60),
             distance_m=round(dist, 1),
             top_speed_kmh=round(top, 1),
-            # n_sprints has the same fault this file just fixed: it counts
-            # individual frames over a threshold, and the frames above 20 km/h
-            # are the same tail that made the maximum unusable. It is left
-            # alone because changing it changes a second published number, and
-            # it is not what was asked for -- but it should not be trusted.
-            n_sprints=int(((speed_kmh > SPRINT_KMH) & valid).sum()),
+            n_sprints=count_sprints(g),
         ))
     return pd.DataFrame(rows).sort_values("distance_m", ascending=False)
 
@@ -130,6 +198,50 @@ def top_speed_reliability(tracks: pd.DataFrame, min_track_s: float = 3.0) -> dic
     if len(first) < 4:
         return dict(r=float("nan"), n=len(first))
     return dict(r=float(np.corrcoef(first, second)[0, 1]), n=len(first))
+
+
+def sprint_reliability(tracks: pd.DataFrame, min_track_s: float = 10.0) -> dict:
+    """Split-half agreement of the sprint rate, and the rate itself.
+
+    Held to longer tracks than the speed test, and for a reason: a sprint must
+    last a second to count, so on a four-second half most tracks score zero
+    and a correlation over mostly-zero data says nothing. Ten seconds gives
+    each half five, which is the shortest window in which the question can be
+    asked at all.
+
+    Reliability is poor wherever it can be measured -- 0.26 on broadcast
+    tracks of ten seconds and 0.05 on those of twenty. The *rate* is
+    nonetheless plausible, so the aggregate is worth reporting and the
+    per-player count is not.
+    """
+    players = tracks[(tracks.cls == "player")
+                     & (tracks.team.isin(["team_A", "team_B"]))]
+    first, second, rates = [], [], []
+    for _, g in players.groupby("track_id"):
+        if len(g) < 20:
+            continue
+        g = _smooth(g)
+        t = g.time_s.to_numpy(dtype=float)
+        minutes = (t[-1] - t[0]) / 60.0
+        if minutes > 0:
+            rates.append(count_sprints(g) / minutes)
+        if (t[-1] - t[0]) < min_track_s:
+            continue
+        mid = len(g) // 2
+        for half, store in ((g.iloc[:mid], first), (g.iloc[mid:], second)):
+            ht = half.time_s.to_numpy(dtype=float)
+            hm = (ht[-1] - ht[0]) / 60.0 if len(ht) > 1 else 0.0
+            store.append(count_sprints(half) / hm if hm > 0 else np.nan)
+
+    pairs = [(a, b) for a, b in zip(first, second)
+             if np.isfinite(a) and np.isfinite(b)]
+    r = float("nan")
+    if len(pairs) > 3:
+        a, b = np.array([p[0] for p in pairs]), np.array([p[1] for p in pairs])
+        if a.std() > 0 and b.std() > 0:
+            r = float(np.corrcoef(a, b)[0, 1])
+    return dict(r=r, n=len(pairs),
+                per_min=float(np.mean(rates)) if rates else float("nan"))
 
 
 def _half_top_speed(g: pd.DataFrame) -> float:
