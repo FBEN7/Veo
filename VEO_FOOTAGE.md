@@ -22,7 +22,7 @@ Reproduce with `python run_veo_analysis.py --clip <clip> --out output_veo`.
     conf_player    0.08         -> 11.0 players/frame
     conf_ball      0.05         -> 1.07 candidates/frame
     scale          35.2 px/m    a 1.75 m player is 62 px tall
-    camera         static       0.28 px/frame, below the 1.0 threshold
+    camera         moves        1.22 px/frame mean, compensated
 
 The elbow rule picked 0.08 rather than collapsing to the MIN_USABLE_CONF floor
 of 0.05, which is the regime it was rebuilt for -- a partial-pitch view never
@@ -36,12 +36,12 @@ connected to the video.
 | ball coverage | 72.7% | — | matches 720p broadcast |
 | ball speed p95 | **332 km/h** | ~120 | impossible |
 | players per frame | 10 (max 16) | 22 on a full pitch | partial view, unverified |
-| track ids | 287 -> 190 | ~22 | **the ceiling is detection, not re-id -- see below** |
+| track ids | 287 -> 189 | ~22 | **the ceiling is field of view, not re-id -- see below** |
 | passes | 24.7/min | 8-12 | 2-3x over-produced |
 | carries | 19.0/min | — | over-produced |
-| distance per 90 | 12.3 / 10.8 km | 10-12 | plausible |
-| top speed | median 22.5, max 39.4 | 30-36 | **carries no signal -- see below** |
-| sprints | 0.45 per tracked min | 0.3-0.7 | plausible in aggregate, not per player |
+| distance per 90 | 8.1 / 8.9 km | 10-12 | low; scale is unverified without homography |
+| top speed | median 13.2, max 31.8 | 30-36 | plausible at last, but r = 0.28 |
+| sprints | 0.00 per tracked min | 0.3-0.7 | too few; see the scale caveat |
 
 ## Two predictions that were wrong
 
@@ -50,11 +50,72 @@ falling to 0.10 at reduced input size, and this footage has a ball about 7.8 px
 across, so coverage was expected to be the binding constraint. It is 72.7%,
 matching the 720p clips. Upscaling to 960 before detection is doing the work.
 
-**The camera is not panning here.** A Veo camera synthesises its view from a
-panoramic sensor, and an earlier 2-minute clip measured 3.19 px/frame, so
-compensation was expected to matter. This window measures 0.28 px/frame and
-compensation is skipped. Camera motion on this footage varies by passage
-rather than being a property of the camera.
+**The camera is panning here, and the pipeline was told it was not.** A Veo
+camera synthesises its view from a panorama, and the virtual camera follows
+the ball. `auto_tune` measured 0.28 px/frame, below the 1.0 threshold, so
+compensation was skipped. The true figure is 2.07 px/frame at the median and
+the view drifts **1911 px in x** over three minutes -- nearly three frame
+widths.
+
+The estimator took a *median* over five runs of twelve frames. That motion is
+bursty: 32% of frames move under a pixel and the rest swing. Simulated on the
+measured motion, that sampling returns under a pixel **14% of the time**, and
+it did so here. Ten runs of twenty-five frames, averaged rather than
+medianed, returns under a pixel in 0% of draws. Fixed.
+
+## Tracking in ground-fixed (panorama) coordinates
+
+Compensating camera motion *is* panorama-space tracking: `camera_motion.
+compensate` subtracts the accumulated displacement, so positions are
+expressed on the ground rather than in the moving crop. The capability was
+already there; the bug above had it switched off.
+
+The check that it works is not subtle. Player positions across the whole clip
+span:
+
+| | extent of the player cloud |
+|---|---|
+| raw, camera frame | **18.1 x 9.8 m** |
+| compensated, ground-fixed | **71.2 x 25.2 m** |
+
+Twenty-two footballers do not spend three minutes inside an 18 by 10 metre
+box. They appear to only because the camera follows them. Ground-fixed they
+occupy a pitch-shaped band, 71 m of a 105 m pitch. The motion estimate is
+also accepted by the independent ORB validator (direct 794 px against
+accumulated 598 over nine intervals, residual 0.25 of direct).
+
+What it changes:
+
+| | camera frame | ground-fixed | football |
+|---|---|---|---|
+| distance per 90 | 12.3 / 10.9 km | 8.1 / 8.9 km | 10-12 |
+| top speed, median | 22.6 km/h | **13.2** | — |
+| top speed, max | 39.4 | **31.8** | 30-36 |
+| speed split-half r | -0.01 | **0.28** | >= 0.5 |
+| sprints per minute | 0.46 | 0.00 | 0.3-0.7 |
+| median per-track p95 speed | 22.8 km/h | 13.8 | — |
+
+**The old numbers were largely camera pan.** In the moving crop a player
+running with the play looks stationary and a stationary player looks like
+they are sprinting backwards, so per-track speed was measuring the camera.
+The ten "sprints" reported before this fix were swings of the virtual camera.
+
+It does **not** fix continuity: 190 tracks become 189. Panorama space fixes
+coordinates, not coverage -- a player outside the crop is not recorded at
+all, whatever frame the coordinates are expressed in.
+
+### What it exposes
+
+Distance now reads 8.1 km per 90 and sprints 0.00 per minute, both below what
+football produces, and they point the same way: the metre scale may be too
+large. It comes from median player height at an assumed 1.75 m, which is one
+number for a view with strong perspective. The compensated cloud spanning
+25 m across a 68 m pitch is the same signal. Speeds and distances are
+therefore uncertain by whatever that scale factor is wrong by, which is the
+homography this pipeline still does not have.
+
+So the order of the remaining problems has changed: it is no longer camera
+motion, it is the absence of a ground plane.
 
 ## The ball track teleports -- everywhere, not here
 

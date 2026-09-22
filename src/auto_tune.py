@@ -245,7 +245,21 @@ def _ball_rate(ball_conf: list[np.ndarray], conf: float) -> float:
 
 
 def _measure_camera_motion(video: str, frames: list[int]) -> float:
-    """Median background movement between consecutive frames, in pixels."""
+    """Mean background movement between consecutive frames, in pixels.
+
+    The mean, not the median, and over a longer sample than it used to be.
+    A Veo camera synthesises its view from a panorama and the virtual camera
+    is *bursty*: on a three-minute clip 32% of frames move under a pixel and
+    the rest swing, with a per-frame median of 2.07 px and a mean of 3.22.
+    A median over five short runs collapses to nearly zero whenever the runs
+    happen to land in the quiet passages -- simulated on the measured motion
+    it returns under a pixel 14% of the time, and it did exactly that on this
+    clip, reporting 0.28 px/frame against a true 2.07.
+    
+    That silently turned camera compensation off for a clip whose view drifts
+    1911 px, nearly three frame widths. The sampling below returns under a
+    pixel in 0% of simulated draws.
+    """
     from .camera_motion import _background_mask, FEATURE_PARAMS, LK_PARAMS
 
     # Read contiguous runs rather than seeking to each pair. Seeking
@@ -253,14 +267,14 @@ def _measure_camera_motion(video: str, frames: list[int]) -> float:
     # several frames and overstate the motion.
     cap = cv2.VideoCapture(video)
     steps = []
-    anchors = frames[:: max(1, len(frames) // 5)][:5]
+    anchors = frames[:: max(1, len(frames) // 10)][:10]
     for anchor in anchors:
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(anchor))
         ok, prev = cap.read()
         if not ok:
             continue
         prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
-        for _ in range(12):
+        for _ in range(25):
             ok, frame = cap.read()
             if not ok:
                 break
@@ -278,7 +292,7 @@ def _measure_camera_motion(video: str, frames: list[int]) -> float:
                         steps.append(float(np.hypot(*disp)))
             prev, prev_gray = frame, gray
     cap.release()
-    return float(np.median(steps)) if steps else 0.0
+    return float(np.mean(steps)) if steps else 0.0
 
 
 def profile_video(video: str, model_name: str = "yolov8m.pt",
