@@ -117,6 +117,69 @@ homography this pipeline still does not have.
 So the order of the remaining problems has changed: it is no longer camera
 motion, it is the absence of a ground plane.
 
+## The homography: what it would fix, and why it is not there yet
+
+`probe_homography.py` takes four measurements.
+
+**One scale does not describe the frame.** The shipped `px_per_m` comes from
+the median player height, which is correct at one depth and wrong everywhere
+else. Measured by image row:
+
+| | shipped | by image row | factor |
+|---|---|---|---|
+| Veo | 35.2 px/m | 16.7 to 51.0 | **3.06x** |
+| SoccerNet w1 | 34.5 | 22.8 to 47.2 | 2.07x |
+| SoccerNet w2 | 34.9 | 21.8 to 47.6 | 2.18x |
+
+Every distance and speed this pipeline reports is therefore wrong by up to a
+factor of two either way, depending on where on the screen the player was.
+That is the size of the prize.
+
+**The ground-plane model is real but noisy.** For a camera viewing a plane, a
+fixed-height object projects to a pixel height linear in image row, zero at
+the horizon, with slope equal to the player's height over the camera's.
+Fitting it gives camera heights of 6.4 m on Veo and 23-26 m on broadcast --
+a Veo mast and a television gantry, which is a good sign. But R^2 is 0.14 to
+0.39: youth players differ in height and a bounding box changes with pose and
+occlusion, so the relation holds for the population and not for a detection.
+
+**The focal length cannot be recovered from the motion.** The plane model
+leaves one unknown, and without it lateral and depth distances scale
+differently. Choosing it to make player speed independent of running
+direction is appealing and does not survive contact: the lateral-to-depth
+p90 ratio is 1.49 on broadcast and 0.78 on Veo, where perspective alone
+requires it to exceed 1 on both. Footballers run along the pitch more than
+across it, and that confound is larger than the effect.
+
+**Chaining homographies between frames collapses.** The physical camera is
+fixed and only pans and zooms, so every pair of frames is related by an exact
+homography, and a mosaic should let markings from different moments
+accumulate into one pitch. Chained over 426 frame pairs it degenerates into a
+radial smear: pairwise projective error compounds, and without bundle
+adjustment or loop closure the chain is worthless by the end. Measured
+separately, the virtual camera's zoom moves by more than 2% in 4 of 10
+sampled steps, ranging 0.81 to 1.31, so translation-only compensation is also
+an approximation -- a good one, but an approximation.
+
+**Markings are visible but thin.** They cover 1.1% to 3.4% of the pitch area
+in the frames checked -- a line here, an arc there. One or two segments is
+not four correspondences, and deciding *which* line a segment is remains the
+ambiguity a homography exists to resolve.
+
+### What would unlock it
+
+Not more effort on this clip. A wider, fixed Veo export -- the same thing
+per-player continuity needs -- would put several markings in frame at once
+and hold the zoom still, at which point a line-and-circle fit against a pitch
+model becomes a normal piece of work rather than a research project. Failing
+that, four clicked correspondences on one frame of a non-zooming clip would
+do it.
+
+Until then the honest statement is that distances and speeds are
+**proportional** measurements, good for comparing players and passages within
+a clip, and not metric. The per-90 kilometre figures should carry that
+caveat wherever they are shown.
+
 ## The ball track teleports -- everywhere, not here
 
 A p95 of 332 km/h means the selected ball track jumps between objects. Two
