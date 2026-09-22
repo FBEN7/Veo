@@ -80,6 +80,109 @@ FEATURE_PARAMS = dict(
 )
 
 
+# --- Burned-in graphics ------------------------------------------------------
+# Scoreboards, clocks and watermarks are painted into the frame after the
+# camera has moved, so they sit still while everything real slides past. The
+# background mask -- "anything that is not grass" -- happily kept 90% of this
+# clip's scoreboard, and optical flow then tracked those corners as though
+# they were the far stand. Features that never move report zero motion, which
+# drags the camera estimate toward zero: this is consistent with the
+# validator finding accumulated motion undershooting a direct measurement by
+# 25%, and with `auto_tune` reading 0.28 px/frame where the truth is 2.07.
+#
+# The giveaway is generic, so nothing here is hard-coded to one broadcaster:
+# a burned-in graphic has **structure that does not move while the view
+# does**. Real scenery has structure and moves; flat grass does not move much
+# in appearance but has no structure to seed features on.
+
+# Frames sampled across the clip to find pixels that never change.
+GRAPHICS_SAMPLES = 32
+
+# A pixel varies less than this across the clip (0-255) to count as static.
+#
+# Swept against the validator's residual, which is the one independent check
+# available -- accumulated motion against a direct measurement of the same
+# interval:
+#
+#     threshold   frame masked   median step   residual
+#         6            1.4%        2.25 px       0.21
+#        14            2.9%        2.29 px       0.20
+#        25            5.9%        2.30 px       0.20
+#
+# Widening buys 0.01 of residual for four times as much of the frame, so the
+# conservative value takes essentially all of the benefit. It leaves the
+# translucent watermark on this clip uncaught: a semi-transparent graphic
+# varies with whatever passes behind it, so it fails a test built on pixels
+# that do not change. An opaque scoreboard is the damaging case and it is
+# caught.
+GRAPHICS_MAX_TEMPORAL_STD = 6.0
+
+# ...and must carry at least this much local gradient to be worth excluding.
+# Without it a flat patch of sky or a uniform stand qualifies, and masking
+# those costs nothing but means nothing either.
+GRAPHICS_MIN_GRADIENT = 12.0
+
+# If more than this share of the frame looks static, the camera itself is
+# probably still and the test cannot separate graphics from scenery. Masking
+# half the frame on that basis would be worse than leaving it alone.
+GRAPHICS_MAX_SHARE = 0.20
+
+
+def static_graphics_mask(video_path: str, samples: int = GRAPHICS_SAMPLES,
+                         verbose: bool = False) -> np.ndarray | None:
+    """Pixels holding structure that never moves: burned-in graphics.
+
+    Returns a mask that is 255 where the frame is usable and 0 over the
+    graphics, or None when the test cannot be trusted -- too few frames, or
+    so much of the view static that the camera is evidently not moving.
+    """
+    cap = cv2.VideoCapture(video_path)
+    n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if n_frames < samples * 2:
+        cap.release()
+        return None
+
+    picks = np.linspace(0, n_frames - 1, samples).astype(int)
+    stack = []
+    for idx in picks:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
+        ok, frame = cap.read()
+        if ok:
+            stack.append(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
+    cap.release()
+    if len(stack) < samples // 2:
+        return None
+
+    arr = np.stack(stack).astype(np.float32)
+    temporal = arr.std(axis=0)
+
+    # Structure, measured on the median frame so a moving player in one
+    # sample cannot invent an edge.
+    median = np.median(arr, axis=0).astype(np.uint8)
+    gx = cv2.Sobel(median, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(median, cv2.CV_32F, 0, 1, ksize=3)
+    gradient = cv2.GaussianBlur(np.hypot(gx, gy), (5, 5), 0)
+
+    graphics = ((temporal < GRAPHICS_MAX_TEMPORAL_STD)
+                & (gradient > GRAPHICS_MIN_GRADIENT)).astype(np.uint8) * 255
+    # Join the strokes of a caption into one region, then take in its
+    # surroundings: a feature sits on a corner, and the corner of a glyph is
+    # a pixel or two from the glyph itself.
+    graphics = cv2.morphologyEx(graphics, cv2.MORPH_CLOSE,
+                                np.ones((15, 15), np.uint8))
+    graphics = cv2.dilate(graphics, np.ones((9, 9), np.uint8), iterations=1)
+
+    share = float((graphics > 0).mean())
+    if share > GRAPHICS_MAX_SHARE:
+        if verbose:
+            print(f"  [graphics] {share:.0%} of the frame looks static; the "
+                  "camera is probably still, so nothing is masked")
+        return None
+    if verbose:
+        print(f"  [graphics] burned-in overlays cover {share:.1%} of the frame")
+    return cv2.bitwise_not(graphics)
+
+
 def _background_mask(frame: np.ndarray) -> np.ndarray:
     """Everything that is not pitch: stands, roof, hoardings.
 
@@ -106,9 +209,17 @@ def estimate_camera_motion(video_path: str, max_frames: int | None = None,
     if max_frames:
         n_frames = min(n_frames, max_frames)
 
+    # Burned-in graphics never move, so features seeded on them report no
+    # motion and pull the estimate toward zero. Found once for the clip.
+    graphics = static_graphics_mask(video_path, verbose=verbose)
+
+    def seed_mask(frame: np.ndarray) -> np.ndarray:
+        m = _background_mask(frame)
+        return m if graphics is None else cv2.bitwise_and(m, graphics)
+
     prev_gray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)
     prev_pts = cv2.goodFeaturesToTrack(
-        prev_gray, mask=_background_mask(prev), **FEATURE_PARAMS)
+        prev_gray, mask=seed_mask(prev), **FEATURE_PARAMS)
 
     cumulative = np.zeros(2, dtype=float)
     out = [cumulative.copy()]
@@ -162,7 +273,7 @@ def estimate_camera_motion(video_path: str, max_frames: int | None = None,
                 or frames_since_seed >= RESEED_INTERVAL_FRAMES):
             frames_since_seed = 0
             prev_pts = cv2.goodFeaturesToTrack(
-                gray, mask=_background_mask(frame), **FEATURE_PARAMS)
+                gray, mask=seed_mask(frame), **FEATURE_PARAMS)
             reseeds += 1
 
         prev_gray = gray
@@ -245,6 +356,10 @@ def validate_motion(video_path: str, motion: np.ndarray,
            else int(np.clip(round(VALIDATION_SPAN_PX / typical),
                             MIN_VALIDATION_GAP, MAX_VALIDATION_GAP)))
 
+    # The validator must exclude the same burned-in graphics the
+    # estimator does, or it measures a different quantity.
+    graphics = static_graphics_mask(video_path)
+
     cap = cv2.VideoCapture(video_path)
     starts = np.linspace(0, len(motion) - 1 - gap, n_anchors).astype(int)
 
@@ -266,10 +381,13 @@ def validate_motion(video_path: str, motion: np.ndarray,
         if second is None:
             continue
 
+        vmask = _background_mask(first)
+        if graphics is not None:
+            vmask = cv2.bitwise_and(vmask, graphics)
         disp, n_inliers = _direct_displacement(
             cv2.cvtColor(first, cv2.COLOR_BGR2GRAY),
             cv2.cvtColor(second, cv2.COLOR_BGR2GRAY),
-            _background_mask(first))
+            vmask)
         if disp is None or n_inliers < MIN_VALIDATION_INLIERS:
             continue
 

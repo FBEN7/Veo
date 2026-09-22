@@ -50,6 +50,43 @@ falling to 0.10 at reduced input size, and this footage has a ball about 7.8 px
 across, so coverage was expected to be the binding constraint. It is 72.7%,
 matching the 720p clips. Upscaling to 960 before detection is doing the work.
 
+### Burned-in graphics were being tracked as scenery
+
+The background mask is "anything that is not grass", which kept 90% of this
+clip's scoreboard. Optical flow then tracked those corners as though they
+were the far stand -- and a feature that never moves reports no motion, so
+every sample it appears in drags the camera estimate toward zero.
+
+The giveaway is generic, so nothing is hard-coded to one broadcaster: a
+burned-in graphic has **structure that does not move while the view does**.
+Real scenery has structure and moves; flat grass moves little in appearance
+but has no structure to seed a feature on. `camera_motion.static_graphics_
+mask` samples 32 frames across the clip and excludes pixels that are both
+low-variance over time and high-gradient in the median frame.
+
+| | masked | median step | x range | validator residual |
+|---|---|---|---|---|
+| before | — | 2.07 px | 1911 px | 0.25 |
+| after | 1.4% | **2.25 px** | **2078 px** | **0.21** |
+
+Both moved as predicted: the estimate rose 9% once the static features
+stopped holding it down, and it agrees better with an independent
+measurement. `auto_tune` now reads 2.05 px/frame against a true 2.25, where
+it read 0.28 before this and the sampling fix below.
+
+Downstream, per-track speed reliability rises from 0.28 to **0.39** -- still
+under the 0.5 needed to publish a per-player figure, but no longer nothing.
+
+On the four SoccerNet broadcast clips the mask excludes **0.0%** and every
+number is unchanged: pass F1 0.85 at +/-2 s, p 0.000, 221 fragments to 139
+tracks, re-derived from scratch. No false positives.
+
+The translucent "EliteScholars" watermark is *not* caught, because a
+semi-transparent graphic varies with whatever passes behind it and so fails a
+test built on pixels that do not change. Widening the threshold to catch it
+was measured and rejected: it buys 0.01 of validator residual for four times
+as much of the frame masked.
+
 **The camera is panning here, and the pipeline was told it was not.** A Veo
 camera synthesises its view from a panorama, and the virtual camera follows
 the ball. `auto_tune` measured 0.28 px/frame, below the 1.0 threshold, so

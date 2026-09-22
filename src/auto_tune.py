@@ -260,11 +260,17 @@ def _measure_camera_motion(video: str, frames: list[int]) -> float:
     1911 px, nearly three frame widths. The sampling below returns under a
     pixel in 0% of simulated draws.
     """
-    from .camera_motion import _background_mask, FEATURE_PARAMS, LK_PARAMS
+    from .camera_motion import (_background_mask, static_graphics_mask,
+                                FEATURE_PARAMS, LK_PARAMS)
 
     # Read contiguous runs rather than seeking to each pair. Seeking
     # compressed video is not frame-accurate, so a "consecutive" pair can span
     # several frames and overstate the motion.
+    # Burned-in graphics never move, so features on them report no motion and
+    # pull this estimate toward zero -- the same fault the estimator proper
+    # had. Excluding them raised the measured motion by 9% there.
+    graphics = static_graphics_mask(video)
+
     cap = cv2.VideoCapture(video)
     steps = []
     anchors = frames[:: max(1, len(frames) // 10)][:10]
@@ -279,8 +285,11 @@ def _measure_camera_motion(video: str, frames: list[int]) -> float:
             if not ok:
                 break
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            seed = _background_mask(prev)
+            if graphics is not None:
+                seed = cv2.bitwise_and(seed, graphics)
             pts = cv2.goodFeaturesToTrack(
-                prev_gray, mask=_background_mask(prev), **FEATURE_PARAMS)
+                prev_gray, mask=seed, **FEATURE_PARAMS)
             if pts is not None and len(pts) >= 8:
                 nxt, status, _ = cv2.calcOpticalFlowPyrLK(
                     prev_gray, gray, pts, None, **LK_PARAMS)
