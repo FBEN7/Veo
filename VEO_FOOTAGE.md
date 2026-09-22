@@ -40,7 +40,7 @@ connected to the video.
 | passes | 24.7/min | 8-12 | 2-3x over-produced |
 | carries | 19.0/min | — | over-produced |
 | distance per 90 | 12.0 / 9.3 km | 10-12 | plausible |
-| top speed | median 33, max 40 | 30-36 | plausible, clipped at the 40 limit |
+| top speed | median 33, max 40 | 30-36 | **not plausible -- see below** |
 
 ## Two predictions that were wrong
 
@@ -87,6 +87,38 @@ spikes never offered an alternative.
 The sweep did improve events slightly, by a different route: pass mean F1
 rises 0.648 to 0.668 across the four labelled windows, on a broad plateau
 from weight 10 upward. That is adopted. It is not a fix for the ball track.
+
+## Top speed is a jitter spike, not a player's speed
+
+The table above called a median top speed of 33 km/h "plausible, clipped at
+the 40 limit". That was wrong, and the shape of the error is worth keeping.
+
+`stats.physical_stats` takes each track's **maximum** frame-to-frame speed
+after a 5-frame median smooth, discarding anything above 40 km/h. A maximum
+over a noisy signal is a measure of the noise. On the four labelled broadcast
+windows, where tracks last about nine seconds:
+
+| | w1 | w2 | w3 | reading |
+|---|---|---|---|---|
+| median top speed | 29.0 | 31.1 | 29.6 | 25.7 |
+| median 95th percentile *within* a track | 14.8 | 16.3 | — | — |
+| tracks pinned at 39+ km/h | 10% | 17% | 12% | 7% |
+
+A track's maximum is roughly double its own 95th percentile, so the figure
+rests on one frame. And a median nine-second fragment does not contain a
+29 km/h sprint -- most contain no sprint at all. Between 7% and 17% of tracks
+reach the 40 km/h discard threshold, which is the signature of a filter
+catching tracking error rather than a limit that is never approached.
+
+Distance is a different story and survives: it sums displacements rather than
+taking an extreme, so single bad frames contribute their own length and no
+more. Roughly 3.2 km across all tracked players in 90 seconds is close to
+what 22 players jogging would cover, and it moved by under 3% when
+re-identification changed underneath it.
+
+**The fix is a one-line change of statistic** -- report a high percentile
+instead of the maximum -- but it changes what a published "top speed" means,
+so it is a product decision and has not been made here.
 
 ## What this run cannot tell us
 

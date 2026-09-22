@@ -238,10 +238,34 @@ p = 0.33, against 46% and 70% before).
 
 **The cost is fewer merges**: 89 tracks become 98 on Reading, 128 become 143,
 111 become 126. Those are genuine same-player joins now refused because one
-fragment's kit was misread. Nothing scored here depends on them, but distance
-covered and top speed are computed per track and would be split across the
-extra fragments. That is untested, and it is the thing to watch if those
-numbers are ever published.
+fragment's kit was misread.
+
+That cost was flagged as untested and has now been measured
+(`check_physical_stats.py`), running the pipeline with and without the
+constraint across all four windows:
+
+| | before | after |
+|---|---|---|
+| total distance (km) | 3.16 / 2.97 / 2.69 / 1.40 | 3.25 / 2.92 / 2.70 / 1.42 |
+| median metres per track | 15 / 18 / 13 / 14 | 16 / 21 / 15 / 15 |
+| median minutes tracked | 0.14-0.16 | 0.15-0.16 |
+| sprint frames | 1594 / 2259 / 1143 / 556 | 1608 / 2263 / 1146 / 560 |
+
+Nothing breaks. Total distance moves by under 3% and in both directions, and
+the median per track goes *up* rather than down. The prediction that shorter
+tracks would divide a player's distance was wrong about which way it would
+go: what actually changes is that more fragments fall under the 20-frame
+minimum and leave the table (125 rows become 108 on one window), so the rows
+that remain are the longer ones.
+
+There is a plausible reason it did not cost anything. A cross-kit merge
+joined two *different people*, and the straight-line jump between them was
+being counted as distance and as speed. Refusing those removes error as well
+as evidence.
+
+The check did find something, but it predates this change and is not caused
+by it: per-track top speed is a jitter spike rather than a player's speed.
+See `VEO_FOOTAGE.md`.
 
 ## The Roboflow route: prepared, and blocked on the data
 
