@@ -36,11 +36,11 @@ connected to the video.
 | ball coverage | 72.7% | — | matches 720p broadcast |
 | ball speed p95 | **332 km/h** | ~120 | impossible |
 | players per frame | 10 (max 16) | 22 on a full pitch | partial view, unverified |
-| track ids | 287 -> 173 | ~22 | heavy fragmentation |
+| track ids | 287 -> 199 | ~22 | heavy fragmentation |
 | passes | 24.7/min | 8-12 | 2-3x over-produced |
 | carries | 19.0/min | — | over-produced |
-| distance per 90 | 12.0 / 9.3 km | 10-12 | plausible |
-| top speed | median 33, max 40 | 30-36 | **not plausible -- see below** |
+| distance per 90 | 12.3 / 10.8 km | 10-12 | plausible |
+| top speed | median 22.5, max 39.4 | 30-36 | **carries no signal -- see below** |
 
 ## Two predictions that were wrong
 
@@ -88,37 +88,58 @@ The sweep did improve events slightly, by a different route: pass mean F1
 rises 0.648 to 0.668 across the four labelled windows, on a broad plateau
 from weight 10 upward. That is adopted. It is not a fix for the ball track.
 
-## Top speed is a jitter spike, not a player's speed
+## Top speed was a jitter spike; fixed on broadcast, absent here
 
-The table above called a median top speed of 33 km/h "plausible, clipped at
-the 40 limit". That was wrong, and the shape of the error is worth keeping.
+The table above once called a median top speed of 33 km/h "plausible, clipped
+at the 40 limit". That was wrong twice over.
 
-`stats.physical_stats` takes each track's **maximum** frame-to-frame speed
+`stats.physical_stats` took each track's **maximum** frame-to-frame speed
 after a 5-frame median smooth, discarding anything above 40 km/h. A maximum
-over a noisy signal is a measure of the noise. On the four labelled broadcast
-windows, where tracks last about nine seconds:
+over a noisy signal measures the noise, and it did: a track's maximum was
+about double its own 95th percentile, and 7-17% of tracks reached the 40 km/h
+discard threshold, which is a filter catching tracking error rather than a
+limit football approaches.
 
-| | w1 | w2 | w3 | reading |
+There is no ground-truth speed, so candidates were scored for **reliability**
+instead: a statistic that measures a player agrees between the first half of
+their track and the second. Over 320 broadcast tracks
+(`sweep_top_speed.py`):
+
+| statistic | split-half r | median | population max | at 40 km/h |
 |---|---|---|---|---|
-| median top speed | 29.0 | 31.1 | 29.6 | 25.7 |
-| median 95th percentile *within* a track | 14.8 | 16.3 | — | — |
-| tracks pinned at 39+ km/h | 10% | 17% | 12% | 7% |
+| maximum (was shipped) | 0.50 | 30.7 | 40.0 | 13% |
+| **95th percentile** | **0.56** | **15.9** | **37.0** | **0%** |
+| 90th percentile | 0.56 | 13.1 | 36.3 | 0% |
+| fastest 0.5 s window | 0.43 | 15.8 | 39.9 | 5% |
 
-A track's maximum is roughly double its own 95th percentile, so the figure
-rests on one frame. And a median nine-second fragment does not contain a
-29 km/h sprint -- most contain no sprint at all. Between 7% and 17% of tracks
-reach the 40 km/h discard threshold, which is the signature of a filter
-catching tracking error rather than a limit that is never approached.
+The rolling window is what sport science reports and it came last, because a
+maximum *over windows* is still an extreme-value statistic: one bad frame
+corrupts every window containing it. The 95th percentile is now shipped.
 
-Distance is a different story and survives: it sums displacements rather than
-taking an extreme, so single bad frames contribute their own length and no
-more. Roughly 3.2 km across all tracked players in 90 seconds is close to
-what 22 players jogging would cover, and it moved by under 3% when
-re-identification changed underneath it.
+### On this footage the metric has no signal at all
 
-**The fix is a one-line change of statistic** -- report a high percentile
-instead of the maximum -- but it changes what a published "top speed" means,
-so it is a product decision and has not been made here.
+The fix moves the Veo numbers from a median of 33 km/h to 22.5, which looks
+better and is not. Running the same split-half test per clip:
+
+| footage | split-half r |
+|---|---|
+| SoccerNet 720p, four windows | 0.45, 0.62, 0.49, 0.58 |
+| **Veo 640x360** | **-0.01 over 113 tracks** |
+
+Zero. A track's top speed in its first half predicts nothing about its second
+half. At 35 px/m a single pixel of jitter per frame is already 2.5 km/h, and
+a 640x360 detection jitters by several, so the tail of the speed distribution
+is entirely detection error whatever percentile is taken.
+
+`run_veo_analysis.py` now prints this figure with every run and says plainly
+when the number should not be reported. The metric is fixed for broadcast and
+**should not be shown to anyone for Veo footage** until the underlying
+positions are steadier -- which is a detection and smoothing problem, not a
+statistics one.
+
+Distance survives the same scrutiny, because it sums displacements rather
+than taking an extreme: 12.3 km per 90 across all tracks and 10.8 for those
+followed at least 15 s, against the 10-12 football expects.
 
 ## What this run cannot tell us
 

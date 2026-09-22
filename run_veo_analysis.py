@@ -169,6 +169,18 @@ def main():
               f"max {ph.top_speed_kmh.max():.1f} "
               f"(clipped at MAX_SPEED_KMH = {stats.MAX_SPEED_KMH:.0f})")
 
+        # How much of that is the player. Split each track in half and
+        # correlate: a statistic measuring a footballer agrees with itself,
+        # one measuring detection jitter does not. Printed rather than
+        # assumed, because it depends on the footage -- 0.56 on 720p
+        # broadcast, under 0.35 on 640x360.
+        rel = stats.top_speed_reliability(metric)
+        verdict = ("usable" if rel["r"] >= 0.5 else
+                   "WEAK -- do not report per-player speed" if rel["r"] >= 0.35
+                   else "NOT MEASURING THE PLAYER -- suppress this figure")
+        print(f"  speed trust  : split-half r {rel['r']:.2f} over "
+              f"{rel['n']} tracks -- {verdict}")
+
     print("\n" + "-" * 74)
     print("These are plausibility checks, not measurements. They catch a")
     print("pipeline that is badly wrong; they cannot tell a good detector from")
