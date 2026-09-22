@@ -7,11 +7,13 @@ everything computed per player: distance covered is split across fragments,
 top speed is measured over stubs, and possession changes hands whenever an id
 is reissued.
 
-Two fragments are the same player when the second starts near where the first
-ended, soon enough that a footballer could have covered the distance. The
-velocity at the end of the first fragment sharpens that: a player running
-right is expected to the right, so a candidate behind them is a worse match
-than distance alone suggests.
+Two fragments are the same player when the second starts close to where the
+first was *heading*. The velocity at the end of the first fragment carries it
+forward, so the test is against a prediction rather than against the last
+seen position, and the radius around that prediction has to cover how far the
+prediction drifts -- not how far a footballer can run. Sizing it as a sprint
+was the fault that made this module merge the wrong fragments; see
+PREDICTION_DRIFT_MS.
 
 Matching is mutual. A fragment pair is joined only when each is the other's
 best candidate, which avoids a popular fragment absorbing several distinct
@@ -31,16 +33,50 @@ import bisect
 import numpy as np
 import pandas as pd
 
-# A footballer's sprint, with headroom. Above this the two fragments are
-# different people.
-MAX_PLAYER_SPEED_MS = 8.0
+# How fast the *prediction* goes wrong, in metres per second of gap.
+#
+# The name matters. This was called a footballer's sprint, on the reasoning
+# that two fragments further apart than a player could run must be different
+# people. The distance being tested is not between the two fragments -- it is
+# between a fragment's *predicted* position, already carried forward at the
+# player's own velocity, and where the candidate actually starts. What the
+# radius has to cover is how far that prediction drifts.
+#
+# Measured, the drift on real ByteTrack fragments is 7.8 to 13.3 m/s at the
+# median across four windows, so 8.0 turns out to be about right -- for a
+# different reason than it was chosen for.
+PREDICTION_DRIFT_MS = 8.0
 
 # Gap lengths to attempt, shortest first.
 GAP_SCHEDULE = (0.4, 0.8, 1.5, 2.5)
 
-# Slack on the reachable radius, absorbing detection jitter and the fact that
-# a player's position is their feet, not their centre of mass.
-POSITION_MARGIN_M = 1.5
+# Slack on the reachable radius at zero gap, absorbing detection jitter and
+# the fact that a player's position is their feet, not their centre of mass.
+#
+# Raised from 1.5 on `bench_track_continuity.py`, which cuts real tracks into
+# pieces and asks the matcher to rejoin them. Scored with the weights real
+# dropout lengths have, tuned on three windows and checked on a fourth:
+#
+#     drift m/s   margin   tune F1   held out
+#         8.0        0.5      0.39       0.48
+#         8.0        1.5      0.52       0.61     (as shipped)
+#         8.0        3.0      0.65       0.78     <- adopted
+#        11.0        3.0      0.64       0.75
+#         6.0        3.0      0.63       0.75
+#
+# Margin 3.0 is the best column at every drift tried, and drift 6 to 11 is
+# flat, so neither is a fitted peak.
+#
+# An earlier pass of this sweep recommended the opposite -- a radius three
+# times *tighter* -- and was wrong because the benchmark cut tracks cleanly.
+# A clean cut leaves the second piece continuing the first's motion exactly,
+# giving a median drift of 1.6-2.9 m/s where real fragments give 7.8-13.3,
+# because a real identity is dropped when the player is occluded and the
+# frames the velocity is read from are the corrupted ones. The benchmark now
+# injects noise at each cut, calibrated to reproduce the observed
+# distribution. The tight setting scored better on the clean version and
+# merged *fewer* fragments in production, which is what caught it.
+POSITION_MARGIN_M = 3.0
 
 # Frames at a fragment's edge used to estimate its velocity.
 VELOCITY_WINDOW = 5
@@ -122,7 +158,7 @@ def _best_match(frag: _Fragments, i: int, max_gap_frames: float,
     pred_y = frag.ey[i] + frag.vy[i] * gap_frames
 
     dist = np.hypot(frag.sx[cand] - pred_x, frag.sy[cand] - pred_y)
-    reach = MAX_PLAYER_SPEED_MS * gap_s + POSITION_MARGIN_M
+    reach = PREDICTION_DRIFT_MS * gap_s + POSITION_MARGIN_M
 
     # Two fragments of one player wear one kit. Joining across kits was
     # relabelling a rejected non-player's fragment with an accepted player's

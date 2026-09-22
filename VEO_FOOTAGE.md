@@ -36,7 +36,7 @@ connected to the video.
 | ball coverage | 72.7% | — | matches 720p broadcast |
 | ball speed p95 | **332 km/h** | ~120 | impossible |
 | players per frame | 10 (max 16) | 22 on a full pitch | partial view, unverified |
-| track ids | 287 -> 199 | ~22 | heavy fragmentation |
+| track ids | 287 -> 190 | ~22 | **the ceiling is detection, not re-id -- see below** |
 | passes | 24.7/min | 8-12 | 2-3x over-produced |
 | carries | 19.0/min | — | over-produced |
 | distance per 90 | 12.3 / 10.8 km | 10-12 | plausible |
@@ -174,6 +174,59 @@ was, because a second of sustained running is not something jitter produces.
 tracks of ten seconds or more is 0.26 on broadcast and -0.04 here. The
 aggregate rate is worth reporting; attributing sprints to individuals is not.
 `run_veo_analysis.py` prints both figures and says so.
+
+## Tracking continuity: the matcher is not the bottleneck
+
+287 fragments become 190 tracks for about 22 players, and per-player speed
+and sprint figures fail their reliability tests partly because a player's
+minutes are scattered across several ids. Re-identification was the obvious
+suspect.
+
+It was measured rather than assumed. `bench_track_continuity.py` cuts real
+tracks into pieces with a known gap and asks the matcher to put them back, so
+which pieces belong together is known exactly. Counting tracks against a
+roster of 22 would have rewarded merging everything; this does not.
+
+**The first version of that benchmark was wrong, and production caught it.**
+Cutting a track cleanly leaves the second piece continuing the first's motion
+exactly, so the prediction lands almost on it -- median drift 1.6-2.9 m/s.
+Real ByteTrack fragments drift 7.8-13.3 m/s, because an identity is dropped
+*when the player is occluded*, and the frames the velocity is read from are
+the corrupted ones. Tuned on clean cuts, the benchmark recommended a radius
+three times tighter, scored better for it, and merged *fewer* fragments in
+production. The benchmark now injects noise at each cut, calibrated to
+reproduce the observed drift.
+
+On the corrected instrument the slack term rises from 1.5 m to 3.0 m
+(held-out F1 0.61 to 0.78) and the drift term stays at 8.0, which turns out
+to match the measured real drift -- the right value for a different reason
+than it was chosen for. In production that is worth 143, 126, 133 and 98
+tracks becoming 139, 120, 130 and 95, with pass and carry detection unchanged
+to the second decimal.
+
+**Three to five percent, and per-player reliability does not move at all**
+(speed 0.44-0.58 against 0.45-0.62 before). The matcher was not the
+constraint.
+
+### What is
+
+Where fragments end says why:
+
+| | ends near the frame edge | starts near the edge |
+|---|---|---|
+| SoccerNet 720p, four windows | 36-40% | 26-42% |
+| **Veo 640x360** | **52%** | 38% |
+
+More than half of all track breaks on this footage are a player crossing the
+edge of the view. Nothing a gap matcher does can rejoin those: a player who
+leaves and returns twenty seconds later is not a 2.5 s gap, and treating them
+as one would be a guess. Only 6-12% of fragments end because the clip does.
+
+So per-player continuity is bounded by how much of the pitch is in frame and
+by detections that fail for longer than a couple of seconds -- a detection
+and field-of-view problem. Aggregate figures like distance and the sprint
+rate survive it, because they pool across fragments. Per-player attribution
+does not.
 
 ## What this run cannot tell us
 
