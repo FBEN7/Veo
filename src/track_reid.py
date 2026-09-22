@@ -67,6 +67,34 @@ GAP_SCHEDULE = (0.4, 0.8, 1.5, 2.5)
 # Margin 3.0 is the best column at every drift tried, and drift 6 to 11 is
 # flat, so neither is a fitted peak.
 #
+# That reasoning was not sound as written, and the grid has since been
+# widened to check it. "Best at every drift tried" was true, but 3.0 was the
+# *last column of the grid*: an optimum on the edge of a search has not been
+# shown to be an optimum, only that the search ran out. Extending the margins
+# to 4.5 and 6.0 finds a genuinely interior peak at drift 6.0, margin 4.5 --
+# tuning F1 0.76 against 0.74, Reading 0.82 against 0.81, Veo 0.76 against
+# 0.73.
+#
+# It is not adopted, because production disagrees. At 6.0/4.5 the four
+# labelled windows merge to 142, 122, 131 and 97 tracks where the shipped
+# setting gives 139, 120, 130 and 95 -- the benchmark prefers a setting that
+# merges *less*, which is the exact signature that exposed the clean-cut bug
+# below. Every downstream figure is identical either way: pass F1 0.849,
+# 0.698, 0.781 and 0.727 to three decimals under both, and the Veo clip is
+# unchanged at 192 tracks and split-half speed 0.39. A 0.02 gain on a
+# synthetic instrument that buys nothing and points the wrong way in
+# production is not a reason to move a shipped constant.
+#
+# The widened grid also shows the two parameters are poorly separated. The
+# objective weights gaps by how often they occur and 66% of real dropouts are
+# at or under 0.2 s, so it is dominated by the radius at short gaps, where
+# the margin supplies most of it. Every setting within 0.02 of the top has a
+# 0.2 s radius between 5.0 and 6.8 m, and among those the ones with the
+# smaller radius at long gaps win -- so what this benchmark actually
+# identifies is the margin, with the drift term only weakly constrained. The
+# measured agreement between drift 8.0 and real fragment drift stands, but it
+# is corroboration from outside this sweep, not something the sweep found.
+#
 # An earlier pass of this sweep recommended the opposite -- a radius three
 # times *tighter* -- and was wrong because the benchmark cut tracks cleanly.
 # A clean cut leaves the second piece continuing the first's motion exactly,

@@ -22,7 +22,7 @@ Reproduce with `python run_veo_analysis.py --clip <clip> --out output_veo`.
     conf_player    0.08         -> 11.0 players/frame
     conf_ball      0.05         -> 1.07 candidates/frame
     scale          35.2 px/m    a 1.75 m player is 62 px tall
-    camera         moves        1.22 px/frame mean, compensated
+    camera         moves        2.05 px/frame mean, compensated
 
 The elbow rule picked 0.08 rather than collapsing to the MIN_USABLE_CONF floor
 of 0.05, which is the regime it was rebuilt for -- a partial-pitch view never
@@ -34,14 +34,18 @@ connected to the video.
 | | observed | expected | reading |
 |---|---|---|---|
 | ball coverage | 72.7% | — | matches 720p broadcast |
-| ball speed p95 | **332 km/h** | ~120 | impossible |
+| ball speed p95 | **329 km/h** | ~120 | impossible |
 | players per frame | 10 (max 16) | 22 on a full pitch | partial view, unverified |
-| track ids | 287 -> 189 | ~22 | **the ceiling is field of view, not re-id -- see below** |
-| passes | 24.7/min | 8-12 | 2-3x over-produced |
-| carries | 19.0/min | — | over-produced |
-| distance per 90 | 8.1 / 8.9 km | 10-12 | low; scale is unverified without homography |
-| top speed | median 13.2, max 31.8 | 30-36 | plausible at last, but r = 0.28 |
-| sprints | 0.00 per tracked min | 0.3-0.7 | too few; see the scale caveat |
+| track ids | 287 -> 192 | ~22 | **the ceiling is field of view, not re-id -- see below** |
+| passes | 23.3/min | 8-12 | 2-3x over-produced |
+| carries | 22.3/min | — | over-produced |
+| distance per 90 | 8.0 / 8.9 km | 10-12 | low; scale is unverified without homography |
+| top speed | median 13.1, max 30.9 | 30-36 | plausible at last, but r = 0.39 |
+| sprints | 0.01 per tracked min | 0.3-0.7 | too few; see the scale caveat |
+
+Re-derived after the graphics-mask fix below, which changed the camera
+estimate and therefore every ground-fixed position. Figures elsewhere in this
+document that predate it are marked where they differ.
 
 ## Two predictions that were wrong
 
@@ -327,9 +331,22 @@ genuine sustained runs looks like. One second is also the conventional
 definition in sport science.
 
 Counts per window fall from 1594, 2259, 1143 and 556 *frames* to 16, 22, 7
-and 3 *sprints*, at 0.36-1.04 per tracked minute. On this Veo clip: 10
-sprints, 0.45 per minute -- in range, and notably more robust than top speed
-was, because a second of sustained running is not something jitter produces.
+and 3 *sprints*, at 0.36-1.04 per tracked minute.
+
+On this Veo clip the figure is **1 sprint over 26.6 tracked minutes, 0.014
+per minute** -- far below the 0.3-0.7 football produces. An earlier version
+of this section reported 10 sprints at 0.45 per minute and called it in
+range. That measurement predates ground-fixed tracking and does not survive
+it: the "sprints" were swings of the virtual camera, the same artefact the
+compensation table above records as 0.46 per minute becoming 0.00. The
+corrected number is the one here.
+
+So sprint counting is more robust than top speed on broadcast -- a second of
+sustained running is not something jitter produces -- and on this footage it
+now under-reports rather than over-reports. That is consistent with the scale
+being too large: a metre that is too big makes every speed too slow, and the
+20 km/h threshold is then reached by almost nobody. It points at the same
+missing homography as the distance figure does, not at the sprint definition.
 
 **The per-player count is still not reliable.** Split-half agreement on
 tracks of ten seconds or more is 0.26 on broadcast and -0.04 here. The
@@ -368,6 +385,64 @@ to the second decimal.
 **Three to five percent, and per-player reliability does not move at all**
 (speed 0.44-0.58 against 0.45-0.62 before). The matcher was not the
 constraint.
+
+### The broadcast tuning transfers to this footage unchanged
+
+All of that was measured on 720p and 1080p broadcast, and the radius is in
+metres -- so at 640x360, where a player is 62 px rather than 60 and the
+metre scale comes from a view with three times the perspective spread, there
+was no reason to assume it carried over. The benchmark manufactures its own
+truth, so it needs trajectories rather than labels and can simply be pointed
+at the Veo clip. It now is.
+
+| gap | broadcast P/R/F1 | Veo P/R/F1 |
+|---|---|---|
+| 0.2 s | 0.91 / 0.87 / **0.89** | 0.86 / 0.87 / **0.86** |
+| 0.4 s | 0.71 / 0.69 / 0.70 | 0.62 / 0.52 / 0.57 |
+| 0.8 s | 0.55 / 0.47 / 0.51 | 0.58 / 0.43 / 0.49 |
+| 1.5 s | 0.46 / 0.34 / 0.39 | 0.45 / 0.29 / 0.35 |
+| 2.5 s | 0.35 / 0.14 / 0.20 | 0.35 / 0.18 / 0.24 |
+
+Re-identification is no worse at a third of the resolution. Swept as a third
+held-out set, the Veo column tracks the tuning windows at every one of the 30
+settings tried, and the optimum sits in the same place. **Nothing needs
+tuning per footage**, and the low per-player reliability on this clip is not
+the matcher mis-sized for it.
+
+The prediction drift was checked the same way: 13.4 m/s at the median on Veo
+against 15.5 to 17.4 on the four broadcast windows, measured on the fragment
+boundaries the matcher declined to join, with the nearest candidate standing
+in for the true successor. Those are the hard cases by construction, so the
+absolute values run high; what matters is that Veo is not an outlier, so the
+noise the benchmark injects at each cut is calibrated for it too.
+
+### The grid had been stopping at the answer
+
+Re-running the sweep exposed a fault in how it had been read. The margin was
+searched over 0.5, 1.5 and 3.0, and 3.0 won every row -- recorded as "best at
+every drift tried", as though that settled it. It does not: an optimum on the
+last column of a grid has not been shown to be an optimum, only that the grid
+ran out.
+
+Extending the margins finds a real interior peak at drift 6.0, margin 4.5 --
+tuning F1 0.76 against 0.74, Reading 0.82 against 0.81, Veo 0.76 against 0.73.
+
+**It was not adopted, because production disagrees.** At 6.0/4.5 the labelled
+windows merge to 142, 122, 131 and 97 tracks where the shipped setting gives
+139, 120, 130 and 95: the benchmark prefers a setting that merges *less*,
+which is precisely the signature that exposed the clean-cut bug above. And
+nothing downstream moves either way -- pass F1 identical to three decimals on
+all four windows (0.849, 0.698, 0.781, 0.727), the Veo clip unchanged at 192
+tracks and split-half speed 0.39. A 0.02 gain on a synthetic instrument that
+buys nothing and points the wrong way in production does not move a shipped
+constant.
+
+The widened grid did settle what the sweep is really measuring. Two thirds of
+real dropouts are 0.2 s or shorter, so the weighted objective is dominated by
+the radius at short gaps, where the margin supplies most of it. Every setting
+within 0.02 of the top has a 0.2 s radius between 5.0 and 6.8 m. The sweep
+identifies the margin; the drift term it barely constrains, and the match
+between drift 8.0 and measured real drift is corroboration from outside it.
 
 ### What is
 
