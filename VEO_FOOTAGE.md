@@ -873,3 +873,45 @@ The trade is the right one -- an anchor 41.5 m out is worse than no anchor,
 because nothing about it looks wrong -- but it is not the best available. The
 frames being discarded are not bad frames. They are frames looking at the
 penalty area, which is where shots are.
+
+
+### Trying to get that coverage back, and the trap it walked into
+
+The discarded frames are penalty-area frames, and a D-anchored frame is not
+wrong by a random amount -- it is wrong by exactly 41.5 m, in a direction
+the arc ought to give away, since the D always bulges away from its goal.
+So: identify the D positively, and re-anchor on it deliberately.
+
+Identifying it took two goes. Arc span alone is not enough, because a centre
+circle with most of itself hidden is also a short arc, and "correcting" one
+of those by 41.5 m creates the very error being removed; measured that way it
+improved 54% of the frames it touched, a coin toss. What a D has and a
+partial circle does not is its chord -- the penalty-area line that cut it,
+lying 5.5 m from the centre. Requiring that took the improvement to 94%, and
+the frames came back to 2.0 m against a 3.7 m chance floor, from 5.3 m read
+as centre circles.
+
+**Switched on, it was a disaster.** Disagreement between two anchors on the
+same clip went from 0.6 m to 2.7 m, the worst case from 7.6 m to 114 m, and
+two clips of five ended up with median disagreements of 40 m and 23 m.
+
+The two measurements do not contradict each other, and the reason is the
+symmetry again. **`marking_error` cannot tell the left penalty spot from the
+right one.** Shifting the map to x = 11 and shifting it to x = 94 put the
+markings onto mirror images of one another, and the model is symmetric about
+x = 52.5, so the two score identically. The 94% confirmed that the
+correction was 41.5 m and said nothing whatever about its sign -- and the
+sign is the whole question.
+
+That is the same blindness that had just been found hiding the orientation
+flip, written up in the section above, and then walked straight into again.
+The rule, stated where it will be read next time:
+
+> A degree of freedom that the pitch's symmetry hides cannot be validated
+> against the markings. It can only be checked by comparing frames.
+
+`use_penalty_arc` is off. Getting it right needs evidence from outside the
+pitch's own symmetry -- which way the camera has panned across the clip,
+which goal play is heading toward, or the centre-circle anchors on
+neighbouring frames voting on which end this is. The last is the most
+promising and is not attempted here.
