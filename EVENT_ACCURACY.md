@@ -571,3 +571,61 @@ The figures at +/-1 s elsewhere in this document have not been re-derived
 and predate the recalibration. They are directionally intact -- the change
 is smaller than the differences they report -- but the exact decimals are
 stale.
+
+## Shots, goals and xG: where they stand
+
+Nothing in this document covers shots, because there is nothing to cover.
+**All four labelled windows contain zero shots and zero goals.** Every
+accuracy figure here rests on those windows, so a shot detector could not be
+shown to work or caught failing. The shot and goal logic is already written
+and gated off behind `absolute_pitch` at `events.py:914`; that gate is
+correct and opening it would produce numbers nobody could check.
+
+### The corpus does have shots, the video does not
+
+| | SHOT | GOAL | all visible |
+|---|---|---|---|
+| Stoke - Huddersfield | 21 | 1 | yes |
+| Reading - Fulham | 23 | 5 | yes |
+
+Fifty events over roughly 100 minutes each, every one marked `visible` and
+carrying the team that took it -- while only four 90-second clips were ever
+cut. `build_shot_windows.py` cuts the missing test set: a window per shot,
+shots within 30 s merged, plus control windows containing none, with a
+manifest the existing scorer reads unchanged. Stoke gives 19 shot + 15
+control windows, Reading 23 + 15.
+
+Goals will remain weakly validated whatever is built. Six across two matches,
+one of them in the Stoke match, cannot separate a good goal detector from a
+lucky one. Shots at 44 are genuinely measurable; goals should be reported as
+a count derived from validated shots, not as a validated metric.
+
+### The geometry is built; the model is not
+
+`src/shot_geometry.py` computes what every xG model takes as input --
+distance to the goal centre, and the angle the goal mouth subtends -- plus
+defenders inside the shooting triangle, which is the one pressure feature
+available from player positions and teams. It is pure geometry, so it is
+checked exactly rather than measured: `check_shot_geometry.py` verifies the
+closed form against an independent vector derivation (agreeing to 1e-13 rad
+over 8000 points), against cases fixed by construction, and against the
+invariances the geometry must have.
+
+The angle is an `arctan2` of two terms rather than an `arctan` of their
+ratio, and that is not stylistic. Inside about 3.7 m of the goal line the
+denominator turns negative, where the naive form returns this:
+
+| distance out | correct | naive `arctan` |
+|---|---|---|
+| 1 m | 149.4 deg | **-30.6 deg** |
+| 3 m | 101.3 deg | **-78.7 deg** |
+| 11 m | 36.8 deg | 36.8 deg |
+
+It agrees everywhere except on the best chances on the pitch, which it turns
+into the worst. Two of the fixed cases exist to catch exactly that.
+
+**No xG number is produced.** That needs coefficients from a specific
+published model, and writing plausible-looking ones would yield a figure that
+reads like Opta and is not. `shot_features_from_events` also refuses to run
+on relative coordinates rather than computing distance to a goal that is not
+located anywhere -- which is every clip processed so far.
