@@ -656,3 +656,110 @@ put a shot in the right part of the box.
 > against 5.2), not far behind them. Veo was never the outlier. The figures
 > in the table above, which came from `anchored_frames` directly, were right
 > throughout.
+
+
+## Trying to close the gap
+
+The previous section ended by saying the Veo anchor was not yet good enough
+to place a shot within the right part of the box. That turned out to be two
+claims, and they came apart under examination.
+
+### How good it actually is
+
+Sampled at 120 frames rather than 40, and repeated with three different
+draws, the Veo clip gives 34 to 36 anchors each time and:
+
+    seed   anchors   median    p90   chance floor
+      0         36     2.0m   7.3m           6.3m
+      1         35     1.6m   6.6m           6.7m
+      2         34     2.2m   7.3m           6.3m
+
+**2.1 m against a 6.4 m floor**, pooled over 105 anchored frames -- 67% below
+chance, where the broadcast clips sit at around 0.9 m. Veo is worse than
+broadcast and not by the margin previously reported. The 3.7 m figure came
+from a reporting path that had been left behind: `fit_pitch_anchor.py` built
+the circle-only anchor but its `main()` still scored the vanishing-point one,
+which this document had already measured as worse and which this footage
+cannot support at all.
+
+The spread across draws, 1.6 to 2.2 m, is worth noting on its own. Any single
+run of this measurement carries a few tenths of a metre of sampling noise,
+and earlier numbers quoted to one decimal place from eight or ten frames were
+more precise-looking than they were.
+
+### Is the metric even measuring the anchor?
+
+Before trying to improve anything, a question that had never been asked: what
+does `marking_error` read when the anchor is exactly *right*? Take a real
+anchor, declare it correct, generate the pitch's true markings, project them
+through it, cut them into 55-pixel pieces with realistic endpoint noise, and
+score them the same way.
+
+    clip            perfect anchor   real anchor
+    SoccerNet w1             0.06m         0.90m
+    reading                  0.02m         0.82m
+    Veo                      0.07m         2.90m
+    pooled                   0.06m         1.10m
+
+Six centimetres. The metric is not the limit; the metre is really the anchor.
+
+### Four ways of improving it, none of which worked
+
+**Refine each anchor against the straight markings.** Fitted on half the
+segments, scored on the other half: pooled 1.2 m to 1.3 m. It moves an anchor
+by half a degree and 0.8 m and changes nothing.
+
+**Refuse anchors that contradict their neighbours.** Two anchors and a warp
+measured from image features must agree about a pitch that did not move, and
+that test needs no markings at all -- so it would work at run time, on a
+frame showing nothing but grass. It does not work: refused anchors score
+1.4 m against 1.0 m for kept, and refusing the same number at random scores
+1.1 m.
+
+**Let every anchor in the clip vote.** Blocked by feature matching rather
+than by geometry, and on the Veo clip most of all: good matches per hop run
+245, 0, 0, 0, 0, 0, 133, 542, 645, 1114 -- either hundreds of features match
+or none do, and the runs of zeros are texture-poor grass at 640x360 seen by
+a corner detector. Where enough anchors did tie together, twenty voters did
+not beat one.
+
+**Correct a per-clip bias.** Since all three failures were failures of
+averaging, the error looked like it must be systematic. One correction per
+clip, fitted on half the anchored frames and applied to the other half, makes
+four clips of five distinctly worse.
+
+### What the failures did turn up
+
+The fits kept driving the scale to the edge of whatever bound they were
+given -- 10% of 12% per frame, 20% of 20% per clip, three clips out of five,
+always shrinking. The obvious suspect was the metric, and the synthetic
+control clears it: shrinking a correct anchor by 10% costs 1.09 m while
+growing it by 10% costs 0.40 m, so `marking_error` punishes shrinking nearly
+three times as hard. What rewards it is the *fitting* loss over detected
+segments. Shrinking drags spurious detections -- a shadow, a boot, the edge
+of a technical area -- toward the middle of the pitch, where the model lines
+are close together and any stray point lands near one. The fits were
+exploiting their own outliers. That leaves the scoring trustworthy and the
+fitting not, which is the right way round, since every accuracy figure here
+rests on the first.
+
+And a structural fact about this footage, which is the most useful thing to
+come out of the attempt. **The Veo camera is fixed.** A pure translation
+explains a pair of its frames to 1.0 px at a gap of 25 frames but is out by
+8 to 19 px beyond 100; a translation *with a scale* holds at 0.92 to 1.29 px
+all the way to 2000 frames, matching a full eight-parameter homography. The
+crop slides and zooms; the camera behind it never moves. So this clip has one
+pose relative to the pitch, every anchored frame measures the same quantity,
+and a frame with no markings in it could still be placed. Collecting that
+needs a matcher that works on grass, which ORB does not.
+
+### Where the real risk is
+
+Not the median. The cross-frame consistency check -- two anchors compared to
+each other, touching no markings -- finds a quarter to a half of all pairs
+disagreeing by more than five metres, with worst cases of 20, 50 and 80 m,
+and the Veo anchors have a p90 of 7.2 m. Those frames do not look wrong.
+A shot placed a metre out is in roughly the right part of the box; a shot
+placed fifty metres out is at the other end of the pitch, and nothing about
+it announces itself. Anything built on these coordinates needs to survive
+that tail, and none of the four attempts above made a dent in it.

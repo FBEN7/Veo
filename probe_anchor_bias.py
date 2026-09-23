@@ -13,8 +13,9 @@ nothing, and they failed in the same way:
 Every one of those is a way of averaging away *noise*. If the error varied
 frame to frame, all three would have helped, and the third especially --
 twenty independent measurements of one quantity beat one measurement, and it
-is not close. That none of them helped says the error does not vary frame to
-frame. It is shared: a systematic offset belonging to the clip.
+is not close. That none of them helped suggests the error does not vary frame
+to frame, but is shared: a systematic offset belonging to the clip. That is
+the hypothesis here, and the result below does not support it.
 
 This measures that directly. One correction -- rotation, shift, scale -- is
 fitted for a whole clip, on half its anchored frames, and applied to the
@@ -28,6 +29,42 @@ It has to be something the clip holds constant -- the horizon taken at
 infinity when the camera does have some tilt, a circle detected slightly
 small because its outer edge is where the grass wins, a principal point
 assumed at the image centre.
+
+## The answer is no, and it comes with a warning about the metric
+
+    clip            frames  before  after   the correction it found
+    SoccerNet w1        25    1.1m   2.9m   +0.3deg  +0.4m  -1.0m  -20.0%
+    SoccerNet w2        16    2.3m   3.2m   +1.1deg  +2.3m  +0.2m  -20.0%
+    SoccerNet w3        15    1.6m   1.9m   -0.3deg  -0.7m  -0.4m  +18.1%
+    reading             14    0.8m   1.4m   -1.4deg  +0.3m  +2.2m  -14.4%
+    Veo                 11    3.7m   3.4m  +11.9deg  -4.1m  +1.9m  -20.0%
+
+The correction does not transfer. On four clips of five it makes frames it
+was not fitted to distinctly worse, and the one it helps it helps by 0.3 m.
+Whatever is left of the anchor's error, it is not a fixed offset belonging
+to the clip.
+
+Which leaves it as neither -- not noise, since averaging twenty anchors did
+not touch it, and not bias, since a per-clip correction does not transfer.
+That combination is strange enough to be suspicious, and the last column
+says what to be suspicious of. The fitted scale sits at -20.0%, -20.0% and
+-20.0% on three clips: the edge of its bound, in the same direction. The
+per-frame refinement did the same thing at its own bound of 12%, and that
+was put down to too few segments. Twice, at two different bounds, with a
+hundred markings behind it, is not too few segments. Something is rewarding
+shrinking.
+
+`check_marking_metric.py` ran that down, and the answer is not the scoring
+metric -- a perfect anchor shrunk by 10% scores 1.09 m against 0.40 m for
+one grown by 10%, so `marking_error` punishes shrinking, hard. What rewards
+it is the fitting loss over *detected* segments: shrinking drags spurious
+detections toward the middle of the pitch, where the model lines are close
+together and any stray point is near one. The fit was exploiting its
+outliers rather than the metric.
+
+That means the numbers above are honest ones -- the scoring is sound, the
+correction genuinely fails to transfer -- and it is the fitting in this file
+and in `refine_anchor.py` that should not be trusted with a free scale.
 
     python probe_anchor_bias.py [--frames 40] [--splits 20]
 """
