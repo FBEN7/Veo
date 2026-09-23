@@ -542,6 +542,21 @@ def _matrix_sqrt(matrix):
     return vectors @ np.diag(np.sqrt(values)) @ vectors.T
 
 
+# How far below the circle's centre to probe when settling which way round
+# the pitch is. Far enough that the mapped difference is not noise, close
+# enough to stay inside the frame.
+ORIENTATION_PROBE_PX = 40.0
+
+
+def turned_pitch() -> np.ndarray:
+    """The pitch end for end: (x, y) -> (105 - x, 68 - y)."""
+    out = np.eye(3)
+    out[:2, :2] = -np.eye(2)
+    out[0, 2] = PITCH_LENGTH_M
+    out[1, 2] = PITCH_WIDTH_M
+    return out
+
+
 def metric_from_circle(horizon, ellipse, halfway_direction=None,
                        radius_m: float = CENTRE_CIRCLE_RADIUS_M):
     """Image to pitch metres, from a horizon and the centre circle.
@@ -580,7 +595,42 @@ def metric_from_circle(horizon, ellipse, halfway_direction=None,
     metric[:2, :2] = rotation @ linear
     metric[:2, 2] = (np.array(PITCH_CENTRE_M)
                      - rotation @ linear @ centre)
-    return metric @ rectification
+    result = metric @ rectification
+
+    # Settle which way round the pitch is, which nothing above has done.
+    #
+    # A circle is unchanged by turning it through 180 degrees and so is the
+    # halfway line, so the two of them together leave the orientation
+    # ambiguous. The line above resolved it with arctan2 of the line's
+    # direction vector -- and that vector is built from a detected segment's
+    # endpoints in whatever order the detector listed them, which HoughLinesP
+    # makes no promise about. The orientation of the entire map was being
+    # decided by an array index.
+    #
+    # Nothing caught it because a pitch is exactly symmetric under that
+    # rotation: 105 minus each line across it gives the same seven numbers,
+    # 68 minus each line along it gives the same six. A flipped anchor puts
+    # every marking on a real pitch line, so `marking_error` scores it
+    # identically. It is invisible to every accuracy figure here and it is
+    # the error that matters most, because a shot flipped end for end is
+    # attributed to the other goal.
+    #
+    # The absolute orientation cannot be recovered from markings -- by that
+    # same symmetry there is no telling one end of a bare pitch from the
+    # other, and it does not matter, so long as every frame agrees. The
+    # camera does not orbit the pitch; it sits on one side, so the near
+    # touchline stays near. Requiring that moving DOWN the image moves
+    # toward increasing y pins the choice to that, and it is the same choice
+    # on every frame of every clip.
+    probe = np.array([[ellipse[0][0], ellipse[0][0]],
+                      [ellipse[0][1], ellipse[0][1] + ORIENTATION_PROBE_PX],
+                      [1.0, 1.0]])
+    mapped_probe = result @ probe
+    if np.all(np.abs(mapped_probe[2]) > 1e-9):
+        here, below = (mapped_probe[:2] / mapped_probe[2]).T
+        if below[1] < here[1]:
+            result = turned_pitch() @ result
+    return result
 
 
 def image_to_pitch(plane, horizon_row: float, pose) -> np.ndarray:

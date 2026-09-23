@@ -115,7 +115,37 @@ MAX_ELLIPSE_AXIS_RATIO = 6.0
 # half. So the conic is now fitted by RANSAC across ALL arc pixels at once
 # rather than per connected component, which lets the two halves of a cut
 # circle support one another.
-MIN_ARC_SPAN_DEG = 120.0
+# How much of a circle must be visible before the arc is believed to be the
+# centre circle. This is not a noise threshold, though it started as one at
+# 120 degrees. It is what tells the centre circle from the penalty D.
+#
+# Both arcs have a radius of 9.15 m -- they come from the same measurement in
+# the laws of the game -- so an ellipse fitted to the D has the right scale,
+# a good residual and nothing wrong with it except which arc it is. Anchoring
+# on it puts the whole map out by 52.5 - 11 = 41.5 m, the centre spot against
+# the penalty spot, and `marking_error` sees a frame sitting 7 m from the
+# markings rather than anything obviously broken.
+#
+# What separates them is fixed by geometry. The D is only the part of its
+# circle outside the penalty area; the penalty spot is 11 m from the goal
+# line and the area's edge is 16.5, so the chord lies 5.5 m from a 9.15 m
+# centre and the arc spans 2*acos(5.5/9.15) = 106 degrees. Never more. At a
+# threshold of 120 the D walked straight through.
+#
+# Measured over 129 anchored frames on five clips:
+#
+#     min span   anchors kept   median   p90    over 5 m
+#         120d        129/129     1.0m   7.3m        19%
+#         160d         94/129     0.8m   6.9m        12%
+#         180d         78/129     0.7m   3.3m         8%
+#         200d         70/129     0.6m   2.1m         4%
+#         220d         60/129     0.6m   1.5m         3%
+#
+# 200 takes the tail down by three and a half times and improves the median
+# as well, which is the sign that what it is refusing was wrong rather than
+# merely marginal. It costs 46% of the anchors; propagation covers the frames
+# they would have anchored.
+MIN_ARC_SPAN_DEG = 200.0
 RANSAC_ITERATIONS = 300
 RANSAC_INLIER_PX = 2.0
 
