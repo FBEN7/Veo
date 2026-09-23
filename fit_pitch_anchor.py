@@ -222,14 +222,45 @@ def halfway_line(segments, centre):
     return None if best is None else best[1]
 
 
-def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False):
-    """Frames carrying a full image-to-pitch map, with that map."""
-    info, horizons = horizons_from_lines(out_dir, n_frames, rng)
-    if not horizons:
-        return info, []
+# The vanishing line, when the perspective is weak enough to ignore.
+#
+# This is the default and it took a head-to-head to believe. The horizon
+# apparatus -- two vanishing points, a gate, a transfer between frames -- is
+# what most of this file was built for, and on identical frames the anchor
+# that skips all of it is better:
+#
+#     clip        horizon anchor   circle alone
+#     w1                  3.3 m          1.4 m
+#     w2                  2.5 m          2.1 m
+#     w3                  2.2 m          2.3 m
+#     reading             2.1 m          0.8 m
+#
+# The reason is not that perspective does not exist. It is that these are
+# narrow views -- a broadcast camera following play, and a Veo virtual camera
+# more so -- and across a narrow field of view the projective part of the
+# mapping is small, while the horizon estimated to remove it carries real
+# error and the transfer between frames adds more. Removing a small
+# distortion with a noisy correction is worse than leaving it.
+#
+# It also unlocks the Veo clip, which has no horizon at all: 4 frames of 60
+# yield two vanishing points and their spread is 522 to 875 px at every gate.
+# Veo has good circles and no straight-line geometry, so an anchor that needs
+# only the circle is the only kind it can have.
+AT_INFINITY = np.array([0.0, 0.0, 1.0])
 
-    motion_path = out_dir / "camera_motion.npy"
-    motion = np.load(motion_path) if motion_path.exists() else None
+
+def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
+                    use_horizon: bool = False):
+    """Frames carrying a full image-to-pitch map, with that map."""
+    info = json.loads((out_dir / "clip.json").read_text())
+    horizons = []
+    motion = None
+    if use_horizon:
+        info, horizons = horizons_from_lines(out_dir, n_frames, rng)
+        if not horizons:
+            return info, []
+        motion_path = out_dir / "camera_motion.npy"
+        motion = np.load(motion_path) if motion_path.exists() else None
     principal = (info["width"] / 2.0, info["height"] / 2.0)
 
     cap = cv2.VideoCapture(info["path"])
@@ -244,9 +275,14 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False):
         circle = find_circle(frame, rng)
         if circle is None:
             continue
-        source, horizon, focal = min(horizons, key=lambda h: abs(h[0] - idx))
-        horizon = transfer_horizon(horizon, motion, source, idx,
-                                   focal if use_rotation else None, principal)
+        if use_horizon:
+            source, horizon, focal = min(horizons,
+                                         key=lambda h: abs(h[0] - idx))
+            horizon = transfer_horizon(
+                horizon, motion, source, idx,
+                focal if use_rotation else None, principal)
+        else:
+            horizon = AT_INFINITY
         (cx, cy), _, _ = circle["ellipse"]
         halfway = halfway_line(circle["segments"], (cx, cy))
         direction = (None if halfway is None

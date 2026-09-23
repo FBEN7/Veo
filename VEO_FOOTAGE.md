@@ -577,3 +577,70 @@ Nothing here is accuracy. Whether the passes it finds are real passes is
 unknown and unknowable without labels for this footage. The SoccerNet results
 -- pass detection above chance on four windows across two matches -- were
 measured on 720p broadcast and do not transfer by assumption to 640x360.
+
+
+## The Veo clip can be anchored to the pitch after all
+
+This document has said throughout that pitch coordinates are out of reach on
+this footage, and that distances are proportional rather than metric. That is
+now wrong, and two mistakes of mine were holding it up.
+
+**The circle detector was deleting the circle.** Finding the centre circle
+begins by painting out every straight line, so a conic fit does not have to
+contend with a touchline. But the line detector fits straight *chords* to a
+large arc -- a 55-pixel chord of a big circle is nearly straight -- so the
+erasing removed the circle itself. The bigger the circle in frame, the more
+of it went. This clip is the extreme case: its centre circle spans most of
+the frame, and the detector found one in **none** of 24 frames. Without the
+erasing it finds eight, at a median residual of 0.66 px over 135 degrees of
+arc, and the ellipse traces the real circle when inspected.
+
+It was costing detections everywhere, not only here -- 7 to 14 on w1, 2 to 9
+on w3 -- and the ones it left were worse. RANSAC rejects straight lines
+perfectly well on its own, which is what it is for.
+
+**The horizon was not worth estimating.** The anchor was built around two
+vanishing points giving a horizon, a gate to decide when to trust it, and a
+transfer to carry it between frames. On identical frames, the anchor that
+skips all of that is better:
+
+| | horizon anchor | circle alone |
+|---|---|---|
+| SoccerNet w1 | 3.3 m | **1.4 m** |
+| SoccerNet w2 | 2.5 m | **2.1 m** |
+| SoccerNet w3 | 2.2 m | 2.3 m |
+| reading | 2.1 m | **0.8 m** |
+
+Not because perspective is absent, but because these are narrow views -- a
+broadcast camera following play, and a Veo virtual camera more so. Across a
+narrow field of view the projective part of the mapping is small, while a
+horizon estimated to remove it carries real error and the transfer adds more.
+Removing a small distortion with a noisy correction is worse than leaving it.
+
+That matters here because **this clip has no horizon to estimate**. Four
+frames of sixty yield two vanishing points at all, and their spread is 522 to
+875 px at every gate tried. Veo shows one family of markings at a time. An
+anchor needing only the circle is the only kind this footage can support.
+
+### Where it lands
+
+| | anchored frames | within reach of one |
+|---|---|---|
+| SoccerNet w1 | 62% | 97% |
+| SoccerNet w2 | 35% | 97% |
+| SoccerNet w3 | 40% | 85% |
+| reading | 35% | 83% |
+| **Veo** | **30%** | **68%** |
+
+Frames without their own anchor borrow the nearest, as `H_a W^-1` with W
+matched between the two frames -- no focal length involved, which matters
+given how much of this project that quantity has cost. Accuracy holds out to
+eight seconds: median 1.6 to 2.2 m across all clips, against a measured
+chance floor of 5.1 to 5.6 m. What falls with distance is the odds of a
+borrow succeeding, from 97% at a third of a second to 40% at eight.
+
+**Veo's margin is the narrowest.** Measured on its own, the clip anchors 9 of
+10 circle frames at a median 3.7 m against a 4.9 m chance floor -- better
+than nothing by a quarter, where broadcast beats its floor by four fifths.
+Pitch coordinates exist on this footage now; they are not yet good enough to
+put a shot in the right part of the box.

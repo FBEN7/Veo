@@ -59,9 +59,28 @@ import numpy as np
 from probe_pitch_lines import (CLIPS, LINE_MIN_BRIGHTNESS, TOPHAT_KERNEL,
                                line_segments, pitch_surface)
 
-# How thick a straight segment is painted out before looking for the arc.
-# Generous: the point is to leave nothing of a line behind, and the circle is
-# nowhere near the lines except where it crosses the halfway line.
+# How thick a straight segment is painted out before looking for the arc,
+# when that is done at all. It is off by default, and the reason is measured.
+#
+# Erasing the straight lines first seemed obviously right: the conic fit
+# should not have to contend with a touchline. It is destructive, because the
+# line detector fits straight *chords* to a large arc -- a 55-pixel chord of a
+# big circle is nearly straight -- so painting the lines out deletes the
+# circle itself. The larger the circle in frame, the worse it gets.
+#
+# Measured over 24 frames a clip, detections with erasing against without:
+#
+#     w1        7  ->  14        w3        2  ->   9
+#     w2        6  ->  10        reading  12  ->  11
+#     Veo       0  ->   8
+#
+# The Veo clip is the extreme case and the one that exposed it -- its centre
+# circle spans most of the frame, so erasing removed all of it and the
+# detector found nothing in 24 frames. But it was costing detections
+# everywhere, and the ones it left were worse: median residual 0.56-0.77 px
+# with erasing against 0.54-0.70 without, over arcs of 120-170 degrees
+# against 135-235. RANSAC rejects the straight lines perfectly well on its
+# own, which is what it is for.
 LINE_ERASE_PX = 11
 
 # An arc needs this many pixels to be worth fitting a conic to.
@@ -113,10 +132,22 @@ def marking_pixels(frame):
     return cv2.bitwise_and(bright, surface)
 
 
-def arc_pixels(frame):
-    """Marking pixels with every straight segment painted out."""
+def arc_pixels(frame, erase_lines: bool = False):
+    """Marking pixels, optionally with every straight segment painted out.
+
+    Erasing helps when the circle is small in frame and the straight lines
+    around it would dominate a conic fit. It is actively destructive when the
+    circle is large, because the line detector then fits straight *chords* to
+    the arc -- a 55-pixel chord of a big circle is nearly straight -- and
+    painting those out deletes the circle before the ellipse fit sees it.
+    That is the Veo case exactly: the clip shows a centre circle spanning most
+    of the frame, and the detector found one in none of 24 frames until this
+    became optional.
+    """
     mask = marking_pixels(frame)
     segments, _ = line_segments(frame)
+    if not erase_lines:
+        return mask, segments
     erased = mask.copy()
     for x1, y1, x2, y2 in segments:
         cv2.line(erased, (x1, y1), (x2, y2), 0, LINE_ERASE_PX)
@@ -159,7 +190,7 @@ def _arc_span_deg(points, ellipse) -> float:
     return float(occupied.sum() * 10)
 
 
-def find_circle(frame, rng=None):
+def find_circle(frame, rng=None, erase_lines: bool = False):
     """One conic fitted across every arc pixel, by RANSAC.
 
     Not per connected component: the circle arrives in pieces, cut by the
@@ -167,7 +198,7 @@ def find_circle(frame, rng=None):
     does not determine an ellipse.
     """
     rng = rng or np.random.default_rng(0)
-    erased, segments = arc_pixels(frame)
+    erased, segments = arc_pixels(frame, erase_lines)
     ys, xs = np.nonzero(erased > 0)
     if len(xs) < MIN_ARC_PIXELS:
         return None
