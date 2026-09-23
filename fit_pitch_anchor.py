@@ -325,140 +325,79 @@ def marking_error(homography, segments, info):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=40)
+    ap.add_argument("--horizon", action="store_true",
+                    help="use the vanishing-point horizon instead of taking "
+                         "it at infinity; kept because it was most of the "
+                         "work here, but it is measurably worse -- see the "
+                         "module docstring")
     ap.add_argument("--rotate-horizon", action="store_true",
-                    help="carry the horizon as a rotation rather than a "
-                         "translation; correct in principle and not "
-                         "measurably better, see the module docstring")
+                    help="with --horizon, carry it as a rotation rather than "
+                         "a translation; correct in principle and not "
+                         "measurably better")
     args = ap.parse_args()
     rng = np.random.default_rng(0)
 
-    print("Horizon from the straight lines, scale and origin from the "
-          "circle.\nThe halfway line fixes only the rotation, so where it "
-          "lands is a free check:\nit must come out at x = 52.5 m.\n")
+    # This reports the anchor that SHIPS. An earlier version of this function
+    # always took the horizon route, long after `anchored_frames` had stopped
+    # doing so by default -- so the headline script was describing a method
+    # that had already been measured and rejected, and the Veo figure quoted
+    # from it (3.7 m against a 4.9 m floor) was not what the pipeline would
+    # actually produce. Both paths are still available; the default is the
+    # one that runs.
+    print("The circle fixes scale and origin; the halfway line fixes only "
+          "the rotation.\nEvery other marking is then a free check -- nothing "
+          "about a touchline or a\npenalty area enters the fit at any "
+          "point.\n")
 
     for name, out_dir in CLIPS:
         path = Path(out_dir)
         if not (path / "clip.json").exists():
             continue
-        info, horizons = horizons_from_lines(path, args.frames, rng)
-        if not horizons:
-            print(f"{name}: no frame determines a horizon\n")
+        info, anchors = anchored_frames(path, args.frames, rng,
+                                        use_rotation=args.rotate_horizon,
+                                        use_horizon=args.horizon)
+        if not anchors:
+            print(f"{name}: no frame yields an anchor\n")
             continue
 
-        motion_path = path / "camera_motion.npy"
-        motion = np.load(motion_path) if motion_path.exists() else None
-
         cap = cv2.VideoCapture(info["path"])
-        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         rows = []
-        for idx in np.linspace(0, total - 1, args.frames).astype(int):
-            idx = int(idx)
+        for idx, homography in anchors:
             cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
             ok, frame = cap.read()
             if not ok:
                 continue
-            circle = find_circle(frame, rng)
-            if circle is None:
+            segments, _ = line_segments(frame)
+            if len(segments) < 3:
+                continue
+            miss = marking_error(homography, segments, info)
+            if not np.isfinite(miss):
                 continue
 
-            source, horizon, focal = min(horizons,
-                                         key=lambda h: abs(h[0] - idx))
-            principal = (info["width"] / 2.0, info["height"] / 2.0)
-            horizon = transfer_horizon(
-                horizon, motion, source, idx,
-                focal if args.rotate_horizon else None, principal)
-
-            (cx, cy), _, _ = circle["ellipse"]
-            halfway = halfway_line(circle["segments"], (cx, cy))
-            direction = None
-            if halfway is not None:
-                direction = np.array([halfway[2] - halfway[0],
-                                      halfway[3] - halfway[1]], dtype=float)
-
-            homography = pm.metric_from_circle(horizon, circle["ellipse"],
-                                               direction)
-            if homography is None:
-                continue
-            if not plausible_anchor(homography, info):
-                continue
-
-            # The free check: every marking the fit never saw.
-            model_x = np.array(pm.LINES_ACROSS_M)
-            model_y = np.array(pm.LINES_ALONG_M)
-            errors = []
-            for segment in circle["segments"]:
-                if halfway is not None and segment == halfway:
-                    continue
-                pts = np.array([[segment[0], segment[2]],
-                                [segment[1], segment[3]], [1.0, 1.0]])
-                mapped = homography @ pts
-                if np.any(np.abs(mapped[2]) < 1e-9):
-                    continue
-                mapped = mapped[:2] / mapped[2]
-                # A pitch line is at constant x or constant y; score it
-                # against whichever it is closer to being.
-                mid = mapped.mean(axis=1)
-                if (mid[0] < -MAX_MARKING_OFFSET_M
-                        or mid[0] > pm.PITCH_LENGTH_M + MAX_MARKING_OFFSET_M
-                        or mid[1] < -MAX_MARKING_OFFSET_M
-                        or mid[1] > pm.PITCH_WIDTH_M + MAX_MARKING_OFFSET_M):
-                    continue
-                if abs(mapped[0, 0] - mapped[0, 1]) < abs(mapped[1, 0]
-                                                          - mapped[1, 1]):
-                    errors.append(float(np.abs(model_x - mid[0]).min()))
-                else:
-                    errors.append(float(np.abs(model_y - mid[1]).min()))
-            miss = float(np.median(errors)) if errors else float("nan")
-
-            # The floor: the same markings under a displaced anchor.
             chance = []
             for _ in range(CHANCE_TRIALS):
-                offset = rng.uniform(-CHANCE_OFFSET_M, CHANCE_OFFSET_M, 2)
-                shifted = []
-                for segment in circle["segments"]:
-                    if halfway is not None and segment == halfway:
-                        continue
-                    pts = np.array([[segment[0], segment[2]],
-                                    [segment[1], segment[3]], [1.0, 1.0]])
-                    mapped = homography @ pts
-                    if np.any(np.abs(mapped[2]) < 1e-9):
-                        continue
-                    mapped = mapped[:2] / mapped[2]
-                    mid = mapped.mean(axis=1) + offset
-                    if abs(mapped[0, 0] - mapped[0, 1]) < abs(mapped[1, 0]
-                                                              - mapped[1, 1]):
-                        shifted.append(float(np.abs(model_x - mid[0]).min()))
-                    else:
-                        shifted.append(float(np.abs(model_y - mid[1]).min()))
-                if shifted:
-                    chance.append(float(np.median(shifted)))
-            floor = float(np.median(chance)) if chance else float("nan")
-
-            rows.append((idx, source, miss, circle["residual_px"], floor))
-
+                shifted = np.eye(3)
+                shifted[:2, 2] = rng.uniform(-CHANCE_OFFSET_M,
+                                             CHANCE_OFFSET_M, 2)
+                value = marking_error(shifted @ homography, segments, info)
+                if np.isfinite(value):
+                    chance.append(value)
+            rows.append((idx, miss, len(segments),
+                         float(np.median(chance)) if chance else float("nan")))
         cap.release()
-        if not rows:
-            print(f"{name}: no frame has both a circle and a horizon to "
-                  f"carry\n")
-            continue
 
-        print(f"{name}: {len(horizons)} horizon frames, {len(rows)} anchored")
-        for idx, source, miss, residual, floor in rows:
-            print(f"   f{idx:5d}  horizon from f{source:<5d}  "
-                  f"other markings land {miss:6.1f} m from a real line  "
-                  f"(chance {floor:5.1f} m, circle residual {residual:.2f} px)")
-        # `miss` is already a distance; subtracting 52.5 from it again was
-        # the first version of this line, and it reported 3.6 m as 48.9.
-        finite = np.array([r[2] for r in rows if np.isfinite(r[2])])
-        floors = np.array([r[4] for r in rows if np.isfinite(r[4])])
-        if finite.size:
-            beat = (f", chance floor {np.median(floors):.1f} m"
-                    if floors.size else "")
-            print(f"   -> median error {np.median(finite):.1f} m, "
-                  f"worst {finite.max():.1f} m, over {finite.size} "
-                  f"frames{beat}\n")
-        else:
-            print("   -> no frame had a halfway line to check against\n")
+        if not rows:
+            print(f"{name}: anchors found, none with markings to check\n")
+            continue
+        print(f"{name}: {len(rows)} anchored frames")
+        for idx, miss, count, floor in rows:
+            print(f"   f{idx:5d}  {count:3d} markings land {miss:6.1f} m from "
+                  f"a real line  (chance {floor:5.1f} m)")
+        finite = np.array([r[1] for r in rows])
+        floors = np.array([r[3] for r in rows if np.isfinite(r[3])])
+        beat = f", chance floor {np.median(floors):.1f} m" if floors.size else ""
+        print(f"   -> median error {np.median(finite):.1f} m, "
+              f"worst {finite.max():.1f} m, over {finite.size} frames{beat}\n")
 
     print("Markings landing metres from any real pitch line mean the anchor "
           "is wrong,\nwhatever the circle residual says. A pitch line is "

@@ -644,3 +644,15 @@ borrow succeeding, from 97% at a third of a second to 40% at eight.
 than nothing by a quarter, where broadcast beats its floor by four fifths.
 Pitch coordinates exist on this footage now; they are not yet good enough to
 put a shot in the right part of the box.
+
+> **That last paragraph was wrong, and the error was in the reporting rather
+> than the anchor.** `fit_pitch_anchor.py` had been changed so that the
+> anchor it *builds* takes the horizon at infinity, but the `main()` that
+> prints the figures still forced the vanishing-point route, which this
+> document had already measured as worse and which the Veo clip cannot
+> support at all. So the headline script was scoring a method that no longer
+> ships. Corrected, the same clip reads **1.6 m against a 4.7 m floor** --
+> 66% below chance, in line with SoccerNet w3 (2.1 against 5.5) and w2 (1.9
+> against 5.2), not far behind them. Veo was never the outlier. The figures
+> in the table above, which came from `anchored_frames` directly, were right
+> throughout.
