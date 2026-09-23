@@ -78,6 +78,10 @@ import numpy as np
 from fit_pitch_anchor import (CHANCE_OFFSET_M, CHANCE_TRIALS, marking_error,
                               plausible_anchor)
 from probe_centre_circle import MIN_ARC_SPAN_DEG, find_circle
+from src.pitch_model import (D_SPAN_MAX, D_SPAN_MIN,
+                             PENALTY_SPOTS_M,
+                             anchor_from_penalty_arc,
+                             penalty_arc_chord)
 from probe_pitch_lines import CLIPS, line_segments
 from src import pitch_model as pm
 
@@ -85,88 +89,9 @@ from src import pitch_model as pm
 # looked for from a little below that, to allow for a detector that clips the
 # ends, and accepted as a D only up to a ceiling well short of what a centre
 # circle shows -- measured at a median of 240 degrees.
-D_SPAN_MIN = 80.0
-D_SPAN_MAX = 150.0
 
 # Where the two penalty spots are, along the pitch.
 PENALTY_SPOTS_M = (11.0, pm.PITCH_LENGTH_M - 11.0)
-
-# The D's chord is the penalty-area line, and it lies exactly this far from
-# the penalty spot: 16.5 m out from the goal line against 11 m.
-D_CHORD_OFFSET_M = 5.5
-D_CHORD_TOLERANCE_M = 1.5
-
-# A chord has to be a real line, not a scrap.
-MIN_CHORD_PX = 60.0
-
-
-def find_chord(homography, segments):
-    """The straight line sitting where the D's chord must sit.
-
-    This is the positive test for a D, and leaving it out is what sank the
-    first version of this file. Arc span alone does not identify a D --
-    plenty of short arcs are centre circles with most of themselves hidden,
-    and "correcting" one of those by 41.5 m creates the very error this is
-    meant to remove. Measured that way it improved 54% of the frames it
-    touched, which is a coin toss.
-
-    The D has something a partial circle does not: a line lying 5.5 m from
-    its centre, which is the edge of the penalty area that cut it. Distance
-    from the centre is unaffected by the rotation, so this can be measured
-    before the rotation is known -- which is just as well, because on these
-    frames it is not.
-    """
-    centre = np.array(pm.PITCH_CENTRE_M)
-    best = None
-    for x1, y1, x2, y2 in segments:
-        if np.hypot(x2 - x1, y2 - y1) < MIN_CHORD_PX:
-            continue
-        pts = np.array([[x1, x2], [y1, y2], [1.0, 1.0]], dtype=float)
-        mapped = homography @ pts
-        if np.any(np.abs(mapped[2]) < 1e-9):
-            continue
-        mapped = mapped[:2] / mapped[2]
-        if not np.all(np.isfinite(mapped)):
-            continue
-        line = np.cross([mapped[0, 0], mapped[1, 0], 1.0],
-                        [mapped[0, 1], mapped[1, 1], 1.0])
-        norm = np.hypot(line[0], line[1])
-        if norm < 1e-9:
-            continue
-        away = abs(line @ np.array([centre[0], centre[1], 1.0])) / norm
-        if abs(away - D_CHORD_OFFSET_M) > D_CHORD_TOLERANCE_M:
-            continue
-        score = abs(away - D_CHORD_OFFSET_M)
-        if best is None or score < best[0]:
-            best = (score, (x1, y1, x2, y2))
-    return None if best is None else best[1]
-
-
-def shift_along(dx: float) -> np.ndarray:
-    out = np.eye(3)
-    out[0, 2] = dx
-    return out
-
-
-def recover(homography, support):
-    """Re-anchor a map built on the D, once it is known to be the D.
-
-    Returns the corrected map and which penalty spot it was decided to be.
-    """
-    points = np.column_stack([support, np.ones(len(support))]).T
-    mapped = homography @ points
-    if np.any(np.abs(mapped[2]) < 1e-9):
-        return None, None
-    mapped = mapped[:2] / mapped[2]
-    if not np.all(np.isfinite(mapped)):
-        return None, None
-
-    # The arc bulges away from its goal, so its centroid sits on the side of
-    # the (wrongly placed) centre that faces up the pitch.
-    bulge = float(mapped[0].mean()) - pm.PITCH_CENTRE_M[0]
-    spot = PENALTY_SPOTS_M[0] if bulge > 0 else PENALTY_SPOTS_M[1]
-    return shift_along(spot - pm.PITCH_CENTRE_M[0]) @ homography, spot
-
 
 def main():
     ap = argparse.ArgumentParser()
@@ -211,7 +136,7 @@ def main():
                 pm.AT_INFINITY_LINE, circle["ellipse"], None)
             if unrotated is None:
                 continue
-            chord = find_chord(unrotated, circle["segments"])
+            chord = penalty_arc_chord(unrotated, circle["segments"])
             if chord is None:
                 continue
 
@@ -225,7 +150,8 @@ def main():
                 pm.AT_INFINITY_LINE, circle["ellipse"], direction)
             if provisional is None:
                 continue
-            fixed, spot = recover(provisional, circle["support"])
+            fixed, spot = anchor_from_penalty_arc(provisional,
+                                                  circle["support"])
             if fixed is None or not plausible_anchor(fixed, info):
                 continue
 

@@ -249,8 +249,56 @@ def halfway_line(segments, centre):
 AT_INFINITY = pm.AT_INFINITY_LINE
 
 
+def penalty_arc_anchor(frame, rng, info):
+    """An anchor built on the penalty D, for frames with no centre circle.
+
+    The span gate that keeps the D from being mistaken for the centre circle
+    also throws the frame away, and those are frames looking at the penalty
+    area -- which is where shots are. They can be kept, because a D is not
+    ambiguous once it is known to be one: its chord lies 5.5 m from its
+    centre and its arc bulges away from its goal, which says which end of
+    the pitch it is.
+
+    Measured on the frames the gate refuses, these come back to 2.0 m
+    against a 3.7 m chance floor, from 5.3 m read as centre circles, and the
+    41.5 m correction improves 94% of them. Weaker than a centre-circle
+    anchor at 0.6 m, and on frames that would otherwise have none at all.
+    """
+    circle = find_circle(frame, rng, min_span_deg=pm.D_SPAN_MIN)
+    if circle is None:
+        return None
+    span = circle["span_deg"]
+    if not (pm.D_SPAN_MIN <= span <= pm.D_SPAN_MAX):
+        return None
+
+    # Unrotated only to measure how far lines sit from the arc's centre,
+    # which a rotation cannot change.
+    unrotated = pm.metric_from_circle(AT_INFINITY, circle["ellipse"], None)
+    if unrotated is None:
+        return None
+    chord = pm.penalty_arc_chord(unrotated, circle["segments"])
+    if chord is None:
+        return None
+
+    # The chord runs parallel to the goal line, the same family as the
+    # halfway line, so it fixes the rotation the same way -- and it is the
+    # only line that can, since nothing crosses a D's centre.
+    direction = np.array([chord[2] - chord[0], chord[3] - chord[1]],
+                         dtype=float)
+    provisional = pm.metric_from_circle(AT_INFINITY, circle["ellipse"],
+                                        direction)
+    if provisional is None:
+        return None
+    homography, _ = pm.anchor_from_penalty_arc(provisional,
+                                               circle["support"])
+    if homography is None or not plausible_anchor(homography, info):
+        return None
+    return homography
+
+
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
-                    use_horizon: bool = False):
+                    use_horizon: bool = False,
+                    use_penalty_arc: bool = True):
     """Frames carrying a full image-to-pitch map, with that map."""
     info = json.loads((out_dir / "clip.json").read_text())
     horizons = []
@@ -274,6 +322,11 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
             continue
         circle = find_circle(frame, rng)
         if circle is None:
+            # No centre circle. The penalty D will do, if this is one.
+            if use_penalty_arc and not use_horizon:
+                fallback = penalty_arc_anchor(frame, rng, info)
+                if fallback is not None:
+                    out.append((idx, fallback))
             continue
         if use_horizon:
             source, horizon, focal = min(horizons,
