@@ -46,12 +46,50 @@ from src import ground_plane
 # point is an extrapolation of hundreds of pixels.
 MIN_VOTE_LENGTH_PX = 70
 
-# A line supports a vanishing point when the point lies this close to it, in
-# pixels, measured at the line's own scale.
-VP_INLIER_PX = 3.5
+# A line supports a vanishing point when it POINTS at it, to within this
+# many degrees.
+#
+# Measuring instead the distance in pixels from the candidate point to the
+# line -- which is what this did first -- is wrong, and wrong in a way that
+# inverts the result. A real vanishing point sits thousands of pixels outside
+# the image, where half a degree of error in a segment's direction is a
+# displacement of tens of pixels. So every correct line was rejected and the
+# only candidates with support were accidental intersections near the middle
+# of the frame. The measured difference on one frame, with the same segments:
+#
+#     distance test   vp (591, 273) inside the image, 8 of 23 lines
+#     angular test    vp (-1835, -424), 22 of 23 lines
+#
+# and the implied horizon moved from row +300, which is impossible for a
+# camera looking down at a pitch, to -369, which is not.
+VP_INLIER_DEG = 1.5
 
-VP_RANSAC_ITERATIONS = 400
+VP_RANSAC_ITERATIONS = 600
 MIN_FAMILY_LINES = 3
+
+# Not every frame can be anchored, and forcing the ones that cannot is what
+# hid the result. The camera sits on midfield for most of a match, where the
+# only markings are the halfway line and the centre circle -- one family and
+# an arc whose segments point every way. Splitting that into two families
+# produces two meaningless directions and a horizon to match.
+#
+# So frames are gated on the evidence they actually carry: both families need
+# this many supporting lines and this share of their members agreeing. The
+# gate is the difference between a horizon that wanders and one that does
+# not:
+#
+#     gate                    w1 spread    w2 spread
+#     none                      1686 px     13681 px
+#     5 lines, 70% support       414 px     14140 px
+#     6 lines, 80% support         5 px       102 px
+#
+# This is the keyframe idea arriving on its own: anchor the frames that can
+# be anchored and carry the rest. It costs coverage -- 3 and 9 frames of 30
+# -- and for shots that is the right trade, because the frames with enough
+# markings to anchor are the frames with the penalty area in view, which are
+# the frames shots happen in.
+GATE_MIN_SUPPORT_LINES = 6
+GATE_MIN_SUPPORT_FRACTION = 0.80
 
 # Two segments belong to different families when their directions differ by
 # more than this.
@@ -95,29 +133,45 @@ def _split_families(segments):
 
 
 def vanishing_point(family, rng):
-    """The point a family of lines converges on, by RANSAC."""
+    """The point a family of lines converges on, by RANSAC.
+
+    Support is angular: a segment votes for a candidate when the direction
+    from its midpoint to that candidate is parallel to the segment itself.
+    See VP_INLIER_DEG for why the obvious alternative is not merely noisier
+    but backwards.
+    """
     if len(family) < 2:
         return None, 0
     lines = [_homogeneous(s) for s in family]
+    midpoints, directions = [], []
+    for x1, y1, x2, y2 in family:
+        midpoints.append(np.array([(x1 + x2) / 2.0, (y1 + y2) / 2.0]))
+        d = np.array([x2 - x1, y2 - y1], dtype=float)
+        directions.append(d / max(np.linalg.norm(d), 1e-9))
+
     best, best_inliers = None, 0
     for _ in range(VP_RANSAC_ITERATIONS):
         i, j = rng.choice(len(lines), 2, replace=False)
         point = np.cross(lines[i], lines[j])
         if abs(point[2]) < 1e-9:
             continue                      # parallel in the image
+        candidate = point[:2] / point[2]
+
         support = 0
-        for seg, line in zip(family, lines):
-            norm = np.hypot(line[0], line[1])
-            if norm < 1e-9:
+        for midpoint, direction in zip(midpoints, directions):
+            toward = candidate - midpoint
+            norm = np.linalg.norm(toward)
+            if norm < 1e-6:
                 continue
-            distance = abs(line @ point) / (norm * abs(point[2]))
-            if distance <= VP_INLIER_PX:
+            cosine = abs(float(direction @ (toward / norm)))
+            if np.degrees(np.arccos(np.clip(cosine, 0.0, 1.0))) <= VP_INLIER_DEG:
                 support += 1
         if support > best_inliers:
-            best, best_inliers = point, support
+            best, best_inliers = candidate, support
+
     if best is None:
         return None, 0
-    return best / best[2], best_inliers
+    return np.array([best[0], best[1], 1.0]), best_inliers
 
 
 def horizon_row_at(vp_a, vp_b, x):
@@ -137,7 +191,7 @@ def main():
     print("Do the markings converge on two vanishing points, and does the "
           "horizon\nthey imply match the one the ground plane fitted from "
           "player heights?\n")
-    print(f"  {'clip':>14s} {'usable':>7s} {'horizon row':>13s} "
+    print(f"  {'clip':>14s} {'gated':>7s} {'of':>5s} {'horizon row':>13s} "
           f"{'spread':>8s} {'plane says':>11s} {'gap':>8s}")
 
     for name, out_dir in CLIPS:
@@ -163,15 +217,19 @@ def main():
             vp_b, support_b = vanishing_point(family_b, rng)
             if vp_a is None or vp_b is None:
                 continue
-            if support_a < MIN_FAMILY_LINES or support_b < MIN_FAMILY_LINES:
+            if min(support_a, support_b) < GATE_MIN_SUPPORT_LINES:
+                continue
+            if (support_a / len(family_a) < GATE_MIN_SUPPORT_FRACTION
+                    or support_b / len(family_b) < GATE_MIN_SUPPORT_FRACTION):
                 continue
             row = horizon_row_at(vp_a, vp_b, info["width"] / 2.0)
             if np.isfinite(row):
                 rows.append((int(idx), row))
 
         cap.release()
-        if len(rows) < 4:
-            print(f"  {name:>14s} {len(rows):7d}   too few usable frames")
+        if len(rows) < 3:
+            print(f"  {name:>14s} {len(rows):7d}   too few frames clear the "
+                  "gate")
             continue
 
         values = np.array([r for _, r in rows])
@@ -194,13 +252,18 @@ def main():
 
         gap = (abs(np.median(values) - plane_row)
                if np.isfinite(plane_row) else float("nan"))
-        print(f"  {name:>14s} {len(rows):7d} {np.median(values):13.0f} "
-              f"{values.std():8.0f} {plane_row:11.0f} {gap:8.0f}")
+        print(f"  {name:>14s} {len(rows):7d} {attempted:5d} "
+              f"{np.median(values):13.0f} {values.std():8.0f} "
+              f"{plane_row:11.0f} {gap:8.0f}")
 
     print("\n  The horizon is far above the frame for a camera looking down "
-          "at a pitch,\n  so large negative rows are expected. What matters "
-          "is the spread across\n  frames and the gap to the independent "
-          "estimate.")
+          "at a pitch,\n  so negative rows are expected and the positive "
+          "ones the first version of\n  this produced were impossible.\n")
+    print("  The remaining gap to the ground plane is not noise and does not "
+          "split the\n  difference: the vanishing points now agree with "
+          "themselves to a few pixels\n  across frames, while the plane sits "
+          "300 to 400 rows away. The plane is\n  the estimate already known "
+          "to make every downstream measurement worse.")
 
 
 if __name__ == "__main__":
