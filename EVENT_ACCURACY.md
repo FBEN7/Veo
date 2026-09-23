@@ -698,6 +698,37 @@ carries this in a `domain` field and `fit_xghub.py` prints it on every run,
 beside a table of positions that can be judged by eye -- six-yard line 0.50,
 edge of the box 0.10, 25 m out 0.04, 35 m out 0.01.
 
+### Penalties take a fixed value, and it is assumed rather than fitted
+
+`predict(is_penalty=...)` bypasses the geometry entirely and returns
+**0.76**. Bypassing is the point: a penalty's distance and angle are the same
+every time and are not what makes it convert, so routing it through a model
+built on open play returns the same wrong 0.20 however it is dressed up.
+
+That 0.76 is **not measured here, and could not be**. Nothing in any corpus
+this project holds labels a penalty -- SoccerNet's ball actions are PASS,
+DRIVE, HEADER, HIGH PASS, OUT, THROW IN, CROSS, BALL PLAYER BLOCK, SHOT,
+PLAYER SUCCESSFUL TACKLE, GOAL and FREE KICK, and xGHub's play patterns are
+regular, free kick and corner. It is the conversion rate professional
+football produces, reported between roughly 0.75 and 0.80, and it is a
+constant of the sport rather than of a dataset -- which is why one number is
+defensible for penalties where it would not be for an open-play shot. Count
+penalties and goals in any corpus that labels them and the measured number
+should replace it immediately.
+
+Two safeguards, both tested in `check_xg.py`:
+
+* `score_shots` records `xg_source` per row -- "fitted model" or "fixed
+  penalty value (assumed)" -- because those are different kinds of number
+  and a bare column of probabilities hides which is which.
+* A shot flagged as a penalty but taken from somewhere a penalty cannot be
+  taken from is reported rather than handed 0.76. That combination is a
+  detection error, and a confident number is the worst thing to put on it.
+
+Nothing in this pipeline detects a penalty, and nothing geometric could: a
+shot from the spot in open play looks identical. It takes the referee's
+decision, so `is_penalty` is carried on the event rather than derived.
+
 ### Three things the dataset card gets wrong
 
 Worth knowing before anyone else reads it: the per-shot file is

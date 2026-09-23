@@ -24,6 +24,7 @@
     "free kick",
     "regular"
   ],
+  "penalty_xg": 0.76,
   "note": "Reduced model: classical shot geometry only. The orientation features that are xGHub's contribution are not available from this pipeline.",
-  "domain": "Open play, free kicks and corners. NO PENALTIES: xGHub contains none, so this model has never seen one. It puts a central shot from the penalty spot at about 0.20, which is right for open play from there -- the dataset's own shots at that distance and angle convert at 0.17 -- and wrong for a penalty, which converts around 0.76. Penalties need their own number, not this one."
+  "domain": "Fitted on open play, free kicks and corners. xGHub contains NO PENALTIES, so the fitted part has never seen one and puts a central shot from the penalty spot at about 0.20 -- right for open play from there, where the dataset's own shots convert at 0.17, and wrong for a penalty. Penalties are therefore not scored by the fit at all: pass is_penalty to predict() and they take the fixed penalty_xg, which is assumed from football's conversion rate rather than fitted here."
 }

@@ -231,7 +231,13 @@ def shot_features_from_events(events, absolute_pitch: bool,
             team=team,
             attacking=goal,
             distance_m=float(feats["distance_m"]),
+            angle_rad=float(feats["angle_rad"]),
             angle_deg=float(feats["angle_deg"]),
             in_penalty_area=bool(feats["in_penalty_area"]),
+            # Carried through rather than derived. Nothing here detects a
+            # penalty, and nothing geometric could: a shot from the spot in
+            # open play looks identical. It takes the referee's decision,
+            # which has to arrive with the event.
+            is_penalty=bool(shot.get("is_penalty", False)),
         ))
     return pd.DataFrame(rows)

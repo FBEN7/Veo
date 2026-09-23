@@ -20,6 +20,10 @@ silently.
   3. Geometry round-trips: a position turned into distance-and-bearing and
      back must land where it started.
 
+  4. Penalties bypass the fit and take the fixed value, whatever geometry
+     they arrive with -- and one recorded away from the spot is surfaced as
+     a detection error rather than handed a confident number.
+
     python check_xg.py
 """
 
@@ -170,8 +174,66 @@ def check_recovery():
     return failures
 
 
+def check_penalties():
+    """Penalties take the fixed value, whatever the geometry says."""
+    print("\n4. Penalties bypass the fit\n")
+    model = xg.fit(synthetic_shots(), verbose=False)
+    failures = 0
+
+    # The fitted model scored on penalty-spot geometry, for contrast.
+    spot_distance = 11.0
+    spot_angle = float(xg._mouth_angle_from(np.array(11.0), np.array(0.0)))
+    fitted = float(model.predict(distance_m=np.array([spot_distance]),
+                                 angle_rad=np.array([spot_angle]))[0])
+    flagged = float(model.predict(distance_m=np.array([spot_distance]),
+                                  angle_rad=np.array([spot_angle]),
+                                  is_penalty=np.array([True]))[0])
+    ok = flagged == model.penalty_xg
+    failures += not ok
+    print(f"   same shot, scored by geometry : {fitted:.3f}")
+    print(f"   same shot, flagged a penalty  : {flagged:.3f}  "
+          f"{'ok' if ok else 'DID NOT TAKE THE FIXED VALUE'}")
+
+    # Geometry must not matter once flagged: a penalty is a penalty.
+    far = float(model.predict(distance_m=np.array([40.0]),
+                              angle_rad=np.array([0.05]),
+                              is_penalty=np.array([True]))[0])
+    ok = far == model.penalty_xg
+    failures += not ok
+    print(f"   flagged, absurd geometry      : {far:.3f}  "
+          f"{'ok' if ok else 'GEOMETRY LEAKED IN'}")
+
+    # Mixed arrays have to be element-wise, not all-or-nothing.
+    mixed = model.predict(distance_m=np.array([11.0, 11.0, 25.0]),
+                          angle_rad=np.array([spot_angle, spot_angle, 0.3]),
+                          is_penalty=np.array([True, False, False]))
+    ok = (mixed[0] == model.penalty_xg and mixed[1] != model.penalty_xg
+          and mixed[2] != model.penalty_xg)
+    failures += not ok
+    print(f"   mixed array                   : "
+          f"{np.round(mixed, 3).tolist()}  "
+          f"{'ok' if ok else 'NOT ELEMENT-WISE'}")
+
+    lo, hi = xg.PENALTY_XG_PLAUSIBLE
+    ok = lo <= model.penalty_xg <= hi
+    failures += not ok
+    print(f"   the assumed value             : {model.penalty_xg:.2f}  "
+          f"{'in' if ok else 'OUTSIDE'} the {lo}-{hi} range football produces")
+
+    # A penalty recorded away from the spot is a detection error, and has to
+    # be surfaced rather than handed a confident number.
+    odd = model.penalties_out_of_place(
+        distance_m=np.array([11.0, 10.2, 31.0, 25.0]),
+        is_penalty=np.array([True, True, True, False]))
+    ok = odd.tolist() == [2]
+    failures += not ok
+    print(f"   penalties away from the spot  : flagged index "
+          f"{odd.tolist()}  {'ok' if ok else 'WRONG'}")
+    return failures
+
+
 def check_refusal():
-    print("\n4. Too little data is refused rather than fitted\n")
+    print("\n5. Too little data is refused rather than fitted\n")
     try:
         xg.fit(synthetic_shots(40, seed=9), verbose=False)
     except SystemExit as exc:
@@ -183,7 +245,7 @@ def check_refusal():
 
 def main():
     failures = (check_convention() + check_round_trip() + check_recovery()
-                + check_refusal())
+                + check_penalties() + check_refusal())
     if failures:
         raise SystemExit(f"\n{failures} check(s) failed")
     print("\n   All checks passed. The pipeline is ready for real shots.")

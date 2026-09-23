@@ -71,6 +71,39 @@ DEFAULT_FEATURES = ("distance_m", "angle_rad")
 # splitting within a match lets the model see its own test conditions.
 HELD_OUT_FRACTION = 0.25
 
+# --- penalties ---------------------------------------------------------------
+# A penalty is not a shot from eleven metres, and the fitted model cannot know
+# that: xGHub contains none, so every shot it learned from had defenders, a
+# moving goalkeeper and a closing angle. Scored on geometry alone a penalty
+# comes out at 0.20 -- correct for open play from that spot, where the
+# dataset's own shots convert at 0.17, and wrong by a factor of nearly four
+# for the real thing.
+#
+# So penalties get a fixed number instead, and this one is **assumed, not
+# fitted**. Nothing in any corpus here marks a penalty: SoccerNet's ball
+# actions run PASS, DRIVE, HEADER, HIGH PASS, OUT, THROW IN, CROSS, BALL
+# PLAYER BLOCK, SHOT, PLAYER SUCCESSFUL TACKLE, GOAL, FREE KICK, and xGHub's
+# play patterns are regular, free kick and corner. There is nothing to measure
+# it from.
+#
+# 0.76 is the conversion rate professional football produces; reported figures
+# sit between about 0.75 and 0.80 depending on competition and era, and public
+# xG models assign a flat value in that band. It is a constant of the sport
+# rather than of this dataset, which is why a single number is defensible here
+# where it would not be for an open-play shot.
+#
+# Replace it with a measured value as soon as a corpus with penalty labels
+# turns up: count penalties, count goals, divide. That is the whole
+# calculation, and a measured number should always displace this one.
+PENALTY_XG = 0.76
+PENALTY_XG_PLAUSIBLE = (0.70, 0.85)
+
+# The penalty spot. Used only to notice when something flagged as a penalty
+# was taken from somewhere a penalty cannot be taken from, which means the
+# detection is wrong rather than the geometry.
+PENALTY_SPOT_DISTANCE_M = 11.0
+PENALTY_SPOT_TOLERANCE_M = 3.0
+
 
 @dataclass
 class XGModel:
@@ -86,16 +119,20 @@ class XGModel:
     source: str = ""
     convention: str = ""
     play_patterns: list = field(default_factory=list)
+    # Assumed, not fitted. See PENALTY_XG.
+    penalty_xg: float = PENALTY_XG
     note: str = ("Reduced model: classical shot geometry only. The "
                  "orientation features that are xGHub's contribution are not "
                  "available from this pipeline.")
-    domain: str = ("Open play, free kicks and corners. NO PENALTIES: xGHub "
-                   "contains none, so this model has never seen one. It puts "
-                   "a central shot from the penalty spot at about 0.20, "
-                   "which is right for open play from there -- the dataset's "
-                   "own shots at that distance and angle convert at 0.17 -- "
-                   "and wrong for a penalty, which converts around 0.76. "
-                   "Penalties need their own number, not this one.")
+    domain: str = ("Fitted on open play, free kicks and corners. xGHub "
+                   "contains NO PENALTIES, so the fitted part has never seen "
+                   "one and puts a central shot from the penalty spot at "
+                   "about 0.20 -- right for open play from there, where the "
+                   "dataset's own shots convert at 0.17, and wrong for a "
+                   "penalty. Penalties are therefore not scored by the fit at "
+                   "all: pass is_penalty to predict() and they take the fixed "
+                   "penalty_xg, which is assumed from football's conversion "
+                   "rate rather than fitted here.")
 
     def save(self, path: Path) -> None:
         Path(path).write_text(json.dumps(asdict(self), indent=2))
@@ -106,15 +143,40 @@ class XGModel:
         data["features"] = tuple(data["features"])
         return cls(**data)
 
-    def predict(self, **features) -> np.ndarray:
-        """Probability a shot with these features becomes a goal."""
+    def predict(self, is_penalty=None, **features) -> np.ndarray:
+        """Probability a shot with these features becomes a goal.
+
+        `is_penalty` marks shots that take the fixed penalty value instead of
+        the fitted one. The geometry is ignored for those, deliberately: a
+        penalty's distance and angle are always the same and are not what
+        makes it convert, so feeding them through a model built on open play
+        would return the same wrong 0.20 every time.
+        """
         missing = [f for f in self.features if f not in features]
         if missing:
             raise ValueError(f"missing features: {missing}")
         x = np.column_stack([np.asarray(features[f], dtype=float)
                              for f in self.features])
         z = self.intercept + x @ np.asarray(self.coefficients, dtype=float)
-        return 1.0 / (1.0 + np.exp(-z))
+        probability = 1.0 / (1.0 + np.exp(-z))
+
+        if is_penalty is None:
+            return probability
+        return np.where(np.asarray(is_penalty, dtype=bool),
+                        self.penalty_xg, probability)
+
+    def penalties_out_of_place(self, distance_m, is_penalty) -> np.ndarray:
+        """Shots flagged as penalties that were not taken from the spot.
+
+        A penalty is taken from eleven metres, centrally, every time. One
+        recorded anywhere else is a detection error, and returning 0.76 for
+        it would bury that error under a confident number.
+        """
+        distance_m = np.asarray(distance_m, dtype=float)
+        flagged = np.asarray(is_penalty, dtype=bool)
+        off_spot = np.abs(distance_m - PENALTY_SPOT_DISTANCE_M) > \
+            PENALTY_SPOT_TOLERANCE_M
+        return np.flatnonzero(flagged & off_spot)
 
     def summary(self) -> str:
         terms = "  ".join(f"{f} {c:+.4f}"
@@ -309,6 +371,40 @@ def calibration_table(y_true, y_prob, bins: int = 5) -> pd.DataFrame:
                          predicted=float(y_prob[sel].mean()),
                          observed=float(y_true[sel].mean())))
     return pd.DataFrame(rows)
+
+
+def score_shots(model: XGModel, features: pd.DataFrame,
+                verbose: bool = True) -> pd.DataFrame:
+    """Attach xG to a frame from `shot_geometry.shot_features_from_events`.
+
+    Penalties take the fixed value; everything else goes through the fit.
+    Each row records which of the two it got, because they are different
+    kinds of number and a column of bare probabilities hides that.
+
+    A shot flagged as a penalty but taken from somewhere a penalty cannot be
+    taken from is reported rather than quietly handed 0.76 -- that is a
+    detection error wearing a confident number.
+    """
+    out = features.copy()
+    if "is_penalty" not in out.columns:
+        out["is_penalty"] = False
+
+    penalties = out.is_penalty.to_numpy(bool)
+    out["xg"] = model.predict(
+        is_penalty=penalties,
+        **{f: out[f].to_numpy(float) for f in model.features})
+    out["xg_source"] = np.where(penalties, "fixed penalty value (assumed)",
+                                "fitted model")
+
+    odd = model.penalties_out_of_place(out.distance_m.to_numpy(float),
+                                       penalties)
+    if verbose and odd.size:
+        distances = np.round(out.distance_m.to_numpy(float)[odd], 1).tolist()
+        print(f"  [xg] {odd.size} shot(s) flagged as penalties were taken "
+              f"from {distances} m, and a penalty is taken from "
+              f"{PENALTY_SPOT_DISTANCE_M:.0f}. Check the detection, not the "
+              "model.")
+    return out
 
 
 def fit(df: pd.DataFrame, features=DEFAULT_FEATURES, seed: int = 0,

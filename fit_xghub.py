@@ -85,12 +85,16 @@ def main():
         near = raw[(raw.distance_from_goal.between(10.5, 11.5))
                    & (raw.angle_to_goal.abs() < 8)]
         rate = near.is_goal.mean() if len(near) else float("nan")
-        print(f"\n  NO PENALTIES IN THIS DATASET. The model has never seen "
-              f"one, so the\n  penalty-spot figure above is an open-play shot "
-              f"from 11 m, not a penalty.\n  It matches the {len(near)} "
-              f"dataset shots from that distance and angle,\n  which convert "
-              f"at {rate:.3f}. A real penalty converts around 0.76 and needs\n"
-              f"  its own number.")
+        print(f"\n  NO PENALTIES IN THIS DATASET. The fit has never seen one, "
+              f"so the\n  penalty-spot row above is an open-play shot from "
+              f"11 m, not a penalty. It\n  matches the {len(near)} dataset "
+              f"shots from that distance and angle, which\n  convert at "
+              f"{rate:.3f}.")
+        print(f"\n  An actual penalty is scored at {model.penalty_xg:.2f} by "
+              f"passing is_penalty to\n  predict(), bypassing the geometry. "
+              f"That value is ASSUMED from football's\n  conversion rate, not "
+              f"fitted here -- no corpus available to this project\n  labels "
+              f"penalties at all. Replace it the moment one does.")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
