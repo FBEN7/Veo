@@ -222,6 +222,70 @@ def halfway_line(segments, centre):
     return None if best is None else best[1]
 
 
+def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False):
+    """Frames carrying a full image-to-pitch map, with that map."""
+    info, horizons = horizons_from_lines(out_dir, n_frames, rng)
+    if not horizons:
+        return info, []
+
+    motion_path = out_dir / "camera_motion.npy"
+    motion = np.load(motion_path) if motion_path.exists() else None
+    principal = (info["width"] / 2.0, info["height"] / 2.0)
+
+    cap = cv2.VideoCapture(info["path"])
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    out = []
+    for idx in np.linspace(0, total - 1, n_frames).astype(int):
+        idx = int(idx)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        ok, frame = cap.read()
+        if not ok:
+            continue
+        circle = find_circle(frame, rng)
+        if circle is None:
+            continue
+        source, horizon, focal = min(horizons, key=lambda h: abs(h[0] - idx))
+        horizon = transfer_horizon(horizon, motion, source, idx,
+                                   focal if use_rotation else None, principal)
+        (cx, cy), _, _ = circle["ellipse"]
+        halfway = halfway_line(circle["segments"], (cx, cy))
+        direction = (None if halfway is None
+                     else np.array([halfway[2] - halfway[0],
+                                    halfway[3] - halfway[1]], dtype=float))
+        homography = pm.metric_from_circle(horizon, circle["ellipse"],
+                                           direction)
+        if homography is None or not plausible_anchor(homography, info):
+            continue
+        out.append((idx, homography))
+    cap.release()
+    return info, out
+
+
+def marking_error(homography, segments, info):
+    """Median distance from mapped markings to a real pitch line, in metres."""
+    model_x = np.array(pm.LINES_ACROSS_M)
+    model_y = np.array(pm.LINES_ALONG_M)
+    errors = []
+    for segment in segments:
+        pts = np.array([[segment[0], segment[2]],
+                        [segment[1], segment[3]], [1.0, 1.0]], dtype=float)
+        mapped = homography @ pts
+        if np.any(np.abs(mapped[2]) < 1e-9):
+            continue
+        mapped = mapped[:2] / mapped[2]
+        mid = mapped.mean(axis=1)
+        if (mid[0] < -MAX_MARKING_OFFSET_M
+                or mid[0] > pm.PITCH_LENGTH_M + MAX_MARKING_OFFSET_M
+                or mid[1] < -MAX_MARKING_OFFSET_M
+                or mid[1] > pm.PITCH_WIDTH_M + MAX_MARKING_OFFSET_M):
+            continue
+        if abs(mapped[0, 0] - mapped[0, 1]) < abs(mapped[1, 0] - mapped[1, 1]):
+            errors.append(float(np.abs(model_x - mid[0]).min()))
+        else:
+            errors.append(float(np.abs(model_y - mid[1]).min()))
+    return float(np.median(errors)) if errors else float("nan")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=40)
