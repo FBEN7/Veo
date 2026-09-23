@@ -54,6 +54,34 @@ MIN_SEGMENT_PX = 55
 # this. A corner needs two orientations; a single touchline gives one.
 ORIENTATION_TOLERANCE_DEG = 25.0
 
+# --- what this detector cannot do, measured ---------------------------------
+#
+# About 30 segments are found per frame where six or eight markings are
+# visible, and inspection shows many of them lying in open grass. Three ways
+# of cleaning that up were tried and none worked, which together say the
+# limit is the footage rather than the rules.
+#
+# A ridge test -- require the segment to be brighter than the grass on BOTH
+# sides, as a painted line is and a mown-stripe boundary is not -- changes
+# almost nothing: 43, 41, 41 and 42 segments kept at flank offsets of 7, 12,
+# 18 and 25 pixels. The false segments are genuinely thin bright ridges,
+# which is what broadcast edge-sharpening makes of a luminance step.
+#
+# Colour does not separate them either, and the number that explains why is
+# this: the markings measure saturation 112 against open grass at 144, while
+# the detected segments span 40 to 130 across both. A 10 cm line seen from a
+# camera 25 m up and 50 m away is thinner than a pixel, so it is blended with
+# the grass around it and is never actually white. There is no white to key
+# on.
+#
+# `_is_ridge` is kept for the record and is deliberately not applied: it
+# removed a quarter of the segments without being shown to remove the wrong
+# quarter, which is not a reason to ship a filter.
+RIDGE_OFFSET_PX = 7
+RIDGE_MIN_CONTRAST = 6.0
+RIDGE_SAMPLES = 12
+RIDGE_MIN_SUPPORT = 0.6
+
 # Erode the grass inward so the touchline itself, where grass meets
 # advertising hoardings, is not mistaken for a marking.
 #
@@ -82,6 +110,33 @@ def pitch_surface(frame: np.ndarray) -> np.ndarray:
         biggest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
         grass = ((labels == biggest) * 255).astype(np.uint8)
     return cv2.erode(grass, np.ones((GRASS_ERODE, GRASS_ERODE), np.uint8), 1)
+
+
+def _is_ridge(seg, grey) -> bool:
+    """Bright in the middle and darker on both sides, as a painted line is."""
+    x1, y1, x2, y2 = seg
+    dx, dy = x2 - x1, y2 - y1
+    length = float(np.hypot(dx, dy))
+    if length < 1e-6:
+        return False
+    nx, ny = -dy / length, dx / length          # unit normal
+
+    t = np.linspace(0.15, 0.85, RIDGE_SAMPLES)  # skip the ends
+    xs = x1 + dx * t
+    ys = y1 + dy * t
+    h, w = grey.shape
+
+    def sample(offset):
+        cx = np.clip((xs + nx * offset).astype(int), 0, w - 1)
+        cy = np.clip((ys + ny * offset).astype(int), 0, h - 1)
+        return grey[cy, cx].astype(np.float32)
+
+    middle = sample(0.0)
+    left = sample(-RIDGE_OFFSET_PX)
+    right = sample(+RIDGE_OFFSET_PX)
+    peaks = ((middle > left + RIDGE_MIN_CONTRAST)
+             & (middle > right + RIDGE_MIN_CONTRAST))
+    return bool(peaks.mean() >= RIDGE_MIN_SUPPORT)
 
 
 def line_segments(frame: np.ndarray):
