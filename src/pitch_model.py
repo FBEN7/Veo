@@ -295,6 +295,114 @@ def fit_pose_multiframe(per_frame_points, pans_rad, field, origin, resolution,
                     **kwargs)
 
 
+# --- rectification from vanishing points -------------------------------------
+# This route uses no ground plane at all, which is the point of it: the plane
+# is the component both earlier attempts blamed. Two vanishing points give the
+# horizon, the horizon gives a rectification, and in the rectified frame the
+# two families of markings become axis-aligned -- so the pitch fit drops to two
+# independent one-dimensional alignments against known spacings.
+
+# Where a rectified line position stops being constant along its own segment.
+# A segment that fails this was never a straight world line.
+RECTIFIED_CONSTANCY = 0.08
+
+# Rectified positions closer than this fraction of the spread are the same
+# world line seen as several segments.
+CLUSTER_RELATIVE_TOL = 0.02
+
+# How close a mapped line must land to a real pitch line, in metres.
+MATCH_TOLERANCE_M = 0.6
+
+# Two lines always fit a two-point solve exactly, so two is not evidence.
+MATCH_MIN_INLIERS = 3
+
+# A broadcast frame does not show more pitch than this. Physical knowledge,
+# used to reject impossible fits rather than to choose among possible ones.
+MAX_VISIBLE_X_M = 85.0
+MAX_VISIBLE_Y_M = 75.0
+
+# Pitch lines at constant x (parallel to the goals) and constant y (parallel
+# to the touchlines).
+LINES_ACROSS_M = (0.0, 5.5, 16.5, 52.5, 88.5, 99.5, 105.0)
+LINES_ALONG_M = (0.0, 13.84, 24.84, 43.16, 54.16, 68.0)
+
+
+def rectify_from_vanishing_points(vp_a, vp_b, origin) -> np.ndarray:
+    """Send one vanishing point to each axis at infinity.
+
+    Rows are the three lines that must map to the axes: a line through vp_b
+    and the origin becomes x = 0, a line through vp_a and the origin becomes
+    y = 0, and the horizon itself becomes the line at infinity. After this
+    the two families of markings are axis-aligned.
+    """
+    o = np.array([origin[0], origin[1], 1.0], dtype=float)
+    return np.vstack([np.cross(vp_b, o), np.cross(vp_a, o),
+                      np.cross(vp_a, vp_b)])
+
+
+def rectified_positions(segments, rectification, axis: int):
+    """Each segment's constant coordinate after rectification."""
+    out = []
+    for x1, y1, x2, y2 in segments:
+        mapped = rectification @ np.array([[x1, x2], [y1, y2], [1.0, 1.0]])
+        if np.any(np.abs(mapped[2]) < 1e-9):
+            continue
+        q = mapped[:2] / mapped[2]
+        spread = abs(q[axis, 0] - q[axis, 1])
+        if spread > RECTIFIED_CONSTANCY * (abs(q[axis, 0]) + 1e-9):
+            continue
+        out.append(float(q[axis].mean()))
+    return out
+
+
+def cluster_positions(values, relative_tol: float = CLUSTER_RELATIVE_TOL):
+    """Collapse several segments of one world line into one position."""
+    if not values:
+        return []
+    ordered = np.sort(np.asarray(values, dtype=float))
+    span = max(float(np.ptp(ordered)), 1e-9)
+    groups, current = [], [ordered[0]]
+    for value in ordered[1:]:
+        if value - current[-1] <= relative_tol * span:
+            current.append(value)
+        else:
+            groups.append(float(np.mean(current)))
+            current = [value]
+    groups.append(float(np.mean(current)))
+    return groups
+
+
+def match_line_positions(positions, model_positions):
+    """Scale and offset putting rectified positions onto real pitch lines.
+
+    Solved exactly from two lines rather than searched: two positions and two
+    model values determine the pair. Every such hypothesis is scored on how
+    many of the *other* lines land on a real marking, which is why at least
+    three inliers are required -- the two that generated the hypothesis are
+    on it by construction and carry no information.
+    """
+    import itertools
+
+    model = np.asarray(model_positions, dtype=float)
+    best = None
+    for i, j in itertools.combinations(range(len(positions)), 2):
+        delta = positions[j] - positions[i]
+        if abs(delta) < 1e-9:
+            continue
+        for mi, mj in itertools.permutations(range(len(model)), 2):
+            scale = (model[mj] - model[mi]) / delta
+            offset = model[mi] - scale * positions[i]
+            mapped = scale * np.asarray(positions) + offset
+            distance = np.abs(mapped[:, None] - model[None, :]).min(axis=1)
+            inliers = int((distance <= MATCH_TOLERANCE_M).sum())
+            if inliers < MATCH_MIN_INLIERS:
+                continue
+            cost = float(np.minimum(distance, MATCH_TOLERANCE_M).mean())
+            if best is None or (inliers, -cost) > (best[0], -best[1]):
+                best = (inliers, cost, float(scale), float(offset))
+    return best
+
+
 def image_to_pitch(plane, horizon_row: float, pose) -> np.ndarray:
     """The homography this whole module exists to produce.
 
