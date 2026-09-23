@@ -361,8 +361,18 @@ def resolve_end(provisional, support, index, references, motion, info):
 
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_horizon: bool = False,
-                    use_penalty_arc: bool = True):
-    """Frames carrying a full image-to-pitch map, with that map."""
+                    use_penalty_arc: bool = True,
+                    with_kind: bool = False):
+    """Frames carrying a full image-to-pitch map, with that map.
+
+    `with_kind` adds where each anchor came from -- "circle" or
+    "penalty_arc". Asking the question by running this twice and diffing the
+    two answers does not work: the RANSAC in the circle detector draws from
+    the `rng` passed in, so the second run finds a different set of frames
+    from the first, and the difference is mostly that rather than the kind.
+    A diagnostic built that way reported a clip with no penalty-arc anchors
+    and two pairs involving one.
+    """
     info = json.loads((out_dir / "clip.json").read_text())
     horizons = []
     motion = None
@@ -414,6 +424,7 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
             continue
         out.append((idx, homography))
     cap.release()
+    kinds = {idx: "circle" for idx, _ in out}
 
     # Second pass over the penalty-D frames, now that the centre-circle
     # anchors exist to measure the camera's pan against.
@@ -424,7 +435,10 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                                   motion, info)
             if settled is not None and plausible_anchor(settled, info):
                 out.append((idx, settled))
+                kinds[idx] = "penalty_arc"
         out.sort(key=lambda row: row[0])
+    if with_kind:
+        return info, [(idx, homography, kinds[idx]) for idx, homography in out]
     return info, out
 
 

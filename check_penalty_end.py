@@ -65,17 +65,18 @@ def main():
         if not (path / "clip.json").exists():
             continue
         info, every = anchored_frames(path, args.frames, rng,
-                                      use_penalty_arc=True)
-        _, circles_only = anchored_frames(path, args.frames, rng,
-                                          use_penalty_arc=False)
+                                      use_penalty_arc=True, with_kind=True)
         if len(every) < 2:
             continue
-        from_circle = {index for index, _ in circles_only}
-        maps = dict(every)
+        # Tagged where it was built. Running this twice and diffing does not
+        # work -- the circle detector's RANSAC draws from `rng`, so the two
+        # runs find different frames and the difference is mostly that.
+        from_circle = {index for index, _, kind in every if kind == "circle"}
+        maps = {index: homography for index, homography, _ in every}
 
         cap = cv2.VideoCapture(info["path"])
         images = {}
-        for index, _ in every:
+        for index, _, _ in every:
             cap.set(cv2.CAP_PROP_POS_FRAMES, index)
             ok, frame = cap.read()
             if ok:
