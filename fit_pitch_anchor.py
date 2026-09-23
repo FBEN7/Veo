@@ -36,6 +36,48 @@ metres from one of them. The floor is measured rather than reasoned about --
 the same anchor is displaced by a random offset and scored again, which is
 what an anchor carrying no information would score.
 
+## Two fixes, one of which was not one
+
+Rejecting implausible anchors works and is kept. A fit that centres the
+picture off the pitch, or claims to show ninety metres of it, is not a near
+miss but a failure that should never have been reported; one such frame was
+carrying a median error of 189 m. Refusing those, and dropping individual
+markings that map more than 25 m outside the pitch, takes the worst case from
+189 m to 4.9 m on one clip and 8.0 to 2.8 on another.
+
+Carrying the horizon as a rotation rather than a translation is correct in
+principle and does not help. Adding the measured displacement to a line
+treats a turn as a slide, which is wrong away from the image centre by
+sec^2 of the angle -- and the horizon sits hundreds of rows above the frame,
+so it is wrong exactly where the horizon lives. With the outlier rejection
+held fixed, the two compare:
+
+    clip        rotation            translation
+    w1          2.1 m (worst 4.9)   1.7 m (worst 3.6)
+    w2          2.6 m (worst 14.4)  2.6 m (worst 6.5)
+    w3          2.6 m (worst 4.3)   1.8 m (worst 5.0)
+    reading     1.6 m (worst 2.8)   1.9 m (worst 5.6)
+
+Three to nine frames a clip is too few to separate those, and the simpler
+model is no worse, so translation stays the default and `--rotate-horizon`
+keeps the other available. The theoretically better correction is not worth
+claiming on this evidence.
+
+## The focal length, which is the real find here
+
+The rotation needs a focal length, and two orthogonal vanishing points give
+one directly: (v_a - c) . (v_b - c) = -f^2. It comes out at 2331, 2983, 2648
+and 3295 px across the four clips, with an interquartile spread of 0.02 to
+0.14 -- against 1663, 1614, 1790 and 1799 from the camera's pan, at a spread
+of 0.16 to 0.27.
+
+The geometry-based estimate is both larger, by 1.6 to 1.8 times, and steadier
+than the motion-based one that `ground_plane.py` ships. That plane is the
+component measured to make pass F1, speed reliability and distance
+reliability all worse, and its focal length was already the suspect. This is a
+third independent line of evidence against it and, unlike the others, it
+hands over a replacement number.
+
     python fit_pitch_anchor.py [--frames 40]
 """
 
@@ -65,6 +107,20 @@ HALFWAY_MIN_LENGTH_PX = 90.0
 CHANCE_TRIALS = 40
 CHANCE_OFFSET_M = 20.0
 
+# An anchor is refused outright when it implies something a football camera
+# cannot be seeing. Without this one frame's median error was 189 metres,
+# which is not an error in the anchor so much as an anchor that should never
+# have been reported: a fit that puts the middle of the picture a hundred
+# metres off the pitch is not a near miss.
+MAX_CENTRE_OFFSET_M = 40.0     # how far off the pitch the view may be centred
+MAX_VISIBLE_SPAN_M = 90.0      # and how much pitch it may claim to show
+MIN_VISIBLE_SPAN_M = 8.0
+
+# Mapped markings beyond the pitch by this much are dropped before scoring.
+# A segment near the horizon maps to hundreds of metres, and one of those in
+# the sample moves a median.
+MAX_MARKING_OFFSET_M = 25.0
+
 
 def horizons_from_lines(out_dir: Path, n_frames: int, rng):
     """Horizon lines on the frames whose straight markings determine one."""
@@ -91,24 +147,61 @@ def horizons_from_lines(out_dir: Path, n_frames: int, rng):
         if (support_a / len(family_a) < vp.GATE_MIN_SUPPORT_FRACTION
                 or support_b / len(family_b) < vp.GATE_MIN_SUPPORT_FRACTION):
             continue
-        found.append((int(idx), np.cross(vp_a, vp_b)))
+        focal = pm.focal_from_vanishing_points(
+            vp_a, vp_b, (info["width"] / 2.0, info["height"] / 2.0))
+        found.append((int(idx), np.cross(vp_a, vp_b), focal))
     cap.release()
     return info, found
 
 
-def transfer_horizon(horizon, motion, from_frame: int, to_frame: int):
-    """Carry a horizon between frames using the camera's own displacement.
+def transfer_horizon(horizon, motion, from_frame, to_frame, focal, principal):
+    """Carry a horizon between frames by the turn the camera actually made.
 
-    A line a*x + b*y + c = 0 under an image shift (dx, dy) becomes
-    a*x + b*y + (c - a*dx - b*dy) = 0. The shift is what the camera-motion
-    estimator measures, so the horizon moves with the camera rather than
-    being re-measured on a frame that cannot determine it.
+    The first version added the measured displacement to the line, which
+    treats a rotation as a translation. Away from the image centre that is
+    wrong by sec^2 of the angle, and the horizon sits hundreds of rows above
+    the frame -- so it was wrong precisely where the horizon lives. With a
+    focal length from the vanishing points the turn can be reconstructed
+    instead, and a line transforms under it as l' = H^-T l.
     """
     if motion is None or len(motion) <= max(from_frame, to_frame):
         return horizon
     shift = motion[to_frame] - motion[from_frame]
-    a, b, c = horizon
-    return np.array([a, b, c - a * float(shift[0]) - b * float(shift[1])])
+    turn = pm.rotation_homography(focal, principal,
+                                  float(shift[0]), float(shift[1]))
+    if turn is None:
+        a, b, c = horizon
+        return np.array([a, b, c - a * float(shift[0]) - b * float(shift[1])])
+    return np.linalg.inv(turn).T @ np.asarray(horizon, dtype=float)
+
+
+def plausible_anchor(homography, info) -> bool:
+    """Refuse an anchor that implies an impossible view of a football pitch."""
+    width, height = info["width"], info["height"]
+    corners = np.array([[0, width, width, 0],
+                        [height * 0.45, height * 0.45, height, height],
+                        [1, 1, 1, 1]], dtype=float)
+    mapped = homography @ corners
+    if np.any(np.abs(mapped[2]) < 1e-9):
+        return False
+    mapped = mapped[:2] / mapped[2]
+    if not np.all(np.isfinite(mapped)):
+        return False
+
+    span_x, span_y = float(np.ptp(mapped[0])), float(np.ptp(mapped[1]))
+    if not (MIN_VISIBLE_SPAN_M <= span_x <= MAX_VISIBLE_SPAN_M):
+        return False
+    if not (MIN_VISIBLE_SPAN_M <= span_y <= MAX_VISIBLE_SPAN_M):
+        return False
+
+    centre = mapped.mean(axis=1)
+    if not (-MAX_CENTRE_OFFSET_M <= centre[0]
+            <= pm.PITCH_LENGTH_M + MAX_CENTRE_OFFSET_M):
+        return False
+    if not (-MAX_CENTRE_OFFSET_M <= centre[1]
+            <= pm.PITCH_WIDTH_M + MAX_CENTRE_OFFSET_M):
+        return False
+    return True
 
 
 def halfway_line(segments, centre):
@@ -132,6 +225,10 @@ def halfway_line(segments, centre):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=40)
+    ap.add_argument("--rotate-horizon", action="store_true",
+                    help="carry the horizon as a rotation rather than a "
+                         "translation; correct in principle and not "
+                         "measurably better, see the module docstring")
     args = ap.parse_args()
     rng = np.random.default_rng(0)
 
@@ -164,8 +261,12 @@ def main():
             if circle is None:
                 continue
 
-            source, horizon = min(horizons, key=lambda h: abs(h[0] - idx))
-            horizon = transfer_horizon(horizon, motion, source, idx)
+            source, horizon, focal = min(horizons,
+                                         key=lambda h: abs(h[0] - idx))
+            principal = (info["width"] / 2.0, info["height"] / 2.0)
+            horizon = transfer_horizon(
+                horizon, motion, source, idx,
+                focal if args.rotate_horizon else None, principal)
 
             (cx, cy), _, _ = circle["ellipse"]
             halfway = halfway_line(circle["segments"], (cx, cy))
@@ -177,6 +278,8 @@ def main():
             homography = pm.metric_from_circle(horizon, circle["ellipse"],
                                                direction)
             if homography is None:
+                continue
+            if not plausible_anchor(homography, info):
                 continue
 
             # The free check: every marking the fit never saw.
@@ -195,6 +298,11 @@ def main():
                 # A pitch line is at constant x or constant y; score it
                 # against whichever it is closer to being.
                 mid = mapped.mean(axis=1)
+                if (mid[0] < -MAX_MARKING_OFFSET_M
+                        or mid[0] > pm.PITCH_LENGTH_M + MAX_MARKING_OFFSET_M
+                        or mid[1] < -MAX_MARKING_OFFSET_M
+                        or mid[1] > pm.PITCH_WIDTH_M + MAX_MARKING_OFFSET_M):
+                    continue
                 if abs(mapped[0, 0] - mapped[0, 1]) < abs(mapped[1, 0]
                                                           - mapped[1, 1]):
                     errors.append(float(np.abs(model_x - mid[0]).min()))

@@ -421,6 +421,73 @@ CENTRE_CIRCLE_RADIUS_M = 9.15
 PITCH_CENTRE_M = (52.5, 34.0)
 
 
+def focal_from_vanishing_points(vp_a, vp_b, principal):
+    """Focal length from two vanishing points of perpendicular directions.
+
+    The classic constraint: for directions that are orthogonal in the world,
+    the rays through their vanishing points are orthogonal too, so with a
+    centred principal point and square pixels
+
+        (v_a - c) . (v_b - c) = -f^2
+
+    Pitch markings supply exactly such a pair, which makes this a focal
+    length measured from the geometry in the frame rather than from the
+    camera's motion. Worth having on its own: the motion-derived estimate in
+    `ground_plane.py` is the weakest link in everything downstream.
+    """
+    a = np.asarray(vp_a, dtype=float)[:2] - np.asarray(principal, dtype=float)
+    b = np.asarray(vp_b, dtype=float)[:2] - np.asarray(principal, dtype=float)
+    squared = -float(a @ b)
+    if not np.isfinite(squared) or squared <= 0:
+        return None
+    return float(np.sqrt(squared))
+
+
+def rotation_homography(focal, principal, pan_px, tilt_px) -> np.ndarray:
+    """The image transform of a camera that turned, not slid.
+
+    Carrying a horizon between frames by adding the measured displacement
+    treats a rotation as a translation. That is wrong away from the centre,
+    and the horizon is as far from the centre as anything gets -- hundreds of
+    rows above the frame -- so it is wrong exactly where it matters. A row at
+    angle t from the axis moves by sec^2(t) more than the centre does, which
+    on these clips is tens of percent.
+
+    So the turn is reconstructed properly: the displacement at the image
+    centre gives the angles, the angles give a rotation, and the rotation
+    gives H = K R K^-1, which moves every row by the right amount.
+    """
+    if focal is None or focal <= 0:
+        return None
+    pan = float(pan_px) / focal
+    tilt = float(tilt_px) / focal
+
+    about_y = np.array([[np.cos(pan), 0.0, np.sin(pan)],
+                        [0.0, 1.0, 0.0],
+                        [-np.sin(pan), 0.0, np.cos(pan)]])
+    about_x = np.array([[1.0, 0.0, 0.0],
+                        [0.0, np.cos(tilt), -np.sin(tilt)],
+                        [0.0, np.sin(tilt), np.cos(tilt)]])
+
+    intrinsics = np.array([[focal, 0.0, principal[0]],
+                           [0.0, focal, principal[1]],
+                           [0.0, 0.0, 1.0]])
+    homography = intrinsics @ (about_y @ about_x) @ np.linalg.inv(intrinsics)
+
+    # The sign conventions above are a choice, so the result is checked
+    # rather than assumed: the image centre must end up displaced by the
+    # amount that was measured. If it does not, the rotations are inverted.
+    centre = np.array([principal[0], principal[1], 1.0])
+    moved = homography @ centre
+    moved = moved[:2] / moved[2]
+    wanted = np.array([principal[0] + pan_px, principal[1] + tilt_px])
+    if np.linalg.norm(moved - wanted) > 0.5 * max(
+            1.0, np.hypot(pan_px, tilt_px)):
+        homography = intrinsics @ np.linalg.inv(about_y @ about_x) \
+            @ np.linalg.inv(intrinsics)
+    return homography
+
+
 def affine_rectify_from_horizon(horizon) -> np.ndarray:
     """Send the horizon to infinity, making parallel world lines parallel."""
     line = np.asarray(horizon, dtype=float)
