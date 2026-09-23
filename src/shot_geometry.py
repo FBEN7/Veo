@@ -116,6 +116,23 @@ def goal_mouth_angle(x, y, goal: str):
     return np.where(forward >= 0.0, angle, 0.0)
 
 
+def angle_to_goal_centre(x, y, goal: str):
+    """How far off a straight-on shot is, in radians.
+
+    Zero when the shot faces the middle of the goal square on, and plus or
+    minus a right angle out on the goal line. Distinct from
+    `goal_mouth_angle`, which is how *wide* the goal looks rather than which
+    direction it lies in; xGHub records both, as `angle_to_goal` and
+    `angle_to_posts`.
+
+    Signed, so the two sides of the pitch are distinguishable. Datasets that
+    mirror their clips to a single side -- xGHub has a `mirror_flag` for
+    exactly that -- have folded the sign away, so compare magnitudes.
+    """
+    forward, lateral = to_goal_frame(x, y, goal)
+    return np.arctan2(lateral, forward)
+
+
 def in_penalty_area(x, y, goal: str):
     """Whether the shot was taken inside the box."""
     forward, lateral = to_goal_frame(x, y, goal)
@@ -157,10 +174,13 @@ def shot_features(x, y, goal: str) -> dict:
     """Every geometric input, for one shot or an array of them."""
     forward, lateral = to_goal_frame(x, y, goal)
     angle = goal_mouth_angle(x, y, goal)
+    bearing = angle_to_goal_centre(x, y, goal)
     return dict(
         distance_m=distance_to_goal(x, y, goal),
         angle_rad=angle,
         angle_deg=np.degrees(angle),
+        bearing_rad=bearing,
+        bearing_deg=np.degrees(bearing),
         forward_m=forward,
         lateral_m=lateral,
         in_penalty_area=in_penalty_area(x, y, goal),

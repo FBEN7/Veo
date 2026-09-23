@@ -624,8 +624,39 @@ denominator turns negative, where the naive form returns this:
 It agrees everywhere except on the best chances on the pitch, which it turns
 into the worst. Two of the fixed cases exist to catch exactly that.
 
-**No xG number is produced.** That needs coefficients from a specific
-published model, and writing plausible-looking ones would yield a figure that
-reads like Opta and is not. `shot_features_from_events` also refuses to run
-on relative coordinates rather than computing distance to a goal that is not
-located anywhere -- which is every clip processed so far.
+**The xG model is fitted, not borrowed.** Coefficients have to come from
+somewhere, and writing plausible-looking ones would yield a figure that reads
+like Opta and is not. xGHub (`github.com/mguti97/xGHub`, CVIU) is a dataset
+rather than a model -- the repository holds a README and nothing else -- and
+every shot in it carries `is_goal` beside its geometry, so `src/xg.py` fits
+on it and `fit_xghub.py` runs that once into a coefficients file.
+
+Three things about that fit are deliberate:
+
+* **Held out by match, not at random.** Two shots from the same game share a
+  pitch, a camera and often a passage of play, so splitting within a match
+  lets the model see its own test conditions.
+* **Unregularised.** scikit-learn applies L2 by default, which is right for a
+  model only used to predict and wrong for one whose coefficients get written
+  down and compared against published work. On synthetic shots drawn from
+  known coefficients the default penalty moved the intercept 23% off its true
+  value while the slopes stayed within 6%.
+* **Calibration is reported, not just AUC.** xG is consumed as a level --
+  "0.6 expected goals" is a quantity, not an ordering -- so a reliability
+  table and a Brier score against the base-rate floor sit beside the
+  discrimination figure.
+
+`check_xg.py` verifies all of it on shots generated from coefficients chosen
+in the test: the fit recovers them to within 5%, predicted probabilities sit
+0.004 RMSE from the true ones, and the dataset's ambiguous distance
+convention is correctly inferred in both directions rather than assumed.
+
+It is a **reduced** model. xGHub's contribution is body orientation, and this
+pipeline has no pose estimation, so its six orientation fields, `body_part`
+and `technique` are all unavailable; the fit uses distance and goal-mouth
+angle only. That should be stated wherever the number is shown.
+
+Still blocked: `huggingface.co` is refused by the egress proxy, so the
+dataset cannot be fetched here. And `shot_features_from_events` refuses to
+run on relative coordinates rather than computing distance to a goal that is
+not located anywhere -- which is every clip processed so far.
