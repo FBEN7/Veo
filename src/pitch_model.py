@@ -542,6 +542,10 @@ def _matrix_sqrt(matrix):
     return vectors @ np.diag(np.sqrt(values)) @ vectors.T
 
 
+# The vanishing line of the ground plane when the perspective is weak enough
+# to ignore it. Passing this to `metric_from_circle` makes the map affine.
+AT_INFINITY_LINE = np.array([0.0, 0.0, 1.0])
+
 # How far below the circle's centre to probe when settling which way round
 # the pitch is. Far enough that the mapped difference is not noise, close
 # enough to stay inside the frame.

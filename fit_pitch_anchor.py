@@ -246,7 +246,7 @@ def halfway_line(segments, centre):
 # yield two vanishing points and their spread is 522 to 875 px at every gate.
 # Veo has good circles and no straight-line geometry, so an anchor that needs
 # only the circle is the only kind it can have.
-AT_INFINITY = np.array([0.0, 0.0, 1.0])
+AT_INFINITY = pm.AT_INFINITY_LINE
 
 
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,

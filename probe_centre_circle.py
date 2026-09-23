@@ -220,7 +220,8 @@ def _arc_span_deg(points, ellipse) -> float:
     return float(occupied.sum() * 10)
 
 
-def find_circle(frame, rng=None, erase_lines: bool = False):
+def find_circle(frame, rng=None, erase_lines: bool = False,
+                min_span_deg: float | None = None):
     """One conic fitted across every arc pixel, by RANSAC.
 
     Not per connected component: the circle arrives in pieces, cut by the
@@ -272,11 +273,16 @@ def find_circle(frame, rng=None, erase_lines: bool = False):
     if residual > MAX_ELLIPSE_RESIDUAL_PX:
         return None
     span = _arc_span_deg(support, ellipse)
-    if span < MIN_ARC_SPAN_DEG:
+    # `min_span_deg` lets a caller ask for shorter arcs than the centre
+    # circle gate allows. `recover_penalty_arc.py` uses it to go looking for
+    # the D on purpose, which is the one case where a short arc is wanted.
+    floor = MIN_ARC_SPAN_DEG if min_span_deg is None else min_span_deg
+    if span < floor:
         return None
 
     return dict(ellipse=ellipse, residual_px=residual,
-                pixels=int(len(support)), span_deg=span, segments=segments)
+                pixels=int(len(support)), span_deg=span, segments=segments,
+                support=support)
 
 
 def main():
