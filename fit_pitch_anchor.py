@@ -259,10 +259,29 @@ def penalty_arc_anchor(frame, rng, info):
     centre and its arc bulges away from its goal, which says which end of
     the pitch it is.
 
-    Measured on the frames the gate refuses, these come back to 2.0 m
+    OFF BY DEFAULT, because it does not work, and the way it fooled its own
+    measurement is worth more than the feature was.
+
+    Scored on markings, this looked excellent: the frames come back to 2.0 m
     against a 3.7 m chance floor, from 5.3 m read as centre circles, and the
-    41.5 m correction improves 94% of them. Weaker than a centre-circle
-    anchor at 0.6 m, and on frames that would otherwise have none at all.
+    41.5 m correction improves 94% of them. Switched on, the disagreement
+    between two anchors on the same clip went from 0.6 m to 2.7 m and the
+    worst case from 7.6 m to 114 m -- two clips of five ended up with median
+    disagreements of 40 m and 23 m.
+
+    The two measurements are not in conflict. `marking_error` cannot tell
+    the left penalty spot from the right one. Shifting the map to x = 11 and
+    shifting it to x = 94 put the markings onto mirror images of each other,
+    and the pitch model is symmetric about x = 52.5, so both score the same
+    to the last decimal. The 94% therefore confirmed that the correction was
+    41.5 m and said nothing whatever about its sign -- and the sign is the
+    whole question.
+
+    That is the same blindness that hid the orientation flip for the life of
+    this project, documented two commits earlier in `check_orientation.py`,
+    and then walked into again here. The rule it should have produced: a
+    degree of freedom the pitch's symmetry hides can never be validated by
+    distance to the markings. It has to be checked by comparing frames.
     """
     circle = find_circle(frame, rng, min_span_deg=pm.D_SPAN_MIN)
     if circle is None:
@@ -298,7 +317,7 @@ def penalty_arc_anchor(frame, rng, info):
 
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_horizon: bool = False,
-                    use_penalty_arc: bool = True):
+                    use_penalty_arc: bool = False):
     """Frames carrying a full image-to-pitch map, with that map."""
     info = json.loads((out_dir / "clip.json").read_text())
     horizons = []

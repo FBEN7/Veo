@@ -63,6 +63,47 @@ frames out of three, which is its own problem.
 The result is scored on markings the fit never saw, against the same chance
 floor as everything else.
 
+## It does not work, and the measurement that said it did was blind
+
+Scored on markings, this looks like a clear win:
+
+    clip       D frames   as centre circle   recovered   chance
+    w1               19               3.1m        1.7m     3.6m
+    w2               23               3.9m        2.4m     3.7m
+    w3               22               5.8m        2.0m     3.7m
+    reading           4               4.7m        1.6m     4.2m
+    Veo              11               6.8m        2.0m     3.8m
+    pooled           79               5.3m        2.0m     3.7m
+
+with the correction improving 94% of the frames it touches, against 54% for
+the version that identified a D by arc span alone. The chord test is doing
+real work there.
+
+Switched on in `anchored_frames`, it is a disaster. Disagreement between two
+anchors on the same clip goes from 0.6 m to 2.7 m, the worst case from 7.6 m
+to 114 m, and two clips of five end up with median disagreements of 40 m and
+23 m.
+
+The two results do not contradict each other, and the reason is the same
+symmetry that hid the orientation flip for the life of this project.
+**`marking_error` cannot tell the left penalty spot from the right one.**
+Shifting the map to x = 11 and shifting it to x = 94 put the markings onto
+mirror images of one another, and the model is symmetric about x = 52.5, so
+the two score identically. The 94% confirmed that the correction was 41.5 m
+and said nothing at all about its sign, which is the entire question.
+
+`check_orientation.py`, written two commits earlier, says exactly this about
+the flip. The rule that should have come out of it, and did not until this
+failed: **a degree of freedom the pitch's symmetry hides cannot be validated
+against the markings. It has to be checked by comparing frames.**
+
+What would make this work is a way to tell one end from the other that does
+not depend on the pitch's own symmetry -- the direction the camera has
+panned over the clip, which goal the play is heading toward, or the
+centre-circle anchors on neighbouring frames voting on it. The last is the
+most promising and is not attempted here. Until then `use_penalty_arc` stays
+off, and the coverage those frames would have brought stays lost.
+
     python recover_penalty_arc.py [--frames 60]
 """
 
