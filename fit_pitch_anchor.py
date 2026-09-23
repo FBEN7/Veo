@@ -355,7 +355,17 @@ def resolve_end(provisional, support, index, references, motion, info):
     where = view_centre_on_pitch(reference, nearest, index, motion, info)
     if where is None:
         return None
-    from_camera = min(pm.PENALTY_SPOTS_M, key=lambda spot: abs(spot - where))
+    # Midfield is a candidate too, and leaving it out was a mistake. The
+    # question was put as "which penalty spot", so the answer was always one
+    # of them -- even on frames where the camera was plainly looking at the
+    # centre of the pitch and the arc was a half-hidden centre circle. Those
+    # got shifted 41.5 m, which is exactly the gap between the two answers
+    # the question allowed. Asking "which of these three" lets the pan say
+    # that the arc should not be moved at all.
+    candidates = (*pm.PENALTY_SPOTS_M, pm.PITCH_CENTRE_M[0])
+    from_camera = min(candidates, key=lambda spot: abs(spot - where))
+    if from_camera == pm.PITCH_CENTRE_M[0]:
+        return None
 
     homography, from_bulge = pm.anchor_from_penalty_arc(provisional, support)
     if homography is None:
