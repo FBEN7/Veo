@@ -403,6 +403,119 @@ def match_line_positions(positions, model_positions):
     return best
 
 
+# --- horizon plus circle -----------------------------------------------------
+# The two halves that do exist, joined. Straight lines give the horizon but
+# only on penalty-area frames; the circle gives scale and origin but only at
+# midfield; measured, they share a frame once in thirty. So neither is used
+# where it is absent -- the horizon is a property of the camera and carries
+# between frames, and the circle supplies everything the horizon cannot.
+#
+# The horizon alone affinely rectifies the plane: send it to infinity and
+# parallel world lines become parallel again, leaving an unknown 2x2 linear
+# map. The circle removes exactly that. An affine image of a circle is an
+# ellipse, and the linear map taking that ellipse back to a circle of radius
+# 9.15 m is determined up to a rotation -- which is the pitch's orientation,
+# and which the halfway line fixes.
+
+CENTRE_CIRCLE_RADIUS_M = 9.15
+PITCH_CENTRE_M = (52.5, 34.0)
+
+
+def affine_rectify_from_horizon(horizon) -> np.ndarray:
+    """Send the horizon to infinity, making parallel world lines parallel."""
+    line = np.asarray(horizon, dtype=float)
+    scale = np.hypot(line[0], line[1])
+    if scale < 1e-12:
+        return np.eye(3)
+    line = line / scale
+    return np.array([[1.0, 0.0, 0.0],
+                     [0.0, 1.0, 0.0],
+                     [line[0], line[1], line[2]]])
+
+
+def ellipse_to_conic(ellipse) -> np.ndarray:
+    """cv2's ((cx, cy), (major, minor), angle) as a conic matrix."""
+    (cx, cy), (major, minor), angle = ellipse
+    a, b = major / 2.0, minor / 2.0
+    theta = np.radians(angle)
+    rotation = np.array([[np.cos(theta), -np.sin(theta)],
+                         [np.sin(theta), np.cos(theta)]])
+    shape = rotation @ np.diag([1.0 / (a * a), 1.0 / (b * b)]) @ rotation.T
+    centre = np.array([cx, cy])
+    conic = np.eye(3)
+    conic[:2, :2] = shape
+    conic[:2, 2] = -shape @ centre
+    conic[2, :2] = -(shape @ centre)
+    conic[2, 2] = float(centre @ shape @ centre) - 1.0
+    return conic
+
+
+def transform_conic(conic, homography) -> np.ndarray:
+    """A conic seen through a homography: C' = H^-T C H^-1."""
+    inverse = np.linalg.inv(homography)
+    return inverse.T @ conic @ inverse
+
+
+def conic_centre_and_shape(conic):
+    """Centre, and the matrix M with (p - c)^T M (p - c) = 1."""
+    upper = conic[:2, :2]
+    if abs(np.linalg.det(upper)) < 1e-15:
+        return None, None
+    centre = -np.linalg.solve(upper, conic[:2, 2])
+    constant = float(centre @ upper @ centre) - conic[2, 2]
+    if abs(constant) < 1e-15:
+        return None, None
+    return centre, upper / constant
+
+
+def _matrix_sqrt(matrix):
+    values, vectors = np.linalg.eigh(matrix)
+    if np.any(values <= 0):
+        return None
+    return vectors @ np.diag(np.sqrt(values)) @ vectors.T
+
+
+def metric_from_circle(horizon, ellipse, halfway_direction=None,
+                       radius_m: float = CENTRE_CIRCLE_RADIUS_M):
+    """Image to pitch metres, from a horizon and the centre circle.
+
+    `halfway_direction` is the halfway line's direction in the image. It is
+    used only to resolve the rotation the circle cannot -- a circle looks the
+    same from every angle -- and never for position, which leaves where the
+    halfway line *lands* as a free check on the result.
+    """
+    rectification = affine_rectify_from_horizon(horizon)
+    conic = transform_conic(ellipse_to_conic(ellipse), rectification)
+    centre, shape = conic_centre_and_shape(conic)
+    if centre is None:
+        return None
+
+    linear = _matrix_sqrt(shape)
+    if linear is None:
+        return None
+    linear = radius_m * linear             # now maps the ellipse to a circle
+
+    rotation = np.eye(2)
+    if halfway_direction is not None:
+        direction = np.asarray(halfway_direction, dtype=float)
+        mapped = rectification[:2, :2] @ direction + rectification[:2, 2] * 0
+        mapped = linear @ mapped
+        norm = np.linalg.norm(mapped)
+        if norm > 1e-9:
+            mapped = mapped / norm
+            # The halfway line runs across the pitch, so it must end up
+            # along the y axis.
+            angle = np.arctan2(mapped[0], mapped[1])
+            rotation = np.array([[np.cos(angle), -np.sin(angle)],
+                                 [np.sin(angle), np.cos(angle)]])
+
+    metric = np.eye(3)
+    metric[:2, :2] = rotation @ linear
+    metric[:2, 2] = (np.array(PITCH_CENTRE_M)
+                     - rotation @ linear @ centre)
+    return metric @ rectification
+
+
 def image_to_pitch(plane, horizon_row: float, pose) -> np.ndarray:
     """The homography this whole module exists to produce.
 
