@@ -10,6 +10,11 @@ detection_accuracy.json
 # Run outputs. output_soccernet* holds artefacts derived from SoccerNet
 # frames, which are under a non-commercial NDA and must not be committed.
 output_soccernet*/
+
+# The shot test set: clips cut from SoccerNet match video, and the manifests
+# naming them. Same NDA as above -- the clips are the footage itself, so they
+# never enter the repository. The script that rebuilds them does.
+shot_windows/
 pass_threshold_sweep.json
 merge_window_sweep.json
 carry_threshold_sweep.json
