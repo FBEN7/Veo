@@ -1,108 +1,49 @@
-"""Anchor on the penalty D deliberately, instead of throwing it away.
+"""Anchor on the penalty D, with the end of the pitch settled from outside.
 
-Raising the arc-span gate to 200 degrees fixed the tail. It also discarded
-half the anchors, and most of a clip's worth on Veo footage, whose coverage
-fell from 68% of frames within reach of an anchor to 25%. That is the right
-trade over keeping anchors that were 41.5 m wrong, but it is not the best
-available one, because the frames being thrown away are not bad frames. They
-are frames looking at the penalty area, and the penalty area is where shots
-happen.
+Raising the arc-span gate to 200 degrees fixed the tail and cost half the
+anchors -- on Veo footage, coverage fell from 68% of frames within reach of
+an anchor to 25%. The discarded frames are not bad frames. They are frames
+looking at the penalty area, which is where shots are.
 
-A D-anchored frame is not wrong by a random amount. It is wrong by exactly
-41.5 m along the pitch -- the centre spot at 52.5 against the penalty spot at
-11 -- and in a direction that the arc itself gives away.
+A D-anchored frame is wrong by exactly 41.5 m, the centre spot at 52.5
+against the penalty spot at 11. Everything else about it is right: both arcs
+are struck at 9.15 m from the same measurement in the laws of the game, so
+the scale is right, and the chord -- the penalty-area line that cut the
+circle, lying 5.5 m from its centre -- identifies the arc as a D and fixes
+the rotation, since nothing crosses a D's centre the way the halfway line
+crosses the circle's.
 
-## Which end, from the shape of the arc
+## The one bit that the pitch cannot supply
 
-The D is the part of the penalty arc lying outside the penalty area, and it
-always bulges *away* from the goal, toward the middle of the pitch. At the
-left end the spot is at x = 11, the area's edge at x = 16.5, and the arc
-reaches out to x = 20.15. At the right end the spot is at 94, the edge at
-88.5, and the arc reaches back to 84.85.
+Which of the two penalty spots. The markings are symmetric about the halfway
+line, so a map placing the arc at x = 11 and one placing it at x = 94 put
+every visible marking onto a real pitch line and score *identically*.
 
-So take the provisional anchor -- the one that has wrongly put the arc's
-centre at (52.5, 34) -- and map the arc's own supporting pixels through it.
-Their centroid sits on the far side of the centre from the goal. If it lies
-at greater x, the goal is the left one and the true centre is (11, 34); if
-at smaller x, it is the right one and the true centre is (94, 34). Shift by
-41.5 m accordingly and the frame is anchored properly, from the D, on
-purpose.
+That is not a theoretical worry. An earlier version of this decided the end
+from the arc's bulge alone and was checked against the markings, where it
+improved 94% of the frames it touched. Switched on, it put two anchors on
+the same clip 114 m apart. The 94% had confirmed the size of the correction
+and was blind to its sign, which was the whole question -- the same
+blindness that hid the orientation flip for the life of this project.
 
-This inherits the orientation convention rather than fighting it. Which end
-is "left" is fixed by `metric_from_circle` pinning the pitch to the camera's
-side, and that choice is the same on every frame of the clip, so every
-recovered frame lands consistently with every other. It does not claim to
-know which physical goal is which -- nothing here can, and a pitch is
-symmetric -- only that the clip agrees with itself.
+## Two signs, and they have to agree
 
-## The test that has to come first, which the first version skipped
+**Where the camera is looking.** It follows play, so its accumulated pan
+says which half of the pitch is in view, measured against the frames whose
+centre circle pins them to the middle. This asks very little of the
+measurement: the two candidate spots are 41.5 m apart, and the pan drifts
+about 4 m over a clip. Ten times the margin, for one bit.
 
-The danger is the opposite mistake: taking a real centre circle for a D and
-introducing a 41.5 m error where there was none. The first version of this
-guarded against it with the arc span alone -- short arc, therefore a D --
-and that is not enough, because a centre circle with most of itself hidden
-behind players or running out of frame is also a short arc. Measured, the
-correction improved 54% of the frames it touched. A coin toss, and for
-exactly that reason: about half of them were not Ds.
+**Which way the arc bulges.** The D is the part of its circle lying outside
+the penalty area, so it swells away from its goal. With the rotation pinned
+by the camera sitting on one side of the pitch, that direction names the end
+too.
 
-What a D has and a partial circle does not is its chord. The penalty-area
-line is what cut the circle, and it lies 5.5 m from the centre -- 16.5 m out
-from the goal line against the spot's 11. So the arc is only treated as a D
-when a real straight line is found sitting 5.5 m from its centre, and that
-distance can be measured before the rotation is known, since a rotation does
-not move anything nearer or further from the centre.
-
-That same chord then fixes the rotation. It runs parallel to the goal line,
-which is the same family as the halfway line, so it plays exactly the part
-the halfway line plays for the centre circle -- and it is the only line that
-can, because on a D frame nothing passes through the centre at all. The
-existing `halfway_line` helper, which wants a line through the centre within
-22 px, is no use here and was quietly returning the chord anyway on two
-frames out of three, which is its own problem.
-
-The result is scored on markings the fit never saw, against the same chance
-floor as everything else.
-
-## It does not work, and the measurement that said it did was blind
-
-Scored on markings, this looks like a clear win:
-
-    clip       D frames   as centre circle   recovered   chance
-    w1               19               3.1m        1.7m     3.6m
-    w2               23               3.9m        2.4m     3.7m
-    w3               22               5.8m        2.0m     3.7m
-    reading           4               4.7m        1.6m     4.2m
-    Veo              11               6.8m        2.0m     3.8m
-    pooled           79               5.3m        2.0m     3.7m
-
-with the correction improving 94% of the frames it touches, against 54% for
-the version that identified a D by arc span alone. The chord test is doing
-real work there.
-
-Switched on in `anchored_frames`, it is a disaster. Disagreement between two
-anchors on the same clip goes from 0.6 m to 2.7 m, the worst case from 7.6 m
-to 114 m, and two clips of five end up with median disagreements of 40 m and
-23 m.
-
-The two results do not contradict each other, and the reason is the same
-symmetry that hid the orientation flip for the life of this project.
-**`marking_error` cannot tell the left penalty spot from the right one.**
-Shifting the map to x = 11 and shifting it to x = 94 put the markings onto
-mirror images of one another, and the model is symmetric about x = 52.5, so
-the two score identically. The 94% confirmed that the correction was 41.5 m
-and said nothing at all about its sign, which is the entire question.
-
-`check_orientation.py`, written two commits earlier, says exactly this about
-the flip. The rule that should have come out of it, and did not until this
-failed: **a degree of freedom the pitch's symmetry hides cannot be validated
-against the markings. It has to be checked by comparing frames.**
-
-What would make this work is a way to tell one end from the other that does
-not depend on the pitch's own symmetry -- the direction the camera has
-panned over the clip, which goal the play is heading toward, or the
-centre-circle anchors on neighbouring frames voting on it. The last is the
-most promising and is not attempted here. Until then `use_penalty_arc` stays
-off, and the coverage those frames would have brought stays lost.
+They are independent -- one is about the clip, the other about the frame --
+so where they agree the answer is decided rather than guessed, and where
+they disagree the frame is refused. Refusing is the point. A D anchor at the
+wrong end is a shot at the wrong end of the pitch, and nothing about it
+looks wrong.
 
     python recover_penalty_arc.py [--frames 60]
 """
@@ -118,11 +59,9 @@ import numpy as np
 
 from fit_pitch_anchor import (CHANCE_OFFSET_M, CHANCE_TRIALS, marking_error,
                               plausible_anchor)
-from probe_centre_circle import MIN_ARC_SPAN_DEG, find_circle
-from src.pitch_model import (D_SPAN_MAX, D_SPAN_MIN,
-                             PENALTY_SPOTS_M,
-                             anchor_from_penalty_arc,
-                             penalty_arc_chord)
+from fit_pitch_anchor import (anchored_frames, penalty_arc_candidate,
+                              resolve_end)
+from probe_centre_circle import find_circle
 from probe_pitch_lines import CLIPS, line_segments
 from src import pitch_model as pm
 
@@ -140,110 +79,89 @@ def main():
     args = ap.parse_args()
     rng = np.random.default_rng(0)
 
-    print("Frames the span gate refuses, anchored on the penalty D on "
-          "purpose.\nScored on markings the fit never saw, against the same "
-          "chance floor.\n")
-    print(f"  {'clip':>14s} {'D frames':>9s} {'as centre circle':>17s} "
-          f"{'recovered':>10s} {'chance':>7s} {'left/right':>11s}")
+    print("Penalty-D frames, with the end of the pitch settled by two "
+          "independent\nsigns: where the camera is looking, and which way "
+          "the arc bulges.\n")
+    print(f"  {'clip':>14s} {'D found':>8s} {'agreed':>7s} {'accepted':>9s} "
+          f"{'error':>7s} {'chance':>7s}")
 
-    pooled_before, pooled_after, pooled_floor = [], [], []
+    pooled_error, pooled_floor, agreed_all = [], [], []
     for name, out_dir in CLIPS:
         path = Path(out_dir)
         if not (path / "clip.json").exists():
             continue
         info = json.loads((path / "clip.json").read_text())
+        motion_path = path / "camera_motion.npy"
+        motion = np.load(motion_path) if motion_path.exists() else None
+
+        # The centre-circle anchors are the reference the pan is measured
+        # against, so they have to exist before any D can be placed.
+        _, references = anchored_frames(path, args.frames, rng,
+                                        use_penalty_arc=False)
+        references = dict(references)
+
         cap = cv2.VideoCapture(info["path"])
         total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-        before, after, floors, ends = [], [], [], []
+        found, agreed, errors, floors = 0, 0, [], []
         for index in np.linspace(0, total - 1, args.frames).astype(int):
-            cap.set(cv2.CAP_PROP_POS_FRAMES, int(index))
+            index = int(index)
+            cap.set(cv2.CAP_PROP_POS_FRAMES, index)
             ok, frame = cap.read()
             if not ok:
                 continue
-            circle = find_circle(frame, rng, min_span_deg=D_SPAN_MIN)
-            if circle is None:
+            if find_circle(frame, rng) is not None:
+                continue                      # a real centre circle, not a D
+            candidate = penalty_arc_candidate(frame, rng, info)
+            if candidate is None:
                 continue
-            span = circle["span_deg"]
-            # Only frames the centre-circle gate refuses, and only arcs short
-            # enough that a centre circle is not a plausible reading.
-            if span >= MIN_ARC_SPAN_DEG or not (D_SPAN_MIN <= span
-                                                <= D_SPAN_MAX):
+            found += 1
+            settled = resolve_end(candidate[0], candidate[1], index,
+                                  references, motion, info)
+            if settled is None or not plausible_anchor(settled, info):
                 continue
-
-            # Unrotated first, only to measure how far lines sit from the
-            # arc's centre -- a distance the rotation cannot change.
-            unrotated = pm.metric_from_circle(
-                pm.AT_INFINITY_LINE, circle["ellipse"], None)
-            if unrotated is None:
-                continue
-            chord = penalty_arc_chord(unrotated, circle["segments"])
-            if chord is None:
-                continue
-
-            # The chord runs across the pitch, parallel to the goal line,
-            # which is the same family as the halfway line -- so it fixes the
-            # rotation in exactly the same way. On a D frame it is also the
-            # only line that can, since nothing passes through the centre.
-            direction = np.array([chord[2] - chord[0], chord[3] - chord[1]],
-                                 dtype=float)
-            provisional = pm.metric_from_circle(
-                pm.AT_INFINITY_LINE, circle["ellipse"], direction)
-            if provisional is None:
-                continue
-            fixed, spot = anchor_from_penalty_arc(provisional,
-                                                  circle["support"])
-            if fixed is None or not plausible_anchor(fixed, info):
-                continue
+            agreed += 1
 
             segments, _ = line_segments(frame)
             if len(segments) < 3:
                 continue
-            plain = marking_error(provisional, segments, info)
-            better = marking_error(fixed, segments, info)
-            if not (np.isfinite(plain) and np.isfinite(better)):
+            error = marking_error(settled, segments, info)
+            if not np.isfinite(error):
                 continue
-
+            errors.append(error)
             chance = []
             for _ in range(CHANCE_TRIALS):
                 displaced = np.eye(3)
                 displaced[:2, 2] = rng.uniform(-CHANCE_OFFSET_M,
                                                CHANCE_OFFSET_M, 2)
-                value = marking_error(displaced @ fixed, segments, info)
+                value = marking_error(displaced @ settled, segments, info)
                 if np.isfinite(value):
                     chance.append(value)
-            before.append(plain)
-            after.append(better)
-            ends.append(spot)
             if chance:
                 floors.append(float(np.median(chance)))
         cap.release()
 
-        if not before:
-            print(f"  {name:>14s} {0:9d}")
+        if not found:
+            print(f"  {name:>14s} {0:8d}")
             continue
-        left = sum(1 for s in ends if s == PENALTY_SPOTS_M[0])
-        print(f"  {name:>14s} {len(before):9d} {np.median(before):16.1f}m "
-              f"{np.median(after):9.1f}m "
-              f"{(np.median(floors) if floors else np.nan):6.1f}m "
-              f"{left}/{len(ends) - left:<5d}")
-        pooled_before += before
-        pooled_after += after
+        print(f"  {name:>14s} {found:8d} {agreed / found:6.0%} "
+              f"{agreed:9d} "
+              f"{(np.median(errors) if errors else np.nan):6.1f}m "
+              f"{(np.median(floors) if floors else np.nan):6.1f}m")
+        pooled_error += errors
         pooled_floor += floors
+        agreed_all.append((found, agreed))
 
-    if pooled_before:
-        print(f"\n  {'pooled':>14s} {len(pooled_before):9d} "
-              f"{np.median(pooled_before):16.1f}m "
-              f"{np.median(pooled_after):9.1f}m "
+    if pooled_error:
+        found = sum(f for f, _ in agreed_all)
+        agreed = sum(a for _, a in agreed_all)
+        print(f"\n  {'pooled':>14s} {found:8d} {agreed / found:6.0%} "
+              f"{agreed:9d} {np.median(pooled_error):6.1f}m "
               f"{np.median(pooled_floor):6.1f}m")
-        rescued = np.mean(np.array(pooled_after) < np.array(pooled_before))
-        print(f"\n  The 41.5 m correction improves {rescued:.0%} of these "
-              f"frames.")
 
-    print("\n  These are frames the anchor currently refuses outright. Any "
-          "of them that\n  comes back under the chance floor is coverage "
-          "regained rather than error\n  reintroduced -- and they are frames "
-          "of the penalty area, where shots are.")
+    print("\n  The two signs are independent, so the frames where they "
+          "disagree are the\n  ones that would have been guesses. Refusing "
+          "them is the point: a D anchor\n  placed at the wrong end is a "
+          "shot at the wrong end, and it looks fine.")
 
 
 if __name__ == "__main__":

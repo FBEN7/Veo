@@ -249,45 +249,22 @@ def halfway_line(segments, centre):
 AT_INFINITY = pm.AT_INFINITY_LINE
 
 
-def penalty_arc_anchor(frame, rng, info):
-    """An anchor built on the penalty D, for frames with no centre circle.
+def penalty_arc_candidate(frame, rng, info):
+    """A penalty-D fit, with the end of the pitch left undecided.
 
-    The span gate that keeps the D from being mistaken for the centre circle
-    also throws the frame away, and those are frames looking at the penalty
-    area -- which is where shots are. They can be kept, because a D is not
-    ambiguous once it is known to be one: its chord lies 5.5 m from its
-    centre and its arc bulges away from its goal, which says which end of
-    the pitch it is.
+    Everything here is determined except one bit: the arc's centre is a
+    penalty spot, but which of the two? The chord fixes the rotation, the
+    radius fixes the scale, and the bulge fixes the map up to that bit --
+    which is exactly the bit the pitch's symmetry hides, so nothing in this
+    frame can settle it. `resolve_end` does, from the camera's motion.
 
-    OFF BY DEFAULT, because it does not work, and the way it fooled its own
-    measurement is worth more than the feature was.
-
-    Scored on markings, this looked excellent: the frames come back to 2.0 m
-    against a 3.7 m chance floor, from 5.3 m read as centre circles, and the
-    41.5 m correction improves 94% of them. Switched on, the disagreement
-    between two anchors on the same clip went from 0.6 m to 2.7 m and the
-    worst case from 7.6 m to 114 m -- two clips of five ended up with median
-    disagreements of 40 m and 23 m.
-
-    The two measurements are not in conflict. `marking_error` cannot tell
-    the left penalty spot from the right one. Shifting the map to x = 11 and
-    shifting it to x = 94 put the markings onto mirror images of each other,
-    and the pitch model is symmetric about x = 52.5, so both score the same
-    to the last decimal. The 94% therefore confirmed that the correction was
-    41.5 m and said nothing whatever about its sign -- and the sign is the
-    whole question.
-
-    That is the same blindness that hid the orientation flip for the life of
-    this project, documented two commits earlier in `check_orientation.py`,
-    and then walked into again here. The rule it should have produced: a
-    degree of freedom the pitch's symmetry hides can never be validated by
-    distance to the markings. It has to be checked by comparing frames.
+    Returns the map with the arc's centre still placed at the middle of the
+    pitch, plus the arc's supporting pixels.
     """
     circle = find_circle(frame, rng, min_span_deg=pm.D_SPAN_MIN)
     if circle is None:
         return None
-    span = circle["span_deg"]
-    if not (pm.D_SPAN_MIN <= span <= pm.D_SPAN_MAX):
+    if not (pm.D_SPAN_MIN <= circle["span_deg"] <= pm.D_SPAN_MAX):
         return None
 
     # Unrotated only to measure how far lines sit from the arc's centre,
@@ -308,16 +285,83 @@ def penalty_arc_anchor(frame, rng, info):
                                         direction)
     if provisional is None:
         return None
-    homography, _ = pm.anchor_from_penalty_arc(provisional,
-                                               circle["support"])
-    if homography is None or not plausible_anchor(homography, info):
+    return provisional, circle["support"]
+
+
+def view_centre_on_pitch(reference, reference_index, index, motion, info):
+    """Where the middle of frame `index` sits along the pitch, in metres.
+
+    Carried from an anchored frame by the camera's own movement. A scene
+    point seen at p in the reference frame is seen at p + (motion[index] -
+    motion[reference]) here, so the middle of this frame was at c minus that
+    displacement in the reference, and the reference's map says where that
+    is on the pitch.
+
+    This is the same translation carry that was measured to drift -- 141 px
+    over 600 frames on the Veo clip -- and the drift does not matter, because
+    of what it is being asked. The two candidate penalty spots are 41.5 m
+    from the middle of the pitch in opposite directions, and 141 px is about
+    4 m at these scales. Ten times the margin, for one bit.
+    """
+    if motion is None or len(motion) <= max(index, reference_index):
+        return None
+    shift = motion[index] - motion[reference_index]
+    centre = np.array([info["width"] / 2.0 - shift[0],
+                       info["height"] * 0.75 - shift[1], 1.0])
+    mapped = reference @ centre
+    if abs(mapped[2]) < 1e-9:
+        return None
+    value = float(mapped[0] / mapped[2])
+    return value if np.isfinite(value) else None
+
+
+def resolve_end(provisional, support, index, references, motion, info):
+    """Settle which penalty spot the arc is, from two independent signs.
+
+    The pitch cannot answer this on its own. Its markings are symmetric
+    about the halfway line, so a map placing the arc at x = 11 and one
+    placing it at x = 94 put every visible marking onto a real line and
+    score identically -- which is how an earlier version passed a 94% check
+    while being wrong often enough to put two anchors 114 m apart.
+
+    Two things here are not symmetric, and they are independent of each
+    other:
+
+    **Where the camera is looking.** It follows play, so its accumulated pan
+    says which half of the pitch is in view, measured against the frames
+    whose centre circle pins them to the middle. This is evidence from
+    outside the geometry, which is the only kind that can settle it.
+
+    **Which way the arc bulges.** The D is the part of its circle outside
+    the penalty area, so it always swells away from its goal. Once the
+    rotation is pinned -- and it is, by the camera sitting on one side of
+    the pitch -- that direction names the end too.
+
+    Either alone is a guess. Both agreeing is a decision, and where they
+    disagree the frame is refused rather than guessed at: a D anchor is
+    worth having only if it is worth trusting, since the failure mode is a
+    shot at the wrong end of the pitch that looks perfectly reasonable.
+    """
+    if not references:
+        return None
+    nearest, reference = min(references.items(),
+                             key=lambda item: abs(item[0] - index))
+    where = view_centre_on_pitch(reference, nearest, index, motion, info)
+    if where is None:
+        return None
+    from_camera = min(pm.PENALTY_SPOTS_M, key=lambda spot: abs(spot - where))
+
+    homography, from_bulge = pm.anchor_from_penalty_arc(provisional, support)
+    if homography is None:
+        return None
+    if from_bulge != from_camera:
         return None
     return homography
 
 
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_horizon: bool = False,
-                    use_penalty_arc: bool = False):
+                    use_penalty_arc: bool = True):
     """Frames carrying a full image-to-pitch map, with that map."""
     info = json.loads((out_dir / "clip.json").read_text())
     horizons = []
@@ -326,13 +370,14 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
         info, horizons = horizons_from_lines(out_dir, n_frames, rng)
         if not horizons:
             return info, []
-        motion_path = out_dir / "camera_motion.npy"
-        motion = np.load(motion_path) if motion_path.exists() else None
+    motion_path = out_dir / "camera_motion.npy"
+    if motion_path.exists():
+        motion = np.load(motion_path)
     principal = (info["width"] / 2.0, info["height"] / 2.0)
 
     cap = cv2.VideoCapture(info["path"])
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    out = []
+    out, pending = [], []
     for idx in np.linspace(0, total - 1, n_frames).astype(int):
         idx = int(idx)
         cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
@@ -341,11 +386,14 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
             continue
         circle = find_circle(frame, rng)
         if circle is None:
-            # No centre circle. The penalty D will do, if this is one.
+            # No centre circle. Keep the penalty D, if this is one, and
+            # decide which end of the pitch it is once every centre-circle
+            # anchor on the clip is known -- they are what the camera's pan
+            # is measured against.
             if use_penalty_arc and not use_horizon:
-                fallback = penalty_arc_anchor(frame, rng, info)
-                if fallback is not None:
-                    out.append((idx, fallback))
+                candidate = penalty_arc_candidate(frame, rng, info)
+                if candidate is not None:
+                    pending.append((idx, candidate[0], candidate[1]))
             continue
         if use_horizon:
             source, horizon, focal = min(horizons,
@@ -366,6 +414,17 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
             continue
         out.append((idx, homography))
     cap.release()
+
+    # Second pass over the penalty-D frames, now that the centre-circle
+    # anchors exist to measure the camera's pan against.
+    if pending:
+        references = dict(out)
+        for idx, provisional, support in pending:
+            settled = resolve_end(provisional, support, idx, references,
+                                  motion, info)
+            if settled is not None and plausible_anchor(settled, info):
+                out.append((idx, settled))
+        out.sort(key=lambda row: row[0])
     return info, out
 
 
