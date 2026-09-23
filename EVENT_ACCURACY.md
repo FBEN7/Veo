@@ -656,7 +656,58 @@ pipeline has no pose estimation, so its six orientation fields, `body_part`
 and `technique` are all unavailable; the fit uses distance and goal-mouth
 angle only. That should be stated wherever the number is shown.
 
-Still blocked: `huggingface.co` is refused by the egress proxy, so the
-dataset cannot be fetched here. And `shot_features_from_events` refuses to
-run on relative coordinates rather than computing distance to a goal that is
-not located anywhere -- which is every clip processed so far.
+### The fit, on the real dataset
+
+10,580 shots over 704 matches, 1,217 of them goals -- an 11.5% conversion
+rate, which is what football produces. Fitted on distance and goal-mouth
+angle, holding out whole matches:
+
+| | distance | angle | AUC | Brier (base-rate floor) |
+|---|---|---|---|---|
+| dataset's own split | -0.1030 | +1.5605 | 0.753 | 0.0906 (0.1019) |
+| **whole matches held out** | **-0.0973** | **+1.6037** | **0.766** | **0.0859** (0.0976) |
+
+Both are reported because the dataset's own split puts 687 of its 704
+matches on *both* sides, so a model can see the teams, pitch and camera it
+will be tested on. The stricter split was expected to score worse for losing
+that. It scores slightly better, so on this data the leakage is not worth
+anything -- worth recording, since the concern was raised before it was
+checked.
+
+AUC 0.766 is where a distance-and-angle model belongs; published models
+reach roughly 0.80 using the features we do not have. Calibration on
+held-out shots tracks the diagonal: predicted 0.030 / 0.052 / 0.080 / 0.128 /
+0.297 against observed 0.024 / 0.042 / 0.056 / 0.158 / 0.267.
+
+The distance convention came out of the data rather than a guess:
+`goal_centre` reproduces the recorded `angle_to_posts` to **0.000 degrees**,
+the perpendicular reading to 1.983.
+
+### It has never seen a penalty
+
+`play_pattern` in the dataset is `regular` (7210), `free kick` (2012) and
+`corner` (1358). There are no penalties at all. The model puts a central
+shot from the penalty spot at **0.202**, and that figure is *correct for
+what it describes*: the dataset's own 81 shots from that distance and angle
+convert at 0.173. It is an open-play shot from 11 m, not a penalty, and a
+penalty converts around 0.76.
+
+Anything that shows xG has to treat penalties separately or it will
+under-report every one of them by a factor of nearly four. The model file
+carries this in a `domain` field and `fit_xghub.py` prints it on every run,
+beside a table of positions that can be judged by eye -- six-yard line 0.50,
+edge of the box 0.10, 25 m out 0.04, 35 m out 0.01.
+
+### Three things the dataset card gets wrong
+
+Worth knowing before anyone else reads it: the per-shot file is
+`labels_tabular.json`, not the documented `tabular_data.json`; the
+`play_pattern` values are `regular`/`free kick`/`corner`, not the documented
+`regular`/`set piece`/`counter`; and `distance_from_goal` is distance to the
+goal centre, which the card leaves ambiguous. The loader accepts both
+filenames and the convention is inferred rather than assumed.
+
+Still blocked downstream: `shot_features_from_events` refuses to run on
+relative coordinates rather than computing distance to a goal that is not
+located anywhere -- which is every clip processed so far. The model is ready
+before the shots are.

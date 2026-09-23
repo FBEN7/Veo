@@ -85,9 +85,17 @@ class XGModel:
     metrics: dict = field(default_factory=dict)
     source: str = ""
     convention: str = ""
+    play_patterns: list = field(default_factory=list)
     note: str = ("Reduced model: classical shot geometry only. The "
                  "orientation features that are xGHub's contribution are not "
                  "available from this pipeline.")
+    domain: str = ("Open play, free kicks and corners. NO PENALTIES: xGHub "
+                   "contains none, so this model has never seen one. It puts "
+                   "a central shot from the penalty spot at about 0.20, "
+                   "which is right for open play from there -- the dataset's "
+                   "own shots at that distance and angle convert at 0.17 -- "
+                   "and wrong for a penalty, which converts around 0.76. "
+                   "Penalties need their own number, not this one.")
 
     def save(self, path: Path) -> None:
         Path(path).write_text(json.dumps(asdict(self), indent=2))
@@ -123,25 +131,35 @@ class XGModel:
 
 # --- reading xGHub -----------------------------------------------------------
 
+# The per-shot metadata file. The dataset card documents it as
+# `tabular_data.json`; the archive actually ships `labels_tabular.json`.
+# Both are accepted rather than picking a side, since either could be what a
+# future release settles on.
+METADATA_NAMES = ("labels_tabular.json", "tabular_data.json")
+
+
 def load_xghub(root: Path) -> pd.DataFrame:
     """Every shot's tabular metadata, as one frame.
 
-    Expects the published layout: `labels/<id>/tabular_data.json`.
+    Layout is `labels/<zero-padded id>/<metadata file>`.
     """
     root = Path(root)
     labels = root / "labels" if (root / "labels").is_dir() else root
     rows = []
-    for meta in sorted(labels.glob("*/tabular_data.json")):
-        try:
-            data = json.loads(meta.read_text())
-        except json.JSONDecodeError:
-            continue
-        data["shot_id"] = meta.parent.name
-        rows.append(data)
+    for name in METADATA_NAMES:
+        for meta in sorted(labels.glob(f"*/{name}")):
+            try:
+                data = json.loads(meta.read_text())
+            except json.JSONDecodeError:
+                continue
+            data["shot_id"] = meta.parent.name
+            rows.append(data)
+        if rows:
+            break
     if not rows:
         raise SystemExit(
-            f"no tabular_data.json files under {labels}. Expected the "
-            "published layout, labels/<id>/tabular_data.json.")
+            f"no shot metadata under {labels}. Expected "
+            f"<id>/{' or '.join(METADATA_NAMES)}.")
     return pd.DataFrame(rows)
 
 
@@ -243,6 +261,33 @@ def _split_by_match(df: pd.DataFrame, seed: int = 0):
     return df[~is_held], df[is_held]
 
 
+# Situations whose answer is known from outside the fit, as (name, metres out
+# from the goal line, metres to the side). Printed after every fit, because a
+# coefficient table cannot be eyeballed and a list of football positions can.
+REFERENCE_SITUATIONS = (
+    ("penalty spot, central", 11.0, 0.0),
+    ("six-yard line, central", 5.5, 0.0),
+    ("edge of the box, central", 16.5, 0.0),
+    ("corner of the six-yard box", 5.5, 9.16),
+    ("25 m out, central", 25.0, 0.0),
+    ("35 m out, central", 35.0, 0.0),
+    ("tight angle by the post", 3.0, 8.0),
+)
+
+
+def reference_predictions(model: XGModel) -> pd.DataFrame:
+    """What the model says about positions anyone can judge by eye."""
+    rows = []
+    for name, forward, lateral in REFERENCE_SITUATIONS:
+        distance = float(np.hypot(forward, lateral))
+        angle = float(_mouth_angle_from(np.array(forward), np.array(lateral)))
+        prob = float(model.predict(distance_m=np.array([distance]),
+                                   angle_rad=np.array([angle]))[0])
+        rows.append(dict(situation=name, distance_m=distance,
+                         angle_deg=float(np.degrees(angle)), xg=prob))
+    return pd.DataFrame(rows)
+
+
 def calibration_table(y_true, y_prob, bins: int = 5) -> pd.DataFrame:
     """Predicted against observed, which is the test that matters for xG.
 
@@ -267,15 +312,26 @@ def calibration_table(y_true, y_prob, bins: int = 5) -> pd.DataFrame:
 
 
 def fit(df: pd.DataFrame, features=DEFAULT_FEATURES, seed: int = 0,
-        source: str = "", convention: str = "",
+        source: str = "", convention: str = "", test_ids=None,
         verbose: bool = True) -> XGModel:
-    """Fit a logistic model and report how well it holds up out of sample."""
+    """Fit a logistic model and report how well it holds up out of sample.
+
+    `test_ids` uses a given set of shot ids as the held-out side instead of
+    holding out whole matches. It exists to reproduce a dataset's own split
+    for comparability -- xGHub's official one puts 687 of its 704 matches on
+    both sides, so it is the looser of the two and the difference between
+    them is worth seeing rather than choosing between blind.
+    """
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import roc_auc_score, log_loss, brier_score_loss
 
     features = tuple(features)
     usable = df.dropna(subset=list(features) + ["is_goal"])
-    train, test = _split_by_match(usable, seed)
+    if test_ids is not None:
+        held = usable.shot_id.isin(set(test_ids))
+        train, test = usable[~held], usable[held]
+    else:
+        train, test = _split_by_match(usable, seed)
     if len(train) < 50 or len(test) < 20:
         raise SystemExit(
             f"too few shots to fit and check: {len(train)} train, "

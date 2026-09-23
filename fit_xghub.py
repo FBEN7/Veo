@@ -25,6 +25,7 @@ settles it.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from src import xg
@@ -50,11 +51,46 @@ def main():
     convention, _ = xg.infer_distance_convention(raw)
 
     features = xg.features_from_xghub(raw, convention)
-    print(f"\nFitting on {', '.join(xg.DEFAULT_FEATURES)} "
-          f"(held out by match):\n")
+
+    # The dataset ships a split, and it is the looser of the two available:
+    # 687 of its 704 matches have shots on both sides, so a model can see the
+    # teams, pitch and camera it will be tested on. Holding out whole matches
+    # is stricter. Both are reported -- if the official split scores better,
+    # that gap is the leakage rather than the model.
+    split_path = Path(args.data) / "clip_split.json"
+    if split_path.exists():
+        official = json.loads(split_path.read_text()).get("test", [])
+        print(f"\nFitting on the dataset's own split "
+              f"({len(official)} held out, matches span both sides):\n")
+        xg.fit(features, seed=args.seed, test_ids=official,
+               source="xGHub (mguti97), CVIU", convention=convention)
+
+    print(f"\nFitting with whole matches held out (the stricter split):\n")
     model = xg.fit(features, seed=args.seed,
-                   source="xGHub (mguti97), CVIU 2026",
+                   source="xGHub (mguti97), CVIU",
                    convention=convention)
+
+    if "play_pattern" in raw.columns:
+        model.play_patterns = sorted(raw.play_pattern.dropna().unique())
+        print(f"\nTrained on play patterns: "
+              f"{raw.play_pattern.value_counts().to_dict()}")
+
+    print("\nWhat it says about positions you can judge by eye:\n")
+    print(f"  {'situation':<30s} {'dist':>6s} {'angle':>7s} {'xG':>7s}")
+    for _, r in xg.reference_predictions(model).iterrows():
+        print(f"  {r.situation:<30s} {r.distance_m:6.1f} "
+              f"{r.angle_deg:7.1f} {r.xg:7.3f}")
+
+    if not any("penalt" in str(p).lower() for p in model.play_patterns):
+        near = raw[(raw.distance_from_goal.between(10.5, 11.5))
+                   & (raw.angle_to_goal.abs() < 8)]
+        rate = near.is_goal.mean() if len(near) else float("nan")
+        print(f"\n  NO PENALTIES IN THIS DATASET. The model has never seen "
+              f"one, so the\n  penalty-spot figure above is an open-play shot "
+              f"from 11 m, not a penalty.\n  It matches the {len(near)} "
+              f"dataset shots from that distance and angle,\n  which convert "
+              f"at {rate:.3f}. A real penalty converts around 0.76 and needs\n"
+              f"  its own number.")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

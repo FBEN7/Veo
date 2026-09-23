@@ -1,0 +1,29 @@
+{
+  "features": [
+    "distance_m",
+    "angle_rad"
+  ],
+  "coefficients": [
+    -0.09730664653765063,
+    1.6036829033718059
+  ],
+  "intercept": -1.3322292755501435,
+  "n_train": 7833,
+  "n_test": 2747,
+  "base_rate": 0.11694114643176305,
+  "metrics": {
+    "brier": 0.08590778790020738,
+    "brier_base": 0.0976218752846828,
+    "log_loss": 0.29750297670794956,
+    "auc": 0.7655342100330597
+  },
+  "source": "xGHub (mguti97), CVIU",
+  "convention": "goal_centre",
+  "play_patterns": [
+    "corner",
+    "free kick",
+    "regular"
+  ],
+  "note": "Reduced model: classical shot geometry only. The orientation features that are xGHub's contribution are not available from this pipeline.",
+  "domain": "Open play, free kicks and corners. NO PENALTIES: xGHub contains none, so this model has never seen one. It puts a central shot from the penalty spot at about 0.20, which is right for open play from there -- the dataset's own shots at that distance and angle convert at 0.17 -- and wrong for a penalty, which converts around 0.76. Penalties need their own number, not this one."
+}
