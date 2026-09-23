@@ -45,6 +45,39 @@ they disagree the frame is refused. Refusing is the point. A D anchor at the
 wrong end is a shot at the wrong end of the pitch, and nothing about it
 looks wrong.
 
+## Measured: the end is right, the arc is not
+
+The direction-of-play half works, and the check that matters says so. Across
+every version tried, **not one pair of anchors landed near 83 m apart**,
+which is what the two penalty spots are and therefore what a wrong end
+costs. The bulge-only version, before the camera was consulted, was
+producing 114 m disagreements routinely. That problem is solved.
+
+What is not solved is telling a D from a centre circle at all. The D anchors
+that survive are wrong by 30 to 43 m, and 41.5 m is the distance from the
+centre spot to a penalty spot -- the signature of a half-hidden centre
+circle being shifted as though it were a D. Three filters were added, each
+measured:
+
+    filter                          D anchors   pairs with a D
+    chord at 5.5 m only                    21   median 30.4 m
+    + arc must lie one side of it           7   median 42.9 m
+    + camera may answer "midfield"          3   median 30.5 m
+
+Each one removes more of them and the survivors stay wrong. By the last
+row the path contributes three anchors across five clips and still misplaces
+them, so it earns nothing. `use_penalty_arc` is off.
+
+The remaining difficulty is not the end and not the pan. It is that a centre
+circle seen with most of itself hidden looks, to every test available here,
+like a penalty arc: same radius, same residual, a line near where a chord
+should be, and enough of the visible arc on one side of it. Distinguishing
+them needs something the frame does not contain -- most likely the
+neighbouring frames, where the same arc is seen more fully.
+
+By contrast the circle-circle anchors, which is what ships, agree to 0.7 m
+with a worst case of 7.5 m and nothing past 20.
+
     python recover_penalty_arc.py [--frames 60]
 """
 

@@ -936,3 +936,73 @@ respectable, on the very anchors that the frame-to-frame check finds 114 m
 apart. Every marking-based number in this project shares that limitation.
 They measure how well a map agrees with a symmetric pattern, and there are
 two ways to agree with it.
+
+
+## Direction of play settles the end; it does not settle the arc
+
+The section above left the penalty-D anchors switched off because nothing in
+a frame can say which of the two penalty spots its arc is struck from -- the
+markings are symmetric, so x = 11 and x = 94 score identically against them.
+The way out was to stop asking the pitch and ask the clip.
+
+**The camera follows play.** Its accumulated pan says which half of the
+pitch is in view, measured against the frames whose centre circle pins them
+to the middle. That is evidence from outside the geometry, and it asks very
+little of the measurement: the two candidate spots are 41.5 m apart while
+the pan drifts about 4 m over a clip. Ten times the margin, for one bit.
+
+The arc's own bulge gives a second, independent sign -- the D swells away
+from its goal -- so the two must agree or the frame is refused.
+
+### It works
+
+Across every version tried, **not one pair of anchors landed near 83 m
+apart**, which is what the two penalty spots are and therefore what a wrong
+end costs. Before the camera was consulted, the bulge-only version produced
+114 m disagreements routinely. The orientation question the D posed is
+answered.
+
+### The arc is a different problem, and it is not solved
+
+The D anchors that survive are wrong by 30 to 43 m. 41.5 m is the distance
+from the centre spot to a penalty spot, which is the signature of a
+half-hidden centre circle being shifted as though it were a D. Three filters
+were added, each measured:
+
+| filter | D anchors | pairs involving one |
+|---|---|---|
+| chord at 5.5 m from the centre | 21 | median 30.4 m |
+| + the arc must lie on one side of it | 7 | median 42.9 m |
+| + the camera may answer "midfield" | 3 | median 30.5 m |
+
+Each removes more of them and the survivors stay wrong. By the last row the
+path contributes three anchors across five clips and still misplaces them,
+so it earns nothing and stays off.
+
+The difficulty is that a centre circle seen with most of itself hidden
+looks, to every test available in a single frame, exactly like a penalty
+arc: same 9.15 m radius, same residual, a line near where a chord should be,
+and enough of the visible arc on one side of that line. Telling them apart
+needs something the frame does not contain -- most plausibly the
+neighbouring frames, where the same arc is seen more fully.
+
+What ships is unchanged and unaffected: circle-circle anchors agree to
+**0.7 m**, worst case 7.5 m, nothing past 20 m.
+
+### What this means for which goal is which
+
+Two different questions have been run together in these notes and are worth
+separating now that one of them is answered.
+
+*Does the clip agree with itself?* Yes. Every frame uses the same
+orientation convention, so a shot at one end is attributed to that end
+throughout, and the camera's pan can place a frame on the correct half of
+the pitch.
+
+*Which physical goal is it?* Still unknown, and geometry cannot say -- a
+bare pitch is symmetric. It also does not matter for xG, which is a
+surprise worth stating plainly: under the flip, a point at (11, 34) maps to
+(94, 34), whose distance and angle to *its* goal are identical. Shot
+distance and goal-mouth angle are invariant. What would need the absolute
+answer is attributing a shot to a team, which needs team identity anyway and
+therefore has to come from outside the geometry regardless.

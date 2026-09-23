@@ -377,7 +377,7 @@ def resolve_end(provisional, support, index, references, motion, info):
 
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_horizon: bool = False,
-                    use_penalty_arc: bool = True,
+                    use_penalty_arc: bool = False,
                     with_kind: bool = False):
     """Frames carrying a full image-to-pitch map, with that map.
 
