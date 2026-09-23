@@ -742,3 +742,30 @@ Still blocked downstream: `shot_features_from_events` refuses to run on
 relative coordinates rather than computing distance to a goal that is not
 located anywhere -- which is every clip processed so far. The model is ready
 before the shots are.
+
+
+## The ground plane's focal length was the suspect, and the measurements acquit it
+
+Two orthogonal vanishing points give a focal length directly, from
+`(v_a - c) . (v_b - c) = -f^2`, and on conditioning it is clearly the better
+estimate: interquartile spread 0.02 to 0.14 against the pan-derived 0.16 to
+0.27, and larger by 1.6 to 1.8 times -- 2331, 2983, 2648 and 3295 px against
+1663, 1614, 1790 and 1799.
+
+Swapping it into the ground plane and re-running the four windows makes
+everything slightly worse (`experiment_focal_source.py`):
+
+| | pass F1 | carry F1 | split-half speed | distance-rate r | km/90 |
+|---|---|---|---|---|---|
+| pan focal (shipped) | **0.758** | **0.686** | **0.50** | **0.20** | **11.4** |
+| vanishing-point focal | 0.747 | 0.672 | 0.47 | 0.13 | 13.6 |
+
+Five measures, all pointing the same way, at the better-conditioned estimate.
+The pan-derived focal stays.
+
+The hypothesis it was built on -- that the focal length is what makes the
+ground plane harmful -- is therefore not supported. Either the noisy estimate
+is nonetheless right, or the vanishing-point constraint is biased here: it
+assumes a centred principal point and square pixels, and broadcast footage is
+cropped and rescaled before anyone sees it. The evidence available says only
+which one the downstream measurements prefer, and they prefer the pan.
