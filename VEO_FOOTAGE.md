@@ -915,3 +915,24 @@ pitch's own symmetry -- which way the camera has panned across the clip,
 which goal play is heading toward, or the centre-circle anchors on
 neighbouring frames voting on which end this is. The last is the most
 promising and is not attempted here.
+
+It is worth knowing what solving it would be worth, so the run was kept:
+
+| clip | within reach, D off | D on |
+|---|---|---|
+| SoccerNet w1 | 77% | **100%** |
+| SoccerNet w2 | 61% | 95% |
+| SoccerNet w3 | 60% | 99% |
+| reading | 54% | 69% |
+| **Veo** | **25%** | **59%** |
+
+Coverage roughly doubles, and on broadcast it becomes essentially complete.
+That is the whole of the cost the span gate imposed, handed back, for the
+price of one bit per frame.
+
+And a third instance of the same blindness, in the same table: propagated
+error with the D anchors switched on reads 1.5 to 1.9 m, perfectly
+respectable, on the very anchors that the frame-to-frame check finds 114 m
+apart. Every marking-based number in this project shares that limitation.
+They measure how well a map agrees with a symmetric pattern, and there are
+two ways to agree with it.
