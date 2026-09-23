@@ -35,13 +35,33 @@ recovered frame lands consistently with every other. It does not claim to
 know which physical goal is which -- nothing here can, and a pitch is
 symmetric -- only that the clip agrees with itself.
 
-## What must be checked
+## The test that has to come first, which the first version skipped
 
 The danger is the opposite mistake: taking a real centre circle for a D and
-introducing a 41.5 m error where there was none. So a recovered anchor has
-to earn it -- the arc must be short enough that a centre circle is
-implausible, and the result is scored on markings the fit never saw, against
-the same chance floor as everything else.
+introducing a 41.5 m error where there was none. The first version of this
+guarded against it with the arc span alone -- short arc, therefore a D --
+and that is not enough, because a centre circle with most of itself hidden
+behind players or running out of frame is also a short arc. Measured, the
+correction improved 54% of the frames it touched. A coin toss, and for
+exactly that reason: about half of them were not Ds.
+
+What a D has and a partial circle does not is its chord. The penalty-area
+line is what cut the circle, and it lies 5.5 m from the centre -- 16.5 m out
+from the goal line against the spot's 11. So the arc is only treated as a D
+when a real straight line is found sitting 5.5 m from its centre, and that
+distance can be measured before the rotation is known, since a rotation does
+not move anything nearer or further from the centre.
+
+That same chord then fixes the rotation. It runs parallel to the goal line,
+which is the same family as the halfway line, so it plays exactly the part
+the halfway line plays for the centre circle -- and it is the only line that
+can, because on a D frame nothing passes through the centre at all. The
+existing `halfway_line` helper, which wants a line through the centre within
+22 px, is no use here and was quietly returning the chord anyway on two
+frames out of three, which is its own problem.
+
+The result is scored on markings the fit never saw, against the same chance
+floor as everything else.
 
     python recover_penalty_arc.py [--frames 60]
 """
@@ -55,8 +75,8 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from fit_pitch_anchor import (CHANCE_OFFSET_M, CHANCE_TRIALS, halfway_line,
-                              marking_error, plausible_anchor)
+from fit_pitch_anchor import (CHANCE_OFFSET_M, CHANCE_TRIALS, marking_error,
+                              plausible_anchor)
 from probe_centre_circle import MIN_ARC_SPAN_DEG, find_circle
 from probe_pitch_lines import CLIPS, line_segments
 from src import pitch_model as pm
@@ -70,6 +90,56 @@ D_SPAN_MAX = 150.0
 
 # Where the two penalty spots are, along the pitch.
 PENALTY_SPOTS_M = (11.0, pm.PITCH_LENGTH_M - 11.0)
+
+# The D's chord is the penalty-area line, and it lies exactly this far from
+# the penalty spot: 16.5 m out from the goal line against 11 m.
+D_CHORD_OFFSET_M = 5.5
+D_CHORD_TOLERANCE_M = 1.5
+
+# A chord has to be a real line, not a scrap.
+MIN_CHORD_PX = 60.0
+
+
+def find_chord(homography, segments):
+    """The straight line sitting where the D's chord must sit.
+
+    This is the positive test for a D, and leaving it out is what sank the
+    first version of this file. Arc span alone does not identify a D --
+    plenty of short arcs are centre circles with most of themselves hidden,
+    and "correcting" one of those by 41.5 m creates the very error this is
+    meant to remove. Measured that way it improved 54% of the frames it
+    touched, which is a coin toss.
+
+    The D has something a partial circle does not: a line lying 5.5 m from
+    its centre, which is the edge of the penalty area that cut it. Distance
+    from the centre is unaffected by the rotation, so this can be measured
+    before the rotation is known -- which is just as well, because on these
+    frames it is not.
+    """
+    centre = np.array(pm.PITCH_CENTRE_M)
+    best = None
+    for x1, y1, x2, y2 in segments:
+        if np.hypot(x2 - x1, y2 - y1) < MIN_CHORD_PX:
+            continue
+        pts = np.array([[x1, x2], [y1, y2], [1.0, 1.0]], dtype=float)
+        mapped = homography @ pts
+        if np.any(np.abs(mapped[2]) < 1e-9):
+            continue
+        mapped = mapped[:2] / mapped[2]
+        if not np.all(np.isfinite(mapped)):
+            continue
+        line = np.cross([mapped[0, 0], mapped[1, 0], 1.0],
+                        [mapped[0, 1], mapped[1, 1], 1.0])
+        norm = np.hypot(line[0], line[1])
+        if norm < 1e-9:
+            continue
+        away = abs(line @ np.array([centre[0], centre[1], 1.0])) / norm
+        if abs(away - D_CHORD_OFFSET_M) > D_CHORD_TOLERANCE_M:
+            continue
+        score = abs(away - D_CHORD_OFFSET_M)
+        if best is None or score < best[0]:
+            best = (score, (x1, y1, x2, y2))
+    return None if best is None else best[1]
 
 
 def shift_along(dx: float) -> np.ndarray:
@@ -135,11 +205,22 @@ def main():
                                                 <= D_SPAN_MAX):
                 continue
 
-            (cx, cy), _, _ = circle["ellipse"]
-            line = halfway_line(circle["segments"], (cx, cy))
-            direction = (None if line is None
-                         else np.array([line[2] - line[0], line[3] - line[1]],
-                                       dtype=float))
+            # Unrotated first, only to measure how far lines sit from the
+            # arc's centre -- a distance the rotation cannot change.
+            unrotated = pm.metric_from_circle(
+                pm.AT_INFINITY_LINE, circle["ellipse"], None)
+            if unrotated is None:
+                continue
+            chord = find_chord(unrotated, circle["segments"])
+            if chord is None:
+                continue
+
+            # The chord runs across the pitch, parallel to the goal line,
+            # which is the same family as the halfway line -- so it fixes the
+            # rotation in exactly the same way. On a D frame it is also the
+            # only line that can, since nothing passes through the centre.
+            direction = np.array([chord[2] - chord[0], chord[3] - chord[1]],
+                                 dtype=float)
             provisional = pm.metric_from_circle(
                 pm.AT_INFINITY_LINE, circle["ellipse"], direction)
             if provisional is None:

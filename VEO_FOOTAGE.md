@@ -763,3 +763,113 @@ A shot placed a metre out is in roughly the right part of the box; a shot
 placed fifty metres out is at the other end of the pitch, and nothing about
 it announces itself. Anything built on these coordinates needs to survive
 that tail, and none of the four attempts above made a dent in it.
+
+
+## Fixing the tail
+
+The section above ended by naming the tail as the real risk: a quarter to a
+half of anchor pairs disagreeing by more than five metres, worst cases of 20,
+50 and 80, and none of four attempts denting it. Those attempts all treated
+it as a statistical problem -- find the outliers, average them away, refuse
+them. That was the mistake. A fifty-metre error is not a statistical event.
+It is a specific error with a specific cause, and asking *which* cause found
+two of them straight away.
+
+`diagnose_tail.py` applies each mistake the anchor could be making to each
+anchored frame and asks whether the error collapses.
+
+### The penalty D, mistaken for the centre circle
+
+**Twenty-one of the twenty-four frames scoring worse than 5 m come back to
+about 2 m when the map is shifted by exactly 41.5 m along the pitch** --
+52.5 minus 11, the centre spot against the penalty spot. Those frames had
+anchored on the D outside the penalty area instead of the centre circle.
+
+It is an easy mistake and an almost undetectable one. Both arcs are struck at
+9.15 m because both come from the same measurement in the laws of the game,
+so an ellipse fitted to the D has the right scale, a good shape, and a median
+residual of 0.7 px -- identical to the frames that got it right. Everything
+about the fit is sound except which arc it is.
+
+Geometry separates them and nothing else does. The D is only the part of its
+circle lying outside the penalty area: the penalty spot is 11 m from the goal
+line and the area's edge is 16.5, so the chord sits 5.5 m from a 9.15 m
+centre and the arc spans `2·acos(5.5/9.15)` = **106 degrees, never more**.
+The gate was 120 degrees, set as a noise threshold with no idea it was also
+the only thing standing between the centre circle and the D.
+
+    min span   anchors kept   median   p90     over 5 m
+        120d        129/129     1.0m   7.3m         19%
+        180d         78/129     0.7m   3.3m          8%
+        200d         70/129     0.6m   2.1m          4%
+        220d         60/129     0.6m   1.5m          3%
+
+200 degrees, where the tail falls three and a half times *and* the median
+improves -- the sign that what is being refused was wrong rather than merely
+marginal.
+
+Worth recording what did **not** separate them: whether a line passes through
+the circle's centre. The halfway line bisects the centre circle; the D's
+chord misses its centre by 5.5 m, so this ought to be decisive. It is 67%
+against 69%, because `halfway_line` accepts a miss of 22 px, which at these
+scales is wide enough for the chord to pass as a diameter.
+
+### Which way round the pitch is, decided by an array index
+
+A circle is unchanged by turning it through 180 degrees, and so is the
+halfway line, so between them the orientation is ambiguous.
+`metric_from_circle` resolved the remainder with `arctan2` of the halfway
+line's direction vector -- built from a detected segment's two endpoints, in
+whatever order `HoughLinesP` listed them. Reverse the order and the pitch
+turns end for end.
+
+**Nothing caught it because a pitch is exactly symmetric under that
+rotation.** 105 minus each line across it gives back the same seven numbers;
+68 minus each line along it, the same six. A flipped anchor puts every
+marking on a real pitch line, so `marking_error` scores it *identically* --
+as would any check built on distance to the markings, which is every accuracy
+figure in this project.
+
+It is also the error that matters most for what the pipeline is for. A shot
+flipped end for end is attributed to the other goal, and a shot from six
+yards becomes a shot from ninety-nine.
+
+What does see it is comparing two frames to each other: one pair in ten was
+flipped relative to its partner, and those pairs sat **34.5 m apart against
+1.1 m** for the pairs that agreed.
+
+The absolute orientation cannot be recovered from markings -- same symmetry,
+there is no telling one end of a bare pitch from the other -- and does not
+need to be. A clip only has to agree with itself. The camera does not orbit
+the pitch, so requiring that moving *down the image* moves toward increasing
+y pins the choice to something physical and frame-independent.
+`test_pitch_orientation.py` holds it there.
+
+### What the two fixes bought
+
+| | before | after |
+|---|---|---|
+| worst disagreement between two anchors | 80.6 m | **7.6 m** |
+| pairs disagreeing by over 5 m | 27-50% | 0% on three clips of four |
+| median disagreement | 1.3 m | 0.6 m |
+| propagated error, a third of a second | 1.6 m | **0.7 m** |
+| propagated error, eight seconds | 2.0 m | **1.1 m** |
+
+### And what they cost
+
+| clip | anchored | within reach |
+|---|---|---|
+| SoccerNet w1 | 62% -> 42% | 97% -> 77% |
+| SoccerNet w2 | 35% -> 12% | 97% -> 61% |
+| SoccerNet w3 | 40% -> 25% | 85% -> 60% |
+| reading | 35% -> 22% | 83% -> 54% |
+| **Veo** | 30% -> 10% | **68% -> 25%** |
+
+Coverage roughly halved, and worst on the footage the product is for. Veo now
+has too few anchors for two of them to overlap, so the consistency check
+cannot see it at all.
+
+The trade is the right one -- an anchor 41.5 m out is worse than no anchor,
+because nothing about it looks wrong -- but it is not the best available. The
+frames being discarded are not bad frames. They are frames looking at the
+penalty area, which is where shots are.
