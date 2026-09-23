@@ -275,6 +275,12 @@ def penalty_arc_candidate(frame, rng, info):
     chord = pm.penalty_arc_chord(unrotated, circle["segments"])
     if chord is None:
         return None
+    # ... and the arc must lie on one side of it. A diameter bisects its
+    # circle; a chord does not. Without this, a half-hidden centre circle
+    # whose biased centre puts the halfway line 5.5 m away passes as a D and
+    # gets shifted 41.5 m.
+    if not pm.arc_is_one_sided(unrotated, chord, circle["support"]):
+        return None
 
     # The chord runs parallel to the goal line, the same family as the
     # halfway line, so it fixes the rotation the same way -- and it is the

@@ -561,6 +561,52 @@ D_CHORD_TOLERANCE_M = 1.5
 MIN_CHORD_PX = 60.0
 
 
+# A chord cuts its circle; a diameter bisects it. For the D, every point of
+# the arc lies on one side of the penalty-area line. For a centre circle,
+# the halfway line runs through the middle and the arc straddles it.
+ONE_SIDED_FRACTION = 0.92
+
+
+def arc_is_one_sided(homography, chord, support) -> bool:
+    """Does the whole arc lie on one side of this line?
+
+    This is what tells a real D from a centre circle that happens to be
+    half-hidden, and leaving it out is what made the penalty-arc anchors
+    unusable. Distance from the centre was supposed to do the job -- the
+    halfway line passes through the circle's centre, the penalty-area line
+    misses the D's centre by 5.5 m -- but a partial arc gives a biased
+    centre, so a true diameter can measure 5.5 m away from an estimate of
+    where the centre is. Measured, the anchors that resulted sat 30 to 43 m
+    from where neighbouring frames put them, which is the 41.5 m of a centre
+    circle shifted as though it were a D.
+
+    Which side of a line the arc falls on does not depend on the centre at
+    all, so it survives that error.
+    """
+    points = np.column_stack([support, np.ones(len(support))]).T
+    mapped = homography @ points
+    if np.any(np.abs(mapped[2]) < 1e-9):
+        return False
+    mapped = mapped[:2] / mapped[2]
+    if not np.all(np.isfinite(mapped)):
+        return False
+
+    ends = np.array([[chord[0], chord[2]], [chord[1], chord[3]],
+                     [1.0, 1.0]], dtype=float)
+    ends = homography @ ends
+    if np.any(np.abs(ends[2]) < 1e-9):
+        return False
+    ends = ends[:2] / ends[2]
+    line = np.cross([ends[0, 0], ends[1, 0], 1.0],
+                    [ends[0, 1], ends[1, 1], 1.0])
+    norm = np.hypot(line[0], line[1])
+    if norm < 1e-9:
+        return False
+    signed = (line[0] * mapped[0] + line[1] * mapped[1] + line[2]) / norm
+    share = max(float(np.mean(signed > 0.0)), float(np.mean(signed < 0.0)))
+    return share >= ONE_SIDED_FRACTION
+
+
 def penalty_arc_chord(homography, segments):
     """The straight line sitting where the D's chord must sit.
 
