@@ -139,9 +139,12 @@ def main():
 
         counts = np.bincount(train_labels, minlength=CLASSES).astype(
             np.float32)
+        # Cast explicitly: np.where against a Python float promotes the
+        # whole thing to float64, and cross_entropy will not take a double
+        # weight beside float activations.
         weight = torch.from_numpy(
-            np.where(counts > 0, counts.sum() / np.maximum(counts, 1), 0.0)
-            / max(1, (counts > 0).sum()))
+            (np.where(counts > 0, counts.sum() / np.maximum(counts, 1), 0.0)
+             / max(1, (counts > 0).sum())).astype(np.float32))
 
         model = Small()
         optimiser = torch.optim.Adam(model.parameters(), lr=3e-3)
