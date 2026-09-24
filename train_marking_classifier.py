@@ -114,6 +114,9 @@ def main():
     ap.add_argument("--epochs", type=int, default=12)
     ap.add_argument("--hold-out", default=None,
                     help="clip to keep back; default is each in turn")
+    ap.add_argument("--binary", action="store_true",
+                    help="centre circle against penalty arc only, balanced, "
+                         "which is the one distinction this exists for")
     args = ap.parse_args()
     torch.manual_seed(0)
     torch.set_num_threads(4)
@@ -122,6 +125,31 @@ def main():
     if not data:
         print("no crops found -- run build_marking_crops.py first")
         return
+
+    if args.binary:
+        # Nine classes with this much imbalance can hide the only question
+        # that matters. Reduced to centre circle against penalty arc, with
+        # the two balanced by subsampling, chance is exactly 50% and there is
+        # nowhere for a majority class to hide.
+        circle = pm.MARKING_CLASS_INDEX["centre circle"]
+        arc = pm.MARKING_CLASS_INDEX["penalty arc"]
+        picker = np.random.default_rng(0)
+        reduced = {}
+        for name, (crops, labels) in data.items():
+            keep = np.isin(labels, (circle, arc))
+            crops, labels = crops[keep], labels[keep]
+            if len(np.unique(labels)) < 2:
+                continue
+            smallest = min((labels == value).sum() for value in (circle, arc))
+            chosen = np.concatenate([
+                picker.choice(np.flatnonzero(labels == value), smallest,
+                              replace=False) for value in (circle, arc)])
+            reduced[name] = (crops[chosen],
+                             (labels[chosen] == arc).astype(np.int64))
+        data = reduced
+        if not data:
+            print("no clip has both classes")
+            return
     print("Held out by clip. The floor is naming the commonest class every "
           "time.\n")
     print(f"  {'held out':>14s} {'train':>7s} {'test':>6s} {'accuracy':>9s} "
@@ -137,8 +165,8 @@ def main():
         images, labels = as_tensors(train_crops, train_labels, flip=True)
         test_images, test_labels = as_tensors(*data[held])
 
-        counts = np.bincount(train_labels, minlength=CLASSES).astype(
-            np.float32)
+        width = 2 if args.binary else CLASSES
+        counts = np.bincount(train_labels, minlength=width).astype(np.float32)
         # Cast explicitly: np.where against a Python float promotes the
         # whole thing to float64, and cross_entropy will not take a double
         # weight beside float activations.
@@ -146,7 +174,7 @@ def main():
             (np.where(counts > 0, counts.sum() / np.maximum(counts, 1), 0.0)
              / max(1, (counts > 0).sum())).astype(np.float32))
 
-        model = Small()
+        model = Small(2 if args.binary else CLASSES)
         optimiser = torch.optim.Adam(model.parameters(), lr=3e-3)
         for _ in range(args.epochs):
             model.train()
@@ -158,6 +186,22 @@ def main():
                                        weight=weight)
                 loss.backward()
                 optimiser.step()
+
+        if args.binary:
+            model.eval()
+            with torch.no_grad():
+                guess = model(test_images).argmax(1).numpy()
+            truth = test_labels.numpy()
+            overall = float((guess == truth).mean())
+            circle_right = float((guess[truth == 0] == 0).mean())
+            arc_right = float((guess[truth == 1] == 1).mean())
+            print(f"  {held:>14s} {len(images):7d} {len(test_images):6d} "
+                  f"{overall:8.0%} {'':8s} {0.5:8.0%} "
+                  f"{circle_right:7.0%} {arc_right:7.0%}")
+            summary.append((held, overall, float("nan"), 0.5,
+                            (circle_right, int((truth == 0).sum())),
+                            (arc_right, int((truth == 1).sum()))))
+            continue
 
         overall, balanced, majority, per_class, _, _ = evaluate(
             model, test_images, test_labels)
