@@ -115,10 +115,11 @@ def pooled_arc(images, target, rng, gaps=NEIGHBOUR_GAPS):
             used += 1
 
     pooled = np.vstack(points)
+    grew = len(pooled) / max(len(points[0]), 1)
     if len(pooled) > MAX_POOLED_PIXELS:
         pooled = pooled[rng.choice(len(pooled), MAX_POOLED_PIXELS,
                                    replace=False)]
-    return fit_arc(pooled, rng, min_span_deg=1.0), used
+    return fit_arc(pooled, rng, min_span_deg=1.0), used, grew
 
 
 def label_from_neighbour(target, centre_px, images, anchors, info):
@@ -222,7 +223,7 @@ def main():
                                 min_span_deg=AMBIGUOUS_SPAN_MIN)
             if alone is None:
                 continue
-            pooled, used = pooled_arc(images, target, rng)
+            pooled, used, grew = pooled_arc(images, target, rng)
             if pooled is None or used == 0:
                 continue
             truth = label_from_neighbour(target, alone["ellipse"][0],
@@ -230,6 +231,10 @@ def main():
             here.append({
                 "alone": alone["span_deg"] if alone else float("nan"),
                 "pooled": pooled["span_deg"],
+                "alone_residual": alone["residual_px"] if alone else np.nan,
+                "pooled_residual": pooled["residual_px"],
+                "neighbours": used,
+                "grew": grew,
                 "label": truth,
             })
 
