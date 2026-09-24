@@ -69,8 +69,26 @@ from src import pitch_model as pm
 # enough to contain the context that distinguishes the classes -- a penalty
 # arc with the box beside it, a touchline with grass on one side only -- and
 # small enough to train on four CPU threads.
-CROP_PX = 160
-CROP_OUT = 48
+# How much PITCH a crop covers, in metres, rather than how many pixels.
+#
+# A fixed pixel size is a different physical footprint on every clip, and
+# that is a real defect rather than a detail. At roughly 20 px/m on 720p
+# broadcast the old 160 px crop covered about 8 m; on Veo at 35 px/m it
+# covered under 5. So the classifier was shown the same marking at wildly
+# different scales and, held out on Veo, recognised not one centre circle.
+#
+# It also has to be large enough to contain what separates the classes. A
+# penalty arc is identifiable because the penalty-area line cuts it 5.5 m
+# from its centre and the box, six-yard box and goal lie beyond that; a
+# centre circle has open grass and a halfway line. Seeing only 8 m of pitch
+# around an arc pixel may not reach any of it. Twenty-four metres does, with
+# room to spare, and the anchor already knows how many pixels that is.
+FOOTPRINT_M = 24.0
+CROP_OUT = 64
+
+# Guard rails, in pixels, for when the anchor's local scale is nonsense.
+MIN_CROP_PX = 48
+MAX_CROP_PX = 900
 
 # A detected pixel is labelled only if it lands this close to a marking in
 # the model. Comfortably above the anchors' 0.7 m agreement and comfortably
@@ -90,15 +108,42 @@ BORROW_REACH = 150
 OUT_DIR = Path("marking_crops")
 
 
-def crop_at(frame, x, y):
-    """A square of the picture about a point, padded at the edges."""
-    half = CROP_PX // 2
-    x0, y0 = int(x) - half, int(y) - half
+def pixels_per_metre(homography, x, y):
+    """How many pixels a metre of pitch covers, here in this frame.
+
+    The homography maps image to pitch, so its Jacobian at a point gives
+    metres per pixel; the square root of its determinant is the area scale,
+    and one over that is pixels per metre. Taken locally rather than once
+    per frame because perspective makes a metre near the camera many more
+    pixels than a metre at the far touchline.
+    """
+    step = 1.0
+    here = np.array([[x, x + step, x], [y, y, y + step], [1.0, 1.0, 1.0]])
+    mapped = homography @ here
+    if np.any(np.abs(mapped[2]) < 1e-9):
+        return None
+    mapped = mapped[:2] / mapped[2]
+    if not np.all(np.isfinite(mapped)):
+        return None
+    jacobian = np.column_stack([mapped[:, 1] - mapped[:, 0],
+                                mapped[:, 2] - mapped[:, 0]]) / step
+    area = abs(float(np.linalg.det(jacobian)))
+    if area < 1e-12:
+        return None
+    return 1.0 / np.sqrt(area)
+
+
+def crop_at(frame, x, y, scale, footprint_m=FOOTPRINT_M):
+    """A fixed number of METRES of pitch about a point, squashed to a square."""
+    size = int(round(footprint_m * scale))
+    if not (MIN_CROP_PX <= size <= MAX_CROP_PX):
+        return None
+    half = size // 2
     patch = cv2.copyMakeBorder(frame, half, half, half, half,
                                cv2.BORDER_REPLICATE)
-    patch = patch[y0 + half:y0 + half + CROP_PX,
-                  x0 + half:x0 + half + CROP_PX]
-    if patch.shape[:2] != (CROP_PX, CROP_PX):
+    x0, y0 = int(x), int(y)
+    patch = patch[y0:y0 + 2 * half, x0:x0 + 2 * half]
+    if patch.shape[0] < 4 or patch.shape[1] < 4:
         return None
     return cv2.resize(patch, (CROP_OUT, CROP_OUT),
                       interpolation=cv2.INTER_AREA)
@@ -126,6 +171,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=120)
     ap.add_argument("--per-frame", type=int, default=60)
+    ap.add_argument("--footprint-m", type=float, default=FOOTPRINT_M,
+                    help="metres of pitch a crop covers")
     args = ap.parse_args()
     rng = np.random.default_rng(0)
 
@@ -215,7 +262,10 @@ def main():
             for x, y, kind in zip(xs, ys, kinds):
                 if kind == 0:
                     continue          # detected, but not a modelled marking
-                patch = crop_at(frame, x, y)
+                scale = pixels_per_metre(homography, x, y)
+                if scale is None:
+                    continue
+                patch = crop_at(frame, x, y, scale, args.footprint_m)
                 if patch is None:
                     continue
                 crops.append(patch)
