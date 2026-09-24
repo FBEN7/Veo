@@ -167,6 +167,9 @@ def main():
     ap.add_argument("--epochs", type=int, default=12)
     ap.add_argument("--hold-out", default=None,
                     help="clip to keep back; default is each in turn")
+    ap.add_argument("--seeds", type=int, default=1,
+                    help="repeat each fold with different initialisations; "
+                         "reported as a mean and a spread, never selected on")
     ap.add_argument("--binary", action="store_true",
                     help="centre circle against penalty arc only, balanced, "
                          "which is the one distinction this exists for")
@@ -227,18 +230,40 @@ def main():
             (np.where(counts > 0, counts.sum() / np.maximum(counts, 1), 0.0)
              / max(1, (counts > 0).sum())).astype(np.float32))
 
-        model = Small(2 if args.binary else CLASSES)
-        optimiser = torch.optim.Adam(model.parameters(), lr=3e-3)
-        for _ in range(args.epochs):
-            model.train()
-            shuffle = torch.randperm(len(images))
-            for start in range(0, len(images), 128):
-                batch = shuffle[start:start + 128]
-                optimiser.zero_grad()
-                loss = F.cross_entropy(model(images[batch]), labels[batch],
-                                       weight=weight)
-                loss.backward()
-                optimiser.step()
+        runs = []
+        for seed in range(args.seeds):
+            torch.manual_seed(seed)
+            model = Small(2 if args.binary else CLASSES)
+            optimiser = torch.optim.Adam(model.parameters(), lr=3e-3)
+            for _ in range(args.epochs):
+                model.train()
+                shuffle = torch.randperm(len(images))
+                for start in range(0, len(images), 128):
+                    batch = shuffle[start:start + 128]
+                    optimiser.zero_grad()
+                    loss = F.cross_entropy(model(images[batch]),
+                                           labels[batch], weight=weight)
+                    loss.backward()
+                    optimiser.step()
+            runs.append(model)
+
+        # Every seed is reported. Picking the best on the held-out clip would
+        # be choosing a model by the answer, which is the thing this whole
+        # file exists to avoid.
+        if args.seeds > 1 and args.binary:
+            scores = []
+            for candidate in runs:
+                candidate.eval()
+                with torch.no_grad():
+                    guess = candidate(test_images).argmax(1).numpy()
+                scores.append(float((guess == test_labels.numpy()).mean()))
+            print(f"  {held:>14s} {len(images):7d} {len(test_images):6d} "
+                  f"{np.mean(scores):8.0%} {'':8s} {0.5:8.0%} "
+                  f"  seeds " + " ".join(f"{s:.0%}" for s in scores))
+            summary.append((held, float(np.mean(scores)), float("nan"), 0.5,
+                            (float("nan"), 0), (float("nan"), 0)))
+            continue
+        model = runs[0]
 
         if args.binary:
             model.eval()
