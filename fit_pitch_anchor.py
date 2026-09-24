@@ -95,6 +95,11 @@ from probe_pitch_lines import CLIPS, line_segments
 from src import marking_model, pitch_model as pm
 import probe_vanishing_points as vp
 
+# How much of a circle an arc may span and still be offered to the
+# classifier. Above this it is a centre circle by inspection and no
+# classifier should be asked to say otherwise.
+CLASSIFIED_SPAN_MAX = 200.0
+
 # A segment is taken for the halfway line when its line passes this close to
 # the centre of the circle, in pixels. The halfway line is a diameter, so it
 # runs through the centre exactly; the tolerance is for detection noise.
@@ -264,7 +269,12 @@ def penalty_arc_candidate(frame, rng, info, classifier=None):
     circle = find_circle(frame, rng, min_span_deg=pm.D_SPAN_MIN)
     if circle is None:
         return None
-    if not (pm.D_SPAN_MIN <= circle["span_deg"] <= pm.D_SPAN_MAX):
+    # The span ceiling exists to keep centre circles out, and with a
+    # classifier in play that is the classifier's job -- it is the only test
+    # here that can actually do it. Widened rather than removed, because an
+    # arc spanning most of a circle is a circle whatever anything says.
+    ceiling = pm.D_SPAN_MAX if classifier is None else CLASSIFIED_SPAN_MAX
+    if not (pm.D_SPAN_MIN <= circle["span_deg"] <= ceiling):
         return None
 
     # Unrotated only to measure how far lines sit from the arc's centre,
@@ -279,7 +289,12 @@ def penalty_arc_candidate(frame, rng, info, classifier=None):
     # circle; a chord does not. Without this, a half-hidden centre circle
     # whose biased centre puts the halfway line 5.5 m away passes as a D and
     # gets shifted 41.5 m.
-    if not pm.arc_is_one_sided(unrotated, chord, circle["support"]):
+    # The one-sided test is a proxy for "this is not a centre circle", and a
+    # poor one: it passed 7 arcs of 21 and the survivors were still 42 m out.
+    # Where the classifier can answer that question directly, it does, and
+    # this stops being worth failing a frame over.
+    if classifier is None and not pm.arc_is_one_sided(unrotated, chord,
+                                                      circle["support"]):
         return None
 
     # Then, if there is a trained classifier, what the picture says. This is
