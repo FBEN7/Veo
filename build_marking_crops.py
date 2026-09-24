@@ -59,9 +59,10 @@ import cv2
 import numpy as np
 from scipy.spatial import cKDTree
 
-from fit_pitch_anchor import anchored_frames
+from fit_pitch_anchor import anchored_frames, plausible_anchor
 from probe_centre_circle import marking_pixels
 from probe_pitch_lines import CLIPS
+from propagate_anchor import frame_to_frame
 from src import pitch_model as pm
 
 # How much of the picture a crop covers, and what it is squashed to. Big
@@ -79,6 +80,12 @@ LABEL_TOLERANCE_M = 1.5
 # Crops are taken from the lower part of the frame, which is where the
 # ground is; above that is stands, and a ground-plane map means nothing.
 SKY_FRACTION = 0.45
+
+# How far an anchor is carried to label a frame it does not own. The
+# propagation measurement puts a borrow at 0.7 m at a third of a second and
+# 1.1 m at eight seconds, against a 5.5 m gap between the closest markings,
+# so the identity it hands over is safe well past this.
+BORROW_REACH = 150
 
 OUT_DIR = Path("marking_crops")
 
@@ -128,7 +135,7 @@ def main():
     OUT_DIR.mkdir(exist_ok=True)
     print("Marking crops, labelled by the frames that already carry a "
           "trusted anchor.\n")
-    print(f"  {'clip':>14s} {'anchored':>9s} {'crops':>7s} {'labelled':>9s} "
+    print(f"  {'clip':>14s} {'own+lent':>9s} {'crops':>7s} {'labelled':>9s} "
           f"{'classes seen':>13s}")
 
     totals = np.zeros(len(pm.MARKING_CLASSES), dtype=np.int64)
@@ -142,13 +149,57 @@ def main():
             print(f"  {name:>14s} {0:9d}")
             continue
 
+        # Labelling only the anchored frames teaches only midfield. A
+        # confident anchor needs a centre circle, a centre circle is at
+        # midfield, so those frames contain the halfway line, the circle and
+        # occasionally a touchline -- and never a penalty area. The first
+        # run of this produced 3439 centre-circle crops and not one penalty
+        # arc, which is the very class the whole exercise is for.
+        #
+        # Borrowed anchors do not have that problem. They are good to 0.7 m
+        # at a third of a second and 1.1 m at eight, and they reach the
+        # frames the camera has moved on to -- which is where the boxes are.
         cap = cv2.VideoCapture(info["path"])
-        crops, targets, frames_used = [], [], []
-        offered = 0
-        for index, homography in anchors:
+        total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        owned = {index: homography for index, homography in anchors}
+        sources = {index: None for index in owned}
+        wanted = sorted({int(i) for i in
+                         np.linspace(0, total - 1, args.frames)}
+                        | set(owned))
+
+        images = {}
+        for index in wanted:
             cap.set(cv2.CAP_PROP_POS_FRAMES, index)
             ok, frame = cap.read()
-            if not ok:
+            if ok:
+                images[index] = frame
+
+        labelled_maps = dict(owned)
+        for index in wanted:
+            if index in labelled_maps or index not in images:
+                continue
+            near = min((i for i in owned if abs(i - index) <= BORROW_REACH
+                        and i in images),
+                       key=lambda i: abs(i - index), default=None)
+            if near is None:
+                continue
+            warp, _ = frame_to_frame(images[near], images[index])
+            if warp is None:
+                continue
+            try:
+                carried = owned[near] @ np.linalg.inv(warp)
+            except np.linalg.LinAlgError:
+                continue
+            if plausible_anchor(carried, info):
+                labelled_maps[index] = carried
+                sources[index] = near
+
+        crops, targets, frames_used = [], [], []
+        offered = 0
+        for index in sorted(labelled_maps):
+            homography = labelled_maps[index]
+            frame = images.get(index)
+            if frame is None:
                 continue
             mask = marking_pixels(frame)
             mask[:int(frame.shape[0] * SKY_FRACTION)] = 0
@@ -182,8 +233,8 @@ def main():
             frames=np.asarray(frames_used), clip=name)
         counts = np.bincount(targets, minlength=len(pm.MARKING_CLASSES))
         totals += counts
-        print(f"  {name:>14s} {len(anchors):9d} {len(crops):7d} "
-              f"{len(crops) / max(offered, 1):8.0%} "
+        print(f"  {name:>14s} {len(anchors):4d}+{len(labelled_maps) - len(anchors):<4d} "
+              f"{len(crops):7d} {len(crops) / max(offered, 1):8.0%} "
               f"{int((counts > 0).sum()):13d}")
 
     print(f"\n  {'class':>20s} {'crops':>8s}")
