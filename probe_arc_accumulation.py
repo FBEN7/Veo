@@ -288,6 +288,22 @@ def main():
         print(f"\n  Pooled span at {threshold} degrees separates them on "
               f"{correct}/{usable} labelled frames ({correct / usable:.0%}).")
 
+    # Did pooling fail because the warps smear the arc, or because the
+    # neighbours were showing the same part of it? The residual says which.
+    for key, title in (("alone_residual", "residual alone"),
+                       ("pooled_residual", "residual pooled")):
+        values = [row[key] for row in rows if np.isfinite(row[key])]
+        if values:
+            print(f"  {title:>16s} {np.median(values):6.2f} px")
+    grew = [row["grew"] for row in rows if np.isfinite(row["grew"])]
+    if grew:
+        used = [row["neighbours"] for row in rows]
+        print(f"  {'pixels pooled':>16s} {np.median(grew):6.1f}x, from "
+              f"{np.median(used):.0f} neighbours")
+    print("\n  A pooled residual much worse than the one alone means the "
+          "warps are smearing\n  the arc rather than completing it. One that "
+          "holds means the neighbours had\n  nothing new to show.\n")
+
     print("\n  The pooled span has to beat the span alone, and by enough to "
           "be worth\n  the warps. A D that stays near 106 degrees however "
           "many frames are added\n  is a D; a circle that opens out was "
