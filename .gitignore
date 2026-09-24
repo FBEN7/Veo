@@ -19,3 +19,8 @@ pass_threshold_sweep.json
 merge_window_sweep.json
 carry_threshold_sweep.json
 output_veo/
+
+# Training crops: four of five clips are SoccerNet, whose terms are
+# non-commercial and no-redistribution. Nothing derived from them is
+# committed; only fitted parameters ever leave this directory.
+marking_crops/

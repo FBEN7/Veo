@@ -56,6 +56,7 @@ GOAL_WIDTH_M = 7.32
 PENALTY_AREA_DEPTH_M = 16.5
 PENALTY_AREA_WIDTH_M = 40.32
 SIX_YARD_DEPTH_M = 5.5
+PENALTY_SPOT_DEPTH_M = 11.0
 SIX_YARD_WIDTH_M = 18.32
 CENTRE_CIRCLE_R_M = 9.15
 
@@ -121,6 +122,105 @@ def model_lines() -> list[tuple[float, float, float, float]]:
     lines += [(xs[i], ys[i], xs[i + 1], ys[i + 1])
               for i in range(len(angles) - 1)]
     return lines
+
+
+# The markings, as kinds rather than as places.
+#
+# Deliberately symmetric: a "goal line", never a "left goal line". A football
+# pitch is exactly symmetric end for end, which has defeated several attempts
+# in this project to tell one end from the other, so a classifier asked to
+# name ends would be asked for something the image cannot contain. Asked only
+# what KIND of marking it is looking at, the symmetry stops being a problem
+# and becomes the reason the classes are clean: both touchlines look alike
+# because they are alike.
+#
+# The distinction this exists for is the last two. A centre circle and a
+# penalty arc have the same 9.15 m radius, the same residual and, when the
+# circle is half hidden, the same span -- no geometric test in this project
+# has separated them. They do not look the same, though: one sits in open
+# grass with a line through its middle, the other sits against a penalty box.
+MARKING_CLASSES = (
+    "background",
+    "touchline",
+    "goal line",
+    "halfway line",
+    "penalty area edge",
+    "penalty area side",
+    "goal area edge",
+    "goal area side",
+    "centre circle",
+    "penalty arc",
+)
+MARKING_CLASS_INDEX = {name: i for i, name in enumerate(MARKING_CLASSES)}
+
+# How finely each marking is sampled when building the label lookup.
+MODEL_SAMPLE_M = 0.25
+
+
+def _sample(x1, y1, x2, y2, step=MODEL_SAMPLE_M):
+    length = float(np.hypot(x2 - x1, y2 - y1))
+    count = max(2, int(length / step) + 1)
+    return np.column_stack([np.linspace(x1, x2, count),
+                            np.linspace(y1, y2, count)])
+
+
+def labelled_model_points():
+    """Every marking on the pitch as points, each carrying its kind.
+
+    Includes the penalty arcs, which `model_lines` leaves out -- they are the
+    reason this exists.
+    """
+    L, W = PITCH_LENGTH_M, PITCH_WIDTH_M
+    mid_y = W / 2.0
+    pa_half, sy_half = PENALTY_AREA_WIDTH_M / 2.0, SIX_YARD_WIDTH_M / 2.0
+
+    pieces = [
+        (_sample(0.0, 0.0, L, 0.0), "touchline"),
+        (_sample(0.0, W, L, W), "touchline"),
+        (_sample(0.0, 0.0, 0.0, W), "goal line"),
+        (_sample(L, 0.0, L, W), "goal line"),
+        (_sample(L / 2, 0.0, L / 2, W), "halfway line"),
+    ]
+    for near, sign in ((0.0, 1.0), (L, -1.0)):
+        d = PENALTY_AREA_DEPTH_M * sign
+        s = SIX_YARD_DEPTH_M * sign
+        pieces += [
+            (_sample(near, mid_y - pa_half, near + d, mid_y - pa_half),
+             "penalty area side"),
+            (_sample(near, mid_y + pa_half, near + d, mid_y + pa_half),
+             "penalty area side"),
+            (_sample(near + d, mid_y - pa_half, near + d, mid_y + pa_half),
+             "penalty area edge"),
+            (_sample(near, mid_y - sy_half, near + s, mid_y - sy_half),
+             "goal area side"),
+            (_sample(near, mid_y + sy_half, near + s, mid_y + sy_half),
+             "goal area side"),
+            (_sample(near + s, mid_y - sy_half, near + s, mid_y + sy_half),
+             "goal area edge"),
+        ]
+
+        # The D: the part of a 9.15 m circle about the penalty spot that
+        # lies outside the penalty area, which is 2*acos(5.5/9.15) of it.
+        spot_x = near + PENALTY_SPOT_DEPTH_M * sign
+        # The arc runs from where the penalty-area line cuts the circle,
+        # which is (16.5 - 11) = 5.5 m from the spot, round the outside.
+        half = np.arccos((PENALTY_AREA_DEPTH_M - PENALTY_SPOT_DEPTH_M)
+                         / CENTRE_CIRCLE_R_M)
+        angles = np.linspace(-half, half, 40)
+        pieces.append((np.column_stack([
+            spot_x + sign * CENTRE_CIRCLE_R_M * np.cos(angles),
+            mid_y + CENTRE_CIRCLE_R_M * np.sin(angles)]), "penalty arc"))
+
+    angles = np.linspace(0.0, 2 * np.pi, 160)
+    pieces.append((np.column_stack([
+        L / 2 + CENTRE_CIRCLE_R_M * np.cos(angles),
+        mid_y + CENTRE_CIRCLE_R_M * np.sin(angles)]), "centre circle"))
+
+    points = np.vstack([piece for piece, _ in pieces])
+    labels = np.concatenate([
+        np.full(len(piece), MARKING_CLASS_INDEX[name], dtype=np.int64)
+        for piece, name in pieces])
+    return points, labels
 
 
 def distance_field(resolution_m: float = FIELD_RESOLUTION_M,
