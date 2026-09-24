@@ -41,6 +41,21 @@ every geometric attempt becomes learnable. Balanced, so chance is 50%:
     w3               50%          98%
     mean             55%          74%
 
+Repeating each fold with four initialisations, reporting every one:
+
+    held out   seed 0   seed 1   seed 2   seed 3
+    w1            98%      97%     100%      99%
+    w3            98%     100%      97%      51%
+    w2            52%      53%      84%      50%
+    reading       52%      50%      50%      50%
+
+That separates instability from inability, and the answer is both. On w1 it
+works on every seed and works nearly perfectly, which is what a real signal
+looks like rather than a lucky draw. On w3 it works on three seeds of four.
+On w2 it mostly collapses and once reaches 84%. On reading it never leaves
+chance.
+
+So the distinction is learnable and does not yet transfer to every clip.
 Two folds near perfect is the finding. A centre circle and a penalty arc are
 separable from the picture, and the missing ingredient was context: 9 m
 around an arc pixel does not reach the penalty-area line that cuts it, and

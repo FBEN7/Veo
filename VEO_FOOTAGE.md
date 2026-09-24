@@ -1065,3 +1065,84 @@ trying a fourth mechanism.
 
 `use_penalty_arc` stays off. What ships is unchanged: circle-circle anchors
 agreeing to 0.7 m, worst case 7.5 m, nothing past 20 m.
+
+
+## A detector for the markings
+
+Six attempts to separate a centre circle from a penalty arc by geometry have
+failed, and the last section concluded that the only evidence never tried
+was the picture itself. So: train something.
+
+### The labels are already there
+
+Where a frame carries a trusted anchor, the pitch model says where every
+marking should appear, so each *detected* marking pixel can be handed the
+identity of the model marking it lands on. The anchor supplies identity, the
+detector supplies position, and neither is asked for what it is bad at --
+which matters, because 0.7 m of anchor error is about 25 px against a 12 cm
+marking, so labels drawn by projecting the model would sit well off the real
+paint. Identity assigned to pixels that were detected is immune to that,
+given the closest pair of markings is 5.5 m apart.
+
+Classes are symmetric on purpose: "goal line", never "left goal line". The
+end-for-end symmetry that defeated every attempt to name *ends* becomes,
+here, the reason the classes are clean and horizontal flips are free
+training data.
+
+**One trap, caught by the output.** Labelling only frames that own an anchor
+produced 3439 centre circles, 2457 halfway lines and zero penalty arcs --
+the class the whole exercise is for. That is circular: an anchor needs a
+centre circle, a centre circle is at midfield, so anchored frames never show
+a penalty area. Labelling from *borrowed* anchors as well, which are good to
+0.7-1.1 m and reach where the camera went, took penalty arcs from 0 to 217.
+
+### Crop size decides it, and differently for each question
+
+| held out | 9 m crops | 24 m crops |
+|---|---|---|
+| SoccerNet w1 | 72% | **98%** |
+| SoccerNet w3 | 50% | **98%** |
+| SoccerNet w2 | 50% | 50% |
+| reading | 50% | 50% |
+| mean | 55% | **74%** |
+
+Balanced, so chance is exactly 50%, and held out by clip -- crops from one
+clip share a pitch, a camera and a colour grade, so testing within a clip
+asks whether a picture already seen can be recognised.
+
+A fixed *pixel* crop was itself a defect: at 17 px/m on broadcast the old
+160 px covered 9 m, on Veo at 35 px/m under 5, so the same marking was shown
+at wildly different scales. Crops now cover a fixed 24 m of pitch, which the
+anchor's own Jacobian converts to pixels, so every clip presents a marking at
+one physical scale whatever its resolution.
+
+Nine metres does not reach the penalty-area line that cuts an arc 5.5 m from
+its centre. Twenty-four metres does, and that is the whole difference.
+
+The same change makes the nine-class problem *worse*, 61% to 50% against a
+60% floor -- a 24 m crop centred on a touchline pixel holds a lot that is
+not the touchline. Circle-against-arc is a question about surroundings;
+"which line is this" is a question about the thing itself. One classifier at
+one scale for both was the wrong shape.
+
+### How far to trust it
+
+Four initialisations per fold, every one reported:
+
+    held out   seed 0   seed 1   seed 2   seed 3
+    w1            98%      97%     100%      99%
+    w3            98%     100%      97%      51%
+    w2            52%      53%      84%      50%
+    reading       52%      50%      50%      50%
+
+Learnable, and not yet general. On w1 every seed lands near perfect, which
+is a real signal rather than a lucky draw; on reading no seed leaves chance.
+With 217 penalty arcs in total and about 350 examples a class once balanced,
+that is roughly what should be expected -- and it is the first positive
+result this problem has produced after six geometric attempts.
+
+**It is not wired into the anchor and should not be until it is stable.**
+What would stabilise it is more footage, and for the product that means more
+Veo: four of the five clips are SoccerNet, whose terms are non-commercial
+and no-redistribution, so nothing learned from them can ship, and this Veo
+clip yields zero penalty arcs of its own.
