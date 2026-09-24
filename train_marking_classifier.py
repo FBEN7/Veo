@@ -29,7 +29,33 @@ touchline -- so mirroring a crop gives another honest training example. That
 is the same symmetry that made every attempt to name *ends* of the pitch
 fail, finally being useful rather than fatal.
 
-## Measured: it does not work, and the constraint is data
+## Crop size decides this, and it decides it differently per question
+
+With 24 m of pitch per crop instead of 9, the distinction that defeated
+every geometric attempt becomes learnable. Balanced, so chance is 50%:
+
+    held out   9 m crops   24 m crops
+    w1               72%          98%
+    reading          50%          50%
+    w2               50%          50%
+    w3               50%          98%
+    mean             55%          74%
+
+Two folds near perfect is the finding. A centre circle and a penalty arc are
+separable from the picture, and the missing ingredient was context: 9 m
+around an arc pixel does not reach the penalty-area line that cuts it, and
+24 m does. The other two folds collapse to naming one class for every input.
+
+The same change makes the NINE-class problem worse, 61% to 50% against a 60%
+floor. That is not a contradiction. A 24 m crop centred on a touchline pixel
+contains a great deal that is not the touchline, so a fine-grained "which
+line is this" gets diluted, while circle-against-arc is entirely a question
+about surroundings. The right footprint depends on the question, and one
+classifier for both was the wrong shape.
+
+## What was measured before, at 9 m
+
+
 
 Nine classes, held out by clip:
 
