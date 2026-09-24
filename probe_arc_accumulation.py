@@ -78,11 +78,15 @@ NEIGHBOUR_GAPS = (8, 25, 50, 100)
 MAX_POOLED_PIXELS = 6000
 
 # A neighbour anchor has to be this close to be trusted as a label.
-LABEL_MAX_GAP = 150
+LABEL_MAX_GAP = 200
 
-# How much closer one candidate must be than the other before the label is
-# called. A pair that splits the difference says nothing.
-LABEL_MARGIN_M = 8.0
+# An arc centre this far from one of the three candidate positions is not
+# called either way. The candidates are 41.5 m apart, so this is generous.
+LABEL_TOLERANCE_M = 14.0
+
+# The widest arc treated as ambiguous. Anything below this is too little to
+# fit; anything at or above MIN_ARC_SPAN_DEG was never in doubt.
+AMBIGUOUS_SPAN_MIN = 60.0
 
 
 def pooled_arc(images, target, rng, gaps=NEIGHBOUR_GAPS):
@@ -117,37 +121,54 @@ def pooled_arc(images, target, rng, gaps=NEIGHBOUR_GAPS):
     return fit_arc(pooled, rng, min_span_deg=1.0), used
 
 
-def label_from_neighbour(target, provisional, images, anchors, info):
-    """Which reading a confidently anchored neighbour supports."""
-    as_circle = provisional
-    candidates = [(spot, pm.shift_along(spot - pm.PITCH_CENTRE_M[0])
-                   @ provisional) for spot in pm.PENALTY_SPOTS_M]
+def label_from_neighbour(target, centre_px, images, anchors, info):
+    """What a confidently anchored neighbour says this arc's centre is.
 
+    Simpler than asking which *reading* of the arc the neighbour supports,
+    and it needs nothing from the arc but where its middle is. Carry the
+    neighbour's map onto this frame through the measured warp, put the arc's
+    centre through it, and see where on the pitch it lands. The centre spot
+    and the two penalty spots are 41.5 m apart, so there is no difficulty
+    telling which it is near.
+
+    The first version of this compared two candidate maps instead, which
+    needed the arc's own rotation -- and on an ambiguous arc that rotation
+    is exactly what is not available. It labelled two frames out of twelve.
+    """
     best = None
     for index, homography in anchors.items():
         if abs(index - target) > LABEL_MAX_GAP or index not in images:
             continue
+        if best is not None and abs(index - target) >= best[0]:
+            continue
         warp, _ = frame_to_frame(images[index], images[target])
         if warp is None:
             continue
-        circle_gap = disagreement(homography, as_circle, warp,
-                                  info["width"], info["height"])
-        arc_gap = min(
-            (disagreement(homography, candidate, warp,
-                          info["width"], info["height"])
-             for _, candidate in candidates),
-            default=float("nan"))
-        if not (np.isfinite(circle_gap) and np.isfinite(arc_gap)):
+        try:
+            carried = homography @ np.linalg.inv(warp)
+        except np.linalg.LinAlgError:
             continue
-        if best is None or abs(index - target) < best[0]:
-            best = (abs(index - target), circle_gap, arc_gap)
+        mapped = carried @ np.array([centre_px[0], centre_px[1], 1.0])
+        if abs(mapped[2]) < 1e-9:
+            continue
+        where = mapped[:2] / mapped[2]
+        if not np.all(np.isfinite(where)):
+            continue
+        best = (abs(index - target), where)
 
     if best is None:
         return None
-    _, circle_gap, arc_gap = best
-    if abs(circle_gap - arc_gap) < LABEL_MARGIN_M:
+    where = best[1]
+    named = {"circle": np.array(pm.PITCH_CENTRE_M),
+             "penalty_arc": None}
+    to_centre = float(np.linalg.norm(where - named["circle"]))
+    to_spot = min(float(np.hypot(where[0] - spot, where[1] - 34.0))
+                  for spot in pm.PENALTY_SPOTS_M)
+    if min(to_centre, to_spot) > LABEL_TOLERANCE_M:
+        return None                       # near neither; say nothing
+    if abs(to_centre - to_spot) < 5.0:
         return None                       # too close to call
-    return "circle" if circle_gap < arc_gap else "penalty_arc"
+    return "circle" if to_centre < to_spot else "penalty_arc"
 
 
 def main():
@@ -193,19 +214,19 @@ def main():
                 continue
             if find_circle(images[target], rng) is not None:
                 continue                  # unambiguous already
-            candidate = penalty_arc_candidate(images[target], rng, info)
-            if candidate is None:
-                continue
-            provisional, support = candidate
-            if not plausible_anchor(provisional, info):
-                continue
+            # Any arc big enough to fit at all. Narrowing this to the frames
+            # that already pass the chord and one-sided tests was the first
+            # version's mistake: those filters are what is under test, so
+            # using them to choose the sample left twelve frames in total.
             alone = find_circle(images[target], rng,
-                                min_span_deg=pm.D_SPAN_MIN)
+                                min_span_deg=AMBIGUOUS_SPAN_MIN)
+            if alone is None:
+                continue
             pooled, used = pooled_arc(images, target, rng)
             if pooled is None or used == 0:
                 continue
-            truth = label_from_neighbour(target, provisional, images,
-                                         anchors, info)
+            truth = label_from_neighbour(target, alone["ellipse"][0],
+                                         images, anchors, info)
             here.append({
                 "alone": alone["span_deg"] if alone else float("nan"),
                 "pooled": pooled["span_deg"],
