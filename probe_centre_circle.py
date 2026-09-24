@@ -234,6 +234,24 @@ def find_circle(frame, rng=None, erase_lines: bool = False,
     if len(xs) < MIN_ARC_PIXELS:
         return None
     points = np.column_stack([xs, ys]).astype(np.float32)
+    found = fit_arc(points, rng, min_span_deg)
+    if found is None:
+        return None
+    found["segments"] = segments
+    return found
+
+
+def fit_arc(points, rng=None, min_span_deg: float | None = None):
+    """One conic fitted across a set of arc pixels, by RANSAC.
+
+    Taken out of `find_circle` so the same fit can be run on pixels pooled
+    from several frames. `probe_arc_accumulation.py` does that: an arc
+    painted on the grass does not move, so warping a neighbouring frame onto
+    this one and adding its arc pixels shows more of the same circle.
+    """
+    rng = rng or np.random.default_rng(0)
+    if len(points) < MIN_ARC_PIXELS:
+        return None
 
     # Thin the candidates so RANSAC samples spread out rather than clustering
     # in whichever blob happens to be densest.
@@ -281,8 +299,7 @@ def find_circle(frame, rng=None, erase_lines: bool = False,
         return None
 
     return dict(ellipse=ellipse, residual_px=residual,
-                pixels=int(len(support)), span_deg=span, segments=segments,
-                support=support)
+                pixels=int(len(support)), span_deg=span, support=support)
 
 
 def main():
