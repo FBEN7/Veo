@@ -1006,3 +1006,62 @@ surprise worth stating plainly: under the flip, a point at (11, 34) maps to
 distance and goal-mouth angle are invariant. What would need the absolute
 answer is attributing a shot to a team, which needs team identity anyway and
 therefore has to come from outside the geometry regardless.
+
+
+## Using the neighbouring frames to tell the arc apart
+
+The previous section ended by saying that a half-hidden centre circle and a
+penalty D are indistinguishable within one frame, and that the neighbouring
+frames -- where the same arc is seen more fully -- were the most plausible
+way out. Two mechanisms were tried.
+
+### Pooling the arc pixels: it makes the separation worse
+
+An arc painted on the grass does not move, so warping a neighbour onto this
+frame lands its arc pixels on the same circle, and where the two frames hide
+different parts of it the union shows more. The quantity that separates the
+two arcs is exactly the one that should grow: the D is 106 degrees of its
+circle and no number of frames can make that bigger, while a centre circle
+is a whole one.
+
+Over 233 ambiguous frames, 43 of them labelled by a neighbouring anchor:
+
+| | circle (n=32) | penalty D (n=11) | separation |
+|---|---|---|---|
+| span alone | 180° | 110° | **70°** |
+| span pooled | 190° | 150° | **40°** |
+
+Pooling does open the circles out, 180° to 190°. It opens the penalty arcs
+further, 110° to 150° -- which is the prediction failing, not just a weak
+result, since the D was supposed to be incapable of that. The gap the rule
+depends on halves. Three runs at different sample sizes all land below the
+majority class: 63% against 84%, 86% against 91%, 67% against 74%.
+
+The obvious excuse is bad warps smearing the arc, and the residuals refuse
+it: 0.80 px on the frame's own pixels against 0.88 px pooled, with 7.8 times
+as many pixels from 7 neighbours. The alignment is fine and the pixels are
+real -- they are just not all arc. Pooling brings in every other marking the
+neighbours contain, and a D sitting inside a penalty area has a great deal
+of such company where a centre circle at midfield has little. The method
+adds most noise exactly where it needed to be cleanest.
+
+### Carrying a neighbour's anchor: it works, and it is no use
+
+Put the arc's centre through a confident neighbour's map, carried across the
+measured warp, and see whether it lands at the centre spot or at a penalty
+spot 41.5 m away. That is reliable; it is what produced the labels above.
+
+But it needs a confident anchor within warp range, which is exactly the case
+where propagation already covers the frame. Using it would swap a borrowed
+anchor good to 0.7 m for a locally fitted D anchor good to 2.0 m.
+
+### And the population is smaller than the effort
+
+The labelled penalty arcs are 11 of 43, and 8 of 51 and 2 of 22 on the other
+runs. Most ambiguous arcs are partial centre circles, not Ds. Even a perfect
+classifier would rescue few frames, which caps what this path can be worth
+however it is identified -- and is the argument for stopping rather than
+trying a fourth mechanism.
+
+`use_penalty_arc` stays off. What ships is unchanged: circle-circle anchors
+agreeing to 0.7 m, worst case 7.5 m, nothing past 20 m.

@@ -48,7 +48,61 @@ anchor within warp range, which is the case where the frame did not need
 help. They are here to say whether the accumulated span is a rule worth
 trusting where no such neighbour exists.
 
-    python probe_arc_accumulation.py [--frames 60] [--window 4]
+## Measured: it makes things worse
+
+233 ambiguous frames, 43 of them labelled by a neighbouring anchor:
+
+                    circle (n=32)   penalty D (n=11)   separation
+    span alone            180 deg            110 deg       70 deg
+    span pooled           190 deg            150 deg       40 deg
+
+Pooling does raise the centre circles, from 180 degrees to 190. It raises
+the penalty arcs further, from 110 to 150 -- and since the whole idea rested
+on the D being unable to exceed 106 degrees however many frames are added,
+that is the prediction failing rather than merely a weak result. The gap the
+rule depends on halves.
+
+The best threshold on the pooled span gets 29 of 43 right, 67%, where
+calling everything a centre circle gets 74%. Three runs at different sample
+sizes all come in below the majority class: 63% against 84%, 86% against
+91%, 67% against 74%.
+
+## Why, and why it is not fixable by better warps
+
+The obvious excuse is that the warps are imprecise and smear the arc, so the
+conic fit degrades. The residuals say otherwise: 0.80 px fitting the frame's
+own pixels, 0.88 px fitting the pooled set, with 7.8 times as many pixels
+drawn from 7 neighbours. The alignment is fine and the pixels are real.
+
+They are simply not all arc. Pooling brings in every other marking the
+neighbouring frames contain -- penalty-area edges, the six-yard box, the
+touchline -- and RANSAC will happily spread an ellipse through whichever of
+them lie near one. A D sitting in the middle of a penalty area has a great
+deal of such company; a centre circle at midfield has much less. So the
+method adds most noise exactly where it needed to be cleanest.
+
+## And the population is small anyway
+
+The labelled penalty arcs are 11 of 43 here, 8 of 51 and 2 of 22 on the
+other runs. Most ambiguous arcs are partial centre circles, not Ds, so even
+a perfect classifier would rescue few frames -- which caps what the whole
+penalty-arc path can be worth however it is identified.
+
+## The one neighbour-based thing that does work
+
+The labelling. Carry a confident neighbour's anchor across the measured warp,
+put the arc's centre through it, and see whether it lands at the centre spot
+or at a penalty spot 41.5 m away. That is reliable, and it is what produced
+the labels above.
+
+It cannot be the decision rule, because it needs a confident anchor within
+warp range -- which is precisely the case where propagation already covers
+the frame. Using it would replace a borrowed anchor good to 0.7 m with a
+locally fitted D anchor good to 2.0 m. Worse, for nothing.
+
+`use_penalty_arc` stays off.
+
+    python probe_arc_accumulation.py [--frames 60]
 """
 
 from __future__ import annotations
