@@ -29,7 +29,60 @@ touchline -- so mirroring a crop gives another honest training example. That
 is the same symmetry that made every attempt to name *ends* of the pitch
 fail, finally being useful rather than fatal.
 
-    python train_marking_classifier.py [--epochs 12] [--hold-out Veo]
+## Measured: it does not work, and the constraint is data
+
+Nine classes, held out by clip:
+
+    held out   accuracy   majority   circle    arc
+    w1              78%        61%      84%    11%
+    reading         50%        61%      81%     0%
+    w2              72%        55%      75%    61%
+    w3              81%        50%      82%    79%
+    Veo             24%        74%       0%      -
+    mean            61%        60%
+
+On the majority floor. Balanced accuracy 37%. The class it exists for swings
+between 0% and 79% depending on which clip is held out, which is a model
+that sometimes happens to match rather than one that has learned. Veo is
+worst and matters most: 24% against a 74% floor, not one centre circle
+recognised -- four clips of 720p broadcast do not transfer to 640x360.
+
+Reduced to the single distinction, balanced so chance is exactly 50%:
+
+    held out   accuracy   circle    arc
+    w1              72%       43%   100%
+    reading         50%      100%     0%
+    w2              50%      100%     0%
+    w3              50%      100%     0%
+    mean            55%
+
+Three folds of four land on exactly 50% with a 100%/0% split, which is a
+model predicting one class for every input. It has not learned the
+difference; it has learned which guess is safer.
+
+## Why, and what would change it
+
+The binding constraint is the number of penalty arcs: 217 crops in total,
+about 350 per class once balanced. That is very little for a convolutional
+network, and it is not an accident of sampling. The labels come from
+anchored frames, a confident anchor needs a centre circle, and a centre
+circle is at midfield -- so the labelled set is midfield-biased by
+construction. Borrowing anchors from neighbouring frames took penalty arcs
+from zero to 217 and cannot take them much further, because propagation
+reaches only as far as the camera went.
+
+Not established, and worth trying before concluding the idea is wrong: a
+larger crop, since 160 px at 720p may not reach from an arc to the box edge
+that distinguishes it, and a larger model, since this one has about twenty
+thousand parameters. Neither was explored, because with 350 examples a
+class the data is the limit either way.
+
+What would actually change it is more footage. For the product that means
+more Veo matches -- this clip contributes zero penalty arcs, so a model
+trained on Veo alone, which is what the licence permits, currently has
+nothing to learn the class from at all.
+
+    python train_marking_classifier.py [--epochs 12] [--binary]
 """
 
 from __future__ import annotations
@@ -213,9 +266,10 @@ def main():
         summary.append((held, overall, balanced, majority, circle, arc))
 
     if summary:
+        balanced = [s[2] for s in summary if np.isfinite(s[2])]
         print(f"\n  {'mean':>14s} {'':7s} {'':6s} "
               f"{np.mean([s[1] for s in summary]):8.0%} "
-              f"{np.nanmean([s[2] for s in summary]):8.0%} "
+              f"{(np.mean(balanced) if balanced else float('nan')):8.0%} "
               f"{np.mean([s[3] for s in summary]):8.0%}")
         arcs = [s[5] for s in summary if s[5][1] > 0]
         if arcs:
