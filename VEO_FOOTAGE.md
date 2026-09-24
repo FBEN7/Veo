@@ -1146,3 +1146,64 @@ What would stabilise it is more footage, and for the product that means more
 Veo: four of the five clips are SoccerNet, whose terms are non-commercial
 and no-redistribution, so nothing learned from them can ship, and this Veo
 clip yields zero penalty arcs of its own.
+
+
+## Wiring the classifier into the anchor
+
+The classifier was left out of the pipeline last time because it is at
+chance on two clips of four. Wired in, with three safeguards that turn an
+unstable signal into a conservative one: it may **abstain** when no crop is
+confident or the vote is close, it **votes** over a dozen crops taken along
+the arc rather than trusting one, and it is asked at the **24 m scale it was
+trained at**, converted to pixels through the anchor's own Jacobian.
+
+Each clip is judged by the model trained *without* it. A model that had seen
+the clip would be marking its own homework, and whether it generalises is
+the entire question.
+
+### It is safe, which is new
+
+    gates + classifier   circle-circle              pairs with an arc
+    strict               38 pairs, 0.6 m median     1 pair, 4.2 m
+                         worst 7.6 m, 0% past 20 m  0% past 20 m
+
+No pair past 20 m. The three previous penalty-arc anchors put 57%, 100% and
+70% of their pairs there. That failure mode -- an anchor 41.5 m out, looking
+perfectly healthy against the markings because the pitch is symmetric -- is
+the one that killed every earlier attempt, and it does not happen here.
+
+### It is also nearly empty
+
+Two arc anchors across four clips. The coverage the span gate cost is not
+meaningfully recovered.
+
+The classifier is not the bottleneck; the geometric gates in front of it
+are. Relaxing them was the obvious next move and was measured:
+
+| gates | arc anchors | arc pair disagreement |
+|---|---|---|
+| strict | 2 | **4.2 m** |
+| relaxed | 3 | **17.5 m** |
+
+One extra anchor, and the one arc pair that can be checked moves most of the
+way to a blunder. Reverted. One pair is not a sample and this settles little
+on its own, but it points the same way as the earlier measurement -- the
+one-sided test took 21 candidate arcs down to 7 -- and when the failure mode
+is a shot at the wrong end of the pitch that nothing downstream would
+notice, the tie goes to the configuration that has never produced one.
+
+### Where that leaves it
+
+`use_penalty_arc` stays off by default, and the reason is now specific
+rather than cautious. On the footage the product is for there is no usable
+model at all: the Veo clip contributes zero penalty arcs to train on, and
+the weights that do exist are trained on SoccerNet, whose terms are
+non-commercial and no-redistribution, so they are as unshippable as the
+frames. `marking_model.load` returns None when no weights are present and
+every caller carries on without it, so the anchor with no model behaves
+exactly as it did before any of this existed.
+
+What is now in place and measured: a labeller that costs nothing, a
+classifier that works where it has seen enough, a wiring that cannot do
+damage when it is wrong, and a test that would catch it if it did. What is
+missing is Veo footage with penalty areas in it.
