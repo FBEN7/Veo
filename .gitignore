@@ -24,3 +24,8 @@ output_veo/
 # non-commercial and no-redistribution. Nothing derived from them is
 # committed; only fitted parameters ever leave this directory.
 marking_crops/
+
+# Weights trained on SoccerNet clips; the terms are non-commercial and
+# no-redistribution, so the fitted model is as unshippable as the frames.
+models/arc_without_*.pt
+models/marking_without_*.pt

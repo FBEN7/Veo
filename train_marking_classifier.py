@@ -208,6 +208,9 @@ def main():
     ap.add_argument("--epochs", type=int, default=12)
     ap.add_argument("--hold-out", default=None,
                     help="clip to keep back; default is each in turn")
+    ap.add_argument("--save", action="store_true",
+                    help="write each fold's model to models/, named for the "
+                         "clip it did NOT see")
     ap.add_argument("--seeds", type=int, default=1,
                     help="repeat each fold with different initialisations; "
                          "reported as a mean and a spread, never selected on")
@@ -305,6 +308,19 @@ def main():
                             (float("nan"), 0), (float("nan"), 0)))
             continue
         model = runs[0]
+
+        if args.save:
+            out = Path("models")
+            out.mkdir(exist_ok=True)
+            # Named for the clip it never saw, so an evaluation on that clip
+            # can pick the one model that is honest about it.
+            stem = "arc" if args.binary else "marking"
+            slug = held.replace(" ", "_")
+            torch.save({"state": model.state_dict(),
+                        "binary": bool(args.binary),
+                        "excluded": held,
+                        "footprint_m": 24.0, "crop_out": 64},
+                       out / f"{stem}_without_{slug}.pt")
 
         if args.binary:
             model.eval()

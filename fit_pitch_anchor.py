@@ -92,7 +92,7 @@ import numpy as np
 
 from probe_centre_circle import find_circle
 from probe_pitch_lines import CLIPS, line_segments
-from src import pitch_model as pm
+from src import marking_model, pitch_model as pm
 import probe_vanishing_points as vp
 
 # A segment is taken for the halfway line when its line passes this close to
@@ -249,7 +249,7 @@ def halfway_line(segments, centre):
 AT_INFINITY = pm.AT_INFINITY_LINE
 
 
-def penalty_arc_candidate(frame, rng, info):
+def penalty_arc_candidate(frame, rng, info, classifier=None):
     """A penalty-D fit, with the end of the pitch left undecided.
 
     Everything here is determined except one bit: the arc's centre is a
@@ -281,6 +281,21 @@ def penalty_arc_candidate(frame, rng, info):
     # gets shifted 41.5 m.
     if not pm.arc_is_one_sided(unrotated, chord, circle["support"]):
         return None
+
+    # Then, if there is a trained classifier, what the picture says. This is
+    # the one piece of evidence the geometry never had: an arc's own shape
+    # cannot distinguish these two, but a penalty D sits against a box and a
+    # centre circle sits in open grass, and that is visible.
+    #
+    # It is allowed to decline. On two clips of four it is at chance, so a
+    # prediction is used only when enough crops along the arc agree and each
+    # is confident; otherwise the frame is refused, which leaves the anchor
+    # exactly where it was rather than where a guess would put it.
+    if classifier is not None:
+        verdict, _ = marking_model.classify_arc(
+            classifier, frame, circle["support"], unrotated, rng)
+        if verdict is not True:
+            return None
 
     # The chord runs parallel to the goal line, the same family as the
     # halfway line, so it fixes the rotation the same way -- and it is the
@@ -378,7 +393,8 @@ def resolve_end(provisional, support, index, references, motion, info):
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_horizon: bool = False,
                     use_penalty_arc: bool = False,
-                    with_kind: bool = False):
+                    with_kind: bool = False,
+                    classifier=None):
     """Frames carrying a full image-to-pitch map, with that map.
 
     `with_kind` adds where each anchor came from -- "circle" or
@@ -417,7 +433,8 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
             # anchor on the clip is known -- they are what the camera's pan
             # is measured against.
             if use_penalty_arc and not use_horizon:
-                candidate = penalty_arc_candidate(frame, rng, info)
+                candidate = penalty_arc_candidate(frame, rng, info,
+                                                  classifier)
                 if candidate is not None:
                     pending.append((idx, candidate[0], candidate[1]))
             continue
