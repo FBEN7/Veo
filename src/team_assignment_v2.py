@@ -209,7 +209,8 @@ def _sample_frames(players: pd.DataFrame, per_track: int) -> dict[int, list]:
 
 def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
                     n_clusters: int = N_CLUSTERS,
-                    verbose: bool = True) -> pd.DataFrame:
+                    verbose: bool = True,
+                    residual_cut: float = RESIDUAL_CUT) -> pd.DataFrame:
     """Cluster tracks into teams by kit colour."""
     players = tracks[tracks.cls == "player"]
     if players.empty:
@@ -285,12 +286,12 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
         rejected = 0
         if scale > 1e-9:
             for t, d in zip(tids, dist / scale):
-                if d > RESIDUAL_CUT and team_map[t] != "other":
+                if d > residual_cut and team_map[t] != "other":
                     team_map[t] = "other"
                     rejected += 1
         if verbose:
             print(f"  [teams] {rejected} tracks rejected as non-players "
-                  f"(> {RESIDUAL_CUT}x the kit spread from either kit)")
+                  f"(> {residual_cut}x the kit spread from either kit)")
 
     out = tracks.copy()
     out["team"] = out.track_id.map(team_map)
