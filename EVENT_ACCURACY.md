@@ -1105,6 +1105,30 @@ measured; the scores are disclosed so the distinction between a principle
 and a fit can be checked. The report prints the measured error beside the
 number.
 
+### The gate was measured in one place and shipped in another
+
+Worth recording, because it nearly published a number that was never true.
+The gate was developed in the scorer and then added to `stats`, leaving two
+implementations that differed in how they smoothed the ball's speed. Scoring
+the shipped function rather than a copy of it caught the gap at once:
+
+| clip | rule | frames | agreement | hit left | hit right | share error |
+|---|---|---|---|---|---|---|
+| Stoke | measured here | 645 | 0.87 | 0.81 | 0.93 | 0.06 |
+| Stoke | shipped, before | 960 | 0.74 | 0.63 | 0.89 | **0.16** |
+| Stoke | shipped, after | 645 | 0.87 | 0.81 | 0.93 | 0.06 |
+
+Same intent, same threshold, different smoothing. The looser estimate kept
+960 frames where the other kept 645, so flight frames survived the gate and
+the bias survived with them -- a 26-point recall gap against 12.
+Documenting 0.06 while shipping 0.16 would have been worse than not
+measuring at all.
+
+Both now call `ball_tracking.kinematics`, and the scorer calls the shipped
+`stats.possession_timeline` rather than reimplementing it, so this number
+moves if the rule does. The final reading is **0.06 share error on both
+clips**, from 0.17 and 0.02.
+
 ### What is still not known
 
 Two matches. The share error is 0.06 on both after the fix, which is better
