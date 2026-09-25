@@ -1357,3 +1357,35 @@ crossing that no amount of carrying could reach appeared. `EVENT_ACCURACY.md`
 has that measurement and the state of the event family it serves, which is
 1 of 3 crossings with 4 to 6 false alarms per ninety seconds -- working on
 synthetic input, not working on football.
+
+
+## The whole thing on Veo footage, in one pass
+
+Every family now reports together, and the tripled anchor budget shows up
+where it was predicted to:
+
+    SHOTS
+      ball placed  : 788 of 3337 ball positions (24%)
+      shots        : 0
+      chances      : 0 created, 0 assists
+
+    BALL OUT OF PLAY
+      crossings    : 2 over the touchline or goal line
+      goals        : 0
+      restarts     : 2  {'free kick': 2}
+
+**Veo placement went from 15% to 24%** -- 505 of 3337 to 788. That is the
+anchor budget, not the reach, and it is the one coverage improvement of the
+day that survives a controlled repeat.
+
+Zero shots and zero chances on three minutes is the expected answer and not
+a reassuring one. Nothing in the footage was labelled a shot, so this is
+consistent with there being none and equally consistent with missing them;
+recall has never been measured anywhere in this project. The two crossings
+are unlabelled and unverifiable, and on labelled footage this family runs at
+one in three with four to six false alarms per ninety seconds, so they
+should be read as "something was seen here", not as two balls out of play.
+
+Cost: 1 minute 50 seconds for the reporting pass over a three-minute clip
+with detection and tracking already cached, of which the 240 circle fits are
+most of it.

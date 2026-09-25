@@ -171,9 +171,10 @@ def main():
         n = counts.get(kind, 0)
         print(f"  {kind:<12} : {n:>3}  ({n / duration * 60:.1f}/min)")
     if not absolute:
-        print("  goals and out-of-play are disabled: the event detector's "
-              "coordinates\n                 come from the ground plane, "
-              "which has no goal line on it")
+        print("  goals and out-of-play are off in HERE: this detector's "
+              "coordinates come\n                 from the ground plane, "
+              "which has no goal line on it. They are\n                 "
+              "detected below instead, on the anchor's maps.")
 
     # Shots come from the anchor instead, which is a different coordinate
     # source and a measured one.
