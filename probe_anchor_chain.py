@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import deque
 from pathlib import Path
 
 import cv2
@@ -56,6 +57,9 @@ from probe_pitch_lines import CLIPS
 from propagate_anchor import features, warp_between
 
 # Gaps to report, in frames. At 25 fps: 2 s, 8 s, 20 s, 40 s, beyond.
+# How many multiplications a map may pass through before it is refused.
+MAX_HOPS = 8
+
 GAP_BANDS = ((0, 50), (50, 200), (200, 500), (500, 1000), (1000, 10 ** 9))
 
 
@@ -134,6 +138,59 @@ def chained_warp(warps, grid, a: int, b: int):
         return None
 
 
+def multi_scale_edges(found, scales, total, anchors):
+    """Warps between frames at several spacings, over one shared graph.
+
+    A coarse step drifts less because there are fewer of them, and fails
+    more often because two frames two seconds apart share less. Holding both
+    lets a walk take coarse steps where they fit and drop to fine ones only
+    to bridge a break.
+    """
+    edges, grids = {}, {}
+    for step in scales:
+        grid = sorted(set(range(0, total, step)) | set(anchors))
+        grid = [i for i in grid if i in found]
+        grids[step] = grid
+        for a, b in zip(grid, grid[1:]):
+            if (a, b) in edges:
+                continue
+            warp, _ = warp_between(found.get(a), found.get(b))
+            if warp is not None:
+                edges[(a, b)] = warp
+    neighbours = {}
+    for (a, b), warp in edges.items():
+        neighbours.setdefault(a, []).append((b, warp, True))
+        neighbours.setdefault(b, []).append((a, warp, False))
+    return neighbours, grids
+
+
+def walk_from(neighbours, source, max_hops):
+    """Accumulated warp from one frame to every frame reachable in few hops.
+
+    Breadth-first, so each frame is reached by the fewest multiplications
+    available rather than by whichever path is tried first -- and since a
+    coarse step covers more ground per hop, fewest hops naturally prefers
+    the coarse ones.
+    """
+    reached = {source: (np.eye(3), 0)}
+    queue = deque([source])
+    while queue:
+        node = queue.popleft()
+        warp_so_far, hops = reached[node]
+        if hops >= max_hops:
+            continue
+        for other, warp, forward in neighbours.get(node, ()):
+            if other in reached:
+                continue
+            try:
+                step = warp if forward else np.linalg.inv(warp)
+            except np.linalg.LinAlgError:
+                continue
+            reached[other] = (step @ warp_so_far, hops + 1)
+            queue.append(other)
+    return reached
+
+
 def carry(anchor, warp):
     """The map a frame inherits, given the warp that reaches it."""
     if warp is None:
@@ -194,6 +251,18 @@ def probe_clip(name: str, out_dir: str, n_frames: int, rng, steps):
                     "metres": gap_metres(stepped, anchors[b], points),
                 })
 
+    neighbours, _ = multi_scale_edges(found, steps, total, anchors)
+    for a in usable:
+        reached = walk_from(neighbours, a, MAX_HOPS)
+        for b in usable:
+            if b <= a or b not in reached:
+                continue
+            warp, hops = reached[b]
+            stepped = carry(anchors[a], warp)
+            rows.append({"step": -1, "gap": b - a, "kind": "multi",
+                         "hops": hops, "fitted": stepped is not None,
+                         "metres": gap_metres(stepped, anchors[b], points)})
+
     for a in usable:
         for b in usable:
             if a >= b:
@@ -213,7 +282,8 @@ def report(results, steps):
           "measured\nagainst something the carry never saw.\n")
 
     pooled = [row for result in results for row in result["rows"]]
-    columns = [("direct", 0)] + [(f"chain/{s}", s) for s in steps]
+    columns = ([("direct", 0)] + [(f"chain/{s}", s) for s in steps]
+               + [("multi", -1)])
     head = "".join(f"{label:>16s}" for label, _ in columns)
     print(f"  {'gap':>10s} {'pairs':>6s}{head}")
 
@@ -229,6 +299,12 @@ def report(results, steps):
             here = [row for row in band
                     if (row["kind"] == "direct" if step == 0
                         else row["step"] == step)]
+            if step == -1:
+                # A multi-scale walk that does not reach a frame leaves no
+                # row at all, so its coverage is against every pair, not
+                # against the rows it produced.
+                here = here + [{"fitted": False, "metres": float("nan")}
+                               for _ in range(pairs - len(here))]
             if not here:
                 cells += f"{'-':>16s}"
                 continue

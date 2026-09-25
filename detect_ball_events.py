@@ -217,6 +217,9 @@ def main():
                     help="seconds of no placement after which the ball's "
                          "last known side of the line is forgotten; pass a "
                          "very large number to require an inside sighting")
+    ap.add_argument("--clip", default=None,
+                    help="substring of the output directory, to score one "
+                         "clip instead of all of them")
     ap.add_argument("--sweep", action="store_true",
                     help="score several reset values off one anchor pass, "
                          "which is the expensive part")
@@ -236,6 +239,8 @@ def main():
     rng = np.random.default_rng(0)
     collected = {reset: [] for reset in resets}
     for name, out_dir in CLIPS:
+        if args.clip and args.clip not in out_dir:
+            continue
         path = Path(out_dir)
         if not (path / "clip.json").exists():
             continue
