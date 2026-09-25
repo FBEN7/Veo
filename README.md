@@ -76,3 +76,39 @@ src/stats.py             # coords terrain, distances, sprints, possession
 src/report.py            # heatmaps mplsoccer + HTML
 templates/report.html.j2 # template du rapport
 ```
+
+
+## Ce qui est mesuré, et ce qui ne l'est pas
+
+Le pipeline d'origine (ci-dessus) produit un rapport. Ce qui suit a été
+ajouté ensuite et, surtout, **mesuré** : chaque chiffre vient d'un contrôle
+reproductible, et les limites sont écrites au même endroit que les
+résultats. Les documents détaillés sont en anglais.
+
+| | état | où c'est mesuré |
+|---|---|---|
+| Tirs et xG | fonctionne sur diffusion TV | `EVENT_ACCURACY.md` |
+| Occasions et passes décisives | fonctionne | `EVENT_ACCURACY.md` |
+| Équipes (maillots) | 0.99 | `TEAM_ASSIGNMENT.md` |
+| Équipes (écarter les non-joueurs) | 0.80 | `TEAM_ASSIGNMENT.md` |
+| Ballon sorti, buts, coups de pied arrêtés | **ne fonctionne pas** | `EVENT_ACCURACY.md` |
+
+Deux précisions qui comptent plus que le tableau.
+
+**Les tirs.** Un tir simulé, placé dans la vraie trajectoire du ballon, est
+retrouvé sur chaque clip à 0.3 m près et son xG à 0.007 près. Sur six
+minutes de football vérifié sans tir, rien ne se déclenche. Ce qui n'a
+jamais été mesuré, faute d'images annotées en contenant, c'est le rappel :
+rien ne prouve que ce détecteur trouve un tir qu'on ne lui a pas donné.
+
+**Le ballon sorti.** Correct sur entrée synthétique, 1 sur 3 sur du vrai
+football, avec 4 à 6 fausses alertes par 90 secondes. La cause est connue et
+n'est pas la géométrie : les repères viennent du rond central, donc du milieu
+du terrain, et le ballon sort sur les côtés. Sur les deux sorties manquées,
+le ballon est détecté 74 et 51 fois et positionné zéro fois. Les coups de
+pied arrêtés en héritent, puisqu'une sortie manquée est une remise en jeu
+manquée.
+
+Le reste du dépôt suit la même règle : `VEO_FOOTAGE.md` contient aussi les
+corrections d'erreurs commises en cours de route, y compris celles qui
+annulent une conclusion publiée la veille.

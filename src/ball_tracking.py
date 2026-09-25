@@ -249,3 +249,33 @@ def extract_ball_tracking(
         ball = pd.DataFrame(rows)
 
     return ball.drop_duplicates("frame").reset_index(drop=True)
+
+
+# Speeds above this are not a football, they are a tracking error.
+MAX_BALL_SPEED_KMH = 120.0
+
+
+def kinematics(tracks: pd.DataFrame, smooth_window: int = 3) -> pd.DataFrame:
+    """Ball position and speed per frame: frame, time_s, bx, by, vel_x, vel_y, speed_kmh.
+
+    Kalman-smoothed and deliberately not gap-filled: filling creates frames
+    that do not exist in player tracking, which breaks possession detection.
+
+    This lives here rather than in either caller because both the event
+    detector and the possession share ask "is the ball travelling too fast
+    to be held", and they were answering it with different smoothing. The
+    two answers differed enough to matter -- one kept 645 frames of a clip
+    and the other 960, and the possession share measured 0.06 off truth
+    with one and 0.16 with the other.
+    """
+    ball = extract_ball_tracking(tracks, smooth_window=smooth_window,
+                                 fill_gaps=False)
+    columns = ["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]
+    if ball.empty:
+        return pd.DataFrame(columns=columns)
+
+    ball = ball.rename(columns={"x": "bx", "y": "by",
+                                "vx": "vel_x", "vy": "vel_y"})
+    speed = np.sqrt(ball["vel_x"] ** 2 + ball["vel_y"] ** 2) * 3.6
+    ball["speed_kmh"] = speed.clip(upper=MAX_BALL_SPEED_KMH)
+    return ball[columns]

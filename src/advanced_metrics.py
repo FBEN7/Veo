@@ -119,7 +119,17 @@ def compute_ball_interaction_metrics(events: list[dict], tracks: pd.DataFrame) -
 
         dribbles = len([e for e in player_events if e.get("event_type") == "dribble"])
         tackles = len([e for e in player_events if e.get("event_type") == "tackle"])
-        interceptions = len([e for e in player_events if e.get("event_type") == "interception"])
+        # A turnover is recorded as the failed pass's outcome rather than as a
+        # separate interception event, so counting only `event_type` here
+        # would report zero interceptions for every player.
+        interceptions = len([
+            e for e in player_events
+            if e.get("event_type") == "interception"
+        ]) + len([
+            e for e in events
+            if e.get("outcome") == "intercepted"
+            and e.get("intercepted_by_track_id") == track_id
+        ])
         clearances = len([e for e in player_events if e.get("event_type") == "clearance"])
 
         metrics[int(player_id)] = {
