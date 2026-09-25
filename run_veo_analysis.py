@@ -25,6 +25,7 @@ import pandas as pd
 
 import detect_shots
 import score_soccernet as sc
+from src import chances
 
 
 def main():
@@ -199,7 +200,8 @@ def main():
                 np.random.default_rng(0))
             shots, placed = detect_shots.find_shots(ball, maps,
                                                     clip_info["fps"])
-            shots = detect_shots.score(shots)
+            shots = detect_shots.score(
+                detect_shots.attribute(shots, out_dir, ball))
             share = placed / max(len(ball), 1)
             print(f"  ball placed  : {placed} of {len(ball)} ball positions "
                   f"({share:.0%}) had a pitch map to sit on")
@@ -221,6 +223,21 @@ def main():
                       "footage available\n                 contains no "
                       "shots, so this has never been shown to find one it\n"
                       "                 was not given.")
+
+            # Chances created and assists are a join over what is already
+            # detected, not a detector: the pass that set up each shot.
+            for shot in shots:
+                shot["timestamp_s"] = shot["time_s"]
+                shot.setdefault("is_goal", False)
+            links = chances.link_chances(events, shots)
+            tally = chances.summarise(links)
+            print(f"  chances      : {tally['chances_created']} created, "
+                  f"{tally['assists']} assists")
+            if shots and not tally["chances_created"]:
+                print("                 no shot had a team-mate's pass "
+                      "before it; with no team on\n                 the "
+                      "shooter this cannot link, which is a gap rather than "
+                      "a zero")
     except Exception as problem:               # never take the run down
         print(f"  unavailable: {problem}")
 

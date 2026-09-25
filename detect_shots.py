@@ -313,6 +313,39 @@ def find_shots(ball: pd.DataFrame, maps, fps: float):
     return merged, len(placed)
 
 
+def attribute(shots, out_dir: Path, ball: pd.DataFrame):
+    """Say who took each shot, and for which team.
+
+    The nearest player to the ball when it was struck. Crude, and enough for
+    what it is used for: a chance is created by a team-mate, so the link
+    between a pass and a shot needs the team and nothing finer. Where the
+    team cannot be read the shot keeps `None`, which the chance rule treats
+    as unlinkable rather than guessing.
+    """
+    path = out_dir / "tracks_teams.parquet"
+    if not path.exists() or not shots:
+        return shots
+    teams = pd.read_parquet(path)
+    players = teams[teams.cls == "player"]
+    lookup = {int(row.frame): row for row in ball.itertuples()}
+
+    for shot in shots:
+        frame = int(shot["frame"])
+        here = players[players.frame == frame]
+        seen = lookup.get(frame)
+        if here.empty or seen is None:
+            continue
+        gap = np.hypot(here.px.to_numpy() - seen.px,
+                       here.py.to_numpy() - seen.py)
+        nearest = here.iloc[int(np.argmin(gap))]
+        team = nearest.get("team")
+        if isinstance(team, str) and team not in ("other", "ball"):
+            shot["team"] = team
+            shot["player_track_id"] = int(nearest.track_id)
+            shot["shooter_gap_px"] = float(gap.min())
+    return shots
+
+
 def score(shots):
     """Attach xG, where a model is available."""
     path = Path("models/xg_xghub.json")
