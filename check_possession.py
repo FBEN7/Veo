@@ -185,6 +185,31 @@ def fill_gaps(predicted, times, max_gap_s: float):
     return np.array(filled, dtype=object)
 
 
+def oracle_teams(out_dir: Path):
+    """A perfect team assignment from the hand-read kit labels, or None.
+
+    Non-players are left out of the mapping rather than given a team, which
+    is how `run_pipeline` expresses an assignment declining to place a
+    track. That is the point of the experiment: a steward who is given a
+    team can take possession from a real player, and stewards stand on the
+    touchline, which is where the ball spends a good deal of its time.
+
+    Substituting truth here does not improve the product. It bounds what
+    improving it could buy, which is the only honest way to decide whether
+    the 0.80 non-player rejection is worth working on.
+    """
+    path = out_dir / "kit_labels.json"
+    if not path.exists():
+        return None
+    kit = json.loads(path.read_text())
+    mapping = {}
+    for track in kit.get("red", []):
+        mapping[int(track)] = "team_A"
+    for track in kit.get("blue", []):
+        mapping[int(track)] = "team_B"
+    return mapping or None
+
+
 def shipped_timeline(metric: pd.DataFrame, frames: np.ndarray):
     """The rule the report actually calls, scored as the report runs it.
 
@@ -346,6 +371,9 @@ def fill_check():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--oracle", action="store_true",
+                    help="replace team assignment with the hand-read kit "
+                         "labels, to bound what perfect teams would buy")
     args = ap.parse_args()
 
     if args.check:
@@ -371,7 +399,13 @@ def main():
         if not (path / "clip.json").exists():
             continue
         info = json.loads((path / "clip.json").read_text())
-        _, _, metric = sc.run_pipeline(info["path"], path, return_tracks=True)
+        override = oracle_teams(path) if args.oracle else None
+        if args.oracle and override is None:
+            print(f"  {out_dir[-14:]:>14s}  no kit labels, skipped")
+            continue
+        _, _, metric = sc.run_pipeline(info["path"], path,
+                                       return_tracks=True,
+                                       team_override=override)
         frames = np.array(sorted(metric.frame.unique()), dtype=int)
         times = frames / float(info["fps"])
         truth = truth_timeline(source, offset,

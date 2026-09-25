@@ -1136,3 +1136,59 @@ than 0.17 and is not good. The denominator also shifts between rules -- the
 settled rule scores 645 frames where the proxy scores 1343 -- so the truth
 share itself differs slightly between rows, and these are not four readings
 of one quantity.
+
+
+## Why two of the three crossings are invisible: the ball is not in the picture
+
+Every attempt on this family has been an algorithm. Looking at the frames
+took ten minutes and ended the argument.
+
+**Stoke, 10.6 s.** The camera is zoomed hard onto the touchline, which runs
+bright and unbroken across the frame. There is no centre circle and no
+penalty area, so neither the shipped anchor nor a box-based one could work
+here -- but the touchline itself could hardly be clearer. Also visible, and
+fatal to the grass idea: **the grass continues past the touchline.** The
+run-off is grass, so a ball a metre out is still over grass. That, not
+lofted balls, is why `grass_frac` failed on this clip.
+
+**Reading, 72.1 s.** Players are standing still, staff are on the touchline,
+the referee is walking. It is plainly a dead ball. There is **no ball in the
+frame**. The ball track's one detection within a second of it, at confidence
+0.41, sits on a player's fluorescent boot; at the labelled moment and a
+second later there are no ball detections at all.
+
+So the answer to "why is the crossing not detected" is that the ball is not
+visible when it leaves the pitch. A broadcast camera follows the ball, and
+at the moment it crosses, the ball is at or beyond the edge of frame. No
+anchor, no marking detector and no amount of geometry reaches that. It is a
+property of the footage.
+
+This also disposes of the edge-anchor plan for these cases. An anchor fitted
+from markings at the edge of the pitch is still a way of saying **where the
+ball is**, and there is no ball to place.
+
+### What is visible instead
+
+In that same frame: twenty-two players who have stopped running. A stoppage
+is written all over the players even when the ball is gone, and player
+tracks do not depend on the ball being in shot.
+
+That is a different signal, available exactly where this one fails, and it
+is worth measuring on its own terms -- which is the next thing here.
+
+### And a separate finding: perfect team assignment does not help possession
+
+Non-player rejection sits at 0.80, and the suspicion was that stewards
+standing on the touchline take possession from real players. The hand-read
+kit labels answer it directly, since `run_pipeline` accepts a team
+override: give it truth, and non-players get no team at all.
+
+| Reading | frames | agreement | majority | margin | share error |
+|---|---|---|---|---|---|
+| assigned teams | 369 | 0.61 | 0.58 | +0.03 | 0.06 |
+| hand-read teams | 349 | 0.64 | 0.61 | **+0.03** | 0.09 |
+
+The margin over the baseline does not move and the share gets slightly
+worse. Whatever limits possession on this clip, it is not the roster. One
+clip carries kit labels, so this is a single reading -- but it is the clip
+where possession is weakest, which is where the effect should have shown.
