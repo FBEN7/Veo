@@ -180,8 +180,12 @@ def main():
     print("Restarts after the ball goes out, named by where it comes back "
           "from,\nand scored against the THROW IN labels inside these "
           "clips.\n")
-    print(f"  {'clip':>24s} {'stoppages':>10s} {'restarts':>9s} "
-          f"{'kinds':>26s} {'throw-ins':>10s} {'matched':>8s}")
+    # Out-of-play is scored here too rather than in its own run: the
+    # stoppages are already computed to find the restarts, and the anchors
+    # behind them are the expensive part.
+    print(f"  {'clip':>22s} {'OUT found':>10s} {'OUT true':>9s} "
+          f"{'matched':>8s} {'false':>6s} {'restarts':>9s} {'kinds':>24s} "
+          f"{'throws':>7s} {'ok':>4s}")
 
     rng = np.random.default_rng(0)
     for name, out_dir in CLIPS:
@@ -202,17 +206,28 @@ def main():
         kinds = Counter(r["event_type"] for r in restarts)
         offset = ball_events.CLIP_OFFSETS.get(out_dir)
         if offset is None:
-            print(f"  {name:>24s} {len(stoppages):10d} {len(restarts):9d} "
-                  f"{str(dict(kinds)):>26s} {'unknown':>10s} {'-':>8s}")
+            print(f"  {name:>22s} {len(stoppages):10d} {'?':>9s} {'-':>8s} "
+                  f"{'-':>6s} {len(restarts):9d} {str(dict(kinds)):>24s} "
+                  f"{'-':>7s} {'-':>4s}")
             continue
         duration = info["n_frames"] / info["fps"]
+        outs_true = labelled("OUT", offset, duration)
+        out_matched = sum(1 for t in outs_true
+                          if any(abs(s["time_s"] - t)
+                                 <= ball_events.TOLERANCE_S
+                                 for s in stoppages))
+        out_false = sum(1 for s in stoppages
+                        if not any(abs(s["time_s"] - t)
+                                   <= ball_events.TOLERANCE_S
+                                   for t in outs_true))
         truth = labelled("THROW IN", offset, duration)
         throws = [r for r in restarts if r["event_type"] == "throw in"]
         matched = sum(1 for t in truth
                       if any(abs(r["time_s"] - t) <= ball_events.TOLERANCE_S
                              for r in throws))
-        print(f"  {name:>24s} {len(stoppages):10d} {len(restarts):9d} "
-              f"{str(dict(kinds)):>26s} {len(truth):10d} {matched:8d}")
+        print(f"  {name:>22s} {len(stoppages):10d} {len(outs_true):9d} "
+              f"{out_matched:8d} {out_false:6d} {len(restarts):9d} "
+              f"{str(dict(kinds)):>24s} {len(truth):7d} {matched:4d}")
 
     print("\n  A restart is only looked for after the ball has been seen to "
           "leave, so a\n  missed crossing is a missed set piece -- the two "
