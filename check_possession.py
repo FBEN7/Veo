@@ -205,9 +205,21 @@ def compare(predicted, truth):
     share_pred = float(np.mean(mapped == "left"))
     share_true = float(np.mean(real == "left"))
     majority = max(share_true, 1.0 - share_true)
+
+    # Per-team recall, which is what a share error is made of. If the rule
+    # is equally wrong about both teams the errors cancel in a ratio and the
+    # share survives; a share that is out while the frames are mostly right
+    # means the mistakes run one way.
+    recall = {}
+    for side in ("left", "right"):
+        here = real == side
+        recall[side] = (float(np.mean(mapped[here] == side))
+                        if here.any() else float("nan"))
+
     return {"frames": int(both.sum()), "agreement": agreement,
             "share_pred": share_pred, "share_true": share_true,
             "majority": majority, "mapping": mapping,
+            "recall_left": recall["left"], "recall_right": recall["right"],
             "share_error": abs(share_pred - share_true)}
 
 
@@ -308,7 +320,8 @@ def main():
           "action.\n")
     print(f"  {'clip':>14s} {'rule/gap':>14s} {'frames':>7s} "
           f"{'agreement':>10s} {'majority':>9s} {'share ours':>11s} "
-          f"{'share true':>11s} {'error':>6s}")
+          f"{'share true':>11s} {'error':>6s} {'hit left':>8s} "
+          f"{'hit right':>9s}")
 
     for out_dir, (source, offset) in CLIP_SOURCES.items():
         path = Path(out_dir)
@@ -335,7 +348,9 @@ def main():
                 print(f"  {out_dir[-14:]:>14s} {tag:>14s} {got['frames']:7d} "
                       f"{got['agreement']:10.2f} {got['majority']:9.2f} "
                       f"{got['share_pred']:11.2f} {got['share_true']:11.2f} "
-                      f"{got['share_error']:6.2f}", flush=True)
+                      f"{got['share_error']:6.2f} "
+                      f"{got['recall_left']:8.2f} "
+                      f"{got['recall_right']:9.2f}", flush=True)
 
     print("\n  'agreement' is per frame and 'share' is the number the report "
           "prints.\n  'majority' is what always naming the dominant team "
