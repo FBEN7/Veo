@@ -262,10 +262,45 @@ def field_tilt(tracks: pd.DataFrame) -> dict:
     return players.groupby("team").x.mean().round(1).to_dict()
 
 
-def possession_proxy(tracks: pd.DataFrame, radius_m: float = 3.0) -> dict:
+# A ball moving faster than this is travelling, not being held.
+#
+# Measured, not guessed. Counting the frames where the ball is in flight was
+# the largest single fault in this number: the nearest player to a ball in
+# mid-pass is routinely an opponent -- the defender it goes past, the man it
+# is played away from -- while the labels credit the team that struck it
+# until someone else touches it. That costs whichever team plays the longer
+# balls, so it biases rather than blurs.
+#
+# Excluding those frames took per-frame agreement from 0.69 to 0.87 against
+# a 0.51 baseline on labelled football, closed the per-team recall gap from
+# 32 points to 12, and cut the share error from 0.17 to 0.06. See
+# check_possession.py and EVENT_ACCURACY.md.
+#
+# The value is the control threshold the event detector already uses, so
+# this is not a new constant to tune.
+BALL_HELD_MAX_KMH = 20.0
+
+
+def possession_proxy(tracks: pd.DataFrame, radius_m: float = 3.0,
+                     max_ball_speed_kmh: float | None = BALL_HELD_MAX_KMH
+                     ) -> dict:
     """Frame par frame : équipe du joueur le plus proche du ballon (< radius).
-    Approximatif : dépend fortement de la qualité de détection du ballon."""
+
+    Approximatif : dépend fortement de la qualité de détection du ballon.
+
+    Les images où le ballon vole trop vite pour être contrôlé sont exclues
+    (`max_ball_speed_kmh`) : le joueur le plus proche d'un ballon en cours de
+    passe est souvent un adversaire, ce qui fausse le pourcentage au
+    détriment de l'équipe qui joue long. Passer `None` retrouve l'ancien
+    comportement.
+    """
     ball = tracks[tracks.cls == "ball"][["frame", "x", "y"]]
+    if max_ball_speed_kmh is not None:
+        speeds = ball_velocity(tracks)
+        if not speeds.empty:
+            calm = speeds[speeds.speed_kmh.fillna(0.0)
+                          <= max_ball_speed_kmh].frame
+            ball = ball[ball.frame.isin(set(calm.astype(int)))]
     players = tracks[tracks.team.isin(["team_A", "team_B"])]
     merged = ball.merge(players, on="frame", suffixes=("_b", ""))
     merged["d"] = np.sqrt((merged.x - merged.x_b)**2 + (merged.y - merged.y_b)**2)

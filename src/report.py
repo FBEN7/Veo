@@ -379,11 +379,12 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
     
     if kpis["possession"]["team_A"] is not None:
         story.append(Paragraph(
-            "<i>* Possession is a proxy: the team of the player nearest the "
-            "ball, counted over the frames where a player is within 3 m of "
-            "it. Measured against labelled football it was out by 17 points "
-            "on one match and 2 on another, and the two errors are not "
-            "comparable -- see EVENT_ACCURACY.md. Read it as an indication, "
+            "<i>* Possession is a proxy: the team of the player nearest "
+            "the ball, over the frames where a player is within 3 m of it "
+            "and the ball is slow enough to be held. Measured against "
+            "labelled football the share was out by 6 points on one match "
+            "and 6 on another, from 17 and 2 before flight frames were "
+            "excluded -- see EVENT_ACCURACY.md. Read it as an indication, "
             "not a figure.</i>",
             styles["small"]))
     

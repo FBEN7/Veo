@@ -1023,3 +1023,92 @@ on labelled football, and the report now says so next to the number instead
 of calling it a proxy and leaving it there.
 
 Reproduce with `python check_possession.py`, controls with `--check`.
+
+
+## What the possession share was actually wrong about: the ball in flight
+
+Three hypotheses, measured in order. Two were wrong, which is why they are
+here.
+
+### Not a selection effect
+
+The share is computed over the frames where the rule fires, and those are
+not a random sample, so the first guess was that a team playing long balls
+spends its possession with nobody near the ball and is under-counted.
+Counting intervals instead of frames -- bridging the gaps between firings,
+the way the truth timeline itself is built -- tests that directly:
+
+| clip | rule | sampled | 1 s | 2 s | 5 s |
+|---|---|---|---|---|---|
+| Stoke | proxy | 0.17 | 0.20 | 0.19 | 0.19 |
+| Stoke | spells | 0.12 | 0.11 | 0.11 | 0.11 |
+| Reading | proxy | 0.02 | 0.03 | 0.02 | 0.01 |
+| Reading | spells | 0.00 | 0.08 | 0.08 | 0.10 |
+
+Coverage rose sharply -- 1343 frames to 1971 on Stoke, 813 to 1662 on
+Reading -- and the share error did not move. **Hypothesis withdrawn.** The
+interval counting stays because it makes the comparison like against like,
+but it is not the fix.
+
+### Not detection either
+
+A share can only be wrong one way if the mistakes run one way, so the next
+question was per-team recall:
+
+| clip | rule | hit left | hit right | gap | share error |
+|---|---|---|---|---|---|
+| Stoke | proxy | 0.54 | 0.86 | 32 pts | 0.17 |
+| Stoke | spells | 0.62 | 0.82 | 20 pts | 0.12 |
+| Reading | proxy | 0.60 | 0.52 | 8 pts | 0.02 |
+
+The bias is real and its width tracks the share error. The obvious cause
+would be seeing one team less, so both teams were counted:
+
+    Stoke     team_A 6.7/frame in 96% of frames   team_B 6.1/frame in 100%
+    Reading   team_A 5.5/frame in 92%             team_B 4.4/frame in  96%
+
+Near enough balanced, and the team whose possession is missed more is the
+one seen *more*. **Hypothesis withdrawn.** The nearest player is not being
+missed; it is being read correctly and is the wrong player.
+
+### The ball in flight
+
+While a pass travels, the nearest player is routinely an opponent -- the
+defender it passes, the man it is played away from. The labels disagree: a
+PASS belongs to the team that struck it until the next action, flight
+included. That is asymmetric in exactly the way the numbers are, because it
+costs whichever team plays the longer balls. It also explains why the spell
+rule, which holds the ball through its flight, already had a recall gap
+twelve points narrower than the proxy, which has no notion of flight.
+
+Keeping only the frames where the ball is slow enough to be held:
+
+| clip | rule | frames | agreement | majority | hit left | hit right | share error |
+|---|---|---|---|---|---|---|---|
+| Stoke | proxy | 1343 | 0.69 | 0.52 | 0.54 | 0.86 | 0.17 |
+| Stoke | **settled** | 645 | **0.87** | 0.51 | 0.81 | 0.93 | **0.06** |
+| Stoke | settled/1 s | 1164 | 0.82 | 0.55 | 0.76 | 0.86 | **0.03** |
+| Reading | proxy | 813 | 0.57 | 0.57 | 0.60 | 0.52 | 0.02 |
+| Reading | **settled** | 369 | 0.61 | 0.58 | 0.62 | 0.60 | 0.06 |
+
+On Stoke this is the largest single improvement in the table: agreement from
+0.69 to 0.87 against a 0.51 baseline, the recall gap from 32 points to 12,
+the share error from 0.17 to 0.06. On Reading it closes the recall gap from
+8 points to 2 and lifts a timeline that sat exactly on its baseline to
+slightly above it, while moving the share error from 0.02 to 0.06 -- on a
+timeline that was never informative, so there was no accurate share there to
+protect, only a lucky one.
+
+**The rule now ships gated.** Not because of those scores but because you
+cannot possess a ball flying past you, which was true before anything was
+measured; the scores are disclosed so the distinction between a principle
+and a fit can be checked. The report prints the measured error beside the
+number.
+
+### What is still not known
+
+Two matches. The share error is 0.06 on both after the fix, which is better
+than 0.17 and is not good. The denominator also shifts between rules -- the
+settled rule scores 645 frames where the proxy scores 1343 -- so the truth
+share itself differs slightly between rows, and these are not four readings
+of one quantity.
