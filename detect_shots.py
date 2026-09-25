@@ -66,30 +66,35 @@ track -- is found, once, on every clip:
     clip       planted   recovered   speed (planted 22 m/s)     xG (true 0.103)
     w1          16.0 m      15.8 m                  22 m/s               0.105
     w2          16.0 m      16.1 m                  22 m/s               0.101
-    w3          16.0 m      15.8 m                  22 m/s               0.105
-    reading     16.0 m      16.5 m                  22 m/s               0.097
-    Veo         16.0 m       8.5 m                  22 m/s               0.298
+    w3          16.0 m      16.3 m                  22 m/s               0.099
+    reading     16.0 m      15.8 m                  22 m/s               0.106
+    Veo         16.0 m      15.7 m                  22 m/s               0.106
 
-Broadcast recovers the shot to within half a metre and its xG to within
-0.006. That is the whole chain working: ball track, anchor, metres, goal
-mouth, geometry, model.
+Every clip recovers the shot to within 0.3 m and its xG to within 0.007.
+That is the whole chain working: ball track, anchor, metres, goal mouth,
+geometry, model.
 
-## The Veo row is not a position error
+## The Veo row used to read 8.5 m, and why it no longer does
 
-It is a *timing* error, and the arithmetic says so. The shot was planted at
-frame 292 and found at 300. Eight frames at 22 m/s and 25 fps is 7.0 m of
-travel, and 16.0 - 7.0 is about the 8.5 m reported. The ball really was 8.5 m
-from goal when this first saw it.
+It was a *timing* error rather than a position error, and the arithmetic
+said so: the shot was planted at frame 292 and found at 300, and eight
+frames at 22 m/s is 7.0 m of travel, which is the whole discrepancy. The
+ball really was 8.5 m from goal when this first saw it.
 
-It saw it late because only 15% of Veo ball positions have a pitch map to
-sit on -- 514 of 3337 -- so the opening frames of the flight were invisible
-and detection began part-way through. The consequence is specific and it
-runs one way: a shot picked up late is reported closer to goal than it was
-struck, and closer means a higher xG. 0.103 became 0.298.
+It saw it late because only 15% of Veo ball positions had a pitch map to sit
+on, so the opening of the flight was invisible and detection began part-way
+through. The consequence ran one way: a shot picked up late is reported
+closer to goal than it was struck, and closer means a higher xG. 0.103
+became 0.298.
 
-So on this footage the detector finds shots and overstates them, and the
-cause is anchor coverage rather than anything in here. Broadcast, at 38-66%
-placement, does not show it.
+Carrying an anchor for 16 s instead of 6 s raised placement enough to see
+whole flights, and the error went with it -- which is the diagnosis
+confirming itself rather than a separate fix. Worth being exact about what
+that table now shows: the injection takes the first anchored run long enough
+to hold a shot, so at the longer reach Veo's shot sits in a different part
+of the clip than it did. It is not the same shot measured twice. What it
+establishes is that where coverage is enough to see a whole flight, Veo's
+geometry is as sound as broadcast's.
 
     python detect_shots.py [--self-check] [--inject]
 """

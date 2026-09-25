@@ -51,7 +51,24 @@ MIN_INLIERS = 25
 RANSAC_PX = 3.0
 
 
-def frame_to_frame(anchor_frame, target_frame):
+def features(frame):
+    """ORB keypoint positions and descriptors, as plain arrays.
+
+    Returned as arrays rather than `cv2.KeyPoint` objects so that a caller
+    walking a whole clip can hold one entry per frame: four thousand
+    keypoints is thirty kilobytes of coordinates and a hundred and thirty of
+    descriptors, where the objects themselves are an order of magnitude
+    more.
+    """
+    orb = cv2.ORB_create(nfeatures=ORB_FEATURES)
+    grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    keypoints, desc = orb.detectAndCompute(grey, None)
+    if desc is None or not keypoints:
+        return None
+    return np.float32([k.pt for k in keypoints]), desc
+
+
+def warp_between(feature_a, feature_b):
     """The homography taking points in one frame to the other.
 
     Features are matched rather than the camera's motion being modelled: for
@@ -61,24 +78,26 @@ def frame_to_frame(anchor_frame, target_frame):
     their own and are left for RANSAC to reject, being a minority of what ORB
     finds.
     """
-    orb = cv2.ORB_create(nfeatures=ORB_FEATURES)
-    grey_a = cv2.cvtColor(anchor_frame, cv2.COLOR_BGR2GRAY)
-    grey_b = cv2.cvtColor(target_frame, cv2.COLOR_BGR2GRAY)
-    kp_a, desc_a = orb.detectAndCompute(grey_a, None)
-    kp_b, desc_b = orb.detectAndCompute(grey_b, None)
-    if desc_a is None or desc_b is None:
+    if feature_a is None or feature_b is None:
         return None, 0
+    points_a, desc_a = feature_a
+    points_b, desc_b = feature_b
     pairs = cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(desc_a, desc_b, k=2)
     good = [p[0] for p in pairs
             if len(p) == 2 and p[0].distance < 0.75 * p[1].distance]
     if len(good) < MIN_MATCHES:
         return None, len(good)
-    src = np.float32([kp_a[m.queryIdx].pt for m in good])
-    dst = np.float32([kp_b[m.trainIdx].pt for m in good])
+    src = points_a[[m.queryIdx for m in good]]
+    dst = points_b[[m.trainIdx for m in good]]
     warp, inliers = cv2.findHomography(src, dst, cv2.RANSAC, RANSAC_PX)
     if warp is None or inliers is None or int(inliers.sum()) < MIN_INLIERS:
         return None, int(inliers.sum()) if inliers is not None else 0
     return warp, int(inliers.sum())
+
+
+def frame_to_frame(anchor_frame, target_frame):
+    """`warp_between` for two frames whose features are not yet computed."""
+    return warp_between(features(anchor_frame), features(target_frame))
 
 
 def chance_floor(homography, segments, info, rng):

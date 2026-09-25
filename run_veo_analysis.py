@@ -23,6 +23,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import detect_ball_events as ball_events
+import detect_set_pieces as set_pieces
 import detect_shots
 import score_soccernet as sc
 from src import chances
@@ -238,6 +240,29 @@ def main():
                       "before it; with no team on\n                 the "
                       "shooter this cannot link, which is a gap rather than "
                       "a zero")
+
+            # Out of play, goals and the restarts that follow, on the same
+            # maps -- the anchors are the expensive part and they are
+            # already computed.
+            stoppages, _ = ball_events.find_ball_events(ball, maps,
+                                                        clip_info["fps"])
+            goals = [e for e in stoppages if e["event_type"] == "goal"]
+            outs = [e for e in stoppages if e["event_type"] == "out_of_play"]
+            restarts = set_pieces.find_restarts(ball, maps,
+                                                clip_info["fps"], outs)
+            kinds = Counter(r["event_type"] for r in restarts)
+            print(f"\nBALL OUT OF PLAY")
+            print(f"  crossings    : {len(outs)} over the touchline or "
+                  f"goal line")
+            print(f"  goals        : {len(goals)}")
+            print(f"  restarts     : {len(restarts)}  {dict(kinds)}")
+            print("  NOTE         : anchors come from the centre circle at "
+                  "midfield and the\n                 ball goes out at the "
+                  "edges, so coverage where this family of\n                 "
+                  "events happens is far below the figure above. On labelled "
+                  "footage\n                 one crossing in three is seen; "
+                  "the misses are frames with no\n                 pitch map "
+                  "at all rather than a geometry error.")
     except Exception as problem:               # never take the run down
         print(f"  unavailable: {problem}")
 
