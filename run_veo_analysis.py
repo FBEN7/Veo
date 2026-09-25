@@ -23,6 +23,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+import detect_shots
 import score_soccernet as sc
 
 
@@ -167,8 +168,61 @@ def main():
         n = counts.get(kind, 0)
         print(f"  {kind:<12} : {n:>3}  ({n / duration * 60:.1f}/min)")
     if not absolute:
-        print("  goals, shots and out-of-play are disabled: no homography, so "
-              "there is no goal line to compare against")
+        print("  goals and out-of-play are disabled: the event detector's "
+              "coordinates\n                 come from the ground plane, "
+              "which has no goal line on it")
+
+    # Shots come from the anchor instead, which is a different coordinate
+    # source and a measured one.
+    #
+    # The obvious move is to pass a homography into
+    # prepare_tracks_for_events and let `absolute` turn True, and it is the
+    # wrong one twice over. That flag also switches on goals and
+    # out-of-play, neither of which has ever been validated; and it would
+    # hand them the ground plane's coordinates, the component this project
+    # measured as making pass F1, speed reliability and distance reliability
+    # all worse. It also wants ONE homography for a whole clip, while the
+    # anchor is per frame and the camera moves.
+    #
+    # So shots are detected separately, on the anchor's per-frame maps,
+    # which is the path that was actually measured: a planted shot comes
+    # back within half a metre on broadcast and its xG within 0.006, and
+    # nothing fires on six minutes of verified shot-free football.
+    print(f"\nSHOTS")
+    try:
+        ball = detect_shots.ball_track(out_dir)
+        if ball.empty:
+            print("  no ball track, so no shots")
+        else:
+            maps = detect_shots.anchors_for(
+                out_dir, clip_info, ball.frame.tolist(),
+                np.random.default_rng(0))
+            shots, placed = detect_shots.find_shots(ball, maps,
+                                                    clip_info["fps"])
+            shots = detect_shots.score(shots)
+            share = placed / max(len(ball), 1)
+            print(f"  ball placed  : {placed} of {len(ball)} ball positions "
+                  f"({share:.0%}) had a pitch map to sit on")
+            print(f"  shots        : {len(shots)}")
+            for shot in shots:
+                extra = (f", xG {shot['xg']:.3f}" if "xg" in shot else "")
+                print(f"    t={shot['time_s']:6.1f}s  "
+                      f"{shot['distance_m']:5.1f} m from goal, "
+                      f"{shot['speed_ms']:4.0f} m/s{extra}")
+            # The bias runs one way and has to be said next to the number.
+            if share < 0.35 and shots:
+                print("  CAUTION      : at this coverage a shot is usually "
+                      "picked up after it\n                 has been "
+                      "struck, which reports it closer to goal than it was "
+                      "and\n                 so OVERSTATES xG -- measured "
+                      "at 0.30 against a true 0.10")
+            elif not shots:
+                print("  none found. Recall is unmeasured: the labelled "
+                      "footage available\n                 contains no "
+                      "shots, so this has never been shown to find one it\n"
+                      "                 was not given.")
+    except Exception as problem:               # never take the run down
+        print(f"  unavailable: {problem}")
 
     ph = stats.physical_stats(metric)
     if not ph.empty and "minutes_tracked" in ph.columns:
