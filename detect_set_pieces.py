@@ -149,19 +149,7 @@ def synthetic_check():
     return ok
 
 
-def labelled(kind: str, offset_s: float, duration_s: float):
-    uploads = Path("/root/.claude/uploads/"
-                   "cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
-    out = []
-    for path in sorted(uploads.glob("*Labels-ball.json")):
-        blob = json.loads(path.read_text())
-        for row in blob["annotations"]:
-            if row["label"] != kind:
-                continue
-            when = int(row["position"]) / 1000.0
-            if offset_s <= when <= offset_s + duration_s:
-                out.append(when - offset_s)
-    return sorted(out)
+
 
 
 def main():
@@ -204,14 +192,15 @@ def main():
 
         from collections import Counter
         kinds = Counter(r["event_type"] for r in restarts)
-        offset = ball_events.CLIP_OFFSETS.get(out_dir)
-        if offset is None:
+        source_offset = ball_events.CLIP_SOURCES.get(out_dir)
+        if source_offset is None:
             print(f"  {name:>22s} {len(stoppages):10d} {'?':>9s} {'-':>8s} "
                   f"{'-':>6s} {len(restarts):9d} {str(dict(kinds)):>24s} "
                   f"{'-':>7s} {'-':>4s}")
             continue
+        source, offset = source_offset
         duration = info["n_frames"] / info["fps"]
-        outs_true = labelled("OUT", offset, duration)
+        outs_true = ball_events.labelled("OUT", source, offset, duration)
         out_matched = sum(1 for t in outs_true
                           if any(abs(s["time_s"] - t)
                                  <= ball_events.TOLERANCE_S
@@ -220,7 +209,7 @@ def main():
                         if not any(abs(s["time_s"] - t)
                                    <= ball_events.TOLERANCE_S
                                    for t in outs_true))
-        truth = labelled("THROW IN", offset, duration)
+        truth = ball_events.labelled("THROW IN", source, offset, duration)
         throws = [r for r in restarts if r["event_type"] == "throw in"]
         matched = sum(1 for t in truth
                       if any(abs(r["time_s"] - t) <= ball_events.TOLERANCE_S

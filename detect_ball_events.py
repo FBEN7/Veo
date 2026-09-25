@@ -62,8 +62,15 @@ MERGE_SECONDS = 3.0
 
 # Where the labelled clips sit in their matches, from the file names:
 # stoke_000520 is 5:20 into the match, reading_5115 is 51:15.
-CLIP_OFFSETS = {"output_soccernet_w3": 320.0,
-                "output_soccernet_reading": 3075.0}
+# Each clip, the match it was cut from and where in it. Both parts matter:
+# filtering labels by time alone pools the two matches, so the Reading
+# window picked up Stoke's labels from the same minute of a different game
+# and reported three crossings where there are two.
+CLIP_SOURCES = {
+    "output_soccernet_w3": ("34498b39-Labels-ball.json", 320.0),
+    "output_soccernet_reading": ("53f06df4-Labels-ball.json", 3075.0),
+}
+CLIP_OFFSETS = {name: offset for name, (_, offset) in CLIP_SOURCES.items()}
 
 # How close a detection has to be to a label to count, matching the
 # convention the rest of this project scores events at.
@@ -110,19 +117,20 @@ def find_ball_events(ball: pd.DataFrame, maps, fps: float):
     return merged, len(placed)
 
 
-def labelled_outs(offset_s: float, duration_s: float):
-    """OUT labels falling inside a clip, in clip time."""
-    uploads = Path("/root/.claude/uploads/"
-                   "cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
+def labelled(kind: str, source: str, offset_s: float, duration_s: float):
+    """Labels of one kind inside a clip, from that clip's own match."""
+    path = (Path("/root/.claude/uploads/"
+                 "cd4d7e67-1dd4-5fa1-975c-2f5b3217663b") / source)
+    if not path.exists():
+        return []
+    blob = json.loads(path.read_text())
     out = []
-    for path in sorted(uploads.glob("*Labels-ball.json")):
-        blob = json.loads(path.read_text())
-        for row in blob["annotations"]:
-            if row["label"] != "OUT":
-                continue
-            when = int(row["position"]) / 1000.0
-            if offset_s <= when <= offset_s + duration_s:
-                out.append(when - offset_s)
+    for row in blob["annotations"]:
+        if row["label"] != kind:
+            continue
+        when = int(row["position"]) / 1000.0
+        if offset_s <= when <= offset_s + duration_s:
+            out.append(when - offset_s)
     return sorted(out)
 
 
@@ -185,13 +193,14 @@ def main():
         outs = [e for e in events if e["event_type"] == "out_of_play"]
         goals = [e for e in events if e["event_type"] == "goal"]
 
-        offset = CLIP_OFFSETS.get(out_dir)
-        if offset is None:
+        source_offset = CLIP_SOURCES.get(out_dir)
+        if source_offset is None:
             print(f"  {name:>24s} {placed:7d} {len(outs):6d} "
                   f"{'unknown':>9s} {'-':>8s} {'-':>6s}")
             continue
+        source, offset = source_offset
         duration = info["n_frames"] / info["fps"]
-        truth = labelled_outs(offset, duration)
+        truth = labelled("OUT", source, offset, duration)
         matched = sum(1 for t in truth
                       if any(abs(e["time_s"] - t) <= TOLERANCE_S
                              for e in outs))
