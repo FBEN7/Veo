@@ -92,18 +92,26 @@ CLIP_OFFSETS = {name: offset for name, (_, offset) in CLIP_SOURCES.items()}
 TOLERANCE_S = 2.0
 
 
-def outside(x, y):
+def outside(x, y, margin_m: float = MARGIN_M):
     """Is the ball off the pitch here, and if so through where?"""
-    if y < -MARGIN_M or y > pm.PITCH_WIDTH_M + MARGIN_M:
+    if y < -margin_m or y > pm.PITCH_WIDTH_M + margin_m:
         return "touchline"
-    if x < -MARGIN_M or x > pm.PITCH_LENGTH_M + MARGIN_M:
+    if x < -margin_m or x > pm.PITCH_LENGTH_M + margin_m:
         middle = abs(y - pm.PITCH_WIDTH_M / 2.0)
         return "goal" if middle <= GOAL_HALF_M else "goal line"
     return None
 
 
+def how_far_out(x, y):
+    """Metres past the nearest edge of the pitch, or 0 while still on it."""
+    over_x = max(0.0, -x, x - pm.PITCH_LENGTH_M)
+    over_y = max(0.0, -y, y - pm.PITCH_WIDTH_M)
+    return float(max(over_x, over_y))
+
+
 def find_ball_events(ball: pd.DataFrame, maps, fps: float,
-                     reset_seconds: float = RESET_SECONDS):
+                     reset_seconds: float = RESET_SECONDS,
+                     margin_m: float = MARGIN_M, min_support: int = 1):
     """Frames where the ball crosses the edge of the pitch."""
     placed = []
     for row in ball.itertuples():
@@ -113,20 +121,33 @@ def find_ball_events(ball: pd.DataFrame, maps, fps: float,
                            float(point[0]), float(point[1])))
 
     events, was_in, last_seen = [], True, None
-    for frame, when, x, y in placed:
+    for k, (frame, when, x, y) in enumerate(placed):
         if last_seen is not None and when - last_seen > reset_seconds:
             was_in = True            # blind for too long to claim otherwise
         last_seen = when
-        where = outside(x, y)
+        where = outside(x, y, margin_m)
         if where is None:
             was_in = True
             continue
         if not was_in:
             continue                 # still out, not a fresh crossing
+        # One placement past the line can be a ball detection landing on a
+        # spectator, or an anchor a metre out. Asking for several in a row
+        # costs a crossing the camera looked away from and rejects the
+        # single stray reading, and which of those matters more is what the
+        # sweep is for.
+        support = 1
+        for later in placed[k + 1:k + min_support]:
+            if outside(later[2], later[3], margin_m) is None:
+                break
+            support += 1
+        if support < min_support:
+            continue
         was_in = False
         kind = "goal" if where == "goal" else "out_of_play"
         events.append({"frame": frame, "time_s": when, "x": x, "y": y,
-                       "event_type": kind, "through": where})
+                       "event_type": kind, "through": where,
+                       "over_m": how_far_out(x, y), "support": support})
 
     merged = []
     for event in events:
@@ -179,6 +200,51 @@ def synthetic_check():
     return ok
 
 
+def explain(clip_name, out_dir, ball, maps, info, args):
+    """Every crossing this found, and every labelled one it did not.
+
+    A missed crossing and a false one fail for different reasons and the
+    fix for one is not the fix for the other, so the two are listed rather
+    than counted. For a miss the question is whether the ball was placed at
+    all; for a false alarm it is how far past the line it went, since a
+    reading one metre out is the anchor and twenty is not.
+    """
+    events, _ = find_ball_events(ball, maps, info["fps"], args.reset,
+                                 args.margin, args.support)
+    outs = [e for e in events if e["event_type"] == "out_of_play"]
+    source_offset = CLIP_SOURCES.get(out_dir)
+    truth = []
+    if source_offset is not None:
+        source, offset = source_offset
+        truth = labelled("OUT", source, offset,
+                         info["n_frames"] / info["fps"])
+
+    print(f"\n  {clip_name}: {len(outs)} crossings found, "
+          f"{len(truth)} labelled")
+    for event in outs:
+        hit = any(abs(event["time_s"] - t) <= TOLERANCE_S for t in truth)
+        print(f"    t={event['time_s']:6.1f}s  {event['through']:<10s} "
+              f"{event['over_m']:5.1f} m past the line, "
+              f"support {event['support']}  "
+              f"{'matches a label' if hit else 'FALSE'}")
+    for when in truth:
+        if any(abs(e["time_s"] - when) <= TOLERANCE_S for e in outs):
+            continue
+        window = ball[(ball.time_s >= when - TOLERANCE_S)
+                      & (ball.time_s <= when + TOLERANCE_S)]
+        placed = sum(1 for row in window.itertuples()
+                     if detect_shots.to_pitch(maps, row.frame, row.px,
+                                              row.py) is not None)
+        furthest = 0.0
+        for row in window.itertuples():
+            point = detect_shots.to_pitch(maps, row.frame, row.px, row.py)
+            if point is not None:
+                furthest = max(furthest, how_far_out(point[0], point[1]))
+        print(f"    t={when:6.1f}s  MISSED: {len(window)} ball detections "
+              f"within {TOLERANCE_S:.0f} s, {placed} placed, "
+              f"furthest {furthest:.1f} m past the line")
+
+
 def score(clip_name: str, out_dir: str, events, placed: int, duration: float):
     """One clip's crossings against its own match's labels."""
     outs = [e for e in events if e["event_type"] == "out_of_play"]
@@ -220,6 +286,12 @@ def main():
     ap.add_argument("--clip", default=None,
                     help="substring of the output directory, to score one "
                          "clip instead of all of them")
+    ap.add_argument("--margin", type=float, default=MARGIN_M,
+                    help="metres past the line before the ball counts as out")
+    ap.add_argument("--support", type=int, default=1,
+                    help="placements in a row outside before it counts")
+    ap.add_argument("--verbose", action="store_true",
+                    help="list every crossing found and every one missed")
     ap.add_argument("--sweep", action="store_true",
                     help="score several reset values off one anchor pass, "
                          "which is the expensive part")
@@ -232,12 +304,15 @@ def main():
         print(f"\n   {'all pass' if ok else 'SOMETHING IS WRONG'}")
         return
 
-    resets = [2.0, 4.0, 8.0, 16.0, 1e9] if args.sweep else [args.reset]
+    settings = ([(margin, support)
+                 for margin in (1.0, 2.0, 3.0, 5.0)
+                 for support in (1, 2, 3)]
+                if args.sweep else [(args.margin, args.support)])
     print("The ball leaving the pitch, detected on the anchor's maps and "
           "scored\nagainst the OUT labels that fall inside these clips.\n")
 
     rng = np.random.default_rng(0)
-    collected = {reset: [] for reset in resets}
+    collected = {setting: [] for setting in settings}
     for name, out_dir in CLIPS:
         if args.clip and args.clip not in out_dir:
             continue
@@ -251,20 +326,25 @@ def main():
         maps = detect_shots.anchors_for(path, info, ball.frame.tolist(), rng,
                                         args.frames)
         duration = info["n_frames"] / info["fps"]
-        for reset in resets:
-            events, placed = find_ball_events(ball, maps, info["fps"], reset)
-            collected[reset].append(score(name, out_dir, events, placed,
-                                          duration))
+        for setting in settings:
+            margin, support = setting
+            events, placed = find_ball_events(ball, maps, info["fps"],
+                                              args.reset, margin, support)
+            collected[setting].append(score(name, out_dir, events, placed,
+                                            duration))
+        if args.verbose:
+            explain(name, out_dir, ball, maps, info, args)
 
-    for reset in resets:
-        if len(resets) > 1:
-            forget = ("never" if reset > 1e8 else f"{reset:.0f} s")
-            print(f"\n=== forget the ball's side after {forget} ===")
+    for setting in settings:
+        if len(settings) > 1:
+            margin, support = setting
+            print(f"\n=== {margin:.0f} m past the line, {support} placement"
+                  f"{'' if support == 1 else 's'} in a row ===")
         print(f"  {'clip':>24s} {'placed':>7s} {'found':>6s} "
               f"{'labelled':>9s} {'matched':>8s} {'false':>6s}")
-        for row in collected[reset]:
+        for row in collected[setting]:
             print_row(row)
-        scored = [r for r in collected[reset] if r["truth"] is not None]
+        scored = [r for r in collected[setting] if r["truth"] is not None]
         if scored:
             print(f"  {'total':>24s} {'':>7s} {'':>6s} "
                   f"{sum(r['truth'] for r in scored):9d} "
