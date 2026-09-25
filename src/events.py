@@ -223,6 +223,20 @@ def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
     return ball_tracking.kinematics(tracks)
 
 
+def _detect_ball_movement_events(ball: pd.DataFrame,
+                                 events: list[dict[str, Any]]) -> None:
+    """Detect ball movement patterns that indicate passes/shots (limited FOV mode).
+
+    DISABLED: This function was creating 138 false positives per 2 minutes.
+    High-speed ball movements alone are insufficient to reliably detect events.
+
+    Requires: Ball movement + visible player validation to work correctly.
+    Status: Disabled until proper player validation is implemented.
+    """
+    # Disabled - creates too many false positives without player validation
+    return
+
+
 def _possession_per_frame(
     ball: pd.DataFrame, tracks: pd.DataFrame,
     release_on_flight: bool = False,
