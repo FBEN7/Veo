@@ -52,7 +52,46 @@ is written into the ball track at a known place, speed and direction, and
 the detector has to find it. That does not prove it finds real shots; it
 proves that when a shot is present and the ball is tracked, this fires.
 
-    python detect_shots.py [--clip output_veo] [--self-check]
+## What the controls say
+
+On six minutes of verified shot-free football, nothing fires: zero
+detections on all four SoccerNet clips and on the Veo clip. The synthetic
+control rules out the dull reason for that, since a detector that never
+fires would also score zero.
+
+A shot planted into each real clip -- laid out in metres, pushed back
+through that frame's own anchor into pixels, dropped into the real ball
+track -- is found, once, on every clip:
+
+    clip       planted   recovered   speed (planted 22 m/s)     xG (true 0.103)
+    w1          16.0 m      15.8 m                  22 m/s               0.105
+    w2          16.0 m      16.1 m                  22 m/s               0.101
+    w3          16.0 m      15.8 m                  22 m/s               0.105
+    reading     16.0 m      16.5 m                  22 m/s               0.097
+    Veo         16.0 m       8.5 m                  22 m/s               0.298
+
+Broadcast recovers the shot to within half a metre and its xG to within
+0.006. That is the whole chain working: ball track, anchor, metres, goal
+mouth, geometry, model.
+
+## The Veo row is not a position error
+
+It is a *timing* error, and the arithmetic says so. The shot was planted at
+frame 292 and found at 300. Eight frames at 22 m/s and 25 fps is 7.0 m of
+travel, and 16.0 - 7.0 is about the 8.5 m reported. The ball really was 8.5 m
+from goal when this first saw it.
+
+It saw it late because only 15% of Veo ball positions have a pitch map to
+sit on -- 514 of 3337 -- so the opening frames of the flight were invisible
+and detection began part-way through. The consequence is specific and it
+runs one way: a shot picked up late is reported closer to goal than it was
+struck, and closer means a higher xG. 0.103 became 0.298.
+
+So on this footage the detector finds shots and overstates them, and the
+cause is anchor coverage rather than anything in here. Broadcast, at 38-66%
+placement, does not show it.
+
+    python detect_shots.py [--self-check] [--inject]
 """
 
 from __future__ import annotations

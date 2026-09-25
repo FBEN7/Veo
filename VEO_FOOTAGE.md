@@ -1207,3 +1207,73 @@ What is now in place and measured: a labeller that costs nothing, a
 classifier that works where it has seen enough, a wiring that cannot do
 damage when it is wrong, and a test that would catch it if it did. What is
 missing is Veo footage with penalty areas in it.
+
+
+## Shots, and the first xG this pipeline has produced
+
+The xG model has been finished and verified since it was fitted -- it
+recovers known coefficients to a few percent and signs off with "the
+pipeline is ready for real shots" -- and nothing had ever handed it one,
+because nothing detected a shot. `run_veo_analysis` still prints *goals,
+shots and out-of-play are disabled: no homography*, which stopped being true
+when the anchor started working.
+
+A shot, in terms the pipeline now has: a ball over 13 m/s on the ground,
+sustained, on a line crossing a goal line inside the mouth, from within
+35 m. The ball track supplies the first; the anchor supplies metres for the
+rest.
+
+**Which goal does not need to be known.** A shot is aimed at the goal it is
+aimed at -- take the one the ball is travelling towards and the distance and
+angle are the same numbers either way. The symmetry that cost this project
+so much is, for xG, irrelevant. It would matter only for saying which *team*
+shot, which needs team identity regardless.
+
+### What can be measured, and what cannot
+
+Recall cannot be, and the reason is exact: the labels hold 50 shots and
+goals across two full matches and not one falls inside the video that
+exists. The Stoke clip covers 320-410 s with labelled shots at 261 and 803 s
+either side; the Reading clip covers 3075-3165 s with shots at 2878 and
+3377 s. Six minutes of football, verified shot-free.
+
+Verified shot-free is worth something. **Nothing fires on any of it** -- zero
+detections on all five clips -- and a synthetic control rules out the dull
+explanation, since a detector that never fired would score the same.
+
+A shot planted into each real clip, through that clip's own anchors, is
+found once on every one:
+
+| clip | planted | recovered | speed (planted 22 m/s) | xG (true 0.103) |
+|---|---|---|---|---|
+| SoccerNet w1 | 16.0 m | 15.8 m | 22 m/s | 0.105 |
+| SoccerNet w2 | 16.0 m | 16.1 m | 22 m/s | 0.101 |
+| SoccerNet w3 | 16.0 m | 15.8 m | 22 m/s | 0.105 |
+| reading | 16.0 m | 16.5 m | 22 m/s | 0.097 |
+| **Veo** | 16.0 m | **8.5 m** | 22 m/s | **0.298** |
+
+Broadcast recovers the shot to half a metre and its xG to 0.006. That is the
+entire chain working at once.
+
+One fix was needed to get there. Velocity had been a difference between the
+ends of a 0.12 s window, so the 0.6 m by which neighbouring anchors disagree
+became 5 m/s of speed that was not there -- an injected 22 m/s shot read
+back as 34 on one clip and 15 on another. A least-squares line through the
+window averages that down instead of amplifying it.
+
+### The Veo row is a timing error, and it runs one way
+
+Not a position error. The shot was planted at frame 292 and found at 300,
+and eight frames at 22 m/s is 7.0 m of travel: 16.0 - 7.0 is the 8.5 m
+reported. The ball really was 8.5 m out when this first saw it.
+
+It saw it late because only **15% of Veo ball positions have a pitch map** --
+514 of 3337. The opening of the flight was invisible, so detection began
+part-way through. The consequence is specific and one-directional: a shot
+picked up late is reported closer to goal than it was struck, and closer
+means higher xG. 0.103 became 0.298, nearly threefold.
+
+So on this footage shots are found and overstated, and the cause is anchor
+coverage, not the detector. Broadcast at 38-66% placement does not show it.
+The thing that would fix it is the thing that has been the answer for three
+sections running: more anchored frames, which means more Veo footage.
