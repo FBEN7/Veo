@@ -157,6 +157,17 @@ BORROW_REACH = 400
 # 0.7 m, so a ball may use the anchor of a frame this close to it.
 ANCHOR_GRID = 4
 
+# How many frames to try a centre-circle fit on. This is a sampling budget,
+# not a property of the footage, and it turned out to be the parameter that
+# decides whether events at the edge of the pitch are visible at all: at 80
+# the Stoke clip places 749 ball positions of 1811 and sees none of its
+# labelled crossings; at 240 it places 1016 and sees one. Three sessions
+# spent on carrying a map further bought less than tripling this did.
+#
+# It costs proportionally: a circle fit per frame tried, and they dominate
+# the run.
+ANCHOR_FRAMES = 240
+
 
 def ball_track(out_dir: Path) -> pd.DataFrame:
     """One ball position per frame, the most confident where there are several."""
@@ -168,7 +179,8 @@ def ball_track(out_dir: Path) -> pd.DataFrame:
     return best.sort_values("frame").reset_index(drop=True)
 
 
-def anchors_for(out_dir: Path, info, frames_wanted, rng, n_frames=120):
+def anchors_for(out_dir: Path, info, frames_wanted, rng,
+                n_frames=ANCHOR_FRAMES):
     """A pitch map on a grid of frames, carried from the anchored ones.
 
     Only the anchored frames are held in memory; every other frame is read,
@@ -467,7 +479,7 @@ def inject_shot(ball, maps, info, fps, goal="left"):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--frames", type=int, default=120)
+    ap.add_argument("--frames", type=int, default=ANCHOR_FRAMES)
     ap.add_argument("--self-check", action="store_true")
     ap.add_argument("--inject", action="store_true",
                     help="put a known shot into each real clip, through that "

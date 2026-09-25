@@ -75,6 +75,22 @@ MERGE_SECONDS = 3.0
 # which risk is worse is a matter for the false-alarm column, not taste.
 RESET_SECONDS = 8.0
 
+# How many placements in a row must be outside before a crossing is called.
+#
+# One is what shipped and one is too few on principle: a single ball
+# detection landing on a spectator, or a single anchor a metre out against a
+# 1 m margin, is not evidence that the ball left the pitch. Two consecutive
+# readings is the smallest requirement that asks for any corroboration at
+# all.
+#
+# Said plainly, because the difference between a principle and a fit is
+# whether you would have chosen it before seeing the scores: on the only
+# labelled footage available this drops one false crossing of six and keeps
+# the one true one. That is disclosed, not relied on -- three labelled
+# crossings cannot choose a threshold, and nothing here was selected on
+# them.
+MIN_SUPPORT = 2
+
 # Where the labelled clips sit in their matches, from the file names:
 # stoke_000520 is 5:20 into the match, reading_5115 is 51:15.
 # Each clip, the match it was cut from and where in it. Both parts matter:
@@ -111,7 +127,8 @@ def how_far_out(x, y):
 
 def find_ball_events(ball: pd.DataFrame, maps, fps: float,
                      reset_seconds: float = RESET_SECONDS,
-                     margin_m: float = MARGIN_M, min_support: int = 1):
+                     margin_m: float = MARGIN_M,
+                     min_support: int = MIN_SUPPORT):
     """Frames where the ball crosses the edge of the pitch."""
     placed = []
     for row in ball.itertuples():
@@ -175,18 +192,32 @@ def labelled(kind: str, source: str, offset_s: float, duration_s: float):
 
 
 def synthetic_check():
-    """A ball walked off the pitch, and another into the net."""
+    """A ball walked off the pitch, and another into the net.
+
+    The paths run several metres past the line rather than stopping on it,
+    because a ball that crosses keeps travelling -- and because the detector
+    now asks for corroboration, a control that ends one sample outside would
+    be testing the old rule.
+
+    The last case is the point of that rule: a single reading past the line
+    with the ball on the pitch either side of it is a stray, not a crossing.
+    """
     identity = np.eye(3)
     ok = True
     for name, path, expect in (
             ("out over a touchline", [(52.5, 30.0), (52.5, 40.0),
-                                      (52.5, 55.0), (52.5, 70.0)],
+                                      (52.5, 55.0), (52.5, 70.0),
+                                      (52.5, 73.0), (52.5, 76.0)],
              "out_of_play"),
             ("goal between the posts", [(20.0, 34.0), (12.0, 34.0),
-                                        (5.0, 34.0), (-2.0, 34.0)], "goal"),
+                                        (5.0, 34.0), (-2.0, 34.0),
+                                        (-3.0, 34.0), (-4.0, 34.0)], "goal"),
             ("behind, outside the posts", [(20.0, 20.0), (12.0, 18.0),
-                                           (5.0, 16.0), (-2.0, 15.0)],
-             "out_of_play")):
+                                           (5.0, 16.0), (-2.0, 15.0),
+                                           (-4.0, 14.0), (-6.0, 13.0)],
+             "out_of_play"),
+            ("one stray reading", [(52.5, 30.0), (52.5, 34.0), (52.5, 72.0),
+                                   (52.5, 38.0), (52.5, 40.0)], "nothing")):
         rows, maps = [], {}
         for k, (x, y) in enumerate(path):
             rows.append({"frame": k, "time_s": k / 25.0, "px": x, "py": y,
@@ -277,7 +308,8 @@ def print_row(row):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--frames", type=int, default=120)
+    ap.add_argument("--frames", type=int,
+                    default=detect_shots.ANCHOR_FRAMES)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--reset", type=float, default=RESET_SECONDS,
                     help="seconds of no placement after which the ball's "
@@ -288,7 +320,7 @@ def main():
                          "clip instead of all of them")
     ap.add_argument("--margin", type=float, default=MARGIN_M,
                     help="metres past the line before the ball counts as out")
-    ap.add_argument("--support", type=int, default=1,
+    ap.add_argument("--support", type=int, default=MIN_SUPPORT,
                     help="placements in a row outside before it counts")
     ap.add_argument("--verbose", action="store_true",
                     help="list every crossing found and every one missed")

@@ -829,3 +829,116 @@ corner, a penalty area -- which is the marking classifier's job and is
 currently blocked on having footage with those markings labelled. The other
 route is the wider panorama, where a single frame holds both an edge and the
 centre circle at once.
+
+
+## Out of play and set pieces: what fixed it, what did not, and where it stands
+
+The earlier section on this page blamed anti-correlated coverage, and that
+was right about the cause and wrong about the remedy. Two remedies were
+tried.
+
+### Carrying the map further does not work
+
+A frame with no centre circle inherits its map from a frame that has one.
+That borrow was matching the anchored frame *directly* against the target,
+one fit across the whole gap, so it failed as soon as the camera had panned
+away -- which is why raising the limit from 6 s to 16 s helped a little and
+36 s helped no more. Time was a proxy; overlap was the limit.
+
+Carrying the map in small steps instead, composing warps between consecutive
+frames, fixes the overlap problem and introduces a worse one. Measured
+against anchors the carry never sees:
+
+| gap | direct | chain/4 | chain/12 | chain/25 | chain/50 |
+|---|---|---|---|---|---|
+| 0-2 s | 75% 0.9m | 92% 3.2m | 92% 1.4m | 83% 1.2m | 83% 1.2m |
+| 2-8 s | 62% 0.7m | 91% 9.3m | 75% 5.9m | 62% 3.1m | 62% 1.5m |
+| 8-20 s | 31% 4.5m | 84% 21.2m | 67% 12.8m | 36% 6.1m | 36% 3.2m |
+
+Drift counts **multiplications**, not seconds: the same twenty seconds costs
+3.2 m in ten steps and 21.2 m in a hundred and twenty-five. Coarse steps
+drift less and break more (45 of 62 fitted against 567 of 576), and one
+break ends a chain, so accuracy and coverage trade against each other
+directly. A hybrid that takes coarse steps where they fit and fine ones only
+to bridge a break behaves exactly as designed and still loses: at 2-8 s it
+buys four points of coverage for twice the error.
+
+**The direct carry is 0.7-0.9 m out to eight seconds and 4.5 m beyond it.**
+That is the number to remember, because out of play is judged against a 1 m
+margin.
+
+### More anchors does work
+
+Only 80 of 2250 frames were ever tried for a centre circle. That is a
+sampling budget, not a property of the footage. Tripling it:
+
+| clip | anchors | placed | labelled crossings seen |
+|---|---|---|---|
+| Stoke, 80 frames | 19 | 749/1811 | 0 of 1 |
+| Stoke, 240 frames | 47 | 1016/1811 | **1 of 1** |
+| Reading, 240 frames | 60 | 1055/1820 | 0 of 2 |
+
+The crossing that three sessions of work on carrying could not reach appears
+immediately. The budget is now 240 and it is the parameter that decides
+whether this family of events is visible at all.
+
+### Two of my own claims were wrong and are withdrawn
+
+**The 150-to-400 reach change was not what found the crossing.** At 240
+anchors the crossing is found at reach 150 too. Holding the anchors fixed
+and varying only the reach, it buys 169 placements and one extra false
+crossing. It is not harmful -- zero false shots on five verified shot-free
+clips, injected shots recovered within 0.3 m -- but the explanation
+published with it was wrong. The original sweep behind that change reported
+993 placements where the shipping detector reports 749 and 751; it was
+written as a shell heredoc and cannot be audited, which is why
+`probe_borrow_reach.py` is now a file.
+
+**The Veo xG improvement was not a coverage improvement.** Veo's placement
+is essentially unchanged (505 against 514). The injection takes the first
+anchored run long enough to hold a shot, and at the longer reach an earlier
+one qualified, so the shot was planted somewhere better covered. What the
+0.106 against a true 0.103 shows is that Veo's geometry is sound where a
+whole flight is visible. It does not show that the reach made flights
+visible.
+
+### Where out of play actually stands: 1 of 3, with 4 to 6 false per 90 s
+
+| | found | labelled | matched | false |
+|---|---|---|---|---|
+| Stoke | 7 | 1 | 1 | 6 |
+| Reading | 2 | 2 | 0 | 2 |
+
+The two failure modes are different and the per-event listing separates
+them.
+
+**The misses are not geometry.** Both Reading crossings have **0 ball
+positions placed** within two seconds, out of 74 and 51 detections. There is
+no map on those frames, at 58% placement across the clip. Anti-correlation
+survives tripling the anchors.
+
+**The false alarms are mostly the anchor's own error.** Of the seven
+spurious crossings, four sit 1.2 to 1.9 m past the line -- inside what the
+anchor is known to be worth, 0.7-1.1 m anchored and several metres carried,
+against a 1 m margin. Two are 11.5 and 21.2 m out, which is a broken map or
+a ball detection on something that is not the ball.
+
+Sweeping the margin from 1 m to 5 m and requiring up to three consecutive
+readings never gets below four false crossings and never above one match.
+**No setting rescues this**, which is the useful thing the sweep says --
+and with three labelled crossings in existence, no setting could be chosen
+on them anyway.
+
+### What would fix it
+
+The same thing as before, and the measurements have now ruled out the
+alternatives. The misses need an anchor that works *at the edge of the
+pitch* -- a goal line meeting a touchline, a penalty area -- because that is
+where these events happen and a midfield circle never sees them. The false
+alarms need a map good to well under a metre at the moment of crossing,
+which is the same requirement.
+
+Set pieces inherit all of it: a restart is only looked for after the ball
+has been seen to leave, so a missed crossing is a missed set piece. The
+classifier that names a restart from its position is correct on synthetic
+input for all five kinds; it has almost nothing real to name.

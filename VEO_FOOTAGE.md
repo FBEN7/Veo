@@ -1286,6 +1286,11 @@ xG 0.298 instead of 0.103, and the cause was diagnosed as late detection:
 at 15% ball placement the opening of the flight had no pitch map, so the
 ball was first seen 7 m closer to goal than it was struck.
 
+> **Corrected below.** The reasoning in this section does not survive a
+> controlled repeat. The reach change is kept -- it costs nothing measurable
+> -- but it is not what fixed the Veo number, and the sweep it was chosen on
+> does not reproduce. Read to the end of the section.
+
 That diagnosis turned out to be exactly right, and it points at its own fix.
 An anchor was being carried at most 150 frames, six seconds. Sweeping that
 against the three labelled crossings:
@@ -1322,3 +1327,33 @@ of anchored frames long enough to hold a shot, and at the longer reach an
 earlier one qualified. So this is not the same shot measured twice. What it
 shows is that where coverage is enough to see a whole flight, the geometry
 is right on Veo too, which was never in evidence before.
+
+### The correction
+
+Two claims above are wrong, and they are wrong in the same way: a number was
+compared across runs that differed in more than the thing being tested.
+
+**The sweep does not reproduce.** It reports 993 of 1811 placed on the Stoke
+clip at reach 400. The shipping detector reports 749 and 751 at that setting,
+on two independent runs. The Reading column matches exactly, which makes it
+worse rather than better -- a discrepancy on one clip and not the other is
+not a property of the reach. That sweep was a shell heredoc and is gone;
+`probe_borrow_reach.py` is the same measurement written down, holding one
+set of anchors per clip so the reaches differ only in the reach. It says the
+reach buys 169 placements and one extra false crossing, and that the
+crossing is already found at 150.
+
+**Veo's placement did not rise.** It is 505 against 514 -- unchanged. So
+"with more of the flight placed, the shot is no longer picked up after it was
+struck" is not what happened. The shot moved to a better-covered part of the
+clip and was measured correctly there. The 0.106 against a true 0.103 is
+still worth having: it is the first evidence that Veo's geometry is sound
+where a whole flight is visible. It is not evidence that the reach made
+flights visible.
+
+**What did raise coverage** was the anchor budget: 80 frames tried for a
+centre circle became 240, Stoke went from 749 placed to 1016, and the
+crossing that no amount of carrying could reach appeared. `EVENT_ACCURACY.md`
+has that measurement and the state of the event family it serves, which is
+1 of 3 crossings with 4 to 6 false alarms per ninety seconds -- working on
+synthetic input, not working on football.

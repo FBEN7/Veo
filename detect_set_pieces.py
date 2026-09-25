@@ -154,8 +154,12 @@ def synthetic_check():
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--frames", type=int, default=120)
+    ap.add_argument("--frames", type=int,
+                    default=detect_shots.ANCHOR_FRAMES)
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--clip", default=None,
+                    help="substring of the output directory, to score one "
+                         "clip instead of all of them")
     args = ap.parse_args()
 
     if args.check:
@@ -177,6 +181,8 @@ def main():
 
     rng = np.random.default_rng(0)
     for name, out_dir in CLIPS:
+        if args.clip and args.clip not in out_dir:
+            continue
         path = Path(out_dir)
         if not (path / "clip.json").exists():
             continue
