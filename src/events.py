@@ -213,40 +213,14 @@ def _smooth_series(s: pd.Series, window: int = VEL_SMOOTH_WINDOW) -> pd.Series:
 
 
 def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
-    """Return a DataFrame with one row per frame that has a ball detection.
+    """Ball position and speed per frame, from `ball_tracking.kinematics`.
 
-    Columns: frame, time_s, bx, by, vel_x, vel_y, speed_kmh
-
-    Uses Kalman filtering for smoothing (no gap-filling to keep frame consistency).
+    Kept as a name here because the rest of this module reads it, but the
+    implementation moved: the possession share needs the same answer to
+    "is the ball travelling too fast to be held", and two copies of it
+    drifted apart.
     """
-    # Use improved ball tracking (Kalman filter + validation, NO gap-filling)
-    # Gap-filling creates frames that don't exist in player tracking, breaking possession detection
-    ball = ball_tracking.extract_ball_tracking(tracks, smooth_window=3, fill_gaps=False)
-
-    if ball.empty:
-        return pd.DataFrame(columns=["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"])
-
-    # Rename columns for compatibility
-    ball = ball.rename(columns={"x": "bx", "y": "by", "vx": "vel_x", "vy": "vel_y"})
-
-    # Calculate speed from velocity components
-    speed = np.sqrt(ball["vel_x"]**2 + ball["vel_y"]**2) * 3.6  # m/s to km/h
-    ball["speed_kmh"] = speed.clip(upper=120.0)
-
-    return ball[["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]]
-
-
-def _detect_ball_movement_events(ball: pd.DataFrame, events: list[dict[str, Any]]) -> None:
-    """Detect ball movement patterns that indicate passes/shots (limited FOV mode).
-
-    DISABLED: This function was creating 138 false positives per 2 minutes.
-    High-speed ball movements alone are insufficient to reliably detect events.
-
-    Requires: Ball movement + visible player validation to work correctly.
-    Status: Disabled until proper player validation is implemented.
-    """
-    # Disabled - creates too many false positives without player validation
-    return
+    return ball_tracking.kinematics(tracks)
 
 
 def _possession_per_frame(

@@ -9,6 +9,8 @@ Métriques MVP (fiables -> approximatives, dans cet ordre) :
 import numpy as np
 import pandas as pd
 
+from . import ball_tracking
+
 PITCH_X, PITCH_Y = 105.0, 68.0
 SPRINT_KMH = 20.0
 MAX_SPEED_KMH = 40.0  # au-delà = erreur de tracking, on filtre
@@ -293,7 +295,10 @@ def possession_timeline(tracks: pd.DataFrame, radius_m: float = 3.0,
     """
     ball = tracks[tracks.cls == "ball"][["frame", "x", "y"]]
     if max_ball_speed_kmh is not None and not ball.empty:
-        speeds = ball_velocity(tracks)
+        # The event detector's kinematics, not this module's ball_velocity:
+        # they smooth differently and the difference is worth ten points of
+        # share error. See ball_tracking.kinematics.
+        speeds = ball_tracking.kinematics(tracks)
         if not speeds.empty:
             calm = speeds[speeds.speed_kmh.fillna(0.0)
                           <= max_ball_speed_kmh].frame
