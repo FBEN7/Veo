@@ -1277,3 +1277,48 @@ So on this footage shots are found and overstated, and the cause is anchor
 coverage, not the detector. Broadcast at 38-66% placement does not show it.
 The thing that would fix it is the thing that has been the answer for three
 sections running: more anchored frames, which means more Veo footage.
+
+
+## Reaching further for an anchor fixes the Veo xG bias
+
+The shot detector reported Veo's injected shot at 8.5 m instead of 16.0 m,
+xG 0.298 instead of 0.103, and the cause was diagnosed as late detection:
+at 15% ball placement the opening of the flight had no pitch map, so the
+ball was first seen 7 m closer to goal than it was struck.
+
+That diagnosis turned out to be exactly right, and it points at its own fix.
+An anchor was being carried at most 150 frames, six seconds. Sweeping that
+against the three labelled crossings:
+
+| reach | placed (w3) | placed (reading) | crossings visible |
+|---|---|---|---|
+| 150f, 6 s | 762/1811 | 751/1820 | 0 of 3 |
+| 400f, 16 s | 993/1811 | 869/1820 | **1 of 3** |
+| 900f, 36 s | 1010/1811 | 882/1820 | 1 of 3 |
+
+At 900 it stops improving, so the limit is the footage rather than the
+number -- two of the three crossings have no centre circle within
+thirty-six seconds either side.
+
+Longer borrows are less accurate, so this had to be paid for somewhere. It
+was not. Every injected shot still comes back, and Veo's stops being wrong:
+
+| clip | recovered (planted 16.0 m) | xG (true 0.103) |
+|---|---|---|
+| SoccerNet w1 | 15.8 m | 0.105 |
+| SoccerNet w2 | 16.1 m | 0.101 |
+| SoccerNet w3 | 16.3 m | 0.099 |
+| reading | 15.8 m | 0.106 |
+| **Veo** | **15.7 m** | **0.106** |
+
+All five within 0.3 m of the planted distance and 0.007 of the true xG. The
+threefold Veo error is gone, and it went for the reason the diagnosis
+predicted: with more of the flight placed, the shot is no longer picked up
+after it was struck.
+
+Worth being precise about what this is not. Veo's shot was planted in a
+different part of the clip than before -- the injection takes the first run
+of anchored frames long enough to hold a shot, and at the longer reach an
+earlier one qualified. So this is not the same shot measured twice. What it
+shows is that where coverage is enough to see a whole flight, the geometry
+is right on Veo too, which was never in evidence before.
