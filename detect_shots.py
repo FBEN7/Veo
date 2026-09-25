@@ -165,8 +165,14 @@ def to_pitch(maps, frame_index, px, py):
     index = int(frame_index)
     homography = maps.get(index)
     if homography is None:
+        # Explicit None checks: `a or b` on numpy arrays asks for their
+        # truth value, which an array of more than one element does not have.
         for offset in range(1, ANCHOR_GRID // 2 + 1):
-            homography = maps.get(index - offset) or maps.get(index + offset)
+            for candidate in (maps.get(index - offset),
+                              maps.get(index + offset)):
+                if candidate is not None:
+                    homography = candidate
+                    break
             if homography is not None:
                 break
     if homography is None:
