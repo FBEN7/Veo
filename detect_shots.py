@@ -77,7 +77,7 @@ from src import xg as xg_module
 SHOT_MIN_SPEED_MS = 13.0
 
 # Over how many frames the speed is measured, and for how many it must hold.
-SPEED_WINDOW = 3
+SPEED_WINDOW = 6
 SUSTAIN_FRAMES = 3
 
 # The ball's line, extended, has to cross the goal line inside the mouth --
@@ -219,18 +219,36 @@ def find_shots(ball: pd.DataFrame, maps, fps: float):
         gap = times[i] - times[j]
         if gap <= 0 or frames[i] - frames[j] > 2 * SPEED_WINDOW:
             continue                     # a jump across missing detections
-        vx, vy = (xs[i] - xs[j]) / gap, (ys[i] - ys[j]) / gap
+        # Fitted across the window rather than differenced between its ends.
+        # Two anchors on neighbouring frames disagree by about 0.6 m, and a
+        # difference over 0.12 s turns that into 5 m/s of speed that is not
+        # there -- measured, an injected 22 m/s shot read back as 34 on one
+        # clip and 15 on another. A least-squares line through every placed
+        # point in the window averages that disagreement down instead of
+        # amplifying it, and gives the position at the same time.
+        window = slice(j, i + 1)
+        span = times[window] - times[j]
+        if len(span) < 3:
+            continue
+        design = np.column_stack([np.ones_like(span), span])
+        try:
+            fit_x, _, _, _ = np.linalg.lstsq(design, xs[window], rcond=None)
+            fit_y, _, _, _ = np.linalg.lstsq(design, ys[window], rcond=None)
+        except np.linalg.LinAlgError:
+            continue
+        start_x, vx = float(fit_x[0]), float(fit_x[1])
+        start_y, vy = float(fit_y[0]), float(fit_y[1])
         speed = float(np.hypot(vx, vy))
         if speed < SHOT_MIN_SPEED_MS or speed > 45.0:
             continue
         for goal in sg.GOALS:
-            if not crosses_mouth(xs[j], ys[j], vx, vy, goal):
+            if not crosses_mouth(start_x, start_y, vx, vy, goal):
                 continue
-            distance = sg.distance_to_goal(xs[j], ys[j], goal)
+            distance = sg.distance_to_goal(start_x, start_y, goal)
             if distance > MAX_SHOT_DISTANCE_M:
                 continue
             hits.append({"frame": int(frames[j]), "time_s": float(times[j]),
-                         "x": float(xs[j]), "y": float(ys[j]),
+                         "x": start_x, "y": start_y,
                          "speed_ms": speed, "goal": goal,
                          "distance_m": float(distance)})
             break
