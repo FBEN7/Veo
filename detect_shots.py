@@ -328,7 +328,9 @@ def inject_shot(ball, maps, info, fps, goal="left"):
     rows = []
     for k in range(span):
         frame = start + k
-        homography = maps.get(frame) or maps.get(frame - frame % ANCHOR_GRID)
+        homography = maps.get(frame)
+        if homography is None:
+            homography = maps.get(frame - frame % ANCHOR_GRID)
         if homography is None:
             continue
         t = k / fps
