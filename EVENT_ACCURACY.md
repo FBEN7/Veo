@@ -962,3 +962,64 @@ restart matches no landmark, and nothing in a ball track shows a foul.
 
 So both families sit at 1 of 3, and they will move together. Whatever makes
 a crossing at the edge of the pitch visible makes its restart visible too.
+
+
+## Possession share: the number the report prints, measured at last
+
+Possession is the most prominent figure in the report and had never been
+compared with anything. It can be: every one of the 1844 ball actions in a
+labelled match carries a `team` field, so the labels are not a list of
+events but a possession timeline sampled about once a second. The team in
+control between one action and the next is the team of the earlier action,
+and from an OUT or a GOAL until the next action nobody is in possession.
+
+Two numbers, because the share alone cannot be trusted. **Share** is what
+the report prints. **Per-frame agreement** is whether the right team is
+named moment to moment, and the bar it has to clear is the majority-class
+baseline: on football where one team holds 60% of the ball, always naming
+that team scores 60%.
+
+| clip | rule | frames | agreement | majority | share ours | share true | error |
+|---|---|---|---|---|---|---|---|
+| Stoke | proxy | 1343 | 0.69 | 0.52 | 0.35 | 0.52 | **0.17** |
+| Stoke | spells | 1623 | 0.71 | 0.53 | 0.41 | 0.53 | **0.12** |
+| Reading | proxy | 813 | 0.57 | 0.57 | 0.55 | 0.57 | 0.02 |
+| Reading | spells | 1120 | 0.50 | 0.56 | 0.56 | 0.56 | 0.00 |
+
+### The two clips say opposite things, and that is the finding
+
+On Stoke the timeline **knows who has the ball** -- 0.69 and 0.71 against a
+0.52 baseline, the clearest signal in this table -- and the share is out by
+seventeen points. On Reading the share is **exact**, 0.00 error, and the
+timeline is worth nothing: the proxy lands precisely on the majority
+baseline and the spell rule scores 0.50 against a baseline of 0.56, which is
+worse than naming one team and never changing your mind.
+
+So accuracy of the share is anticorrelated with whether the thing underneath
+it works. A reader given "Team A 54%" cannot tell which of these two matches
+they are looking at, and neither can the pipeline.
+
+### Why a share can be exact while the timeline is a coin flip
+
+The share is not computed over the match. It is computed over **the frames
+where the rule fires** -- where the ball is detected and a player is within
+3 m of it -- and those frames are not a random sample of the football. The
+proxy scores 1343 frames of 2250 on Stoke and 813 on Reading. A team that
+plays long balls spends its possession with nobody within three metres of
+the ball, so its possession is disproportionately invisible, and the ratio
+is taken over what is left.
+
+That is a selection effect, not a measurement error, and it explains both
+rows: it can distort a share badly while each individual frame is decided
+correctly, and it can leave a share intact while the frames are guesses.
+
+### What this does not say
+
+Two matches. The spell rule beats the proxy on Stoke and loses to it on
+Reading, so nothing here picks a winner between them, and the report's use
+of the weaker-looking rule is not established as a mistake. What is
+established is that the printed percentage has been out by seventeen points
+on labelled football, and the report now says so next to the number instead
+of calling it a proxy and leaving it there.
+
+Reproduce with `python check_possession.py`, controls with `--check`.
