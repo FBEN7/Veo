@@ -69,6 +69,10 @@ STOPPERS = ("OUT", "GOAL")
 # The report's rule: a player within this many metres of the ball holds it.
 PROXY_RADIUS_M = 3.0
 
+# How long a gap between firings may be bridged. 0 keeps the sampled
+# behaviour the report ships, which is the baseline this is against.
+GAPS_S = (0.0, 1.0, 2.0, 5.0)
+
 LABEL_DIR = Path("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
 
 
@@ -134,6 +138,53 @@ def spell_timeline(metric: pd.DataFrame, frames: np.ndarray):
                      for f in frames], dtype=object)
 
 
+def fill_gaps(predicted, times, max_gap_s: float):
+    """Turn a sampled timeline into a continuous one.
+
+    This is the fix for the selection effect, and it is worth being precise
+    about what the effect is. The share is not computed over the match; it is
+    computed over the frames where the rule fires -- ball detected, a player
+    within three metres of it -- and those frames are not a random sample of
+    football. A team that plays long balls spends its possession with nobody
+    near the ball, so its possession is disproportionately invisible and the
+    ratio is taken over what is left.
+
+    Counting intervals instead of samples removes that, because an interval
+    spans its own gaps. Between two firings of the rule:
+
+      * naming the same team, the whole interval is that team's -- the ball
+        was theirs before and after, so it was theirs in between;
+      * naming different teams, the interval is split down the middle, since
+        the change happened somewhere inside it and the middle is the only
+        defensible guess;
+      * longer than `max_gap_s`, nobody is credited. Beyond some length the
+        two ends are not one possession and joining them invents football.
+
+    The truth timeline is built exactly this way -- control runs from one
+    labelled action to the next -- so filling makes the two comparable rather
+    than comparing a continuous timeline against a sampled one.
+    """
+    filled = list(predicted)
+    known = [k for k, value in enumerate(filled) if value is not None]
+    if not known:
+        return np.array(filled, dtype=object)
+
+    for start, end in zip(known, known[1:]):
+        if end == start + 1:
+            continue
+        if float(times[end] - times[start]) > max_gap_s:
+            continue
+        before, after = filled[start], filled[end]
+        if before == after:
+            for k in range(start + 1, end):
+                filled[k] = before
+        else:
+            middle = (times[start] + times[end]) / 2.0
+            for k in range(start + 1, end):
+                filled[k] = before if times[k] < middle else after
+    return np.array(filled, dtype=object)
+
+
 def compare(predicted, truth):
     """Agreement and share, under whichever team mapping agrees more."""
     both = np.array([p is not None and t is not None
@@ -197,6 +248,46 @@ def synthetic_check():
     return ok
 
 
+
+
+def fill_check():
+    """Filling a sampled timeline, and refusing to fill too far."""
+    times = np.arange(10) / 2.0          # half a second apart
+    sampled = np.array(["team_A", None, None, "team_A", None, None,
+                        "team_B", None, None, "team_B"], dtype=object)
+    ok = True
+
+    filled = fill_gaps(sampled, times, max_gap_s=5.0)
+    same = list(filled[:4]) == ["team_A"] * 4
+    split = list(filled[4:7]) == ["team_A", "team_B", "team_B"]
+    print(f"   {'same team either side':<28s} -> "
+          f"{'filled through' if same else 'WRONG'}")
+    print(f"   {'different teams':<28s} -> "
+          f"{'split at the middle' if split else 'WRONG'}")
+    ok &= same and split
+
+    narrow = fill_gaps(sampled, times, max_gap_s=0.6)
+    untouched = sum(1 for v in narrow if v is None) == 6
+    print(f"   {'gap wider than allowed':<28s} -> "
+          f"{'left empty' if untouched else 'WRONG'}")
+    ok &= untouched
+
+    # The point of the whole exercise: a team whose possession is sampled
+    # less often loses share, and filling gives it back.
+    times2 = np.arange(12) / 2.0
+    biased = np.array(["team_A"] * 6 + ["team_B", None, None, None, None,
+                       "team_B"], dtype=object)
+    before = sum(1 for v in biased if v == "team_B") / \
+        sum(1 for v in biased if v is not None)
+    after_fill = fill_gaps(biased, times2, max_gap_s=5.0)
+    after = sum(1 for v in after_fill if v == "team_B") / len(after_fill)
+    good = abs(before - 0.25) < 1e-9 and abs(after - 0.5) < 1e-9
+    ok &= good
+    print(f"   {'sparsely seen team':<28s} -> share {before:.2f} sampled, "
+          f"{after:.2f} filled  {'ok' if good else 'WRONG'}")
+    return ok
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
@@ -205,6 +296,9 @@ def main():
     if args.check:
         print("Scoring a known timeline, to see what the two numbers do.\n")
         ok = synthetic_check()
+        print("\nFilling the gaps between firings, which is the follow-up "
+              "this measures.\n")
+        ok &= fill_check()
         print(f"\n   {'all pass' if ok else 'SOMETHING IS WRONG'}")
         return
 
@@ -212,9 +306,9 @@ def main():
 
     print("Possession against the team named on every labelled ball "
           "action.\n")
-    print(f"  {'clip':>16s} {'rule':>8s} {'frames':>7s} {'agreement':>10s} "
-          f"{'majority':>9s} {'share ours':>11s} {'share true':>11s} "
-          f"{'error':>6s}")
+    print(f"  {'clip':>14s} {'rule/gap':>14s} {'frames':>7s} "
+          f"{'agreement':>10s} {'majority':>9s} {'share ours':>11s} "
+          f"{'share true':>11s} {'error':>6s}")
 
     for out_dir, (source, offset) in CLIP_SOURCES.items():
         path = Path(out_dir)
@@ -231,14 +325,17 @@ def main():
 
         for label, predicted in (("proxy", proxy_timeline(metric, frames)),
                                  ("spells", spell_timeline(metric, frames))):
-            got = compare(predicted, truth)
-            if got is None:
-                print(f"  {out_dir[-16:]:>16s} {label:>8s}  nothing to score")
-                continue
-            print(f"  {out_dir[-16:]:>16s} {label:>8s} {got['frames']:7d} "
-                  f"{got['agreement']:10.2f} {got['majority']:9.2f} "
-                  f"{got['share_pred']:11.2f} {got['share_true']:11.2f} "
-                  f"{got['share_error']:6.2f}", flush=True)
+            for gap in GAPS_S:
+                filled = (predicted if gap <= 0
+                          else fill_gaps(predicted, times, gap))
+                got = compare(filled, truth)
+                if got is None:
+                    continue
+                tag = f"{label}/{'sampled' if gap <= 0 else f'{gap:.0f}s'}"
+                print(f"  {out_dir[-14:]:>14s} {tag:>14s} {got['frames']:7d} "
+                      f"{got['agreement']:10.2f} {got['majority']:9.2f} "
+                      f"{got['share_pred']:11.2f} {got['share_true']:11.2f} "
+                      f"{got['share_error']:6.2f}", flush=True)
 
     print("\n  'agreement' is per frame and 'share' is the number the report "
           "prints.\n  'majority' is what always naming the dominant team "
