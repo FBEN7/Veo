@@ -115,25 +115,23 @@ def proxy_timeline(metric: pd.DataFrame, frames: np.ndarray,
 
 
 def spell_timeline(metric: pd.DataFrame, frames: np.ndarray):
-    """The careful rule, from the possession logic that drives the events."""
-    ball = metric[metric.cls == "ball"].copy()
-    players = metric[metric.cls == "player"].copy()
-    if ball.empty or players.empty:
+    """The careful rule, from the possession logic that drives the events.
+
+    This wants the ball's kinematics frame rather than its raw rows -- it
+    reads the ball's speed to decide whether anyone can be controlling it --
+    and it hands back the holding team itself, so there is nothing here to
+    reconstruct from track ids.
+    """
+    ball = ev_module._ball_kinematics(metric)
+    if ball.empty:
         return np.full(frames.shape, None, dtype=object)
-    poss = ev_module._possession_per_frame(ball, players)
-    if poss.empty:
+    poss = ev_module._possession_per_frame(ball, metric)
+    if poss.empty or "possessor_team" not in poss.columns:
         return np.full(frames.shape, None, dtype=object)
-    team_of = (players.dropna(subset=["team"])
-               .groupby("track_id").team.agg(
-                   lambda s: s.value_counts().idxmax()).to_dict())
-    holder = dict(zip(poss.frame.astype(int), poss.track_id))
-    out = []
-    for f in frames:
-        track = holder.get(int(f))
-        team = team_of.get(int(track)) if track is not None and track >= 0 \
-            else None
-        out.append(team if team in ("team_A", "team_B") else None)
-    return np.array(out, dtype=object)
+    by_frame = dict(zip(poss.frame.astype(int), poss.possessor_team))
+    return np.array([by_frame.get(int(f)) if by_frame.get(int(f))
+                     in ("team_A", "team_B") else None
+                     for f in frames], dtype=object)
 
 
 def compare(predicted, truth):
