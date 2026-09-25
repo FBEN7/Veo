@@ -1,8 +1,23 @@
-# The pipeline on Veo footage
+# The pipeline on the 640x360 clip
+
+> **Corrected.** This page was written as "the pipeline on Veo footage", and
+> described the clip as "a Veo camera at 640x360". That is wrong, and the
+> error ran through the whole repository. The clip is a match **downloaded
+> from the web** -- an auto-follow crop with a scoreboard burnt into the
+> corner, panning to keep the ball centred. There is no Veo camera behind
+> it and no Veo panorama to go back to. The file names and the `output_veo`
+> directory keep the old name so that earlier results stay findable; the
+> footage is what this paragraph says it is.
+>
+> It matters because a following camera has a blind spot a fixed one does
+> not: when the ball leaves the pitch the camera has not caught up, so
+> there is nothing in frame at the moment out-of-play has to be detected.
+> That is documented in EVENT_ACCURACY.md as a property of *this* footage,
+> not as a limit of the method.
 
 Every accuracy figure in this project comes from SoccerNet or Roboflow, both
-720p or 1080p broadcast. The footage the product is for is a Veo camera at
-640x360. This is the first run on it since the rebuild.
+720p or 1080p broadcast. This clip is 640x360, which is lower than anything
+the pipeline was measured on.
 
 Clip: 3 minutes from 20:00 of a full match, 640x360 at 25 fps, 4500 frames.
 

@@ -1214,11 +1214,14 @@ carrying the anchor further, carrying it in steps at four spacings, a
 multi-scale walk over both, tripling the anchor budget (which fixed one of
 three), the grass around the ball, and now collective player motion.
 
-## The footage is the limit, and it is the wrong footage
+## The footage is the limit, and there is no better copy of it
 
-The clip called "Veo" throughout this repository is a **640x360
-auto-follow crop** -- a broadcast-style feed with a scoreboard burnt into
-the corner, panning to keep the ball centred. It is not a Veo panorama.
+The clip called "Veo" throughout this repository is a **640x360 auto-follow
+crop** -- a broadcast-style feed with a scoreboard burnt into the corner,
+panning to keep the ball centred. It is not a Veo panorama, and there is no
+panorama to fetch: it was downloaded from the web, and there is no camera,
+account or original recording behind it. The name is a misnomer this
+repository carried for a long time.
 
 That matters more than anything else on this page, because the failure this
 section documents is a *property of a camera that follows the ball*: when
@@ -1239,7 +1242,15 @@ It would also remove most of what this project has spent its time on:
   * **out of play becomes observable**, because the touchline and the ball
     are in the same frame at the moment that matters.
 
-So the recommendation is not another detector. It is to run this on the
-panoramic export at full resolution, and to label a few minutes of it, so
-that the numbers are measured on the footage the product actually has
-rather than transferred from two broadcast matches on faith.
+So the recommendation is not another detector, and it is not the panoramic
+export either, because there is not one. What is left is smaller and still
+worth doing: **label the clip that exists.** Three minutes of it, by hand,
+gives this project its first labels on footage that is not SoccerNet, and
+answers the question the plausibility checks cannot -- whether the pipeline
+transfers at all, or whether every number here belongs to 720p broadcast
+and nothing else.
+
+The blind spot will remain, because it belongs to the camera. Out of play
+will stay unmeasurable on this footage whatever is labelled. Everything
+else -- shots, possession, teams, passes -- becomes measurable where it
+currently is not.
