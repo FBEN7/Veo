@@ -938,7 +938,27 @@ where these events happen and a midfield circle never sees them. The false
 alarms need a map good to well under a metre at the moment of crossing,
 which is the same requirement.
 
-Set pieces inherit all of it: a restart is only looked for after the ball
-has been seen to leave, so a missed crossing is a missed set piece. The
-classifier that names a restart from its position is correct on synthetic
-input for all five kinds; it has almost nothing real to name.
+### Set pieces, at the new budget: 1 of 3, for exactly the same reason
+
+A restart is only looked for after the ball has been seen to leave, so the
+two measurements are one measurement. Scored against the THROW IN labels
+inside these clips:
+
+| clip | crossings found | restarts | named | throw-ins labelled | matched |
+|---|---|---|---|---|---|
+| Stoke | 6 | 6 | 4 free kick, 2 throw in | 1 | **1** |
+| Reading | 2 | 2 | 2 free kick | 2 | 0 |
+
+Stoke's throw-in is the first real set piece this pipeline has ever named
+correctly, and it appeared the moment the crossing before it became
+visible. Reading's two are missed because Reading's two crossings are
+missed.
+
+The classifier itself is not the problem: it names all five kinds correctly
+from position on synthetic input, and it is right about the one real
+restart it can see. It has almost nothing real to name. "Free kick" in that
+table is a residue rather than a detection -- it is what is left when a
+restart matches no landmark, and nothing in a ball track shows a foul.
+
+So both families sit at 1 of 3, and they will move together. Whatever makes
+a crossing at the edge of the pitch visible makes its restart visible too.
