@@ -769,3 +769,63 @@ is nonetheless right, or the vanishing-point constraint is biased here: it
 assumes a centred principal point and square pixels, and broadcast footage is
 cropped and rescaled before anyone sees it. The evidence available says only
 which one the downstream measurements prefer, and they prefer the pan.
+
+
+## Out of play, set pieces, and a coverage problem that is not random
+
+Both were built on the anchor rather than on the `absolute_pitch` flag,
+because that flag also switches on goal detection and feeds everything the
+ground plane's coordinates. Both pass their synthetic controls: a ball
+walked over each edge of the pitch is named correctly, including the case
+that matters -- behind the goal line but outside the posts is out, not a
+goal -- and all five restart landmarks classify correctly.
+
+Against real labels they fail completely.
+
+| clip | OUT found | OUT true | matched | false | throw-ins | matched |
+|---|---|---|---|---|---|---|
+| SoccerNet w3 | 2 | 1 | **0** | 2 | 1 | **0** |
+| reading | 0 | 2 | **0** | 0 | 2 | **0** |
+
+Not one of the three real crossings found, two invented. Set pieces follow
+from crossings, so the throw-ins are 0 of 3 as a consequence rather than a
+separate failure.
+
+### Why, exactly
+
+The ball is detected at every one of them. It simply has nowhere to stand:
+
+    Stoke   OUT at 10.6 s : 43 ball detections within 2 s, 0 placed on the pitch
+    reading OUT at  5.4 s : 74 ball detections within 2 s, 0 placed
+    reading OUT at 72.1 s : 51 ball detections within 2 s, 0 placed
+
+**Zero placed, on all three.** Not a marginal miss -- there is no pitch map
+on those frames at all, so the crossing cannot be seen whatever the geometry
+does.
+
+### The part worth remembering
+
+This is anchor coverage again, but not the version already known. Coverage
+being 15% on Veo and 38-66% on broadcast has been treated as a uniform
+sampling rate, as though two frames in five are anchored wherever they
+happen to be. They are not.
+
+An anchor comes from the centre circle. The centre circle is at midfield.
+The ball goes out at the edges. So the frames with anchors and the frames
+containing a crossing are **anti-correlated**, and the coverage that matters
+for this event family is far below the average -- zero on all three
+occasions here, against a headline 38-66%.
+
+Every event tied to the edge of the pitch inherits this: out of play,
+throw-ins, corners, goal kicks, and goals themselves, which happen at the
+one place a midfield anchor never reaches. Shots are partly spared because
+they are taken from around the box, closer to where circles are seen, which
+is why an injected shot is found on every clip while a real crossing is
+found on none.
+
+Raising average coverage does not fix it. What would is an anchor that works
+from the markings *at* the edges -- a goal line and a touchline meeting at a
+corner, a penalty area -- which is the marking classifier's job and is
+currently blocked on having footage with those markings labelled. The other
+route is the wider panorama, where a single frame holds both an edge and the
+centre circle at once.
