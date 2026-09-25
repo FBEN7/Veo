@@ -281,35 +281,55 @@ def field_tilt(tracks: pd.DataFrame) -> dict:
 BALL_HELD_MAX_KMH = 20.0
 
 
-def possession_proxy(tracks: pd.DataFrame, radius_m: float = 3.0,
-                     max_ball_speed_kmh: float | None = BALL_HELD_MAX_KMH
-                     ) -> dict:
-    """Frame par frame : équipe du joueur le plus proche du ballon (< radius).
+def possession_timeline(tracks: pd.DataFrame, radius_m: float = 3.0,
+                        max_ball_speed_kmh: float | None = BALL_HELD_MAX_KMH
+                        ) -> pd.DataFrame:
+    """Qui tient le ballon, image par image : frame, team.
 
-    Approximatif : dépend fortement de la qualité de détection du ballon.
-
-    Les images où le ballon vole trop vite pour être contrôlé sont exclues
-    (`max_ball_speed_kmh`) : le joueur le plus proche d'un ballon en cours de
-    passe est souvent un adversaire, ce qui fausse le pourcentage au
-    détriment de l'équipe qui joue long. Passer `None` retrouve l'ancien
-    comportement.
+    Exposé séparément du pourcentage pour que ce qui est mesuré soit
+    exactement ce qui est publié. Mesurer une implémentation et en livrer
+    une autre -- même à deux lignes près, comme deux façons de lisser la
+    vitesse du ballon -- rend la mesure inutile.
     """
     ball = tracks[tracks.cls == "ball"][["frame", "x", "y"]]
-    if max_ball_speed_kmh is not None:
+    if max_ball_speed_kmh is not None and not ball.empty:
         speeds = ball_velocity(tracks)
         if not speeds.empty:
             calm = speeds[speeds.speed_kmh.fillna(0.0)
                           <= max_ball_speed_kmh].frame
             ball = ball[ball.frame.isin(set(calm.astype(int)))]
     players = tracks[tracks.team.isin(["team_A", "team_B"])]
+    if ball.empty or players.empty:
+        return pd.DataFrame(columns=["frame", "team"])
+
     merged = ball.merge(players, on="frame", suffixes=("_b", ""))
-    merged["d"] = np.sqrt((merged.x - merged.x_b)**2 + (merged.y - merged.y_b)**2)
+    if merged.empty:
+        return pd.DataFrame(columns=["frame", "team"])
+    merged["d"] = np.sqrt((merged.x - merged.x_b) ** 2
+                          + (merged.y - merged.y_b) ** 2)
     nearest = merged.loc[merged.groupby("frame").d.idxmin()]
     nearest = nearest[nearest.d < radius_m]
-    if len(nearest) == 0:
+    return nearest[["frame", "team"]].reset_index(drop=True)
+
+
+def possession_proxy(tracks: pd.DataFrame, radius_m: float = 3.0,
+                     max_ball_speed_kmh: float | None = BALL_HELD_MAX_KMH
+                     ) -> dict:
+    """Part de possession par équipe, sur la base de `possession_timeline`.
+
+    Approximatif : dépend fortement de la qualité de détection du ballon.
+
+    Les images où le ballon vole trop vite pour être contrôlé sont exclues :
+    le joueur le plus proche d'un ballon en cours de passe est souvent un
+    adversaire, ce qui fausse le pourcentage au détriment de l'équipe qui
+    joue long. Passer `max_ball_speed_kmh=None` retrouve l'ancien
+    comportement.
+    """
+    held = possession_timeline(tracks, radius_m, max_ball_speed_kmh)
+    if held.empty:
         return {"team_A": None, "team_B": None, "frames_used": 0}
-    share = nearest.team.value_counts(normalize=True).round(3).to_dict()
-    share["frames_used"] = int(len(nearest))
+    share = held.team.value_counts(normalize=True).round(3).to_dict()
+    share["frames_used"] = int(len(held))
     return share
 
 
