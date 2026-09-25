@@ -185,6 +185,34 @@ def fill_gaps(predicted, times, max_gap_s: float):
     return np.array(filled, dtype=object)
 
 
+def census(metric: pd.DataFrame, frames: np.ndarray):
+    """How much of each team the pipeline actually sees.
+
+    A possession rule that names the nearest player can only name a player
+    it has. If one team is detected, tracked or teamed less often than the
+    other, then whenever that team holds the ball the nearest *known* player
+    is more likely to be an opponent, and their possession is handed over.
+    That would be a bias rather than noise, and it is what the per-team
+    recall gap looks like from the other side.
+    """
+    players = metric[metric.cls == "player"]
+    total = len(frames)
+    out = {}
+    for team in ("team_A", "team_B"):
+        here = players[players.team == team]
+        per_frame = here.groupby("frame").size()
+        out[team] = {
+            "rows": int(len(here)),
+            "per_frame": float(per_frame.mean()) if len(per_frame) else 0.0,
+            "frames_present": (float(len(per_frame) / total)
+                               if total else float("nan")),
+        }
+    untimed = players[~players.team.isin(("team_A", "team_B"))]
+    out["no team"] = {"rows": int(len(untimed)), "per_frame": float("nan"),
+                      "frames_present": float("nan")}
+    return out
+
+
 def compare(predicted, truth):
     """Agreement and share, under whichever team mapping agrees more."""
     both = np.array([p is not None and t is not None
@@ -335,6 +363,14 @@ def main():
                                info["n_frames"] / info["fps"], times)
         if truth is None:
             continue
+
+        seen = census(metric, frames)
+        print(f"  {out_dir[-14:]:>14s} {'seen':>14s}  "
+              + "  ".join(
+                  f"{team}: {info['per_frame']:.1f}/frame in "
+                  f"{info['frames_present']:.0%} of frames"
+                  for team, info in seen.items() if team != "no team")
+              + f"  ({seen['no team']['rows']} rows with no team)")
 
         for label, predicted in (("proxy", proxy_timeline(metric, frames)),
                                  ("spells", spell_timeline(metric, frames))):
