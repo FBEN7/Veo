@@ -185,6 +185,42 @@ def fill_gaps(predicted, times, max_gap_s: float):
     return np.array(filled, dtype=object)
 
 
+def settled_timeline(metric: pd.DataFrame, frames: np.ndarray,
+                     radius_m: float = PROXY_RADIUS_M):
+    """The proxy, but only while the ball is slow enough to be controlled.
+
+    The detection census rules out the obvious explanation for the bias --
+    both teams are seen about equally often -- so the nearest player is
+    being read correctly and is simply the wrong player. The candidate left
+    is the ball in flight. While a pass travels, the nearest player is
+    routinely an opponent: the defender it passes, the man it is played
+    away from. The labels do not see it that way. A PASS belongs to the team
+    that struck it until the next action, flight included.
+
+    That mechanism is asymmetric in exactly the way the numbers are, because
+    it costs whichever team plays the longer balls, and the two rules
+    already rank the way it predicts: the spell rule holds the ball through
+    its flight and its recall gap is twelve points narrower than the proxy's,
+    which has no notion of flight at all.
+
+    So: drop the frames where the ball is travelling too fast for anyone to
+    be holding it, and let the gap-filling carry the previous holder across.
+    If flight is the mechanism the bias should fall; if it does not move,
+    the mechanism is something else again.
+    """
+    ball = ev_module._ball_kinematics(metric)
+    if ball.empty:
+        return np.full(frames.shape, None, dtype=object)
+    calm = ball[ball.speed_kmh.fillna(0.0)
+                <= ev_module.BALL_CONTROL_SPEED_KMH]
+    if calm.empty:
+        return np.full(frames.shape, None, dtype=object)
+    sampled = proxy_timeline(metric, frames, radius_m)
+    keep = set(calm.frame.astype(int))
+    return np.array([team if int(f) in keep else None
+                     for f, team in zip(frames, sampled)], dtype=object)
+
+
 def census(metric: pd.DataFrame, frames: np.ndarray):
     """How much of each team the pipeline actually sees.
 
@@ -372,8 +408,10 @@ def main():
                   for team, info in seen.items() if team != "no team")
               + f"  ({seen['no team']['rows']} rows with no team)")
 
-        for label, predicted in (("proxy", proxy_timeline(metric, frames)),
-                                 ("spells", spell_timeline(metric, frames))):
+        for label, predicted in (
+                ("proxy", proxy_timeline(metric, frames)),
+                ("spells", spell_timeline(metric, frames)),
+                ("settled", settled_timeline(metric, frames))):
             for gap in GAPS_S:
                 filled = (predicted if gap <= 0
                           else fill_gaps(predicted, times, gap))
