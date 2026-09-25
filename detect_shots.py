@@ -293,10 +293,78 @@ def synthetic_check(fps=25.0):
     return len(shots) == 1
 
 
+def inject_shot(ball, maps, info, fps, goal="left"):
+    """Write a real shot into a real clip, through the real pitch maps.
+
+    The synthetic control tests `find_shots` on a perfect track with an
+    identity map, which is most of the chain missing. This puts a shot into
+    an actual clip: a trajectory is laid out in metres, pushed back through
+    the frame's own anchor into pixels, and dropped into the ball track. It
+    then has to survive everything a real shot would -- the anchor's error,
+    the grid the anchors sit on, the coverage gaps.
+
+    Returns the modified track and the frame the shot starts on, or None if
+    the clip has no run of anchored frames to put one in.
+    """
+    anchored = sorted(maps)
+    if not anchored:
+        return None, None
+    span = int(SUSTAIN_FRAMES * SPEED_WINDOW + 2 * ANCHOR_GRID + 8)
+    start = None
+    for candidate in anchored:
+        covered = sum(1 for f in range(candidate, candidate + span)
+                      if f in maps or (f - f % ANCHOR_GRID) in maps)
+        if covered >= span * 0.8:
+            start = candidate
+            break
+    if start is None:
+        return None, None
+
+    goal_x = 0.0 if goal == "left" else pm.PITCH_LENGTH_M
+    sign = 1.0 if goal == "left" else -1.0
+    x0, y0 = goal_x + sign * 16.0, pm.PITCH_WIDTH_M / 2.0
+    speed = 22.0
+
+    rows = []
+    for k in range(span):
+        frame = start + k
+        homography = maps.get(frame) or maps.get(frame - frame % ANCHOR_GRID)
+        if homography is None:
+            continue
+        t = k / fps
+        x = x0 - sign * speed * t
+        y = y0
+        try:
+            to_image = np.linalg.inv(homography)
+        except np.linalg.LinAlgError:
+            continue
+        pixel = to_image @ np.array([x, y, 1.0])
+        if abs(pixel[2]) < 1e-9:
+            continue
+        pixel = pixel[:2] / pixel[2]
+        if not np.all(np.isfinite(pixel)):
+            continue
+        rows.append({"frame": frame, "time_s": frame / fps,
+                     "px": float(pixel[0]), "py": float(pixel[1]),
+                     "cls": "ball", "confidence": 1.0,
+                     "track_id": -1, "crop_h": 0.0,
+                     "detection_method": "injected"})
+    if len(rows) < SUSTAIN_FRAMES + SPEED_WINDOW:
+        return None, None
+
+    injected = pd.DataFrame(rows)
+    kept = ball[~ball.frame.isin(injected.frame)]
+    out = pd.concat([kept, injected], ignore_index=True)
+    return out.sort_values("frame").reset_index(drop=True), start
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=120)
     ap.add_argument("--self-check", action="store_true")
+    ap.add_argument("--inject", action="store_true",
+                    help="put a known shot into each real clip, through that "
+                         "clip's own anchors, and see whether it is found")
     args = ap.parse_args()
 
     if args.self_check:
@@ -323,6 +391,22 @@ def main():
             print(f"  {name:>14s} {'no ball track':>12s}")
             continue
         maps = anchors_for(path, info, ball.frame.tolist(), rng, args.frames)
+        if args.inject:
+            planted, start = inject_shot(ball, maps, info, info["fps"])
+            if planted is None:
+                print(f"  {name:>14s} {len(ball):12d} {'-':>7s} "
+                      f"{'no anchored run long enough':>30s}")
+                continue
+            shots, placed = find_shots(planted, maps, info["fps"])
+            shots = score(shots)
+            found = [s for s in shots if abs(s["frame"] - start) <= 12]
+            print(f"  {name:>14s} {len(ball):12d} {placed:7d} "
+                  f"{len(shots):6d} {'FOUND' if found else 'missed':>11s}")
+            for shot in found[:1]:
+                print(f"      planted at f{start}, found f{shot['frame']}, "
+                      f"{shot['distance_m']:.1f} m, {shot['speed_ms']:.0f} m/s"
+                      + (f", xG {shot['xg']:.3f}" if "xg" in shot else ""))
+            continue
         shots, placed = find_shots(ball, maps, info["fps"])
         shots = score(shots)
         minutes = info["n_frames"] / info["fps"] / 60.0
