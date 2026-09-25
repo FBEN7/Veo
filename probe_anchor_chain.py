@@ -22,20 +22,47 @@ two frames share few features, and the fit fails however patient the reach
 is. Distance in seconds is a proxy; the real limit is overlap.
 
 Consecutive frames always overlap. So the alternative is to carry the map in
-steps -- grid frame to grid frame, four frames at a time, composing the
-warps -- and to accept whatever error accumulates along the way.
+steps -- grid frame to grid frame, composing the warps -- and to accept
+whatever error accumulates along the way.
 
-## Which is the question, because chaining has an obvious cost
+## The answer, measured against anchors the carry never sees
 
-Every step multiplies in its own error, and they do not cancel. Twenty
-seconds at four frames a step is 125 multiplications, and if each one is
-worth a millimetre they are worth 125 of them, not one.
+      gap      direct     chain/4    chain/12    chain/25    chain/50
+     0-2s   75% 0.9m    92% 3.2m    92% 1.4m    83% 1.2m    83% 1.2m
+     2-8s   62% 0.7m    91% 9.3m    75% 5.9m    62% 3.1m    62% 1.5m
+    8-20s   31% 4.5m   84% 21.2m   67% 12.8m    36% 6.1m    36% 3.2m
 
-This measures that, and it can be measured honestly because the anchors
-themselves are the ruler. Take two frames that both carry their own anchor,
-derived independently from their own centre circles. Carry the first one's
-map to the second, both ways, and compare each against the anchor that is
-already there. Neither number comes from the thing being tested.
+Chaining fits far more often and drifts unusably. The step-size sweep says
+why: the same twenty seconds costs 3.2 m in ten steps and 21 m in a hundred
+and twenty-five, so what accumulates is the **number of multiplications**,
+not the elapsed time. Every step multiplies in its own error and they do not
+cancel.
+
+Coarse steps break more often, though -- 45 of 62 single steps fitted against
+567 of 576 -- and one break ends a chain, which is why the error falls and
+the coverage falls with it.
+
+## The hybrid, which does not earn its place
+
+If drift counts hops and breaks come from coarseness, a walk over a graph
+holding several spacings should take coarse steps by default and drop to
+fine ones only to bridge a break. Breadth-first does exactly that without
+being told to, since a coarse step covers more ground per hop.
+
+It works, and it is not enough:
+
+      gap      direct    chain/12    chain/50       multi
+     0-2s   75% 0.9m    92% 1.4m    83% 1.2m    92% 1.3m
+     2-8s   62% 0.7m    75% 5.9m    62% 1.5m    66% 1.6m
+
+At two to eight seconds -- the range that decides whether a crossing is
+seen -- the hybrid buys four points of coverage for twice the error. A
+direct fit at 0.7 m is worth more than a walked one at 1.6 m when the
+question is whether the ball is a metre past the touchline.
+
+So carrying is not the lever. The anchors are: only 80 of 2250 frames are
+ever tried for a centre circle, and that is a sampling budget rather than a
+property of the footage.
 
     python probe_anchor_chain.py [--frames 80] [--clip w3]
 """
