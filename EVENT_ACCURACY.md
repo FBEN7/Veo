@@ -1192,3 +1192,54 @@ The margin over the baseline does not move and the share gets slightly
 worse. Whatever limits possession on this clip, it is not the roster. One
 clip carries kit labels, so this is a single reading -- but it is the clip
 where possession is weakest, which is where the effect should have shown.
+
+
+## Stoppages from player motion: measured, and it does not work either
+
+If the ball is not in the picture, the players are. Median player speed per
+frame, a stoppage being where it drops and stays down:
+
+| clip | best setting | matched | false | delays |
+|---|---|---|---|---|
+| Stoke | any of nine | 0 of 1 | 1-9 | +4 / -2 |
+| Reading | still < 0.8 m/s, 1 s | 1 of 2 | 1 | +13, -0 |
+
+The criterion was set before the run: play stops when the players notice
+rather than when the ball crosses, so a working detector shows a consistent
+positive delay and a coincidence shows scatter. The delays are +13, -4, -53,
+-1. That is scatter.
+
+**Every route to this event family has now been measured and rejected:**
+carrying the anchor further, carrying it in steps at four spacings, a
+multi-scale walk over both, tripling the anchor budget (which fixed one of
+three), the grass around the ball, and now collective player motion.
+
+## The footage is the limit, and it is the wrong footage
+
+The clip called "Veo" throughout this repository is a **640x360
+auto-follow crop** -- a broadcast-style feed with a scoreboard burnt into
+the corner, panning to keep the ball centred. It is not a Veo panorama.
+
+That matters more than anything else on this page, because the failure this
+section documents is a *property of a camera that follows the ball*: when
+the ball leaves the pitch the camera has not caught up, so the ball is at or
+past the edge of frame and there is nothing to detect. A fixed wide camera
+covering the whole pitch does not have that failure mode.
+
+It would also remove most of what this project has spent its time on:
+
+  * **the anchor problem disappears.** A camera that does not move has one
+    homography for the whole match. Everything about carrying a map from
+    frame to frame, the 6 s and 16 s reaches, the drift that counts
+    multiplications, the anti-correlated coverage -- all of it exists
+    because the camera pans;
+  * **the ball gets more pixels.** At 640x360 the ball is about 7.8 px
+    across, which is why its detection is 73% and its speed noisy enough to
+    need a least-squares fit over six frames;
+  * **out of play becomes observable**, because the touchline and the ball
+    are in the same frame at the moment that matters.
+
+So the recommendation is not another detector. It is to run this on the
+panoramic export at full resolution, and to label a few minutes of it, so
+that the numbers are measured on the footage the product actually has
+rather than transferred from two broadcast matches on faith.
