@@ -132,7 +132,17 @@ MAX_SHOT_DISTANCE_M = 35.0
 MERGE_SECONDS = 2.0
 
 # How far an anchor is carried to put the ball on the pitch.
-BORROW_REACH = 150
+#
+# Raised from 150 after measuring what it costs and what it buys. The events
+# that need the edge of the pitch -- crossings, and the set pieces that
+# follow them -- get no anchor at 150 at all, because anchors come from the
+# centre circle at midfield and the ball goes out at the edges. At 400 one
+# of the three labelled crossings becomes visible, with 28 ball positions
+# placed and 14 of them reading as outside the pitch; total ball placement
+# rises from 762 to 993 on one clip and 751 to 869 on the other. At 900 it
+# stops improving, so the limit is the footage rather than the number: the
+# other two crossings have no centre circle within thirty-six seconds.
+BORROW_REACH = 400
 
 # Anchors are computed every few frames rather than on every one. Matching
 # each of several thousand ball frames against an anchor would mean as many
