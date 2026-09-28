@@ -11,6 +11,12 @@ detection_accuracy.json
 # frames, which are under a non-commercial NDA and must not be committed.
 output_soccernet*/
 
+# The same, for the windows cut around labelled shots: output_stoke_1302 and
+# friends are the pipeline's artefacts from SoccerNet match video, so they
+# are covered by the same NDA as anything else derived from those frames.
+output_stoke*/
+output_reading*/
+
 # The shot test set: clips cut from SoccerNet match video, and the manifests
 # naming them. Same NDA as above -- the clips are the footage itself, so they
 # never enter the repository. The script that rebuilds them does.
