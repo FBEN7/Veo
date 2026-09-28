@@ -1256,12 +1256,29 @@ else -- shots, possession, teams, passes -- becomes measurable where it
 currently is not.
 
 
-## Shot recall, measured at last: 0 of 2, and the anchor is why
+## Shot recall, measured at last: 0 of 6, and the anchor is why
 
 The clips that existed bracketed every labelled shot without containing one,
 so the shot detector shipped numbers with its recall unmeasured. Cutting
-windows around the labels fixed that. The first window, 13:02 of Stoke -
-Huddersfield, holds two labelled shots.
+windows around the labels fixed that: three windows of Stoke -
+Huddersfield, two labelled shots each.
+
+| window | ball placed | shots labelled | found | matched |
+|---|---|---|---|---|
+| 13:02 | 984/1612 (61%) | 2 | 0 | **0** |
+| 42:07 | 173/1272 (14%) | 2 | 0 | **0** |
+| 70:01 | 939/1548 (61%) | 2 | 0 | **0** |
+| **total** | | **6** | **0** | **0.00 recall** |
+
+Zero false positives as well, which is the one consolation and the same
+figure the shot-free footage gave. A detector that never fires scores that
+too.
+
+The two 61% windows are the ones to read: coverage is not the excuse there,
+and it is better than the windows where an injected shot came back within
+0.3 m. The 14% window fails for the ordinary reason, no map at all.
+
+The first window is traced below.
 
     event      labelled   found   matched   recall   precision
     shot              2       0         0     0.00           -

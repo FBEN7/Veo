@@ -107,7 +107,7 @@ résultats. Les documents détaillés sont en anglais.
 
 | | état | où c'est mesuré |
 |---|---|---|
-| Tirs et xG | fonctionne sur diffusion TV | `EVENT_ACCURACY.md` |
+| Tirs et xG | **ne trouve aucun tir réel** (0 sur 6) | `EVENT_ACCURACY.md` |
 | Occasions et passes décisives | fonctionne | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0.99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0.80 | `TEAM_ASSIGNMENT.md` |
@@ -115,11 +115,22 @@ résultats. Les documents détaillés sont en anglais.
 
 Deux précisions qui comptent plus que le tableau.
 
-**Les tirs.** Un tir simulé, placé dans la vraie trajectoire du ballon, est
-retrouvé sur chaque clip à 0.3 m près et son xG à 0.007 près. Sur six
-minutes de football vérifié sans tir, rien ne se déclenche. Ce qui n'a
-jamais été mesuré, faute d'images annotées en contenant, c'est le rappel :
-rien ne prouve que ce détecteur trouve un tir qu'on ne lui a pas donné.
+**Les tirs.** Le rappel a fini par être mesuré, sur trois fenêtres découpées
+autour de tirs annotés : **0 tir trouvé sur 6**. Aucune fausse alerte non
+plus, mais un détecteur qui ne se déclenche jamais obtient ce score-là
+aussi.
+
+La cause n'est pas le détecteur de tirs. Sur deux des trois fenêtres la
+couverture est bonne (61 % du ballon positionné) et le ballon est quand
+même placé à quarante mètres de sa vraie position : le repère vient du rond
+central, la caméra est zoomée dans la surface quand il y a un tir, et le
+rond central n'est plus dans l'image. Détail dans `EVENT_ACCURACY.md`.
+
+Ce qui reste vrai : un tir simulé, placé dans la vraie trajectoire du
+ballon, est retrouvé à 0.3 m près et son xG à 0.007 près. Cela mesure la
+géométrie et le modèle xG, pas la détection — le tir simulé était inséré à
+travers un repère valide, ce qui garantissait silencieusement une bonne
+carte.
 
 **Le ballon sorti.** Correct sur entrée synthétique, 1 sur 3 sur du vrai
 football, avec 4 à 6 fausses alertes par 90 secondes. La cause est connue et

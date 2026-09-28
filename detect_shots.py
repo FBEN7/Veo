@@ -33,9 +33,33 @@ that has cost this project so much is, for xG, genuinely irrelevant -- it
 would matter only for saying which TEAM shot, which needs team identity
 anyway.
 
+## Recall: 0 of 6, measured
+
+> Read this before the rest of the docstring, which was written when recall
+> was unmeasurable and reads more confidently than the evidence now
+> supports.
+>
+> Three windows were cut around labelled shots and scored: **six labelled
+> shots, none found**. Zero false positives too, which a detector that never
+> fires also achieves.
+>
+> The fault is not in here. On two of the three windows ball placement is
+> 61%, better than the windows where an injected shot came back within
+> 0.3 m, and the ball is still put forty metres from where it is -- so a
+> fast ball in midfield pointing nowhere near a goal is correctly not called
+> a shot. The anchor is what fails: it comes from the centre circle, a
+> camera zoomed into the box for a shot has no centre circle in it, and on
+> one window a single spurious RANSAC fit on a penalty-box frame became the
+> nearest anchor to the shot.
+>
+> The injected-shot control below cannot catch this, because it plants its
+> shot through the anchor of a frame that has one, which silently
+> guarantees a good map. It measures the geometry and the xG model. Both
+> are sound. See EVENT_ACCURACY.md.
+
 ## What can and cannot be measured here
 
-Recall cannot be. The labels hold 50 shots and goals across two full
+Recall could not be, when this was written. The labels hold 50 shots and goals across two full
 matches, and not one of them falls inside the video that exists: the Stoke
 clip covers 320-410 s with labelled shots at 261 s and 803 s on either side,
 the Reading clip covers 3075-3165 s with shots at 2878 s and 3377 s. Six
