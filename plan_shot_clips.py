@@ -169,7 +169,10 @@ def describe(windows, top: int, split: bool):
 
 def cut(video: Path, window, out_dir: Path, target_mb: float,
         split: bool) -> Path:
-    bitrate = int(target_mb * 8 * 1024 * 1024 / window["seconds"])
+        # Decimal megabytes, not MiB. Computing the bitrate in 2^20 units while
+    # the upload limit is 10^6 made a "28 MB" target come out at 30.3 MB --
+    # over the limit, and found only once a real encode was finally run.
+    bitrate = int(target_mb * 8 * 1_000_000 / window["seconds"])
     target = out_dir / (window_name(window, split) + ".mp4")
     command = [
         "ffmpeg", "-y", "-ss", f"{window['start_s']:.3f}", "-i", str(video),
@@ -226,7 +229,7 @@ def main():
     ap.add_argument("--take", type=int, default=3,
                     help="how many of the ranked windows to cut")
     ap.add_argument("--out", default="shot_clips")
-    ap.add_argument("--target-mb", type=float, default=28.0)
+    ap.add_argument("--target-mb", type=float, default=26.0)
     args = ap.parse_args()
 
     labels = Path(args.labels)

@@ -50,7 +50,7 @@ import sys
 from pathlib import Path
 
 # The upload limit for a session, with room for container overhead.
-TARGET_MB = 28.0
+TARGET_MB = 26.0
 
 # Audio is not used anywhere in this pipeline and costs bitrate the picture
 # could have had.
@@ -85,7 +85,10 @@ def cut(source: Path, start_s: float, length_s: float, out_path: Path,
         target_mb: float) -> None:
     """One clip, encoded to land just under the limit at full resolution."""
     # Bits available for the picture, over the clip's length.
-    bitrate = int(target_mb * 8 * 1024 * 1024 / length_s)
+        # Decimal megabytes, not MiB. Computing the bitrate in 2^20 units while
+    # the upload limit is 10^6 made a "28 MB" target come out at 30.3 MB --
+    # over the limit, and found only once a real encode was finally run.
+    bitrate = int(target_mb * 8 * 1_000_000 / length_s)
     command = [
         "ffmpeg", "-y",
         # Seeking before -i is fast; re-encoding below makes it frame-exact.
