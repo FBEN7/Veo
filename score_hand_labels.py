@@ -1,0 +1,246 @@
+"""Score the pipeline against hand-written labels for a clip.
+
+Every accuracy figure in this project comes from two SoccerNet broadcast
+matches. Nothing measures whether any of it transfers, and the plausibility
+checks in the run output explicitly cannot: "roughly 22 players, one ball,
+human speeds" catches a pipeline that is badly wrong and not one that is
+subtly so, which is the failure this project has actually had.
+
+Hand labels fix that for one clip. This reads them and scores what they
+can reach.
+
+## The format, which is meant to survive being typed by a person
+
+One event per line, a time and a name, times relative to the start of the
+clip:
+
+    00:04  out  touchline
+    00:11  throw in
+    0:52   shot
+    1:03   out goal line
+    69     corner
+    02:13  goal
+
+Blank lines and anything after `#` are ignored. Times may be `m:ss`,
+`h:mm:ss` or plain seconds. Names are matched loosely -- "throw in",
+"throw-in" and "throwin" are one thing -- because a label file is worth more
+than the discipline needed to type it consistently.
+
+Unknown names are reported rather than dropped silently. A line nobody
+scores is usually a typo, and a typo in the truth is worse than one in the
+code: it makes a working detector look broken.
+
+## What can and cannot be scored here
+
+**Shots are the prize.** The detector has never been shown to find a shot it
+was not handed: no labelled footage available contains one, so its recall is
+unmeasured while it ships numbers. One labelled shot changes that.
+
+**Goals, corners and throw-ins** are scored where labelled.
+
+**Out of play cannot be rescued by labelling.** On a camera that follows the
+ball, the ball is at or past the edge of frame when it crosses -- at one
+labelled crossing in the SoccerNet footage there is no ball in the picture
+at all. The blind spot belongs to the camera. It is scored anyway, because
+a measured zero is worth having written down.
+
+    python score_hand_labels.py labels.txt --out output_veo
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+# The tolerance every other event in this project is scored at.
+TOLERANCE_S = 2.0
+
+# Spellings that mean the same event. Matched after stripping anything that
+# is not a letter, so "throw-in", "throw in" and "ThrowIn" all arrive here
+# as "throwin".
+ALIASES = {
+    "shot": "shot", "shots": "shot", "attempt": "shot", "tir": "shot",
+    "goal": "goal", "but": "goal", "scored": "goal",
+    "out": "out", "outofplay": "out", "touchline": "out", "sortie": "out",
+    "goalline": "out", "behind": "out",
+    "throwin": "throw in", "throw": "throw in", "touche": "throw in",
+    "corner": "corner", "cornerkick": "corner",
+    "goalkick": "goal kick", "gk": "goal kick",
+    "freekick": "free kick", "fk": "free kick", "foul": "free kick",
+    "penalty": "penalty", "pen": "penalty",
+    "save": "save", "offside": "offside", "kickoff": "kick off",
+}
+
+# What this can score, and with what.
+SCOREABLE = ("shot", "goal", "out", "throw in", "corner", "goal kick")
+
+
+def read_time(text: str) -> float | None:
+    parts = text.split(":")
+    try:
+        values = [float(p) for p in parts]
+    except ValueError:
+        return None
+    if len(values) == 1:
+        return values[0]
+    if len(values) == 2:
+        return values[0] * 60 + values[1]
+    if len(values) == 3:
+        return values[0] * 3600 + values[1] * 60 + values[2]
+    return None
+
+
+def read_labels(path: Path):
+    """Parse a hand-written label file into events, and report what failed."""
+    events, unknown, unparsed = [], [], []
+    for number, raw in enumerate(path.read_text().splitlines(), start=1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        # Split on any run of whitespace: a person aligning columns types
+        # two spaces, and partitioning on one leaves the rest starting with
+        # a blank, which then reads as an empty event name.
+        pieces = line.split(None, 1)
+        head = pieces[0]
+        rest = pieces[1].strip() if len(pieces) > 1 else ""
+        when = read_time(head)
+        if when is None:
+            unparsed.append((number, raw.strip()))
+            continue
+        key = re.sub(r"[^a-z]", "", rest.lower())
+        name = ALIASES.get(key)
+        if name is None:
+            # "out touchline" and "out goal line" both start with a word
+            # that names the event; try the first word before giving up.
+            words = rest.lower().split()
+            first = re.sub(r"[^a-z]", "", words[0]) if words else ""
+            name = ALIASES.get(first)
+        if name is None:
+            unknown.append((number, rest or "(nothing)"))
+            continue
+        events.append({"time_s": when, "event_type": name,
+                       "detail": rest})
+    return sorted(events, key=lambda e: e["time_s"]), unknown, unparsed
+
+
+def match(found_times, truth_times, tolerance=TOLERANCE_S):
+    """Greedy one-to-one matching, nearest first.
+
+    One detection cannot satisfy two labels and one label cannot excuse two
+    detections, which a per-event `any()` test quietly allows.
+    """
+    pairs = sorted(((abs(f - t), k, j)
+                    for k, f in enumerate(found_times)
+                    for j, t in enumerate(truth_times)
+                    if abs(f - t) <= tolerance))
+    used_found, used_truth, matched = set(), set(), []
+    for gap, k, j in pairs:
+        if k in used_found or j in used_truth:
+            continue
+        used_found.add(k)
+        used_truth.add(j)
+        matched.append((k, j, gap))
+    return matched, used_found, used_truth
+
+
+def report(name, found_times, truth_times):
+    matched, _, _ = match(found_times, truth_times)
+    hits = len(matched)
+    recall = hits / len(truth_times) if truth_times else float("nan")
+    precision = hits / len(found_times) if found_times else float("nan")
+    if matched:
+        delay = float(np.median([found_times[k] - truth_times[j]
+                                 for k, j, _ in matched]))
+        shown = f"{delay:+.1f}s"
+    else:
+        shown = "-"
+    print(f"  {name:>12s} {len(truth_times):9d} {len(found_times):7d} "
+          f"{hits:8d} {recall:8.2f} {precision:10.2f} {shown:>10s}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("labels", help="the hand-written label file")
+    ap.add_argument("--out", default="output_veo",
+                    help="the pipeline's output directory for that clip")
+    ap.add_argument("--frames", type=int, default=None,
+                    help="anchor budget; defaults to the shipped value")
+    args = ap.parse_args()
+
+    path = Path(args.labels)
+    if not path.exists():
+        raise SystemExit(f"no label file at {path}")
+    truth, unknown, unparsed = read_labels(path)
+
+    print(f"Read {len(truth)} labelled events from {path.name}.\n")
+    for number, text in unparsed:
+        print(f"  line {number}: no time at the start -- {text!r}")
+    for number, text in unknown:
+        print(f"  line {number}: don't know the event {text!r}")
+    if unknown or unparsed:
+        print("  (those lines are not scored; fix or ignore as you like)\n")
+
+    counts = pd.Series([e["event_type"] for e in truth]).value_counts()
+    print("  labelled:", ", ".join(f"{n} {k}" for k, n in counts.items()))
+
+    out_dir = Path(args.out)
+    if not (out_dir / "clip.json").exists():
+        raise SystemExit(f"no pipeline output in {out_dir} -- run the "
+                         f"pipeline on that clip first")
+    info = json.loads((out_dir / "clip.json").read_text())
+
+    import detect_ball_events as ball_events
+    import detect_set_pieces as set_pieces
+    import detect_shots
+
+    ball = detect_shots.ball_track(out_dir)
+    if ball.empty:
+        raise SystemExit("no ball track in that output directory")
+    rng = np.random.default_rng(0)
+    frames = args.frames or detect_shots.ANCHOR_FRAMES
+    maps = detect_shots.anchors_for(out_dir, info, ball.frame.tolist(), rng,
+                                    frames)
+    shots, placed = detect_shots.find_shots(ball, maps, info["fps"])
+    shots = detect_shots.score(detect_shots.attribute(shots, out_dir, ball))
+    stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])
+    outs = [e for e in stoppages if e["event_type"] == "out_of_play"]
+    goals = [e for e in stoppages if e["event_type"] == "goal"]
+    restarts = set_pieces.find_restarts(ball, maps, info["fps"], outs)
+
+    print(f"\n  ball placed on the pitch: {placed} of {len(ball)} "
+          f"({placed / max(len(ball), 1):.0%})\n")
+    print(f"  {'event':>12s} {'labelled':>9s} {'found':>7s} {'matched':>8s} "
+          f"{'recall':>8s} {'precision':>10s} {'delay':>10s}")
+
+    def times(kind):
+        return [e["time_s"] for e in truth if e["event_type"] == kind]
+
+    report("shot", [s["time_s"] for s in shots], times("shot"))
+    report("goal", [g["time_s"] for g in goals], times("goal"))
+    report("out", [o["time_s"] for o in outs], times("out"))
+    for kind in ("throw in", "corner", "goal kick"):
+        report(kind, [r["time_s"] for r in restarts
+                      if r["event_type"] == kind], times(kind))
+
+    if times("shot") and shots:
+        print("\n  Shots found, with what the model makes of them:")
+        for shot in shots:
+            extra = f", xG {shot['xg']:.3f}" if "xg" in shot else ""
+            print(f"    t={shot['time_s']:6.1f}s  "
+                  f"{shot['distance_m']:5.1f} m, "
+                  f"{shot['speed_ms']:4.0f} m/s{extra}")
+
+    print("\n  Recall on shots is the number this was built for: nothing in "
+          "this project\n  has ever shown the shot detector finding one it "
+          "was not given. Out of\n  play is expected to score zero on a "
+          "camera that follows the ball, and a\n  measured zero is still "
+          "worth writing down.")
+
+
+if __name__ == "__main__":
+    main()
