@@ -339,8 +339,15 @@ def possession_proxy(tracks: pd.DataFrame, radius_m: float = 3.0,
     held = possession_timeline(tracks, radius_m, max_ball_speed_kmh)
     if held.empty:
         return {"team_A": None, "team_B": None, "frames_used": 0}
-    share = held.team.value_counts(normalize=True).round(3).to_dict()
-    share["frames_used"] = int(len(held))
+    counts = held.team.value_counts(normalize=True).round(3).to_dict()
+    # Both teams always, even at zero. value_counts only reports what it
+    # saw, so a clip where one team is never nearest the ball came back
+    # missing a key and crashed the report on kpis["possession"]["team_A"].
+    # Narrowing the frames considered -- which the ball-speed gate does --
+    # makes a one-sided clip more likely, not less.
+    share = {"team_A": float(counts.get("team_A", 0.0)),
+             "team_B": float(counts.get("team_B", 0.0)),
+             "frames_used": int(len(held))}
     return share
 
 
