@@ -30,7 +30,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from src.detect_track_hybrid import _grass_mask
+from src.grass import _grass_mask
 
 CLIPS = (("SoccerNet w1", "output_soccernet"),
          ("SoccerNet w2", "output_soccernet_w2"),

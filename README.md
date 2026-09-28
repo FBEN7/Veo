@@ -78,6 +78,26 @@ templates/report.html.j2 # template du rapport
 ```
 
 
+## Tests
+
+```bash
+python run_tests.py --controls   # ~7 s, aucune dépendance lourde
+python run_tests.py              # ajoute main.py de bout en bout (~30 s)
+python run_tests.py --list       # ce que chaque test couvre
+```
+
+Les *controls* sont les contrôles synthétiques de chaque détecteur : un
+ballon promené par-dessus chaque ligne, une remise en jeu depuis chaque
+repère, une possession juste, inversée, ou tirée à pile ou face. Ils ne
+demandent ni vidéo ni modèle. Le second niveau lance le vrai `main.py` sur
+un match synthétique — c'est le seul test qui attrape une régression du
+rapport.
+
+Aucun de ces tests ne mesure la précision : les chiffres de
+`EVENT_ACCURACY.md` viennent de vidéos sous NDA absentes du dépôt. Les tests
+vérifient que le code fait ce qu'il annonce sur des cas à réponse connue,
+pas qu'il marche sur du football.
+
 ## Ce qui est mesuré, et ce qui ne l'est pas
 
 Le pipeline d'origine (ci-dessus) produit un rapport. Ce qui suit a été
