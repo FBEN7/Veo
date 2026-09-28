@@ -1254,3 +1254,66 @@ The blind spot will remain, because it belongs to the camera. Out of play
 will stay unmeasurable on this footage whatever is labelled. Everything
 else -- shots, possession, teams, passes -- becomes measurable where it
 currently is not.
+
+
+## Shot recall, measured at last: 0 of 2, and the anchor is why
+
+The clips that existed bracketed every labelled shot without containing one,
+so the shot detector shipped numbers with its recall unmeasured. Cutting
+windows around the labels fixed that. The first window, 13:02 of Stoke -
+Huddersfield, holds two labelled shots.
+
+    event      labelled   found   matched   recall   precision
+    shot              2       0         0     0.00           -
+    out               2       3         0     0.00        0.00
+
+**Zero.** The detector did not fire at all, and this is not a coverage
+excuse: 984 of 1612 ball positions were placed, 61%, the best this pipeline
+has managed and better than the windows where an injected shot came back
+within 0.3 m.
+
+### What actually rejected the shot
+
+At the labelled shot the ball is placed at **x = 46-63 m** -- the middle of
+the pitch -- while the video shows it struck a dozen metres from goal. Its
+speed reads 23.6 m/s, comfortably over the 13 m/s a shot needs. So the
+detector behaved correctly on the input it was given: a fast ball in
+midfield travelling nowhere near a goal is not a shot. The map underneath it
+was wrong by about forty metres.
+
+### Why the map was wrong, traced
+
+1. The camera is zoomed into the penalty area for the whole passage, so the
+   centre circle is off screen. Of 240 frames tried, **6 produced an anchor
+   at all**.
+2. The shot sits at frame 500. The two nearest anchors are frames 178 and
+   667, and 667 is nearer, so the shot borrows its map from 667.
+3. Frame 667 shows the penalty box. Re-running the circle detector on it
+   with twenty different random draws finds a circle **zero times**. The
+   anchoring run got one fit, and it does not reproduce.
+
+So a single stochastic mis-fit, on a frame with no centre circle in it,
+became the nearest anchor to the shot and displaced it by forty metres.
+
+### The lesson, which is not about shots
+
+The circle fit is RANSAC, so it is a sampler, not a function. A rare
+spurious fit is not an anomaly to be surprised by; it is what a sampler does
+occasionally. Nothing downstream asks an anchor to prove itself, and on a
+clip where only six frames anchor, one bad anchor contaminates a large share
+of the borrowed maps.
+
+The cheap defence is to make an anchor reproduce before it is trusted: fit
+twice with independent draws and keep it only if both agree. On this clip
+that rejects frame 667 (0 of 20 refits) and keeps frame 178 (refits
+immediately). It costs a second fit per candidate frame and some yield,
+which has to be measured before it ships -- yield on this footage is already
+6 of 240.
+
+### And this changes what the earlier shot evidence meant
+
+The injected-shot control recovered a planted shot on every clip to within
+0.3 m. It did that by planting the shot **through the anchor of a frame
+that had one**, which quietly guaranteed the map was good. It measured the
+geometry and the xG model, and it could not have caught this, because the
+failure is an anchor that should never have existed.
