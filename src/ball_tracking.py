@@ -196,14 +196,25 @@ def validate_ball_detection(
 
 
 def extract_ball_tracking(
-    tracks: pd.DataFrame, smooth_window: int = 3, fill_gaps: bool = True
+    tracks: pd.DataFrame, smooth_window: int = 3, fill_gaps: bool = True,
+    columns: tuple[str, str] | None = None
 ) -> pd.DataFrame:
     """Extract and clean ball tracking from detection tracks.
 
     Returns ball DataFrame with improved tracking.
+
+    ``columns`` names the pair to read positions from. The default prefers
+    `px`/`py`, which is right for the metric tracks the event detector uses,
+    where `px`/`py` hold metres. It is wrong for the report's tracks, where
+    `to_pitch_coords` leaves `px`/`py` as pixels and puts metres in `x`/`y`
+    -- a caller that then compares the resulting speed against a threshold
+    in km/h is out by the pixels-per-metre scale. Callers who know which
+    columns carry metres should say so.
     """
     # Handle both raw (x, y) and pitch-projected (px, py) coordinate systems
-    if "px" in tracks.columns and "py" in tracks.columns:
+    if columns is not None:
+        cols = ["frame", "time_s", columns[0], columns[1]]
+    elif "px" in tracks.columns and "py" in tracks.columns:
         cols = ["frame", "time_s", "px", "py"]
     else:
         cols = ["frame", "time_s", "x", "y"]
@@ -211,8 +222,7 @@ def extract_ball_tracking(
     ball = tracks[tracks.cls == "ball"][cols].copy()
 
     # Normalize column names to x, y for consistency
-    if "px" in ball.columns:
-        ball = ball.rename(columns={"px": "x", "py": "y"})
+    ball = ball.rename(columns={cols[2]: "x", cols[3]: "y"})
 
     if ball.empty:
         return ball
@@ -255,7 +265,8 @@ def extract_ball_tracking(
 MAX_BALL_SPEED_KMH = 120.0
 
 
-def kinematics(tracks: pd.DataFrame, smooth_window: int = 3) -> pd.DataFrame:
+def kinematics(tracks: pd.DataFrame, smooth_window: int = 3,
+               columns: tuple[str, str] | None = None) -> pd.DataFrame:
     """Ball position and speed per frame: frame, time_s, bx, by, vel_x, vel_y, speed_kmh.
 
     Kalman-smoothed and deliberately not gap-filled: filling creates frames
@@ -269,7 +280,7 @@ def kinematics(tracks: pd.DataFrame, smooth_window: int = 3) -> pd.DataFrame:
     with one and 0.16 with the other.
     """
     ball = extract_ball_tracking(tracks, smooth_window=smooth_window,
-                                 fill_gaps=False)
+                                 fill_gaps=False, columns=columns)
     columns = ["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]
     if ball.empty:
         return pd.DataFrame(columns=columns)

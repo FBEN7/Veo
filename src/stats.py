@@ -298,7 +298,13 @@ def possession_timeline(tracks: pd.DataFrame, radius_m: float = 3.0,
         # The event detector's kinematics, not this module's ball_velocity:
         # they smooth differently and the difference is worth ten points of
         # share error. See ball_tracking.kinematics.
-        speeds = ball_tracking.kinematics(tracks)
+        #
+        # x/y named explicitly because that is where THIS function reads
+        # positions from, and the speed has to be measured in the same
+        # coordinates as the distances it gates. On the report's tracks
+        # px/py are pixels, and letting them be picked up here threw out
+        # 95% of the frames.
+        speeds = ball_tracking.kinematics(tracks, columns=("x", "y"))
         if not speeds.empty:
             calm = speeds[speeds.speed_kmh.fillna(0.0)
                           <= max_ball_speed_kmh].frame
