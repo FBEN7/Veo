@@ -1,10 +1,19 @@
 name: tests
 
 on:
+  # Only main on push. A branch with an open pull request would otherwise
+  # run everything twice for each commit -- once for the push and once for
+  # the pull_request -- which the first run on this workflow did.
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  # Superseded runs are not worth finishing: a second commit while the first
+  # is still building makes the first answer stale.
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   controls:
