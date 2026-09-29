@@ -75,6 +75,43 @@ REPLAY_AREA = 0.33
 # A propagated box must keep this much of itself inside the picture.
 MIN_INSIDE = 0.98
 
+# How much the crop may stop looking like the one that was drawn.
+#
+# The geometric stops below check that the *warp* is plausible; none of them
+# checks that the box still contains a goal. Inspected at maximum drift,
+# about a third of carried boxes had slid onto hoardings or crowd while
+# every geometric test still passed -- a warp can be perfectly well
+# conditioned and still be tracking the wrong thing.
+#
+# So the crop is compared with the one the labeller drew, as a small
+# normalised greyscale patch. A goal that stays a goal correlates highly
+# with itself; a box that has wandered onto an advertising board does not.
+APPEARANCE_MIN = 0.55
+PATCH = 40
+
+
+def patch_of(frame, box):
+    """A small normalised greyscale crop, for comparing appearance."""
+    h, w = frame.shape[:2]
+    x0 = int(max(0, min(box[0], 1.0) * w))
+    x1 = int(max(0, min(box[2], 1.0) * w))
+    y0 = int(max(0, min(box[1], 1.0) * h))
+    y1 = int(max(0, min(box[3], 1.0) * h))
+    if x1 - x0 < 4 or y1 - y0 < 4:
+        return None
+    crop = cv2.cvtColor(frame[y0:y1, x0:x1], cv2.COLOR_BGR2GRAY)
+    crop = cv2.resize(crop, (PATCH, PATCH)).astype(np.float32)
+    crop -= crop.mean()
+    norm = float(np.linalg.norm(crop))
+    return None if norm < 1e-6 else crop / norm
+
+
+def looks_alike(a, b) -> float:
+    """Correlation between two normalised patches, -1 to 1."""
+    if a is None or b is None:
+        return -1.0
+    return float(np.sum(a * b))
+
 
 def warp_box(box, warp, width, height):
     """Move a normalised box through an image-to-image homography."""
@@ -116,6 +153,7 @@ def walk(cap, info, start_frame, box, direction: int):
     ok, previous = cap.read()
     if not ok:
         return out
+    seed_patch = patch_of(previous, box)
 
     for _ in range(MAX_STEPS):
         nxt = here + direction * STEP
@@ -136,8 +174,11 @@ def walk(cap, info, start_frame, box, direction: int):
             break
         if inside_fraction(moved) < MIN_INSIDE:
             break
+        alike = looks_alike(seed_patch, patch_of(frame, moved))
+        if alike < APPEARANCE_MIN:
+            break
         out.append({"frame": nxt, "box": [round(v, 4) for v in moved],
-                    "inliers": int(inliers)})
+                    "inliers": int(inliers), "alike": round(alike, 3)})
         current, previous, here = moved, frame, nxt
     return out
 
