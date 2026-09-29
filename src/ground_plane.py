@@ -222,6 +222,21 @@ def fit_height_model(tracks: pd.DataFrame,
     Returns (h_cam, y_horizon, r2, n), or None when there is not enough to
     fit.
 
+    KNOWN INCONSISTENCY, recorded rather than silently changed. This function
+    reads `py` into a variable called `y_centre` and the argument below
+    assumes it is the box centre. It is not: both detectors write the *feet*
+    row (`detect_track.py:349` and `detect_track_hybrid.py:370` set
+    `py = float(y2)`). So the fit is already on feet, `h_cam = H/slope + H/2`
+    adds a correction that does not belong, and `homography` applies
+    `centre_factor` on top of it.
+
+    It is left alone because the errors are small -- H/2 is 0.9 m against a
+    camera 20-40 m up, and `centre_factor` is 0.978 -- and because the
+    mapping was checked against a quantity it never saw: goal heights
+    measured through it have a median of 2.5 m where the laws of the game say
+    2.44 (`probe_goal_ruler.py`). Correcting the algebra means re-running that
+    check, not assuming it improves.
+
     The fit is against the box *centre* row, not the feet, and that choice is
     load-bearing. The model describes an object standing on the plane, so the
     feet are the natural variable -- but the feet row is `py + crop_h / 2`,

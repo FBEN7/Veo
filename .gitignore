@@ -48,3 +48,6 @@ marking_crops/
 # no-redistribution, so the fitted model is as unshippable as the frames.
 models/arc_without_*.pt
 models/marking_without_*.pt
+runs/
+goal_labeller_corners.html
+goal_corners.json

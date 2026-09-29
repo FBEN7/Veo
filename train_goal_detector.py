@@ -35,6 +35,29 @@ held-out window** -- the moment of the labelled shot, where the anchor
 fails and where a goal was labelled in all six windows. Everything else is
 context.
 
+"Found" means landing on the hand-drawn box, not merely returning one.
+
+## What it found, at 60 epochs
+
+Held out: mAP50 0.78, precision 0.93, recall 0.76 over 58 frames. At the
+shot moment, 5 of 6 land on the labelled goal at IoU 0.89 to 0.96,
+including 2 of the 3 held-out windows at 0.87 and 0.93 confidence. Compare
+the centre-circle anchor, which finds the shot moment 0 times in 10.
+
+The miss is stoke_7001, and it is not a marginal one: that frame contains
+the clearest, most fully visible goal in the set and the model returns no
+box at all. Whatever it has learnt, it is not "a white frame on grass".
+
+## What this does not give you
+
+A landmark, not a geometry. `probe_goal_ruler.py` puts the detected box
+through the ground plane and measures a quantity the laws of the game fix
+exactly: goal width comes out at a median 4.7 m against a true 7.32, short
+on almost every frame, because an axis-aligned rectangle discards the slant
+that encodes orientation. The same measurement taken vertically -- where an
+oblique view does not foreshorten -- gives a median 2.5 m against a true
+2.44. Distances to goal need the corners, not the box.
+
     python train_goal_detector.py --dataset goal_dataset.json [--epochs 60]
 """
 
@@ -124,11 +147,35 @@ def build_dataset(dataset_path: Path, root: Path):
     return root / "data.yaml"
 
 
-def test_shot_moments(model, conf: float):
-    """Does it find the goal at the moment of each labelled shot?"""
+def iou(a, b) -> float:
+    x0, y0 = max(a[0], b[0]), max(a[1], b[1])
+    x1, y1 = min(a[2], b[2]), min(a[3], b[3])
+    if x1 <= x0 or y1 <= y0:
+        return 0.0
+    inter = (x1 - x0) * (y1 - y0)
+    area_a = (a[2] - a[0]) * (a[3] - a[1])
+    area_b = (b[2] - b[0]) * (b[3] - b[1])
+    return inter / (area_a + area_b - inter)
+
+
+# A detection counts only if it lands on the goal that was labelled.
+MIN_IOU = 0.5
+
+
+def test_shot_moments(model, conf: float, labels: dict | None = None):
+    """Does it find the goal at the moment of each labelled shot?
+
+    "Found" means overlapping the hand-drawn box, not merely returning one.
+    The difference is not pedantic: an earlier version of this counted any
+    box at all, and eyeballing the rendered frames it was genuinely unclear
+    whether two of the five were on goals or on advertising hoardings. IoU
+    against the labels settled it in seconds -- 0.89 to 0.96, all on the
+    goal -- where staring at the picture had produced a wrong guess.
+    """
     print(f"\n  The test that counts: the goal at frame {SHOT_FRAME}, the "
           f"moment of the\n  labelled shot, where the anchor fails.\n")
-    print(f"  {'window':>14s} {'held out':>9s} {'found':>6s} {'conf':>6s}")
+    print(f"  {'window':>14s} {'held out':>9s} {'conf':>6s} {'IoU':>6s}  "
+          f"verdict")
     hits = total = 0
     for clip in ("stoke_1302", "stoke_4207", "stoke_7001",
                  "reading_0737", "reading_1155", "reading_2519"):
@@ -142,17 +189,39 @@ def test_shot_moments(model, conf: float):
         cap.release()
         if not ok:
             continue
+        truth = (labels or {}).get(f"{clip}:{SHOT_FRAME}")
+        if truth is None:
+            continue
+        h, w = frame.shape[:2]
+        truth = [truth[0] * w, truth[1] * h, truth[2] * w, truth[3] * h]
+
         result = model.predict(frame, conf=conf, verbose=False)[0]
-        best = 0.0
-        if len(result.boxes):
-            best = float(result.boxes.conf.max())
+        best_iou, best_conf = 0.0, 0.0
+        for box, score in zip(result.boxes.xyxy.cpu().numpy(),
+                              result.boxes.conf.cpu().numpy()):
+            got = iou(box, truth)
+            if got > best_iou:
+                best_iou, best_conf = got, float(score)
+
+        on_goal = best_iou >= MIN_IOU
         held = "yes" if clip in VAL_CLIPS else "no"
         total += 1
-        hits += int(best > 0)
-        print(f"  {clip:>14s} {held:>9s} {'yes' if best else 'no':>6s} "
-              f"{best:6.2f}")
-    print(f"\n  {hits} of {total} shot moments found.")
+        hits += int(on_goal)
+        verdict = ("on the goal" if on_goal else
+                   "no box at all" if not len(result.boxes) else
+                   "found the wrong thing")
+        print(f"  {clip:>14s} {held:>9s} {best_conf:6.2f} {best_iou:6.2f}  "
+              f"{verdict}")
+    print(f"\n  {hits} of {total} shot moments land on the labelled goal "
+          f"(IoU >= {MIN_IOU}).")
     return hits, total
+
+
+def hand_boxes(dataset_path: Path) -> dict:
+    """The hand-drawn box per `clip:frame`, for scoring against."""
+    blob = json.loads(Path(dataset_path).read_text())
+    return {f"{r['clip']}:{r['frame']}": r["box"]
+            for r in blob["rows"] if r["box"] and r.get("source") == "hand"}
 
 
 def main():
@@ -184,7 +253,7 @@ def main():
           f"mAP50-95 {metrics.box.map:.3f}   "
           f"precision {metrics.box.mp:.3f}   recall {metrics.box.mr:.3f}")
 
-    test_shot_moments(model, args.conf)
+    test_shot_moments(model, args.conf, hand_boxes(Path(args.dataset)))
     print("\n  Validation numbers on 3 held-out windows are a small sample "
           "and the\n  shot-moment rows are six frames. Neither is a claim "
           "about football; they\n  are a check that the thing found is the "
