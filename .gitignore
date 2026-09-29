@@ -49,5 +49,5 @@ marking_crops/
 models/arc_without_*.pt
 models/marking_without_*.pt
 runs/
-goal_labeller_corners.html
+goal_corner_labeller.html
 goal_corners.json
