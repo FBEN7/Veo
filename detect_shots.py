@@ -251,8 +251,37 @@ def anchors_for(out_dir: Path, info, frames_wanted, rng,
     return maps
 
 
+class AnchorPlacer:
+    """The centre-circle anchor, behind the same interface as the goal.
+
+    Wrapping it changes nothing about how it works. It exists so that
+    `find_shots` asks "where is this pixel on the pitch" of something it
+    does not have to know the identity of, which is what lets the goal
+    landmark be swapped in without touching a line of the shot logic.
+    """
+
+    side = None
+
+    def __init__(self, maps):
+        self.maps = maps
+
+    def __len__(self):
+        return len(self.maps)
+
+    def place(self, frame, px, py):
+        return to_pitch(self.maps, frame, px, py)
+
+
 def to_pitch(maps, frame_index, px, py):
-    """Place a ball, using the nearest grid anchor within half a step."""
+    """Place a ball, using the nearest grid anchor within half a step.
+
+    Accepts a placer as well as a dict of homographies. Every detector in
+    this repository -- shots, ball events, set pieces -- asks this one
+    function where a pixel is, so teaching it to delegate is the whole of
+    what it takes to run any of them off the goal instead of the anchor.
+    """
+    if hasattr(maps, "place"):
+        return maps.place(frame_index, px, py)
     index = int(frame_index)
     homography = maps.get(index)
     if homography is None:
@@ -288,11 +317,18 @@ def crosses_mouth(x, y, vx, vy, goal):
     return abs(crossing - pm.PITCH_WIDTH_M / 2.0) <= half
 
 
-def find_shots(ball: pd.DataFrame, maps, fps: float):
-    """Frames where the ball is struck towards a goal."""
+def find_shots(ball: pd.DataFrame, placer, fps: float):
+    """Frames where the ball is struck towards a goal.
+
+    `placer` turns a ball pixel into pitch metres and is the only thing that
+    knows how. Passing a bare dict of homographies still works: it is
+    wrapped, so existing callers and the synthetic control are unaffected.
+    """
+    if isinstance(placer, dict):
+        placer = AnchorPlacer(placer)
     placed = []
     for row in ball.itertuples():
-        point = to_pitch(maps, row.frame, row.px, row.py)
+        point = placer.place(row.frame, row.px, row.py)
         if point is not None:
             placed.append((int(row.frame), float(row.time_s),
                            float(point[0]), float(point[1])))
@@ -332,7 +368,12 @@ def find_shots(ball: pd.DataFrame, maps, fps: float):
         speed = float(np.hypot(vx, vy))
         if speed < SHOT_MIN_SPEED_MS or speed > 45.0:
             continue
-        for goal in sg.GOALS:
+        # A goal-calibrated placer knows where only one goal is, so the
+        # other end is not a candidate: a ball heading that way would be
+        # scored against a goal whose position was never established.
+        candidates = (sg.GOALS if getattr(placer, "side", None) is None
+                      else (placer.side,))
+        for goal in candidates:
             if not crosses_mouth(start_x, start_y, vx, vy, goal):
                 continue
             distance = sg.distance_to_goal(start_x, start_y, goal)

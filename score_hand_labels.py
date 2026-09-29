@@ -163,6 +163,44 @@ def report(name, found_times, truth_times):
           f"{hits:8d} {recall:8.2f} {precision:10.2f} {shown:>10s}")
 
 
+def goal_maps(out_dir, info, ball, args):
+    """A placer built from the goal detector, calibrated by the corners.
+
+    Two stages, and the division of labour is the point. The corners are
+    clicked **once per clip** and fix the camera position, which a gantry
+    camera keeps for the whole window. The detector then supplies a box on
+    every sampled frame, and a box is enough to recover the rest of the pose
+    once position is known.
+    """
+    import numpy as np
+    from ultralytics import YOLO
+
+    from check_goal_corners import load, poses_for_clip
+    from src.goal_placer import build
+    from src.ground_plane import GroundPlane
+
+    rows = [r for r in load(Path(args.corners))
+            if Path(r["out_dir"]).resolve() == Path(out_dir).resolve()]
+    if not rows:
+        print(f"  no corners in {args.corners} for {out_dir}")
+        return None
+
+    plane_path = Path(out_dir) / "ground_plane.json"
+    blob = json.loads(plane_path.read_text()) if plane_path.exists() else {}
+    plane = None if not blob or blob.get("refused") else GroundPlane(**blob)
+
+    poses = poses_for_clip(rows, plane)
+    if not poses:
+        print("  the corners did not yield a pose for this clip")
+        return None
+    eye = np.mean([p.camera_position() for p in poses.values()], axis=0)
+    seed = float(np.median([p.focal_px for p in poses.values()]))
+
+    return build(info["path"], ball.frame.tolist(), eye, seed,
+                 info["width"], info["height"], YOLO(args.goal_weights),
+                 verbose=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("labels", help="the hand-written label file")
@@ -173,6 +211,16 @@ def main():
                          "before the reproducibility gate shipped")
     ap.add_argument("--frames", type=int, default=None,
                     help="anchor budget; defaults to the shipped value")
+    ap.add_argument("--goal-weights",
+                    help="a trained goal detector. With --corners, events "
+                         "are placed from the goal instead of the centre "
+                         "circle. The weights are trained on footage under "
+                         "a non-commercial agreement and are therefore not "
+                         "in this repository; supply your own.")
+    ap.add_argument("--corners",
+                    help="hand-clicked goal corners, which calibrate the "
+                         "clip's camera position once so every frame's pose "
+                         "can come from a detected box")
     args = ap.parse_args()
 
     path = Path(args.labels)
@@ -204,10 +252,18 @@ def main():
     ball = detect_shots.ball_track(out_dir)
     if ball.empty:
         raise SystemExit("no ball track in that output directory")
-    rng = np.random.default_rng(0)
-    frames = args.frames or detect_shots.ANCHOR_FRAMES
-    maps = detect_shots.anchors_for(out_dir, info, ball.frame.tolist(), rng,
-                                    frames, reproduce=args.reproduce)
+    if args.goal_weights and args.corners:
+        maps = goal_maps(out_dir, info, ball, args)
+        if maps is None:
+            raise SystemExit("could not calibrate this clip from the corners")
+        print(f"  placing from the goal: poses on {len(maps)} sampled "
+              f"frames\n")
+    else:
+        rng = np.random.default_rng(0)
+        frames = args.frames or detect_shots.ANCHOR_FRAMES
+        maps = detect_shots.anchors_for(out_dir, info, ball.frame.tolist(),
+                                        rng, frames,
+                                        reproduce=args.reproduce)
     shots, placed = detect_shots.find_shots(ball, maps, info["fps"])
     shots = detect_shots.score(detect_shots.attribute(shots, out_dir, ball))
     stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])
