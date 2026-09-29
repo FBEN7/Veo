@@ -196,9 +196,27 @@ def goal_maps(out_dir, info, ball, args):
     eye = np.mean([p.camera_position() for p in poses.values()], axis=0)
     seed = float(np.median([p.focal_px for p in poses.values()]))
 
-    return build(info["path"], ball.frame.tolist(), eye, seed,
+    goal = build(info["path"], ball.frame.tolist(), eye, seed,
                  info["width"], info["height"], YOLO(args.goal_weights),
                  verbose=True)
+    if not args.anchor_too:
+        return goal
+
+    # The anchor covers midfield, where the goal is out of frame. Combining
+    # is refused unless the two can be shown to point the same way.
+    import detect_shots
+    from src.goal_placer import combine
+
+    rng = np.random.default_rng(0)
+    maps = detect_shots.anchors_for(Path(out_dir), info, ball.frame.tolist(),
+                                    rng, detect_shots.ANCHOR_FRAMES)
+    if not maps:
+        print("  [both] no anchors on this clip; using the goal alone")
+        return goal
+    tracks = pd.read_parquet(Path(out_dir) / "tracks.parquet")
+    return combine(goal, detect_shots.AnchorPlacer(maps),
+                   sorted(goal.poses), info["width"], info["height"],
+                   players=tracks[tracks.cls == "player"])
 
 
 def main():
@@ -217,6 +235,10 @@ def main():
                          "circle. The weights are trained on footage under "
                          "a non-commercial agreement and are therefore not "
                          "in this repository; supply your own.")
+    ap.add_argument("--anchor-too", action="store_true",
+                    help="also use the centre-circle anchor where the goal "
+                         "is out of frame, if the two can be shown to point "
+                         "the same way")
     ap.add_argument("--corners",
                     help="hand-clicked goal corners, which calibrate the "
                          "clip's camera position once so every frame's pose "

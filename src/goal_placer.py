@@ -312,6 +312,26 @@ MIN_OVERLAP_FRAMES = 15
 # pitch is and where neither mapping is extrapolating near its horizon.
 PROBE_POINTS = ((0.35, 0.72), (0.50, 0.78), (0.65, 0.72))
 
+# How far apart two frames may be and still be bridged by a player.
+#
+# Measured, the two landmarks never share a frame at all: on reading_2519 the
+# goal has poses on 103 frames and the anchor maps on 117, both spanning the
+# whole clip, and the overlap is zero -- zero exactly, and still zero
+# allowing two frames of slack. That is not a sampling artefact. A tight
+# broadcast framing shows either the box or the centre circle, never both,
+# so no probe point on any shared frame can decide the orientation, because
+# there are no shared frames.
+#
+# Players can bridge the gap. They are detected on nearly every frame and
+# carry persistent track ids, so the same player can be placed through the
+# goal on one frame and through the anchor on a nearby one. Twelve frames is
+# half a second, in which a sprinting player moves about 4 m -- far less
+# than the pitch length that separates a right orientation from a wrong one.
+BRIDGE_FRAMES = 12
+
+# Fewer bridged players than this and the orientation is a guess.
+MIN_BRIDGE_PLAYERS = 20
+
 
 def turn(point):
     """A pitch position seen from the other end."""
@@ -371,11 +391,63 @@ def agreement(goal: "GoalPlacer", anchor, frames, width: int, height: int):
             len(straight))
 
 
+def agreement_via_players(goal: "GoalPlacer", anchor, players,
+                          max_bridge: int = BRIDGE_FRAMES):
+    """Compare the landmarks through a player seen on two nearby frames.
+
+    The same track id, placed through the goal on its frame and through the
+    anchor on the nearest frame the anchor covers. Returns
+    (median as-is, median turned, comparisons).
+    """
+    anchor_frames = np.array(sorted(getattr(anchor, "maps", {}) or {}))
+    goal_frames = sorted(goal.poses)
+    if anchor_frames.size == 0 or not goal_frames:
+        return None, None, 0
+
+    by_frame = {f: g.set_index("track_id")
+                for f, g in players.groupby("frame")}
+    straight, turned = [], []
+    for frame in goal_frames:
+        near = int(anchor_frames[np.argmin(np.abs(anchor_frames - frame))])
+        if abs(near - frame) > max_bridge:
+            continue
+        here, there = by_frame.get(frame), by_frame.get(near)
+        if here is None or there is None:
+            continue
+        for tid in here.index.intersection(there.index):
+            a = goal.place(frame, float(here.loc[tid].px),
+                           float(here.loc[tid].py))
+            b = anchor.place(near, float(there.loc[tid].px),
+                             float(there.loc[tid].py))
+            if a is None or b is None:
+                continue
+            b = np.asarray(b, dtype=float)
+            straight.append(float(np.linalg.norm(a - b)))
+            turned.append(float(np.linalg.norm(a - turn(b))))
+    if not straight:
+        return None, None, 0
+    return (float(np.median(straight)), float(np.median(turned)),
+            len(straight))
+
+
 def combine(goal: "GoalPlacer", anchor, frames, width: int, height: int,
-            verbose: bool = True):
+            players=None, verbose: bool = True):
     """Both landmarks in one frame, or the goal alone if they disagree."""
     straight, turned, overlap = agreement(goal, anchor, frames, width, height)
-    if overlap < MIN_OVERLAP_FRAMES:
+    how = "on shared frames"
+    if overlap < MIN_OVERLAP_FRAMES and players is not None:
+        if verbose:
+            print(f"  [both] {overlap} shared-frame comparisons; bridging "
+                  f"with players instead")
+        straight, turned, overlap = agreement_via_players(goal, anchor,
+                                                          players)
+        how = "bridged by players"
+        if overlap < MIN_BRIDGE_PLAYERS:
+            if verbose:
+                print(f"  [both] {overlap} bridged players is too few to "
+                      f"decide the orientation; using the goal alone")
+            return goal
+    elif overlap < MIN_OVERLAP_FRAMES:
         if verbose:
             print(f"  [both] {overlap} overlapping frames is too few to "
                   f"check the frames agree; using the goal alone")
@@ -383,7 +455,7 @@ def combine(goal: "GoalPlacer", anchor, frames, width: int, height: int,
     flip = turned < straight
     best = min(straight, turned)
     if verbose:
-        print(f"  [both] anchor vs goal on {overlap} frames: "
+        print(f"  [both] anchor vs goal, {overlap} comparisons {how}: "
               f"{straight:.1f} m as-is, {turned:.1f} m turned around")
     if best > MAX_LANDMARK_DISAGREEMENT_M:
         if verbose:
