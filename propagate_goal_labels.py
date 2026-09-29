@@ -62,8 +62,17 @@ DIRS = {
 # How far to carry a box, and in what steps. Five frames is a fifth of a
 # second: far enough that the walk is cheap, near enough that ORB has plenty
 # of overlap to match on.
+#
+# Three steps, not eight. At forty frames from the seed, roughly a third of
+# carried boxes had slid onto advertising hoardings, and tightening the
+# appearance test alone did not clear them: a white goal frame and a
+# white-lettered board, both against a dark crowd and reduced to a small
+# patch, look more alike than is comfortable. Fifteen frames multiplies the
+# hand labels by six rather than sixteen, and a smaller clean set beats a
+# larger contaminated one -- contaminated positives would teach the detector
+# that hoardings are goals, which is the exact failure this replaces.
 STEP = 5
-MAX_STEPS = 8
+MAX_STEPS = 3
 
 # A box whose area changes by more than this between steps is being dragged
 # by a bad warp, not by the camera.
@@ -86,7 +95,7 @@ MIN_INSIDE = 0.98
 # So the crop is compared with the one the labeller drew, as a small
 # normalised greyscale patch. A goal that stays a goal correlates highly
 # with itself; a box that has wandered onto an advertising board does not.
-APPEARANCE_MIN = 0.55
+APPEARANCE_MIN = 0.80
 PATCH = 40
 
 
@@ -229,7 +238,8 @@ def main():
                                 seed["label"]["goal"], direction):
                     dataset.append({"clip": clip, "frame": got["frame"],
                                     "box": got["box"], "source": "carried",
-                                    "from": seed["frame"]})
+                                    "from": seed["frame"],
+                                    "alike": got.get("alike")})
                     carried += 1
         cap.release()
         print(f"  {clip:>18s} {len(seeds):5d} {carried:8d}", flush=True)
