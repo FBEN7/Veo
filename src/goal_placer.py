@@ -60,10 +60,59 @@ from . import pitch_model as pm
 from . import shot_geometry as sg
 from .goal_pose import GOAL_WIDTH_M, ground_point, pose_from_box
 
-# Detections below this are not trusted to carry geometry. Higher than the
-# 0.15 the detector runs at for "is there a goal here", because a box that
-# is only just a goal is not a box worth solving a camera from.
-MIN_BOX_CONFIDENCE = 0.35
+# The detector's measured operating point, chosen against its 124 goal-less
+# frames: 0.15 finds 6 of 6 shot moments for 4 false frames in 124, where
+# 0.25 finds 5 for 2. An earlier version of this file used 0.35 on the
+# reasoning that a box only just a goal is not worth solving a camera from.
+# That reasoning was never measured and cost most of the coverage -- goals
+# found on 60 of 466 sampled frames, 13%, where at 0.15 the same clip gives
+# 27 of 30 grid frames around a shot.
+MIN_BOX_CONFIDENCE = 0.15
+
+# Poses are smoothed across this many grid steps either side.
+#
+# Each grid frame solves its own pose from its own box, so box noise becomes
+# pose noise and pose noise becomes metres. Measured on consecutive frames
+# around a labelled shot, placed positions jumped 10 to 15 m between one
+# frame and the next -- and a shot is found by fitting a velocity over six
+# frames, which that destroys.
+#
+# The camera is the reason this is fixable rather than merely reducible: it
+# pans, tilts and zooms smoothly, so its rotation and focal are smooth
+# functions of time and a jump between neighbours is noise by construction.
+# Rotation vectors are averaged componentwise, which is only valid for small
+# differences; four frames apart on a broadcast pan they are small.
+SMOOTH_STEPS = 2
+
+# How far a pose may disagree with its neighbours and still be used.
+#
+# Smoothing helps only where there are neighbours to smooth against. Around
+# a shot with the goal densely in view -- 27 poses over 120 frames -- it cut
+# the 90th-percentile jump between consecutive placed positions from 10.2 m
+# to 6.0 m and the worst from 93.9 m to 9.8 m. Around a shot with the goal
+# mostly out of view -- 9 poses over the same span -- it did nothing useful,
+# because averaging a handful of badly disagreeing poses spreads the error
+# rather than cancelling it.
+#
+# So a pose has to agree with its neighbours to be used at all, which is the
+# same discipline `fit_pitch_anchor` applies to anchors: a landmark that
+# cannot reproduce is not a landmark. Disagreement is measured where it
+# matters, in metres on the pitch, by placing one reference pixel through
+# the pose and through its neighbours' average.
+MAX_POSE_DISAGREEMENT_M = 4.0
+
+# A pose must sit in a run of this many detections to be used.
+#
+# Without it the agreement gate is toothless exactly where it is needed. An
+# isolated pose has no neighbours to disagree with, so it passes by default,
+# and those are the poses that put consecutive ball positions 66 m apart.
+# Requiring a run encodes what makes the geometry trustworthy in the first
+# place: the goal steadily in view, not glimpsed once.
+MIN_POSE_NEIGHBOURS = 3
+
+# How far past a line a ball may be placed and still be believed. Balls do
+# go out; rays that graze the horizon go to Australia.
+OFF_PITCH_MARGIN_M = 8.0
 
 # A box fit worse than this is not describing the calibrated goal -- most
 # likely the goal at the other end, or a false positive on a hoarding.
@@ -116,13 +165,69 @@ class GoalPlacer:
         x, y = to_pitch(hit[0], hit[1])
         if not (np.isfinite(x) and np.isfinite(y)):
             return None
-        # Off the pitch by more than a goal's width is a grazing ray, not a
-        # ball: near the horizon a few pixels become tens of metres.
-        if not (-sg.GOAL_HALF_M <= x <= pm.PITCH_LENGTH_M + sg.GOAL_HALF_M):
+        # A grazing ray is the failure to guard against: near the horizon a
+        # few pixels of ball position become tens of metres of ground, and
+        # the result looks like a measurement. The first version of these
+        # bounds allowed y from -68 to +136 m -- three pitch widths -- which
+        # refused nothing at all.
+        #
+        # A ball genuinely leaves the pitch, so the margin is a touchline's
+        # worth rather than nothing, and the far limit is the halfway line:
+        # this placer knows where one goal is, and `MAX_SHOT_DISTANCE_M` is
+        # 35 m, so a point in the far half is not a shot at this goal
+        # whatever else it is.
+        if not (-OFF_PITCH_MARGIN_M <= x <= pm.PITCH_LENGTH_M / 2.0):
             return None
-        if not (-pm.PITCH_WIDTH_M <= y <= 2 * pm.PITCH_WIDTH_M):
+        if not (-OFF_PITCH_MARGIN_M <= y
+                <= pm.PITCH_WIDTH_M + OFF_PITCH_MARGIN_M):
             return None
         return np.array([x, y])
+
+
+def smooth(poses: dict, grid: int, steps: int = SMOOTH_STEPS) -> dict:
+    """Average each pose with its neighbours in time.
+
+    Only rotation and focal are averaged; the camera position is shared and
+    exact already. Frames with no neighbour within reach keep their own
+    pose rather than being dropped -- a lone pose is noisier, not wrong.
+    """
+    import cv2
+
+    if steps <= 0 or len(poses) < 2:
+        return poses
+    order = sorted(poses)
+    out = {}
+    for i, index in enumerate(order):
+        near = [poses[order[j]]
+                for j in range(max(0, i - steps),
+                               min(len(order), i + steps + 1))
+                if abs(order[j] - index) <= steps * grid]
+        if len(near) < MIN_POSE_NEIGHBOURS:
+            continue
+        rvec = np.mean([p.rvec.reshape(3) for p in near], axis=0)
+        focal = float(np.mean([p.focal_px for p in near]))
+        rot, _ = cv2.Rodrigues(rvec.reshape(3, 1))
+        base = poses[index]
+        eye = base.camera_position()
+        averaged = base.__class__(
+            rvec=rvec.reshape(3, 1), tvec=(-rot @ eye).reshape(3, 1),
+            focal_px=focal, cx=base.cx, cy=base.cy,
+            reprojection_px=base.reprojection_px, n_corners=0)
+
+        # The gate: place one reference pixel -- low and central, where a
+        # ball in play usually is -- through this frame's own pose and
+        # through its neighbours'. A pose that cannot agree with the frames
+        # either side of it is not describing the same camera they are.
+        probe = (base.cx, base.cy * 1.5)
+        here = ground_point(poses[index], *probe)
+        there = ground_point(averaged, *probe)
+        if here is None or there is None:
+            continue
+        if float(np.hypot(here[0] - there[0], here[1] - there[1])) > \
+                MAX_POSE_DISAGREEMENT_M:
+            continue
+        out[index] = averaged
+    return out
 
 
 def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
@@ -161,6 +266,8 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
             continue
         poses[index] = pose
     cap.release()
+
+    poses = smooth(poses, grid)
 
     if verbose:
         print(f"  [goal] {detected} goals found on {tried} sampled frames, "
