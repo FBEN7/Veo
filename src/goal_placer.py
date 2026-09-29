@@ -273,3 +273,111 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
         print(f"  [goal] {detected} goals found on {tried} sampled frames, "
               f"{len(poses)} gave a pose")
     return GoalPlacer(poses, grid)
+
+
+# --- combining the two landmarks -------------------------------------------
+#
+# The goal and the centre circle are complementary by construction. The
+# anchor is fitted from the centre circle, which is in view at midfield and
+# gone once play reaches the box; the goal is in view in the attacking third
+# and gone at midfield. Each covers where the other fails, and on
+# stoke_1302 the goal alone reaches only 10% of ball frames.
+#
+# What stops this being free is the frame. The anchor has its own pitch
+# coordinates with goals at x = 0 and x = 105, and nothing says its x = 0 is
+# the goal the corners calibrated. If it is the other one, the two differ by
+# a half turn, and combining them without checking would be worse than
+# either alone.
+#
+# So it is checked rather than assumed: on frames where both can place the
+# ball, the disagreement is measured as it stands and again with the anchor
+# turned through 180 degrees. The better wins, and if neither agrees the
+# two are not combined at all -- that outcome is a finding about the anchor,
+# not a reason to average them.
+
+# How far apart the two may be, in metres, on frames where both place the
+# ball, before combining them is refused.
+MAX_LANDMARK_DISAGREEMENT_M = 12.0
+
+# Fewer overlapping frames than this and the comparison decides nothing.
+MIN_OVERLAP_FRAMES = 15
+
+
+def turn(point):
+    """A pitch position seen from the other end."""
+    return np.array([pm.PITCH_LENGTH_M - point[0],
+                     pm.PITCH_WIDTH_M - point[1]])
+
+
+class CombinedPlacer:
+    """The goal where it is visible, the anchor elsewhere.
+
+    The goal is preferred wherever it has a pose: it is the landmark that is
+    in frame when shots happen, and the one whose geometry was checked
+    against a quantity the laws of the game fix. The anchor fills in the
+    rest of the pitch.
+    """
+
+    def __init__(self, goal: "GoalPlacer", anchor, flip: bool = False):
+        self.goal = goal
+        self.anchor = anchor
+        self.flip = flip
+        self.side = goal.side
+        self.used = {"goal": 0, "anchor": 0}
+
+    def __len__(self):
+        return len(self.goal) + len(getattr(self.anchor, "maps", ()) or ())
+
+    def place(self, frame, px, py):
+        point = self.goal.place(frame, px, py)
+        if point is not None:
+            self.used["goal"] += 1
+            return point
+        point = self.anchor.place(frame, px, py)
+        if point is None:
+            return None
+        self.used["anchor"] += 1
+        return turn(point) if self.flip else np.asarray(point, dtype=float)
+
+
+def agreement(goal: "GoalPlacer", anchor, ball):
+    """How far apart the two landmarks put the same ball, both ways round.
+
+    Returns (median as-is, median turned, overlapping frames).
+    """
+    straight, turned = [], []
+    for row in ball.itertuples():
+        a = goal.place(row.frame, row.px, row.py)
+        b = anchor.place(row.frame, row.px, row.py)
+        if a is None or b is None:
+            continue
+        b = np.asarray(b, dtype=float)
+        straight.append(float(np.linalg.norm(a - b)))
+        turned.append(float(np.linalg.norm(a - turn(b))))
+    if not straight:
+        return None, None, 0
+    return (float(np.median(straight)), float(np.median(turned)),
+            len(straight))
+
+
+def combine(goal: "GoalPlacer", anchor, ball, verbose: bool = True):
+    """Both landmarks in one frame, or the goal alone if they disagree."""
+    straight, turned, overlap = agreement(goal, anchor, ball)
+    if overlap < MIN_OVERLAP_FRAMES:
+        if verbose:
+            print(f"  [both] {overlap} overlapping frames is too few to "
+                  f"check the frames agree; using the goal alone")
+        return goal
+    flip = turned < straight
+    best = min(straight, turned)
+    if verbose:
+        print(f"  [both] anchor vs goal on {overlap} frames: "
+              f"{straight:.1f} m as-is, {turned:.1f} m turned around")
+    if best > MAX_LANDMARK_DISAGREEMENT_M:
+        if verbose:
+            print(f"  [both] they disagree by {best:.1f} m either way; "
+                  f"not combining, using the goal alone")
+        return goal
+    if verbose:
+        print(f"  [both] combining, anchor {'turned' if flip else 'as-is'}")
+    return CombinedPlacer(goal, anchor, flip)
