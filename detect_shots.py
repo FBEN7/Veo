@@ -136,6 +136,7 @@ import pandas as pd
 from fit_pitch_anchor import anchored_frames, plausible_anchor
 from probe_pitch_lines import CLIPS
 from propagate_anchor import frame_to_frame
+from src import ball_path
 from src import shot_geometry as sg
 from src import pitch_model as pm
 from src import xg as xg_module
@@ -193,14 +194,22 @@ ANCHOR_GRID = 4
 ANCHOR_FRAMES = 240
 
 
-def ball_track(out_dir: Path) -> pd.DataFrame:
-    """One ball position per frame, the most confident where there are several."""
+def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
+    """The ball's path through a clip, chosen as a trajectory.
+
+    This used to take the most confident detection on each frame,
+    independently. That is what put 272 to 404 impossible jumps into every
+    shot window -- steps implying 280 to 465 m/s, which is a sock or a line
+    marking, not a ball. `ball_path` picks the cheapest plausible path
+    through the same detections instead, and carries a `segment` column
+    marking where the ball was genuinely lost.
+    """
     tracks = pd.read_parquet(out_dir / "tracks.parquet")
-    ball = tracks[tracks.cls == "ball"]
-    if ball.empty:
-        return ball
-    best = ball.sort_values("confidence").groupby("frame").tail(1)
-    return best.sort_values("frame").reset_index(drop=True)
+    if fps is None:
+        info_path = out_dir / "clip.json"
+        fps = (json.loads(info_path.read_text())["fps"]
+               if info_path.exists() else 25.0)
+    return ball_path.track(tracks, float(fps))
 
 
 def anchors_for(out_dir: Path, info, frames_wanted, rng,
@@ -326,12 +335,14 @@ def find_shots(ball: pd.DataFrame, placer, fps: float):
     """
     if isinstance(placer, dict):
         placer = AnchorPlacer(placer)
+    has_segments = "segment" in ball.columns
     placed = []
     for row in ball.itertuples():
         point = placer.place(row.frame, row.px, row.py)
         if point is not None:
             placed.append((int(row.frame), float(row.time_s),
-                           float(point[0]), float(point[1])))
+                           float(point[0]), float(point[1]),
+                           int(row.segment) if has_segments else 0))
     if len(placed) < SPEED_WINDOW + 1:
         return [], len(placed)
 
@@ -339,6 +350,7 @@ def find_shots(ball: pd.DataFrame, placer, fps: float):
     times = np.array([p[1] for p in placed])
     xs = np.array([p[2] for p in placed])
     ys = np.array([p[3] for p in placed])
+    segs = np.array([p[4] for p in placed])
 
     hits = []
     for i in range(SPEED_WINDOW, len(placed)):
@@ -346,6 +358,11 @@ def find_shots(ball: pd.DataFrame, placer, fps: float):
         gap = times[i] - times[j]
         if gap <= 0 or frames[i] - frames[j] > 2 * SPEED_WINDOW:
             continue                     # a jump across missing detections
+        if segs[i] != segs[j]:
+            # Between segments the ball was lost, so the two ends are not
+            # one flight. Fitting a velocity across the break invents a
+            # strike out of the gap.
+            continue
         # Fitted across the window rather than differenced between its ends.
         # Two anchors on neighbouring frames disagree by about 0.6 m, and a
         # difference over 0.12 s turns that into 5 m/s of speed that is not

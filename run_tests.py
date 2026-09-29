@@ -61,6 +61,10 @@ CONTROLS = [
     ("stoppages from players",
      [sys.executable, "probe_stoppage.py", "--check"],
      "a pitch brought to a halt, one that never stops, and one that dips"),
+    ("the ball's path",
+     [sys.executable, "src/ball_path.py"],
+     "a ball among distractors the detector scores higher, where taking the "
+     "best blob per frame lands on the wrong object a third of the time"),
     ("pose from goal corners",
      [sys.executable, "src/goal_pose.py"],
      "a known camera recovered from a projected goal, three views and a "
