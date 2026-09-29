@@ -168,6 +168,8 @@ def main():
     ap.add_argument("labels", help="the hand-written label file")
     ap.add_argument("--out", default="output_veo",
                     help="the pipeline's output directory for that clip")
+    ap.add_argument("--reproduce", action="store_true",
+                    help="keep only anchors a frame produces twice over")
     ap.add_argument("--frames", type=int, default=None,
                     help="anchor budget; defaults to the shipped value")
     args = ap.parse_args()
@@ -204,7 +206,7 @@ def main():
     rng = np.random.default_rng(0)
     frames = args.frames or detect_shots.ANCHOR_FRAMES
     maps = detect_shots.anchors_for(out_dir, info, ball.frame.tolist(), rng,
-                                    frames)
+                                    frames, reproduce=args.reproduce)
     shots, placed = detect_shots.find_shots(ball, maps, info["fps"])
     shots = detect_shots.score(detect_shots.attribute(shots, out_dir, ball))
     stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])

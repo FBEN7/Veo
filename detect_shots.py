@@ -204,7 +204,7 @@ def ball_track(out_dir: Path) -> pd.DataFrame:
 
 
 def anchors_for(out_dir: Path, info, frames_wanted, rng,
-                n_frames=ANCHOR_FRAMES):
+                n_frames=ANCHOR_FRAMES, reproduce: bool = False):
     """A pitch map on a grid of frames, carried from the anchored ones.
 
     Only the anchored frames are held in memory; every other frame is read,
@@ -212,7 +212,8 @@ def anchors_for(out_dir: Path, info, frames_wanted, rng,
     than one per ball position, and a few frames of memory rather than all
     of them.
     """
-    _, owned = anchored_frames(out_dir, n_frames, rng, use_penalty_arc=False)
+    _, owned = anchored_frames(out_dir, n_frames, rng, use_penalty_arc=False,
+                               reproduce=reproduce)
     if not owned:
         return {}
     maps = dict(owned)
