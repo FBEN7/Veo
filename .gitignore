@@ -18,6 +18,12 @@ goal_labeller.html
 goal_labels.json
 goal_dataset.json
 
+# The YOLO dataset built from those labels, and the weights trained on it.
+# Both are SoccerNet frames or derived from them, so neither is committed;
+# the scripts that rebuild them are.
+goal_yolo/
+yolov8n.pt
+
 # The same, for the windows cut around labelled shots: output_stoke_1302 and
 # friends are the pipeline's artefacts from SoccerNet match video, so they
 # are covered by the same NDA as anything else derived from those frames.
