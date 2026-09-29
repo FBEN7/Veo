@@ -168,8 +168,9 @@ def main():
     ap.add_argument("labels", help="the hand-written label file")
     ap.add_argument("--out", default="output_veo",
                     help="the pipeline's output directory for that clip")
-    ap.add_argument("--reproduce", action="store_true",
-                    help="keep only anchors a frame produces twice over")
+    ap.add_argument("--no-reproduce", dest="reproduce", action="store_false",
+                    help="accept an anchor from a single fit, as this did "
+                         "before the reproducibility gate shipped")
     ap.add_argument("--frames", type=int, default=None,
                     help="anchor budget; defaults to the shipped value")
     args = ap.parse_args()

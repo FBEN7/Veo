@@ -470,7 +470,7 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_penalty_arc: bool = False,
                     with_kind: bool = False,
                     classifier=None,
-                    reproduce: bool = False):
+                    reproduce: bool = True):
     """Frames carrying a full image-to-pitch map, with that map.
 
     `with_kind` adds where each anchor came from -- "circle" or

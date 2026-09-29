@@ -1334,3 +1334,76 @@ The injected-shot control recovered a planted shot on every clip to within
 that had one**, which quietly guaranteed the map was good. It measured the
 geometry and the xG model, and it could not have caught this, because the
 failure is an anchor that should never have existed.
+
+
+## Making an anchor prove itself: measured, and it ships
+
+The gate: fit the frame twice with independent draws and keep the anchor
+only if the two maps place the ground within 2 m of each other. Seeded per
+frame from a fixed salt, so the second opinion does not disturb the run's
+main random stream -- taking the seed from that stream made the gated and
+ungated runs explore different RANSAC sequences everywhere downstream, and
+the first measurement of this was void because of it. The guard that caught
+it was the gate reporting an anchor it had *added*, which it cannot do.
+
+### What it keeps
+
+| clip | anchors, plain | gated | kept |
+|---|---|---|---|
+| Stoke 13:02 | 6 | 1 | 17% |
+| Stoke 42:07 | 7 | 1 | 14% |
+| Stoke 70:01 | 47 | 31 | 66% |
+| SoccerNet w1 | 91 | 86 | 95% |
+| SoccerNet w2 | 32 | 25 | 78% |
+| SoccerNet w3 | 47 | 34 | 72% |
+| reading | 60 | 54 | 90% |
+| Veo | 13 | 11 | 85% |
+
+The split is the finding. Windows looking at midfield keep 72-95%. The two
+windows cut around shots, where the camera is zoomed into the box, keep 17%
+and 14%. The anchors near the box were not occasionally wrong; they were
+mostly unreproducible, and the 61% ball placement on the 13:02 window rested
+on maps that cannot be found twice.
+
+That also corrects something said earlier on this page. Frame 178 was called
+a good anchor because it refit once. Over eight independent draws it fits
+twice and those two fits place the ground **7.3 m apart**; frame 667, the
+one that cost the shots, fits zero times. The difference between them is 2
+of 8 against 0 of 8, not sound against broken.
+
+### What it costs, and what it buys
+
+On the shot window, placement falls from 984 of 1612 (61%) to 162 (10%) and
+shot recall stays 0 of 2 -- but all three false crossings disappear. The
+gate converts confidently wrong output into honest silence.
+
+On the clips where the anchor works, it does something better than break
+even. Every injected shot is still recovered -- 15.8 to 16.2 m against 16.0
+planted, xG 0.101 to 0.105 against 0.103 -- and **coverage rises on four of
+five clips**:
+
+| clip | placed, plain | gated |
+|---|---|---|
+| w1 | 1042 | 1017 |
+| w2 | 680 | 700 |
+| w3 | 751 | **976** |
+| reading | 873 | **908** |
+| Veo | 505 | **682** |
+
+Worth understanding rather than just noting. A bad anchor captures the
+frames nearest to it as their borrow source, and then the maps carried from
+it are implausible and get thrown away. Removing it lets the next-nearest
+sound anchor serve those frames instead. The gate was not only removing
+noise; it was unblocking coverage that a bad anchor had been holding.
+
+**Shipped on by default**, against a rule fixed before the number was seen:
+pass the injected-shot control and it ships. `--no-reproduce` restores the
+old behaviour for comparison.
+
+### What it does not do
+
+Shot recall is 0 of 6 with the gate and 0 of 6 without it. This improves
+what the pipeline says about the penalty area; it does not improve what it
+can see there. That still needs an anchor built from markings visible in the
+box, which is the same structural gap out of play keeps arriving at from the
+other direction.

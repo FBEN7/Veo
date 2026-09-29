@@ -204,7 +204,7 @@ def ball_track(out_dir: Path) -> pd.DataFrame:
 
 
 def anchors_for(out_dir: Path, info, frames_wanted, rng,
-                n_frames=ANCHOR_FRAMES, reproduce: bool = False):
+                n_frames=ANCHOR_FRAMES, reproduce: bool = True):
     """A pitch map on a grid of frames, carried from the anchored ones.
 
     Only the anchored frames are held in memory; every other frame is read,
@@ -505,8 +505,9 @@ def inject_shot(ball, maps, info, fps, goal="left"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=ANCHOR_FRAMES)
-    ap.add_argument("--reproduce", action="store_true",
-                    help="keep only anchors a frame produces twice over")
+    ap.add_argument("--no-reproduce", dest="reproduce", action="store_false",
+                    help="accept an anchor from a single fit, as this did "
+                         "before the reproducibility gate shipped")
     ap.add_argument("--self-check", action="store_true")
     ap.add_argument("--inject", action="store_true",
                     help="put a known shot into each real clip, through that "
