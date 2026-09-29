@@ -299,8 +299,18 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
 # ball, before combining them is refused.
 MAX_LANDMARK_DISAGREEMENT_M = 12.0
 
-# Fewer overlapping frames than this and the comparison decides nothing.
+# Fewer overlapping comparisons than this and it decides nothing.
 MIN_OVERLAP_FRAMES = 15
+
+# Where to compare the two landmarks, as fractions of the frame.
+#
+# The first version of this compared them at the *ball*, and got zero
+# overlapping frames on both clips tried -- the ball is detected on a
+# fraction of frames, and requiring it on a frame both landmarks also cover
+# made the comparison almost impossible. Any point on the grass does the
+# job, and every frame has plenty. These sit low and central, where the
+# pitch is and where neither mapping is extrapolating near its horizon.
+PROBE_POINTS = ((0.35, 0.72), (0.50, 0.78), (0.65, 0.72))
 
 
 def turn(point):
@@ -340,29 +350,31 @@ class CombinedPlacer:
         return turn(point) if self.flip else np.asarray(point, dtype=float)
 
 
-def agreement(goal: "GoalPlacer", anchor, ball):
-    """How far apart the two landmarks put the same ball, both ways round.
+def agreement(goal: "GoalPlacer", anchor, frames, width: int, height: int):
+    """How far apart the two landmarks put the same pitch point, both ways.
 
-    Returns (median as-is, median turned, overlapping frames).
+    Returns (median as-is, median turned, number of comparisons).
     """
     straight, turned = [], []
-    for row in ball.itertuples():
-        a = goal.place(row.frame, row.px, row.py)
-        b = anchor.place(row.frame, row.px, row.py)
-        if a is None or b is None:
-            continue
-        b = np.asarray(b, dtype=float)
-        straight.append(float(np.linalg.norm(a - b)))
-        turned.append(float(np.linalg.norm(a - turn(b))))
+    for frame in frames:
+        for u, v in PROBE_POINTS:
+            a = goal.place(frame, u * width, v * height)
+            b = anchor.place(frame, u * width, v * height)
+            if a is None or b is None:
+                continue
+            b = np.asarray(b, dtype=float)
+            straight.append(float(np.linalg.norm(a - b)))
+            turned.append(float(np.linalg.norm(a - turn(b))))
     if not straight:
         return None, None, 0
     return (float(np.median(straight)), float(np.median(turned)),
             len(straight))
 
 
-def combine(goal: "GoalPlacer", anchor, ball, verbose: bool = True):
+def combine(goal: "GoalPlacer", anchor, frames, width: int, height: int,
+            verbose: bool = True):
     """Both landmarks in one frame, or the goal alone if they disagree."""
-    straight, turned, overlap = agreement(goal, anchor, ball)
+    straight, turned, overlap = agreement(goal, anchor, frames, width, height)
     if overlap < MIN_OVERLAP_FRAMES:
         if verbose:
             print(f"  [both] {overlap} overlapping frames is too few to "
