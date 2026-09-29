@@ -42,7 +42,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from goal_pose import (GOAL_HEIGHT_M, GOAL_WIDTH_M,  # noqa: E402
-                       shot_geometry, solve)
+                       bundle, shot_geometry, solve)
 from ground_plane import GroundPlane  # noqa: E402
 from propagate_goal_labels import DIRS  # noqa: E402
 
@@ -115,6 +115,76 @@ def focal_from_rectangle(corners, cx: float, cy: float):
     centre = np.array([cx, cy])
     dot = float(np.dot(out[0] - centre, out[1] - centre))
     return float(np.sqrt(-dot)) if dot < 0 else None
+
+
+# Frames shot from a different camera than the one following play: two goal
+# celebrations with broadcast graphics over them, and one from behind the
+# goal. Identified by drawing the corners on the frames and looking. They
+# are excluded because the bundle's whole premise is one camera in one
+# place, and a replay camera is neither.
+#
+# The behind-goal case is also detectable without a list -- seen from
+# behind, the left and right posts swap, so corner 1 lands to the *right* of
+# corner 4 -- and `looks_mirrored` checks for it. The two celebration views
+# are not mirrored, only differently placed, so the list stays.
+REPLAY_CAMERAS = {"reading_0737:963", "stoke_1302:1445", "stoke_7001:1927"}
+
+
+def looks_mirrored(corners) -> bool:
+    """Seen from behind the goal, the posts swap sides."""
+    if corners[0] is None or corners[3] is None:
+        return False
+    return bool(corners[0][0] > corners[3][0])
+
+
+def poses_for_clip(rows, plane, verbose: bool = False):
+    """Best pose available for each frame of one clip, keyed by frame id.
+
+    Focal length is the thing that limits this, so it is taken from the
+    strongest source available, in order:
+
+      1. a bundle over the clip's frames, which shares one camera position
+         and fits a focal per frame -- the most constrained, and the only
+         one that uses the fact that a gantry camera does not move;
+      2. failing that (one usable frame), the frame's own solve, seeded from
+         the ground plane's focal where there is a ground plane and from the
+         rectangle's vanishing points where there is not.
+
+    That second fallback is what unblocks reading_1155 and reading_2519,
+    whose clips yield no ground plane at all. Their focal was never
+    unobtainable -- it was simply being asked for from the one source that
+    could not supply it.
+    """
+    usable = [r for r in rows
+              if r["id"] not in REPLAY_CAMERAS
+              and not looks_mirrored(r["corners"])
+              and all(c is not None for c in r["corners"])]
+    if not usable:
+        return {}
+
+    cx = usable[0]["width"] / 2.0
+    cy = usable[0]["height"] / 2.0
+    rect = [focal_from_rectangle(pixels(r), cx, cy) for r in usable]
+    seeds = [f for f in rect if f]
+    seed = (plane.focal_px if plane else
+            (float(np.median(seeds)) if seeds else None))
+    if seed is None:
+        return {}
+
+    if len(usable) >= 2:
+        fitted = bundle([pixels(r) for r in usable], seed, cx, cy)
+        if fitted is not None:
+            _, poses, _ = fitted
+            return {r["id"]: p for r, p in zip(usable, poses)}
+
+    out = {}
+    for row, f_rect in zip(usable, rect):
+        pose = solve(pixels(row), plane.focal_px if plane else f_rect, cx, cy)
+        if pose is None and f_rect:
+            pose = solve(pixels(row), f_rect, cx, cy)
+        if pose is not None:
+            out[row["id"]] = pose
+    return out
 
 
 def main():
@@ -195,6 +265,73 @@ def main():
     print("\n  Camera heights from the corners and from player sizes are "
           "independent.\n  The spread is the test the clicks could fail "
           "outright: one gantry,\n  several frames, solved separately.")
+
+    shot_table(rows, planes)
+
+
+# The moment of the labelled shot in every window cut around one.
+SHOT_FRAME = 481
+
+
+def shot_table(rows, planes):
+    """Distance and angle at each labelled shot moment.
+
+    The position measured is the **shooter's feet**, not the ball. A player
+    is unambiguously standing on the pitch, which is the assumption the
+    whole ground intersection rests on; a ball is often in flight, above the
+    plane, and its ray then meets the ground far beyond where it really is.
+    Taking the ball gave 171.7 m and 50.9 m on two of these windows. Taking
+    the nearest player to the ball gives 25.9 and 18.0.
+    """
+    import pandas as pd
+
+    by_clip = {}
+    for row in rows:
+        by_clip.setdefault(row["clip"], []).append(row)
+
+    print(f"\n\nAt the shot moment, frame {SHOT_FRAME}, from the shooter's "
+          f"feet.\n")
+    print(f"  {'window':>14s} {'plane':>6s} {'distance':>9s} {'angle':>6s} "
+          f"{'reproj':>8s}")
+    got = total = 0
+    for clip, group in sorted(by_clip.items()):
+        shot = [r for r in group if r["frame"] == SHOT_FRAME]
+        if not shot:
+            continue
+        total += 1
+        plane = planes.get(clip)
+        pose = poses_for_clip(group, plane).get(shot[0]["id"])
+        label = "yes" if plane else "no"
+        if pose is None:
+            print(f"  {clip:>14s} {label:>6s}   no pose")
+            continue
+        tracks = pd.read_parquet(Path(shot[0]["out_dir"]) / "tracks.parquet")
+        ball = tracks[(tracks.cls == "ball")
+                      & (abs(tracks.frame - SHOT_FRAME) <= 3)]
+        players = tracks[(tracks.cls == "player")
+                         & (tracks.frame == SHOT_FRAME)]
+        if ball.empty or players.empty:
+            print(f"  {clip:>14s} {label:>6s}   no ball or player here")
+            continue
+        bx, by = float(ball.px.iloc[0]), float(ball.py.iloc[0])
+        near = ((players.px - bx) ** 2 + (players.py - by) ** 2) ** 0.5
+        shooter = players.loc[near.idxmin()]
+        geom = shot_geometry(pose, float(shooter.px), float(shooter.py))
+        if geom is None:
+            print(f"  {clip:>14s} {label:>6s}   refused, beyond the pitch")
+            continue
+        got += 1
+        print(f"  {clip:>14s} {label:>6s} {geom[0]:8.1f} m {geom[1]:5.0f}d "
+              f"{pose.reprojection_px:6.2f}px")
+
+    print(f"\n  {got} of {total} shot moments carry a measured distance and "
+          f"angle.")
+    print("\n  Reprojection cannot arbitrate the focal length here: a focal "
+          "fitted to\n  these very corners will always reproject them best, "
+          "while focal and\n  distance trade off against each other. The "
+          "single-frame rows are the\n  weaker ones for that reason; the "
+          "bundled rows are constrained by a\n  camera that has to be in one "
+          "place across several frames.")
 
 
 if __name__ == "__main__":
