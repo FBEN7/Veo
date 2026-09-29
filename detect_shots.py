@@ -505,6 +505,8 @@ def inject_shot(ball, maps, info, fps, goal="left"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--frames", type=int, default=ANCHOR_FRAMES)
+    ap.add_argument("--reproduce", action="store_true",
+                    help="keep only anchors a frame produces twice over")
     ap.add_argument("--self-check", action="store_true")
     ap.add_argument("--inject", action="store_true",
                     help="put a known shot into each real clip, through that "
@@ -534,7 +536,8 @@ def main():
         if ball.empty:
             print(f"  {name:>14s} {'no ball track':>12s}")
             continue
-        maps = anchors_for(path, info, ball.frame.tolist(), rng, args.frames)
+        maps = anchors_for(path, info, ball.frame.tolist(), rng,
+                           args.frames, reproduce=args.reproduce)
         if args.inject:
             planted, start = inject_shot(ball, maps, info, info["fps"])
             if planted is None:
