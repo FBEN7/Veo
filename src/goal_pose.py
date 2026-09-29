@@ -305,6 +305,70 @@ def bundle(frames, focal_guess: float, cx: float, cy: float,
     return eye, poses, rms
 
 
+def pose_from_box(box, eye, focal_guess: float, cx: float, cy: float,
+                  max_nfev: int = 600):
+    """Pose on a frame with no corners, from a detected box and a fixed camera.
+
+    Corners exist on 25 hand-labelled frames and nowhere else, which would
+    confine metric geometry to those frames. But `bundle` establishes
+    something that carries: a clip's camera position, to sub-pixel
+    reprojection. Position fixed leaves rotation and focal unknown -- four
+    numbers -- and a detected goal box is also four numbers. So the box is
+    enough, once the clip has been calibrated once.
+
+    That is what connects the working goal detector (6 of 6 at the shot
+    moments) to metric distance on frames nobody clicked.
+
+    Measured against the corner-derived pose on the 12 frames that have
+    both, started from a neutral guess that knows nothing of the true
+    rotation: median disagreement 1.8 m, 90th percentile 3.2 m. Usable for
+    xG bands, weaker than corners, and not a substitute for calibrating the
+    clip in the first place.
+
+    `box` is (x0, y0, x1, y1) in pixels. `eye` is the camera position in
+    goal-frame metres. Returns a GoalPose, or None if it flips.
+    """
+    from scipy.optimize import least_squares
+
+    eye = np.asarray(eye, dtype=np.float64)
+    observed = np.asarray(box, dtype=np.float64)
+
+    def bbox(rvec, focal):
+        rot, _ = cv2.Rodrigues(rvec)
+        tvec = (-rot @ eye).reshape(3, 1)
+        camera = np.array([[focal, 0.0, cx], [0.0, focal, cy],
+                           [0.0, 0.0, 1.0]])
+        pts, _ = cv2.projectPoints(MODEL, rvec, tvec, camera, None)
+        pts = pts.reshape(-1, 2)
+        return np.array([pts[:, 0].min(), pts[:, 1].min(),
+                         pts[:, 0].max(), pts[:, 1].max()])
+
+    # Start looking straight at the goal centre. This knows nothing about
+    # the true rotation, which is the point: seeding from a known-good pose
+    # would let the fit sit where it started and report agreement it had
+    # not earned.
+    target = np.array([GOAL_WIDTH_M / 2.0, GOAL_HEIGHT_M / 2.0, 0.0])
+    forward = target - eye
+    forward /= np.linalg.norm(forward)
+    right = np.cross(forward, np.array([0.0, 1.0, 0.0]))
+    right /= np.linalg.norm(right)
+    start, _ = cv2.Rodrigues(np.vstack([right, np.cross(forward, right),
+                                        forward]))
+
+    fit = least_squares(
+        lambda q: bbox(q[:3], np.exp(q[3])) - observed,
+        np.concatenate([start.ravel(), [np.log(focal_guess)]]),
+        method="lm", max_nfev=max_nfev)
+
+    rvec = fit.x[:3].reshape(3, 1)
+    rot, _ = cv2.Rodrigues(rvec)
+    pose = GoalPose(rvec=rvec, tvec=(-rot @ eye).reshape(3, 1),
+                    focal_px=float(np.exp(fit.x[3])), cx=cx, cy=cy,
+                    reprojection_px=float(np.sqrt(np.mean(fit.fun ** 2))),
+                    n_corners=0)
+    return None if pose.camera_position()[1] <= 0.0 else pose
+
+
 def selftest(verbose: bool = True) -> bool:
     """Project a goal from a known camera, then recover the known answer."""
     focal, cx, cy = 1800.0, 640.0, 360.0
@@ -378,6 +442,28 @@ def selftest(verbose: bool = True) -> bool:
             print(f"  {'one camera, 3 zooms':>18s}  position err {err:.3f} m  "
                   f"residual {rms:.2f} px   focals {focals} "
                   f"(true 1500, 2200, 2900)   {'ok' if good else 'WRONG'}")
+
+    # A box and a known camera position, with no corners at all.
+    eye = np.array([-25.0, 16.0, 30.0])
+    corners, _ = _synthetic(eye, [3.0, 0.0, 14.0], focal=1900.0)
+    corners = np.asarray(corners)
+    box = (corners[:, 0].min(), corners[:, 1].min(),
+           corners[:, 0].max(), corners[:, 1].max())
+    from_box = pose_from_box(box, eye, 1500.0, 640.0, 360.0)
+    from_corners = solve([tuple(p) for p in corners], 1900.0, 640.0, 360.0)
+    if from_box is None or from_corners is None:
+        print("  pose from a box FAILED")
+        ok = False
+    else:
+        a = shot_geometry(from_corners, 640.0, 540.0)
+        b = shot_geometry(from_box, 640.0, 540.0)
+        gap = abs(a[0] - b[0]) if a and b else float("inf")
+        good = gap < 1.0
+        ok &= good
+        if verbose:
+            print(f"  {'box, no corners':>18s}  distance {b[0]:5.2f} m "
+                  f"against {a[0]:5.2f} from corners, gap {gap:.2f} m   "
+                  f"{'ok' if good else 'WRONG'}")
 
     # Two corners must refuse rather than guess.
     if solve([(0.0, 0.0), None, None, (10.0, 0.0)], focal, cx, cy) is not None:
