@@ -61,6 +61,10 @@ CONTROLS = [
     ("stoppages from players",
      [sys.executable, "probe_stoppage.py", "--check"],
      "a pitch brought to a halt, one that never stops, and one that dips"),
+    ("pose from goal corners",
+     [sys.executable, "src/goal_pose.py"],
+     "a known camera recovered from a projected goal, three views and a "
+     "refusal when only two corners are given"),
 ]
 
 PIPELINE = [
