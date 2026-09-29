@@ -620,6 +620,44 @@ a line through.
 
 Geometry is no longer what is failing. Better ball tracking is.
 
+### Combining the two landmarks: measured, and refused
+
+The goal covers the attacking third and the anchor covers midfield, so using
+both should roughly triple coverage -- on reading_2519 the goal places 149
+ball positions and the anchor 327. It is not available, and the reason is a
+property of the footage rather than of the code.
+
+**They never share a frame.** Not one, across reading_2519's 103 goal poses
+and 117 anchor maps, both spanning the whole clip; still none allowing two
+frames of slack. A tight broadcast framing shows the box or the centre
+circle, never both. The nearest anchor frame to a goal frame is 59 frames
+away on that clip and 812 -- thirty-two seconds -- on stoke_1302.
+
+That matters because the two do not share a coordinate frame either. The
+anchor's x = 0 may be the calibrated goal or the other one, and a wrong
+choice puts every anchor-placed ball at the far end of the pitch.
+
+**Bridging with players** -- the same track id, placed through the goal on
+its frame and through the anchor on the nearest frame it covers:
+
+| bridge | comparisons | as-is | turned | margin |
+|---|---|---|---|---|
+| 3.0 s | 6 | 29.3 m | 49.5 m | 20.2 m |
+| 6.0 s | 25 | 40.0 m | 51.2 m | 11.2 m |
+
+As-is wins both times, by less than the 30 m margin required, so
+`goal_placer.combine` refuses and uses the goal alone.
+
+**The residual is not evidence against the anchor.** Over three seconds a
+player covers twenty metres and over six he covers fifty, so a 29-40 m
+disagreement is what player motion alone produces. The measurement cannot
+separate a wrong anchor from too long a bridge, and the bridge cannot be
+shortened because the landmarks are never close in time here.
+
+What would settle it is footage where both landmarks appear within a second
+of each other -- a wider angle, or a full match containing such moments. Not
+more code.
+
 ### What got worse
 
 Out-of-play precision. The anchor placed so little that it reported almost

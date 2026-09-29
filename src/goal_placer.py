@@ -292,8 +292,37 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
 # So it is checked rather than assumed: on frames where both can place the
 # ball, the disagreement is measured as it stands and again with the anchor
 # turned through 180 degrees. The better wins, and if neither agrees the
-# two are not combined at all -- that outcome is a finding about the anchor,
-# not a reason to average them.
+# two are not combined at all.
+#
+# ## Measured: this footage cannot decide it
+#
+# It refuses, and the reason is worth stating so nobody rebuilds this
+# expecting a different answer.
+#
+# The landmarks never share a frame -- not one, on reading_2519's 103 goal
+# poses and 117 anchor maps, and still none allowing two frames of slack. A
+# tight broadcast framing shows the box or the centre circle, never both.
+# The nearest anchor frame to a goal frame is 59 frames away on that clip
+# and 812 -- thirty-two seconds -- on stoke_1302.
+#
+# Bridging with players gives, on reading_2519:
+#
+#     bridge 3.0 s    6 players    as-is 29.3 m   turned 49.5 m
+#     bridge 6.0 s   25 players    as-is 40.0 m   turned 51.2 m
+#
+# As-is wins both times, by 20.2 m and 11.2 m, under the 30 m margin
+# required. So the answer is "probably not turned, but not established".
+#
+# The residual is not evidence against the anchor, and should not be read
+# that way. Over a three-second bridge a player covers twenty metres and
+# over six he covers fifty, so a 29-40 m disagreement is exactly what
+# player motion alone would produce. The measurement cannot separate a
+# wrong anchor from too long a bridge, and the bridge cannot be shortened
+# because the landmarks are never close in time here.
+#
+# What would settle it is footage where both landmarks are in frame within a
+# second of each other -- a wider angle, or a full match in which such
+# moments occur. Not more code.
 
 # How far apart the two may be, in metres, on frames where both place the
 # ball, before combining them is refused.
