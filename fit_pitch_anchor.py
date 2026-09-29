@@ -406,6 +406,11 @@ def resolve_end(provisional, support, index, references, motion, info):
 # fits of the same markings.
 REPRODUCE_TOLERANCE_M = 2.0
 
+# Salt for the second opinion's generator. Fixed, and combined with the frame
+# index, so the second fit is deterministic per frame and does not depend on
+# the state of the run's main random stream.
+REPRODUCE_SEED = 917_000
+
 # Where on the frame the two fits are compared. The lower part, because the
 # top is stands and sky and a ground-plane map means nothing there.
 AGREE_ROWS = (0.55, 0.70, 0.85, 0.97)
@@ -527,12 +532,17 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
         if homography is None or not plausible_anchor(homography, info):
             continue
         if reproduce:
-            # Ask the frame the same question again, with an independent
-            # draw taken from this run's own generator so the result stays
-            # reproducible. An anchor that cannot be found twice is not an
-            # anchor.
+            # Ask the frame the same question again, from a generator of its
+            # own. Deliberately NOT drawn from `rng`: taking a seed from the
+            # shared stream advances it, so every later fit in the run sees
+            # different draws and the gated run stops being comparable with
+            # the ungated one. That showed up as the gate "adding" an anchor
+            # it cannot add -- it had simply explored a different sequence.
+            #
+            # Seeded per frame, so the second opinion is deterministic and
+            # independent of how many frames anchored before this one.
             again = anchor_from_frame(
-                frame, np.random.default_rng(int(rng.integers(2 ** 62))),
+                frame, np.random.default_rng(REPRODUCE_SEED + idx),
                 info, horizon)
             if not maps_agree(homography, again, info):
                 continue
