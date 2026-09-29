@@ -226,6 +226,85 @@ def shot_geometry(pose: GoalPose, x: float, y: float):
             float(np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0)))))
 
 
+def bundle(frames, focal_guess: float, cx: float, cy: float,
+           max_nfev: int = 300):
+    """One camera position for several frames, each with its own zoom.
+
+    Solving each frame alone leaves the focal length free per frame, and
+    position scales with it, so recovered positions scatter by tens of
+    metres for a camera that never moved. But a broadcast camera is bolted
+    to a gantry: across a ninety-second window it pans, tilts and zooms, and
+    does not travel. That is a constraint the per-frame solve throws away.
+
+    So position is shared and rotation and focal are per frame, fitted
+    together by least squares on reprojection. For n frames that is 3 + 4n
+    unknowns against 8n measurements, determined from two frames up.
+
+    It is also a test rather than a smoothing. If the corners are right and
+    the camera really is fixed, one position reprojects every frame to a
+    couple of pixels. If it cannot, something is wrong -- the corners, the
+    assumption, or which goal a frame is looking at -- and the residual says
+    so instead of hiding in a plausible-looking average.
+
+    `frames` is a list of four-corner pixel lists. Returns
+    (camera position, [GoalPose], residual px) or None.
+    """
+    from scipy.optimize import least_squares
+
+    usable = [f for f in frames if f is not None
+              and all(c is not None for c in f)]
+    if len(usable) < 2:
+        return None
+
+    starts = [solve(f, focal_guess, cx, cy) for f in usable]
+    if any(s is None for s in starts):
+        return None
+    eye0 = np.mean([s.camera_position() for s in starts], axis=0)
+
+    observed = [np.asarray(f, dtype=np.float64) for f in usable]
+    n = len(usable)
+
+    def unpack(p):
+        eye = p[:3]
+        rvecs = p[3:3 + 3 * n].reshape(n, 3)
+        focals = np.exp(p[3 + 3 * n:])      # kept positive
+        return eye, rvecs, focals
+
+    def residuals(p):
+        eye, rvecs, focals = unpack(p)
+        out = []
+        for i in range(n):
+            rot, _ = cv2.Rodrigues(rvecs[i])
+            tvec = (-rot @ eye).reshape(3, 1)
+            camera = np.array([[focals[i], 0.0, cx],
+                               [0.0, focals[i], cy], [0.0, 0.0, 1.0]])
+            proj, _ = cv2.projectPoints(MODEL, rvecs[i], tvec, camera, None)
+            out.append((proj.reshape(-1, 2) - observed[i]).ravel())
+        return np.concatenate(out)
+
+    p0 = np.concatenate([eye0]
+                        + [s.rvec.ravel() for s in starts]
+                        + [np.full(n, np.log(focal_guess))])
+    fit = least_squares(residuals, p0, method="lm", max_nfev=max_nfev)
+
+    eye, rvecs, focals = unpack(fit.x)
+    if eye[1] <= 0.0:
+        return None
+    rms = float(np.sqrt(np.mean(fit.fun.reshape(-1, 2) ** 2).sum()))
+
+    poses = []
+    for i in range(n):
+        rot, _ = cv2.Rodrigues(rvecs[i])
+        per = fit.fun[i * 8:(i + 1) * 8].reshape(-1, 2)
+        poses.append(GoalPose(
+            rvec=rvecs[i].reshape(3, 1),
+            tvec=(-rot @ eye).reshape(3, 1),
+            focal_px=float(focals[i]), cx=cx, cy=cy,
+            reprojection_px=float(np.sqrt(np.mean(np.sum(per ** 2, axis=1)))),
+            n_corners=4))
+    return eye, poses, rms
+
+
 def selftest(verbose: bool = True) -> bool:
     """Project a goal from a known camera, then recover the known answer."""
     focal, cx, cy = 1800.0, 640.0, 360.0
@@ -275,6 +354,30 @@ def selftest(verbose: bool = True) -> bool:
                   f"distance {got[0]:5.2f} m (true {truth_d:5.2f}, err "
                   f"{err_d:.3f})   angle {got[1]:5.1f} deg   "
                   f"{'ok' if good else 'WRONG'}")
+
+    # One camera, three zooms: the bundle must find the shared position that
+    # per-frame solving cannot, because each frame alone leaves focal free.
+    eye = np.array([-30.0, 15.0, 34.0])
+    shots = []
+    for f, ball in ((1500.0, [2.0, 0.0, 12.0]),
+                    (2200.0, [5.0, 0.0, 20.0]),
+                    (2900.0, [3.0, 0.0, 9.0])):
+        corners, _ = _synthetic(eye, ball, focal=f)
+        shots.append([tuple(p) for p in corners])
+    got = bundle(shots, 2000.0, 640.0, 360.0)
+    if got is None:
+        print("  bundle over three frames FAILED to fit")
+        ok = False
+    else:
+        eye_fit, poses, rms = got
+        err = float(np.linalg.norm(eye_fit - eye))
+        good = err < 0.5 and rms < 1.0
+        ok &= good
+        if verbose:
+            focals = ", ".join(f"{p.focal_px:.0f}" for p in poses)
+            print(f"  {'one camera, 3 zooms':>18s}  position err {err:.3f} m  "
+                  f"residual {rms:.2f} px   focals {focals} "
+                  f"(true 1500, 2200, 2900)   {'ok' if good else 'WRONG'}")
 
     # Two corners must refuse rather than guess.
     if solve([(0.0, 0.0), None, None, (10.0, 0.0)], focal, cx, cy) is not None:
