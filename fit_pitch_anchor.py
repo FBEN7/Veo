@@ -399,11 +399,73 @@ def resolve_end(provisional, support, index, references, motion, info):
     return homography
 
 
+
+# How well two independent fits of the same frame must agree, in metres.
+# Generous on purpose: this is meant to reject an anchor that is wrong by
+# tens of metres, not to referee sub-metre differences between two honest
+# fits of the same markings.
+REPRODUCE_TOLERANCE_M = 2.0
+
+# Where on the frame the two fits are compared. The lower part, because the
+# top is stands and sky and a ground-plane map means nothing there.
+AGREE_ROWS = (0.55, 0.70, 0.85, 0.97)
+AGREE_COLS = (0.15, 0.35, 0.65, 0.85)
+
+
+def maps_agree(first, second, info,
+               tolerance_m: float = REPRODUCE_TOLERANCE_M) -> bool:
+    """Do two anchors for the same frame place the ground in the same place?
+
+    RANSAC is a sampler, not a function: run it twice on one frame and it
+    can answer differently. Usually the two answers are the same markings
+    fitted to within noise. Occasionally one of them is a spurious fit on a
+    frame that has no centre circle in it at all, and that one is worth tens
+    of metres -- it put a shot forty metres from where it was taken and cost
+    the detector every shot in that window.
+
+    Comparing the two maps on the same frame needs no warp between frames
+    and no ground truth, which is what makes it cheap enough to run on every
+    candidate.
+    """
+    if first is None or second is None:
+        return False
+    width, height = info["width"], info["height"]
+    points = np.array([[c * width for c in AGREE_COLS for _ in AGREE_ROWS],
+                       [r * height for _ in AGREE_COLS for r in AGREE_ROWS],
+                       [1.0] * (len(AGREE_COLS) * len(AGREE_ROWS))])
+    here, there = first @ points, second @ points
+    if np.any(np.abs(here[2]) < 1e-9) or np.any(np.abs(there[2]) < 1e-9):
+        return False
+    here, there = here[:2] / here[2], there[:2] / there[2]
+    gaps = np.hypot(*(here - there))
+    gaps = gaps[np.isfinite(gaps)]
+    if not gaps.size:
+        return False
+    return bool(np.median(gaps) <= tolerance_m)
+
+
+def anchor_from_frame(frame, rng, info, horizon):
+    """One anchor from one frame, or None. The fit, with nothing around it."""
+    circle = find_circle(frame, rng)
+    if circle is None:
+        return None
+    (cx, cy), _, _ = circle["ellipse"]
+    halfway = halfway_line(circle["segments"], (cx, cy))
+    direction = (None if halfway is None
+                 else np.array([halfway[2] - halfway[0],
+                                halfway[3] - halfway[1]], dtype=float))
+    homography = pm.metric_from_circle(horizon, circle["ellipse"], direction)
+    if homography is None or not plausible_anchor(homography, info):
+        return None
+    return homography
+
+
 def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                     use_horizon: bool = False,
                     use_penalty_arc: bool = False,
                     with_kind: bool = False,
-                    classifier=None):
+                    classifier=None,
+                    reproduce: bool = False):
     """Frames carrying a full image-to-pitch map, with that map.
 
     `with_kind` adds where each anchor came from -- "circle" or
@@ -464,6 +526,16 @@ def anchored_frames(out_dir: Path, n_frames: int, rng, use_rotation=False,
                                            direction)
         if homography is None or not plausible_anchor(homography, info):
             continue
+        if reproduce:
+            # Ask the frame the same question again, with an independent
+            # draw taken from this run's own generator so the result stays
+            # reproducible. An anchor that cannot be found twice is not an
+            # anchor.
+            again = anchor_from_frame(
+                frame, np.random.default_rng(int(rng.integers(2 ** 62))),
+                info, horizon)
+            if not maps_agree(homography, again, info):
+                continue
         out.append((idx, homography))
     cap.release()
     kinds = {idx: "circle" for idx, _ in out}
