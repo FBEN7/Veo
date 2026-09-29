@@ -92,6 +92,21 @@ MODEL = np.array([
 # Fewer than this many clicked corners and the pose is not determined.
 MIN_CORNERS = 4
 
+# Beyond this, the answer is not a shot and probably not a position either.
+#
+# The ground intersection is a ray meeting a plane, and a ray that grazes
+# the plane meets it arbitrarily far away: a few pixels near the horizon
+# become tens of metres. Run on real clicks, two of four shot moments came
+# back at 171.7 m and 50.9 m, both with the detected "ball" high in the
+# frame -- in flight, above the plane, or a false positive. A pitch is about
+# 105 m end to end and nobody shoots from 60, so a number past this is
+# evidence the input was not a ball resting on the grass.
+#
+# Refusing is the point. A distance is worth having only when it is a
+# measurement, and the failure mode here returns something that looks like
+# one.
+MAX_PITCH_DISTANCE_M = 60.0
+
 # A reprojection worse than this means the corners do not describe a goal:
 # a mis-click, a corner put on the net rather than the frame, or a label
 # whose order was scrambled. In pixels.
@@ -201,6 +216,8 @@ def shot_geometry(pose: GoalPose, x: float, y: float):
         return None
     ball = np.array(hit, dtype=np.float64)
     centre = np.array([GOAL_WIDTH_M / 2.0, 0.0])
+    if float(np.linalg.norm(ball - centre)) > MAX_PITCH_DISTANCE_M:
+        return None          # a grazing ray, not a ball on the grass
     left = np.array([0.0, 0.0]) - ball
     right = np.array([GOAL_WIDTH_M, 0.0]) - ball
     cosine = float(np.dot(left, right)

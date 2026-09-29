@@ -113,8 +113,17 @@ def crop_for(frame, box, width: int, height: int):
         return None, None
     # The rect is what the page needs to send clicks back to full-frame
     # coordinates; the zoom is only for reporting.
+    #
+    # `fw`/`fh` are the *clip's own* frame size and must travel with every
+    # rect. The first version of this used one page-wide size taken from
+    # whichever clip happened to be loaded first, which is correct only
+    # while every clip matches it. The Veo clip is 640x360 where the
+    # broadcast ones are 1280x720, so its corners came back at exactly half
+    # their true values -- a silent factor of two in 1 frame of 25,
+    # recoverable only because the factor is exact.
     return base64.b64encode(buf).decode("ascii"), {
         "x": cx0, "y": cy0, "w": cx1 - cx0, "h": cy1 - cy0,
+        "fw": int(width), "fh": int(height),
         "zoom": round(float(zoom), 2),
         # The original box, drawn faintly so it is obvious which goal is
         # meant and that the crop found it.
@@ -268,8 +277,8 @@ function record(){
   // downstream needs to know the page cropped and magnified anything.
   const f = FRAMES[at], r = f.rect;
   done[f.id] = pts.map(p => p === null ? null : [
-    +((r.x + p[0]*r.w) / __W__).toFixed(5),
-    +((r.y + p[1]*r.h) / __H__).toFixed(5)]);
+    +((r.x + p[0]*r.w) / r.fw).toFixed(5),
+    +((r.y + p[1]*r.h) / r.fh).toFixed(5)]);
   localStorage.setItem(KEY, JSON.stringify(done));
   at++; show();
 }
@@ -314,11 +323,12 @@ document.addEventListener("keydown", e=>{
 });
 document.getElementById("save").onclick = ()=>{
   const out = FRAMES.map(f => ({id:f.id, clip:f.clip, frame:f.frame,
-                                box:f.box,
+                                box:f.box, width:f.rect.fw,
+                                height:f.rect.fh,
                                 corners: done[f.id] === undefined ? null
                                         : done[f.id]}));
   const blob = new Blob([JSON.stringify(
-    {width:__W__, height:__H__, order:NAMES,
+    {order:NAMES,
      labelled:Object.keys(done).length, frames:out}, null, 1)],
     {type:"application/json"});
   const a = document.createElement("a");
@@ -380,9 +390,12 @@ def main():
     print(f"  magnification {min(zooms):.1f}x to {max(zooms):.1f}x "
           f"(median {float(np.median(zooms)):.1f}x)")
 
-    width, height = next(iter(caps.values()))[1:] if caps else (1280, 720)
-    page = (PAGE.replace("__DATA__", json.dumps(frames))
-                .replace("__W__", str(width)).replace("__H__", str(height)))
+    sizes = {(f["rect"]["fw"], f["rect"]["fh"]) for f in frames}
+    if len(sizes) > 1:
+        print(f"  frame sizes present: "
+              f"{', '.join(f'{w}x{h}' for w, h in sorted(sizes))} "
+              f"-- carried per frame, not page-wide")
+    page = PAGE.replace("__DATA__", json.dumps(frames))
     target = Path(args.out)
     target.write_text(page, encoding="utf-8")
     size = target.stat().st_size / 1e6
