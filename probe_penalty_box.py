@@ -1,5 +1,26 @@
 """Are the penalty-area markings even there, in the frames that matter?
 
+> **This probe's answer is not trustworthy, and the reason is worth more
+> than the answer was.** It reported 0-18% of frames usable, which reads as
+> "the markings are not there". Drawing what it found on a frame shows
+> otherwise: the lines it detects are mostly the hoardings, the crowd
+> boundary and long diagonals crossing bare grass, while the penalty arc and
+> the box lines that are plainly visible go mostly untraced. Eroding the
+> grass mask by 31 px removes the worst of the hoarding lines and does not
+> fix it.
+>
+> So this measured the line detector, not the footage. The angle-based
+> family split compounded it: on one frame the lines parallel to the goal
+> line arrive at 7, 17, 19, 26, 174, 175 and 176 degrees -- a 30 degree
+> spread, because perspective makes parallel lines converge -- against a
+> 25 degree threshold for calling two lines transverse. The within-family
+> spread is wider than the between-family test.
+>
+> Kept as a record of the attempt. Fixing it needs a marking detector that
+> finds paint rather than contrast, and a family split done by vanishing
+> point rather than by image angle.
+
+
 Shot recall is 0 of 10 and goal detection 0 of 2, and the cause is settled:
 the anchor is fitted from the centre circle, which is at the halfway line,
 and a camera following play into the box does not show it. The proposed fix

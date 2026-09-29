@@ -1462,3 +1462,50 @@ The same six clips scored passes and carries against the full label file.
 Pass clears chance on the new windows as it did on the old ones, and the
 reproducibility gate -- which changed the anchor path underneath everything
 -- did not degrade it. Those detectors do not use the anchor.
+
+
+## The penalty-area anchor: blocked on finding the paint
+
+The obvious fix for 0 of 10 shots is an anchor fitted from the markings that
+are in the box -- goal line, six-yard box, penalty area, and the sides
+joining them. Before building a fitter, a cheaper question: are those
+markings detectable in the frames where the centre-circle anchor fails?
+
+The triage said 0-18% of frames usable, which reads as "the markings are not
+there". **That answer is wrong and the reason matters more than the answer.**
+
+Drawing the detected lines on a frame settles it. The frame shows the goal
+line, the six-yard box, the penalty area and the arc clearly. What the
+detector returns is mostly the **hoardings**, the crowd boundary and long
+diagonals across bare grass, while the paint goes mostly untraced. Eroding
+the grass mask by 31 px removes the worst hoarding lines and does not fix
+the rest.
+
+A second fault compounded it. Lines parallel to the goal line arrive at 7,
+17, 19, 26, 174, 175 and 176 degrees on one frame -- a 30 degree spread,
+because perspective makes parallel lines converge -- against a 25 degree
+threshold for calling two lines transverse. The within-family spread is
+wider than the between-family test, so the split is meaningless. Families
+have to be found by vanishing point, not image angle.
+
+### What this establishes
+
+Not that the box cannot be mapped. That the **markings cannot currently be
+found**, which is a different and more tractable problem, and one this
+project has already met: the marking-classifier work was abandoned earlier
+because anchor-derived training data contained zero penalty arcs -- anchors
+come from the centre circle, so nothing near the box was ever labelled.
+
+The same circularity is still in place. The anchor cannot see the box, so it
+cannot label the box, so nothing learns to find the box.
+
+### The honest next step
+
+Break the circle with data rather than cleverness. Label the markings on a
+few hundred frames of box-zoomed footage by hand -- goal line, six-yard box,
+penalty area, arc -- and train a segmenter on that. `line_segments` finds
+contrast; what is needed is something that finds paint, which is a
+recognition problem rather than an edge-detection one.
+
+Until then, the penalty-area anchor cannot be built on what this pipeline
+can see, and the 0 of 10 stands.
