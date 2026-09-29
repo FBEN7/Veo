@@ -572,7 +572,78 @@ and predate the recalibration. They are directionally intact -- the change
 is smaller than the differences they report -- but the exact decimals are
 stale.
 
-## Shots, goals and xG: where they stand
+## Shots and goals, placed from the goal instead of the centre circle
+
+Measured on five hand-labelled windows cut around shots, with events placed
+by `src/goal_placer.py` -- a goal detector for the landmark, hand-clicked
+corners for the camera position, `goal_pose` for the rest.
+
+| window | ball placed | shots | goals |
+|---|---|---|---|
+| stoke_1302 | 179 / 1612 (11%) | 0 of 2 | - |
+| stoke_4207 | 526 / 1272 (41%) | **1 of 2**, precision 1.00 | - |
+| stoke_7001 | 51 / 1548 (3%) | 0 of 2 | - |
+| reading_1155 | 166 / 1530 (11%) | 0 of 1 | 0 of 1 |
+| reading_2519 | 152 / 1674 (9%) | 0 of 1 | **1 of 1**, precision 1.00 |
+
+**Shots 1 of 8. Goals 1 of 2.** Against 0 of 10 and 0 of 2 on the
+centre-circle anchor. These are the first shot and goal this project has
+detected that were not injected by its own test harness.
+
+The denominators differ because only five of the six windows have a label
+file; the published 0 of 10 covered a sixth. The comparison is still a
+comparison -- nothing here was found before -- but it is not 8 against 10 on
+the same set.
+
+### The bottleneck moved twice, and is now the ball
+
+The anchor was the first. It is fitted from the centre circle at midfield
+and a camera following play into the box does not show one, so shots were
+placed nowhere at all.
+
+Goal visibility was the second, briefly, and was my own doing: the placer
+required detections at 0.35 confidence when the detector's measured
+operating point is 0.15.
+
+What remains is ball detection density, and the table says so plainly. The
+only window that yielded a shot is the only one with 41% of ball positions
+placed; the rest sit at 3-11%. `find_shots` fits a velocity over six placed
+points within a twelve-frame window and wants three sustained hits, which at
+one placement in ten frames cannot happen.
+
+Looked at frame by frame around stoke_1302's labelled shot, the ball is
+detected on 17 of 70 frames, with a 280-pixel jump between two consecutive
+detections, and the strike itself has three usable points. The geometry was
+right -- the ball travels from x = 13.5 m to x = 2.3 m at y = 34, dead centre
+of a mouth spanning 30.3 to 37.7 -- and there were not enough points to fit
+a line through.
+
+Geometry is no longer what is failing. Better ball tracking is.
+
+### What got worse
+
+Out-of-play precision. The anchor placed so little that it reported almost
+nothing; the goal placer reports more, and more of it is wrong -- five false
+"out" calls on stoke_4207, two on stoke_7001. Recall is unchanged at 1 of 3.
+More detections is not better detection, and this is the line of the table
+that says so.
+
+### The ceiling that is not a bug
+
+Placing a ball assumes the ball is on the grass. A struck ball is in the
+air, its ray meets the ground plane beyond where it really is, and near the
+horizon a few pixels become tens of metres. Measuring the *shooter's feet*
+avoids this for a known shot moment -- that is how the six shot distances in
+`check_goal_corners.py` are obtained -- but a detector has to work from the
+ball, because speed and heading are what make a shot a shot. The anchor
+homography had the identical flaw, so this is not a regression; it is a
+limit on how far this approach goes.
+
+## Shots, goals and xG: the older position
+
+The section above supersedes what follows, which was written when the only
+labelled footage contained no shots at all. It is kept because the reasoning
+about xG and held-out evaluation still holds.
 
 Nothing in this document covers shots, because there is nothing to cover.
 **All four labelled windows contain zero shots and zero goals.** Every
