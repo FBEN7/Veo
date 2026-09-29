@@ -1407,3 +1407,58 @@ what the pipeline says about the penalty area; it does not improve what it
 can see there. That still needs an anchor built from markings visible in the
 box, which is the same structural gap out of play keeps arriving at from the
 other direction.
+
+
+## The full shot and goal measurement: 0 of 10 and 0 of 2, on two matches
+
+Six windows cut around labelled shots, three from each of two matches. The
+Stoke windows were scored before the reproducibility gate shipped, the
+Reading windows after it, which is why the false-alarm column differs.
+
+| window | ball placed | shots | goals | found | false out |
+|---|---|---|---|---|---|
+| Stoke 13:02 | 984/1612 (61%) | 2 | - | 0 | 3 |
+| Stoke 13:02, gated | 162/1612 (10%) | 2 | - | 0 | **0** |
+| Stoke 42:07 | 173/1272 (14%) | 2 | - | 0 | 0 |
+| Stoke 70:01 | 939/1548 (61%) | 2 | - | 0 | 0 |
+| Reading 07:37 | 455/1651 (28%) | 2 | - | 0 | 0 |
+| Reading 11:55 | 170/1530 (11%) | 1 | 1 | 0 | 1 |
+| Reading 25:19 | 355/1674 (21%) | 1 | 1 | 0 | 1 |
+| **total** | | **10** | **2** | **0** | |
+
+Goal detection had never seen a real goal before these two windows. It has
+now seen two, and found neither. It remains correct on synthetic input,
+which is what it was always measured on.
+
+### Placement is not the discriminator, and that is the point
+
+Two windows place 61% of the ball, one places 11%, and the outcome is
+identical. On the 61% windows the ball is placed plentifully and placed
+**wrongly**: at the Stoke 13:02 shot it sits at x = 46-63 m, midfield, while
+the video shows it struck a dozen metres from goal.
+
+So this is not a coverage problem with a coverage fix. Wherever the camera
+goes to watch something worth measuring, the anchor's only landmark -- the
+centre circle, at the halfway line -- leaves the frame. What is left to fit
+is whatever happens to be in the box, and the reproducibility gate measures
+how little that is worth: windows looking at midfield keep 72-95% of their
+anchors, the windows cut around shots keep 14-17%.
+
+### What this settles
+
+The pipeline **cannot measure anything that happens in the penalty area on
+broadcast footage**. That is now a measurement on 10 shots and 2 goals
+across two matches, not an inference from one clip.
+
+It also bounds what the xG model is worth in practice. The model itself is
+sound -- `check_xg.py` recovers known coefficients, and an injected shot
+comes back to 0.3 m with xG within 0.007 -- but it has never been handed a
+real shot by this pipeline, and on this evidence it will not be until the
+anchor can work from markings inside the box.
+
+### What still works, measured on the same runs
+
+The same six clips scored passes and carries against the full label file.
+Pass clears chance on the new windows as it did on the old ones, and the
+reproducibility gate -- which changed the anchor path underneath everything
+-- did not degrade it. Those detectors do not use the anchor.

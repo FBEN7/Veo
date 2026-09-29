@@ -107,7 +107,8 @@ résultats. Les documents détaillés sont en anglais.
 
 | | état | où c'est mesuré |
 |---|---|---|
-| Tirs et xG | **ne trouve aucun tir réel** (0 sur 6) | `EVENT_ACCURACY.md` |
+| Tirs et xG | **ne trouve aucun tir réel** (0 sur 10) | `EVENT_ACCURACY.md` |
+| Buts | **aucun but réel détecté** (0 sur 2) | `EVENT_ACCURACY.md` |
 | Occasions et passes décisives | fonctionne | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0.99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0.80 | `TEAM_ASSIGNMENT.md` |
@@ -115,8 +116,9 @@ résultats. Les documents détaillés sont en anglais.
 
 Deux précisions qui comptent plus que le tableau.
 
-**Les tirs.** Le rappel a fini par être mesuré, sur trois fenêtres découpées
-autour de tirs annotés : **0 tir trouvé sur 6**. Aucune fausse alerte non
+**Les tirs.** Le rappel a fini par être mesuré, sur six fenêtres découpées
+autour de tirs annotés, dans deux matchs : **0 tir trouvé sur 10, et 0 but
+sur 2**. Aucune fausse alerte non
 plus, mais un détecteur qui ne se déclenche jamais obtient ce score-là
 aussi.
 
