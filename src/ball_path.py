@@ -59,10 +59,20 @@ PLAYER_HEIGHT_M = 1.75
 # m/s; this leaves room for a mis-measured scale without admitting teleports.
 MAX_BALL_SPEED_MS = 45.0
 
-# Where the speed penalty starts biting, in m/s. Below it a step is nearly
-# free, above it the cost grows quadratically, so the path prefers a slow
-# ball to a fast one but will accept a fast one to stay on a real strike.
-SOFT_BALL_SPEED_MS = 12.0
+# Where the speed penalty starts biting, in m/s. Below it a step is free;
+# above it the cost grows quadratically.
+#
+# This was 12, which was a mistake with a specific consequence: a struck
+# ball travels far faster than that, so the tracker was penalising exactly
+# the motion the shot detector exists to find. Measured, the chosen track's
+# 95th-percentile speed came out at 9.5 to 12.6 m/s against a
+# `SHOT_MIN_SPEED_MS` of 13.0 -- the tracker was quietly capping the ball
+# below the shot threshold.
+#
+# 25 m/s is a firmly struck ball, so ordinary football motion costs nothing
+# and the hard limit does the rejecting. Raising it to 25 roughly doubles
+# the frames above 13 m/s with no increase in impossible steps.
+SOFT_BALL_SPEED_MS = 25.0
 
 # How far ahead an edge may reach, in frames. The ball is occluded, leaves
 # frame and is missed; a path that cannot skip would have to take a
@@ -89,6 +99,26 @@ NODE_REWARD = 1.0
 
 # A segment shorter than this is not a track, it is a coincidence.
 MIN_SEGMENT = 4
+
+# A segment that goes nowhere for this long is not the ball.
+#
+# The speed penalty is `max(0, speed - SOFT)^2`, which is *zero* for a
+# candidate that does not move. So a static false positive -- a blob in the
+# crowd, a fleck on an advertising board -- offers a long chain at no cost,
+# while the real ball pays speed and gap penalties for actually moving. The
+# optimum was biased towards things that stay still, which is the opposite
+# of a ball in play.
+#
+# Seen directly on reading_2519: through the goal at frame 500 the path sat
+# on a point in the stands for thirty frames. Drawing the candidates showed
+# why -- at that moment every ball candidate is in the crowd and the real
+# ball is not detected at all.
+#
+# A ball at a free kick genuinely is still, and this will drop it. That is
+# an accepted cost: a stationary ball carries no event, and a stationary
+# false positive corrupts every velocity fitted near it.
+STATIC_DISPLACEMENT_M = 2.0
+STATIC_SECONDS = 1.0
 
 
 def pixels_per_metre(tracks: pd.DataFrame) -> float | None:
@@ -157,6 +187,18 @@ def choose(candidates: pd.DataFrame, fps: float, px_per_m: float,
     return rows.iloc[path[::-1]].reset_index(drop=True)
 
 
+def _is_static(path: pd.DataFrame, fps: float, px_per_m: float) -> bool:
+    """A long run that covers no ground: crowd, hoarding, not a ball."""
+    frames = path.frame.to_numpy(float)
+    seconds = (frames.max() - frames.min()) / max(fps, 1e-6)
+    if seconds < STATIC_SECONDS:
+        return False
+    x = path.px.to_numpy(float) / px_per_m
+    y = path.py.to_numpy(float) / px_per_m
+    travelled = float(np.sum(np.hypot(np.diff(x), np.diff(y))))
+    return travelled < STATIC_DISPLACEMENT_M
+
+
 def segments(candidates: pd.DataFrame, fps: float, px_per_m: float,
              max_gap: int = MAX_GAP_FRAMES,
              min_segment: int = MIN_SEGMENT) -> pd.DataFrame:
@@ -182,9 +224,11 @@ def segments(candidates: pd.DataFrame, fps: float, px_per_m: float,
         if len(path) < min_segment:
             break
         path = path.copy()
-        path["segment"] = index
-        found.append(path)
-        index += 1
+        keep = not _is_static(path, fps, px_per_m)
+        if keep:
+            path["segment"] = index
+            found.append(path)
+            index += 1
         remaining = remaining[~remaining.frame.isin(set(path.frame))]
     if not found:
         return candidates.iloc[0:0]
