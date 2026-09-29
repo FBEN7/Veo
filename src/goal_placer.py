@@ -327,7 +327,27 @@ PROBE_POINTS = ((0.35, 0.72), (0.50, 0.78), (0.65, 0.72))
 # goal on one frame and through the anchor on a nearby one. Twelve frames is
 # half a second, in which a sprinting player moves about 4 m -- far less
 # than the pitch length that separates a right orientation from a wrong one.
-BRIDGE_FRAMES = 12
+# Twelve frames was the first value and it bridged nothing. Measured, the
+# nearest anchor frame to a goal frame is 59 frames away on reading_2519 and
+# 812 -- thirty-two seconds -- on stoke_1302. The two landmarks do not
+# interleave finely; they occupy different stretches of the clip.
+#
+# A wider bridge is still decisive because the two hypotheses are not close:
+# they differ by a pitch length, about 105 m, while a player covers at most
+# 15 m in the two and a half seconds this allows. It cannot rescue a
+# thirty-second gap, and is not asked to -- `MIN_ORIENTATION_MARGIN_M`
+# refuses rather than guesses there.
+BRIDGE_FRAMES = 75
+
+# How much better the winning orientation must be, in metres.
+#
+# Over a wide bridge the players really have moved, so the two hypotheses
+# are compared with a margin rather than a bare inequality. Without one, a
+# clip where play happened to travel half the pitch between the two
+# stretches could score 60 m against 45 m and pick the wrong answer
+# confidently. A wrong orientation puts every anchor-placed ball at the far
+# end, which is worse than not using the anchor at all.
+MIN_ORIENTATION_MARGIN_M = 30.0
 
 # Fewer bridged players than this and the orientation is a guess.
 MIN_BRIDGE_PLAYERS = 20
@@ -454,6 +474,12 @@ def combine(goal: "GoalPlacer", anchor, frames, width: int, height: int,
         return goal
     flip = turned < straight
     best = min(straight, turned)
+    margin = abs(straight - turned)
+    if margin < MIN_ORIENTATION_MARGIN_M:
+        if verbose:
+            print(f"  [both] the two orientations are only {margin:.1f} m "
+                  f"apart, too close to call; using the goal alone")
+        return goal
     if verbose:
         print(f"  [both] anchor vs goal, {overlap} comparisons {how}: "
               f"{straight:.1f} m as-is, {turned:.1f} m turned around")
