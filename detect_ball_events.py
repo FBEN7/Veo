@@ -110,6 +110,22 @@ RESET_SECONDS = 8.0
 # them.
 MIN_SUPPORT = 2
 
+# A crossing has to be a crossing: the ball tracked inside the pitch, then
+# outside, by a path a ball could take. Measured on six windows, the false
+# out-of-play detections sit 6-7 m past the line where placement error is
+# about 0.5 m, and rendered, the tracked "ball" is on the hoardings or in
+# the stand -- an object that appears outside without ever having been in.
+#
+# None of these are fitted to the labels. The window is the ball tracker's
+# own gap limit (12 frames at 25 fps); the speed is its own ceiling; the
+# slack is about twice the 90th-percentile placement error (1.05 m,
+# `probe_truncated_box.py`); and the segment is the tracker's own statement
+# that it did not lose the ball in between.
+from src.ball_path import MAX_BALL_SPEED_MS
+
+ENTRY_WINDOW_S = 0.5
+ENTRY_SLACK_M = 2.0
+
 # Where the labelled clips sit in their matches, from the file names:
 # stoke_000520 is 5:20 into the match, reading_5115 is 51:15.
 # Each clip, the match it was cut from and where in it. Both parts matter:
@@ -144,20 +160,47 @@ def how_far_out(x, y):
     return float(max(over_x, over_y))
 
 
+def entered_from_inside(placed, k, margin_m: float = MARGIN_M,
+                        window_s: float = ENTRY_WINDOW_S,
+                        slack_m: float = ENTRY_SLACK_M):
+    """Did the ball get to placement `k` from a tracked point on the pitch?
+
+    The reading just before it must be on the pitch, recent, in the same
+    tracked segment, and near enough for a ball to have covered the gap.
+    """
+    if k == 0:
+        return False
+    frame, when, x, y, segment = placed[k]
+    _, before, bx, by, bseg = placed[k - 1]
+    if outside(bx, by, margin_m) is not None:
+        return False
+    gap = when - before
+    if gap <= 0 or gap > window_s or bseg != segment:
+        return False
+    return float(np.hypot(x - bx, y - by)) <= MAX_BALL_SPEED_MS * gap + slack_m
+
+
 def find_ball_events(ball: pd.DataFrame, maps, fps: float,
                      reset_seconds: float = RESET_SECONDS,
                      margin_m: float = MARGIN_M,
-                     min_support: int = MIN_SUPPORT):
-    """Frames where the ball crosses the edge of the pitch."""
+                     min_support: int = MIN_SUPPORT,
+                     continuity: bool = True):
+    """Frames where the ball crosses the edge of the pitch.
+
+    With `continuity`, only where it was tracked crossing
+    (`entered_from_inside`); without, as before, for comparison.
+    """
+    has_segments = "segment" in ball.columns
     placed = []
     for row in ball.itertuples():
         point = detect_shots.to_pitch(maps, row.frame, row.px, row.py)
         if point is not None:
             placed.append((int(row.frame), float(row.time_s),
-                           float(point[0]), float(point[1])))
+                           float(point[0]), float(point[1]),
+                           int(row.segment) if has_segments else 0))
 
     events, was_in, last_seen = [], True, None
-    for k, (frame, when, x, y) in enumerate(placed):
+    for k, (frame, when, x, y, _) in enumerate(placed):
         if last_seen is not None and when - last_seen > reset_seconds:
             was_in = True            # blind for too long to claim otherwise
         last_seen = when
@@ -178,6 +221,12 @@ def find_ball_events(ball: pd.DataFrame, maps, fps: float,
                 break
             support += 1
         if support < min_support:
+            continue
+        if continuity and not entered_from_inside(placed, k, margin_m):
+            # Appeared outside rather than crossed: a hoarding, the stand,
+            # or a ball the tracker lost on the way. Not a fresh crossing
+            # either way, so it does not re-arm until the ball is back in.
+            was_in = False
             continue
         was_in = False
         kind = "goal" if where == "goal" else "out_of_play"
@@ -224,19 +273,28 @@ def synthetic_check():
     identity = np.eye(3)
     ok = True
     for name, path, expect in (
-            ("out over a touchline", [(52.5, 30.0), (52.5, 40.0),
-                                      (52.5, 55.0), (52.5, 70.0),
-                                      (52.5, 73.0), (52.5, 76.0)],
+            # One metre a frame, 25 m/s. The first versions stepped 7-15 m
+            # between frames -- 175-375 m/s -- which the continuity rule
+            # rightly refuses as no ball's path.
+            ("out over a touchline", [(52.5, 62.0 + k) for k in range(14)],
              "out_of_play"),
-            ("goal between the posts", [(20.0, 34.0), (12.0, 34.0),
-                                        (5.0, 34.0), (-2.0, 34.0),
-                                        (-3.0, 34.0), (-4.0, 34.0)], "goal"),
-            ("behind, outside the posts", [(20.0, 20.0), (12.0, 18.0),
-                                           (5.0, 16.0), (-2.0, 15.0),
-                                           (-4.0, 14.0), (-6.0, 13.0)],
+            ("goal between the posts", [(8.0 - k, 34.0) for k in range(14)],
+             "goal"),
+            ("behind, outside the posts", [(8.0 - k, 18.0 - 0.3 * k)
+                                           for k in range(14)],
              "out_of_play"),
             ("one stray reading", [(52.5, 30.0), (52.5, 34.0), (52.5, 72.0),
-                                   (52.5, 38.0), (52.5, 40.0)], "nothing")):
+                                   (52.5, 38.0), (52.5, 40.0)], "nothing"),
+            # A hoarding: the tracker jumps from the ball in midfield to a
+            # point 40 m away beyond the touchline and stays there. No ball
+            # travels 40 m in a frame.
+            ("jump to a hoarding", [(52.5, 30.0), (52.5, 31.0),
+                                    (60.0, 74.0), (60.0, 74.0),
+                                    (60.0, 74.0), (60.0, 74.0)], "nothing"),
+            # A fast clearance, 30 m/s, crossing between two frames: a real
+            # crossing the speed allowance must keep.
+            ("fast clearance", [(52.5, 64.4 + 1.2 * k) for k in range(7)],
+             "out_of_play")):
         rows, maps = [], {}
         for k, (x, y) in enumerate(path):
             rows.append({"frame": k, "time_s": k / 25.0, "px": x, "py": y,
