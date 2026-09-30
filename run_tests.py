@@ -61,6 +61,9 @@ CONTROLS = [
     ("stoppages from players",
      [sys.executable, "probe_stoppage.py", "--check"],
      "a pitch brought to a halt, one that never stops, and one that dips"),
+    ("per-player ball metrics",
+     [sys.executable, "test_player_metrics.py"],
+     "an intercepted pass credits the interceptor and not the passer"),
     ("the ball's path",
      [sys.executable, "src/ball_path.py"],
      "a ball among distractors the detector scores higher, where taking the "

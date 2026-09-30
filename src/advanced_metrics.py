@@ -128,7 +128,7 @@ def compute_ball_interaction_metrics(events: list[dict], tracks: pd.DataFrame) -
         ]) + len([
             e for e in events
             if e.get("outcome") == "intercepted"
-            and e.get("intercepted_by_track_id") == track_id
+            and e.get("intercepted_by_track_id") == player_id
         ])
         clearances = len([e for e in player_events if e.get("event_type") == "clearance"])
 
