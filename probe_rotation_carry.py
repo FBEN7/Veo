@@ -35,7 +35,39 @@ fitted to make those agree; the far-end pose was never an input.
 If it works, midfield gets geometry without anyone clicking anything. If it
 fails, manual midfield landmarks become worth asking for, and not before.
 
-    python probe_rotation_carry.py [--clips reading_2519 reading_0737]
+## What it found: carrying does not work on this footage
+
+    gaps attempted               9, across three clips
+    broke (frames not matched)   6
+    carried                      3, all on stoke_4207
+      536 -> 592    2.2 s    6.52 m    focal ratio 1.124
+      608 -> 792    7.4 s   20.64 m    focal ratio 0.558
+     1160 -> 1480  12.8 s    7.11 m    focal ratio 0.809
+
+Against a floor of 1.8 m -- the box-derived pose's own error -- even the
+shortest carry is 3.6 times over.
+
+Two separate failures.
+
+**Most gaps cannot be crossed at all.** Six of nine broke on a pair of
+frames with too few feature matches. The longest, reading_2519's 64 s from
+frame 580 to 2176, is long enough to contain a cut to a replay or another
+camera, and across a cut frame N and N+1 come from different cameras. No
+constraint on the warp carries a pose across that, and none should.
+
+**Where it crosses, the zoom drifts.** Error does not track gap length -- a
+12.8 s carry came out at 7.1 m and a 7.4 s one at 20.6 -- it tracks the
+focal ratio at the far end, 0.558 on the worst. Rotation is well
+constrained from each warp; the per-step focal is a ratio of row norms, and
+its noise compounds multiplicatively along the chain. Three unknowns per
+step rather than eight did not save it, because the one that fails is the
+one that multiplies.
+
+So midfield geometry needs a per-frame observation, as the goal did, rather
+than a pose carried from somewhere else.
+
+    python probe_rotation_carry.py --corners goal_corners.json \
+        --goal-weights best.pt
 """
 
 from __future__ import annotations
