@@ -285,9 +285,9 @@ def main():
                   "                 check (62-72 m against 15.6-15.9). "
                   "Treat the counts as\n                 unvalidated. On "
                   "the labelled windows out-of-play precision is\n"
-                  "                 3 of 15 even on goal-based geometry, "
-                  "because the tracked ball\n                 near a "
-                  "touchline is often a hoarding or the stand.")
+                  "                 2 of 3, recall 2 of 4, on goal-based "
+                  "geometry with the\n                 continuity check; "
+                  "four labelled crossings cannot validate it.")
     except Exception as problem:               # never take the run down
         print(f"  unavailable: {problem}")
 

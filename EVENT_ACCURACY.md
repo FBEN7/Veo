@@ -872,11 +872,41 @@ The geometry is right to call those points out of the pitch; the ball
 tracker gave it the wrong object.
 
 So out-of-play is now limited by ball identity near the touchline, not by
-geometry or by the margin. What would address it is a continuity test --
-a real ball crosses the line from a tracked position inside it, within
-what a ball can travel; a hoarding appears outside without ever having
-been inside -- which is physics, not a threshold fitted to three events.
-Not yet built.
+geometry or by the margin.
+
+#### The continuity check: built and measured
+
+A crossing now counts only if the reading before it is on the pitch,
+within 0.5 s, in the same tracked segment, and near enough for a ball at
+45 m/s plus 2 m of placement slack (`detect_ball_events.entered_from_inside`).
+Every number is the tracker's own limit or the measured placement error;
+none was chosen on the labels. Predicted before running: most hoarding
+detections go, with the risk a real crossing the tracker lost on its way
+out. Same placer, with and without it, six windows:
+
+| | without | with |
+|---|---|---|
+| detected | 15 | 3 |
+| false | 12 | **1** |
+| real found, of 4 labelled | 3 | 2 |
+| precision | 3 of 15 (0.20) | **2 of 3 (0.67)** |
+| recall | 3 of 4 | 2 of 4 |
+
+Eleven of the twelve false crossings go. The one new false positive
+(stoke_7001, 11.4 s) is a later reading that became a fresh crossing once
+the hoarding at 10.1 s was refused.
+
+The real crossing lost, stoke_4207 at 01:07, is the **airborne ball**, not
+a lost track: tracked cleanly to (4.1, 35.0) in front of goal at 65.12 s,
+then read at (-7.9, 20.2) 0.24 s later -- 19 m, 80 m/s on the grass --
+jumping 100 px up the image as it goes over the bar. A ball in the air
+projects far beyond where it is, the same limit that turned the "shot" of
+the earlier table into a cross. Loosening the speed allowance to keep it
+would readmit the hoardings; it is recorded, not recovered.
+
+Four labelled crossings still cannot validate a detector. What this shows
+is narrower: the false positives were a single mechanism, and removing it
+by physics rather than by threshold takes precision from 0.20 to 0.67.
 
 The section below is kept as it was written; its conclusion about the
 margin rested on the retired 1.8 m figure.
