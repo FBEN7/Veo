@@ -590,6 +590,10 @@ corners for the camera position, `goal_pose` for the rest.
 centre-circle anchor. These are the first shot and goal this project has
 detected that were not injected by its own test harness.
 
+*Later: neither held.* The goal did not survive the ball-path rebuild, and
+the stoke_4207 shot was the cross before it -- see "Where the camera is"
+below. On the current pipeline it is 0 of 10 and 0 of 2.
+
 The denominators differ because only five of the six windows have a label
 file; the published 0 of 10 covered a sixth. The comparison is still a
 comparison -- nothing here was found before -- but it is not 8 against 10 on
@@ -663,6 +667,100 @@ rather than by reading code: a ground-space residual that let the focal
 collapse to infinity and score a perfect 0.00 m, and a homography
 decomposition that kept whichever of H and -H came out, landing on real
 anchors with the camera looking away from the pitch.
+
+**The camera position used above was wrong** on stoke_7001, by 25 m -- see
+the next section. Rerun with the located camera the ratios are **1.01**
+(IQR 0.95–1.07, spread 0.12) and **1.07** (IQR 0.99–1.11, spread 0.11):
+both nearer 1 and tighter, but the table above passed with a camera 25 m
+out, so this check is weakly sensitive to position and is not what
+established it.
+
+### Where the camera is: the goal's line and the centre circle's, crossed
+
+Wired in alongside the goal, the refit kept almost nothing: 2 of 73
+circles with a halfway line on stoke_7001 and 0 of 43 on reading_1155
+passed the 8 px gate. The circles were not the problem -- 66 of those 73
+fitted at 8 px or better **without** the halfway line. The halfway line and
+the camera position disagreed.
+
+**Goal corners fix the camera only to a line.** Focal and distance trade
+against each other: on stoke_7001's one usable corner frame, assuming 1500,
+2500 and 4000 px puts the camera at (-32, 10, 25), (-55, 16, 41) and
+(-90, 25, 66), reprojecting at 2.1, 1.0 and 0.6 px -- nothing picks one.
+The pipeline took the ground plane's focal and landed at (-36, 11, 28).
+Clips with a single corner frame are exposed to this; a bundle over several
+constrains it only as far as the framings differ.
+
+**The centre circle fixes a second line.** Fitted with the camera free,
+71 of 73 circles on stoke_7001 pass, every freed camera at z = 51-53 -- level
+with the halfway line -- and all on one ray out of the centre spot, spread
+98 m along it: the same dolly-zoom ambiguity, pointing the other way.
+
+`src/camera_position.py` places the camera where the two lines cross,
+voting over up to 30 circle frames and refusing any whose line misses the
+corners' by more than 3 m. The corner poses are then refitted with that
+position held (`goal_pose.pose_at`), and both placers use it.
+
+| clip | voting | camera (x, up, z) | lines miss | spread | corners alone |
+|---|---|---|---|---|---|
+| reading_0737 | 29 / 30 | (-63.4, 18.4, 52.4) | 0.1 m | 0.2 m | (-52.6, 15.6, 44.0) |
+| reading_1155 | 26 / 30 | (-64.1, 18.8, 52.3) | 0.3 m | 0.5 m | (-32.6, 10.7, 27.8) |
+| reading_2519 | 21 / 30 | (-63.0, 19.1, 52.4) | 0.5 m | 0.2 m | (-57.8, 17.7, 48.8) |
+| stoke_4207 | 11 / 11 | (76.2, 19.8, 52.7) | 1.3 m | 0.3 m | (53.5, 14.2, 36.0) |
+| stoke_7001 | 21 / 30 | (-70.8, 20.3, 52.2) | 1.6 m | 0.7 m | (-36.2, 11.4, 27.5) |
+| stoke_1302 | 2 -- refused | kept | | | (33.1, 8.5, 20.2) |
+
+Checks nothing in the fit forced:
+
+* **Three Reading clips, fitted independently, agree to 1.1 m** --
+  x -63.0 to -64.1, height 18.4 to 19.1.
+* **Two Stoke clips calibrated from opposite goals agree**: 74.5 and
+  72.5 m out from the goal's centreline (x is mirrored because the goal is
+  the other one), 20.3 and 19.8 m up.
+* Every camera sits on the halfway line, z = 52.2-52.7 against 52.5,
+  where a main broadcast camera is mounted.
+* Player heights, above, move to 1.01 and 1.07 and tighten.
+* Against the camera heights from player sizes (`probe_anchor_height.py`):
+  stoke_7001 21.9 m and stoke_4207 24.8 m, located 20.3 and 19.8, corners
+  alone 11.4 and 14.2; reading_0737 15.9 m, located 18.4, corners alone
+  15.6. Two of three closer, one further; that estimate fits at R² 0.16.
+
+**What it cannot see.** The goal and the centre spot both sit on the
+pitch's long axis, so a second camera displaced within the plane through
+that axis and the first -- same height and distance out, further along the
+touchline -- gives lines that still cross. The self-test pins that case as
+accepted. Out of that plane the lines miss: 7.8 m for a camera 8 m lower,
+5.0 m for one 15 m nearer the touchline, both refused.
+
+It also inherits a 105 m pitch, which puts the centre spot at 52.5 m; on a
+100-102 m pitch the camera moves 1-2.5 m along the pitch.
+
+#### What it changes
+
+| clip | ball placed, before | after | midfield poses, before | after |
+|---|---|---|---|---|
+| stoke_1302 | 10% | 10% | 0 | 0 (camera refused) |
+| stoke_4207 | 43% | 45% | 0 | 11 |
+| stoke_7001 | 3% | **16%** | 0 | 53 |
+| reading_1155 | 12% | **21%** | 0 | 34 |
+| reading_2519 | 14% | 14% | 19 | 64 |
+| reading_0737 | - | 26% | - | 85 |
+
+xG at the six labelled shot moments barely moves -- distances shift by
+0.1 to 1.6 m and the total goes from 0.49 to 0.46. That is expected: near
+the goal the goal's own image pins the geometry, and the camera's position
+matters most far from it.
+
+**Shots 0 of 10, goals 0 of 2.** The one shot the goal placer had matched,
+stoke_4207 at 01:06, is lost, and it was not the shot. What matched, 1.7 s
+before the label, is the ball crossing from the right wing, about (18, 60),
+to the near post, (5, 36), in 0.7 s, after which the ball is not detected
+again until after the label: the cross before the shot, inside the
+matching tolerance. Its ground speed read 45 m/s with the old camera --
+the plausibility ceiling exactly -- and 50-57 with the located one, above
+it. Either is too fast for a ball on the grass; it was most likely in the
+air, which stretches any ground projection. The ceiling is not being raised
+to recover it. The earlier "1 of 8" should be read as a cross.
 
 ### Out of play: why it cannot be fixed on this footage
 

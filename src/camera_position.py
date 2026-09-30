@@ -27,20 +27,22 @@ centre-circle frame, fitted with the camera free, gives another from the
 centre spot; the clip's camera is the median of where they cross, over the
 frames whose lines pass within `MAX_MISS_M` of each other.
 
-First measured with an earlier version that slid the camera along the
-corners' line and fitted each circle there (see `locate` for why it was
-replaced):
+Measured on the six labelled clips:
 
-    clip          circles fitting   camera (x, up, z)       IQR along the line
-    reading_1155  42 / 43           (-64.1, 18.7, 52.3)     about 0.1 m
-    reading_2519  72 / 91           (-62.9, 19.0, 52.4)     about 0.1 m
-    stoke_7001    55 / 73           (-70.9, 20.3, 52.3)     about 1 m
+    clip          voting    camera (x, up, z)      lines miss   spread
+    reading_0737  29 / 30   (-63.4, 18.4, 52.4)    0.1 m        0.2 m
+    reading_1155  26 / 30   (-64.1, 18.8, 52.3)    0.3 m        0.5 m
+    reading_2519  21 / 30   (-63.0, 19.1, 52.4)    0.5 m        0.2 m
+    stoke_4207    11 / 11   ( 76.2, 19.8, 52.7)    1.3 m        0.3 m
+    stoke_7001    21 / 30   (-70.8, 20.3, 52.2)    1.6 m        0.7 m
+    stoke_1302    refused, 2 frames
 
-against 0/43, 19/103 and 2/73 with the camera where the corners alone put
-it. Two things nothing forced: the camera comes out on the halfway line
-(z = 52.3-52.4, the line at 52.5), where a main broadcast camera sits, and
-the two Reading clips -- the same ground, fitted independently -- agree to
-1.2 m.
+Three things nothing forced: every camera lands on the halfway line
+(z = 52.2-52.7, the line at 52.5), where a main broadcast camera sits; the
+three Reading clips, fitted independently, agree to 1.1 m; and the two
+Stoke clips, calibrated from opposite goals, sit 74.5 and 72.5 m out from
+the goal's centreline at 20.3 and 19.8 m up. Player heights predicted by
+the refitted midfield poses move to 1.01 and 1.07 of observed.
 
 One assumption carries through: the circle is placed half a 105 m pitch
 from the calibrated goal. On a 100-102 m pitch the camera moves 1-2.5 m

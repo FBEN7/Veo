@@ -5,19 +5,24 @@ from two independent methods, because its tilt comes from a horizon carried
 to midfield by the camera's displacement -- a step its own docstring says
 "treats a turn as a slide". This replaces that.
 
-The goal corners fix the camera's *position* per clip, and a broadcast
-camera does not travel. With position known, a midfield frame has four
-unknowns, rotation and focal, which the centre circle's observed arc and the
-halfway line over-determine.
+The camera's *position* is fixed per clip -- a broadcast camera does not
+travel -- by `camera_position`, from the goal corners and the circle. With
+position known, a midfield frame has four unknowns, rotation and focal,
+which the centre circle's observed arc and the halfway line
+over-determine.
 
 Validated in `probe_constrained_anchor.py` against a quantity the fit never
 sees -- how tall players appear:
 
-    clip          pose         observed / predicted    spread
-    reading_0737  old anchor   19.97                   0.90
-                  this          1.04  (IQR 0.96-1.09)  0.13
-    stoke_7001    old anchor   28.30                   0.82
-                  this          1.11  (IQR 1.02-1.20)  0.16
+    clip          pose                observed / predicted    spread
+    reading_0737  old anchor          19.97                   0.90
+                  this                 1.01  (IQR 0.95-1.07)  0.12
+    stoke_7001    old anchor          28.30                   0.82
+                  this                 1.07  (IQR 0.99-1.11)  0.11
+
+with the camera located by `camera_position`. Held where the goal corners
+alone put it -- 25 m out on stoke_7001 -- the same check read 1.04 and
+1.11, so it is weakly sensitive to position and did not catch that.
 
 Poses are expressed in the calibrated goal's frame -- X across the goal line
 from the left post, Y up, Z out onto the pitch -- with the circle placed

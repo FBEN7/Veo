@@ -167,10 +167,10 @@ def goal_maps(out_dir, info, ball, args):
     """A placer built from the goal detector, calibrated by the corners.
 
     Two stages, and the division of labour is the point. The corners are
-    clicked **once per clip** and fix the camera position, which a gantry
-    camera keeps for the whole window. The detector then supplies a box on
-    every sampled frame, and a box is enough to recover the rest of the pose
-    once position is known.
+    clicked **once per clip** and, with the centre circle, fix the camera
+    position, which a gantry camera keeps for the whole window. The
+    detector then supplies a box on every sampled frame, and a box is
+    enough to recover the rest of the pose once position is known.
     """
     import numpy as np
     from ultralytics import YOLO
