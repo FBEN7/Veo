@@ -51,3 +51,5 @@ models/marking_without_*.pt
 runs/
 goal_corner_labeller.html
 goal_corners.json
+circle_labeller.html
+circle_labels.json
