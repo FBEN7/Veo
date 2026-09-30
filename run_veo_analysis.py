@@ -188,10 +188,30 @@ def main():
     # all worse. It also wants ONE homography for a whole clip, while the
     # anchor is per frame and the camera moves.
     #
-    # So shots are detected separately, on the anchor's per-frame maps,
-    # which is the path that was actually measured: a planted shot comes
-    # back within half a metre on broadcast and its xG within 0.006, and
-    # nothing fires on six minutes of verified shot-free football.
+    # So shots are detected separately, on the anchor's per-frame maps.
+    #
+    # QUARANTINED. This used to say the anchor path "was actually measured:
+    # a planted shot comes back within half a metre on broadcast and its xG
+    # within 0.006". That test planted the shot *through the same anchor*,
+    # so it measured the anchor agreeing with itself, not with the pitch.
+    # Checked against the outside world (`probe_anchor_height.py`), the
+    # anchor's homography puts the camera 62-72 m up, against 15.6 m from
+    # the hand-clicked goal corners and 15.9 m from player sizes -- two
+    # independent methods that agree with each other. The error is in the
+    # tilt: positions land on a believable patch of pitch while depth
+    # inside it is distorted.
+    #
+    # So a shot's *timing* from this path is still worth reporting -- a
+    # fast ball heading goalwards is a fast ball heading goalwards -- but
+    # its distance, and the xG computed from that distance, are not. An xG
+    # figure reads like a measurement and gets quoted as one; printing it
+    # from geometry known to fail an independent check would be exactly the
+    # "reads like Opta and is not" failure `src/xg.py` exists to avoid.
+    #
+    # The goal-based geometry (`src/goal_placer.py`) does not have this
+    # problem, but it needs a goal detector and one round of corner clicks
+    # per clip, neither of which a fresh run has. `score_hand_labels.py`
+    # runs that path; this one reports what it can stand behind.
     print(f"\nSHOTS")
     try:
         ball = detect_shots.ball_track(out_dir)
@@ -210,17 +230,19 @@ def main():
                   f"({share:.0%}) had a pitch map to sit on")
             print(f"  shots        : {len(shots)}")
             for shot in shots:
-                extra = (f", xG {shot['xg']:.3f}" if "xg" in shot else "")
+                # Timing only. Distance and xG come from the anchor's depth,
+                # which fails an independent check -- see the comment above.
                 print(f"    t={shot['time_s']:6.1f}s  "
-                      f"{shot['distance_m']:5.1f} m from goal, "
-                      f"{shot['speed_ms']:4.0f} m/s{extra}")
-            # The bias runs one way and has to be said next to the number.
-            if share < 0.35 and shots:
-                print("  CAUTION      : at this coverage a shot is usually "
-                      "picked up after it\n                 has been "
-                      "struck, which reports it closer to goal than it was "
-                      "and\n                 so OVERSTATES xG -- measured "
-                      "at 0.30 against a true 0.10")
+                      f"{shot['speed_ms']:4.0f} m/s towards goal")
+            if shots:
+                print("  QUARANTINED  : distance and xG are withheld. They "
+                      "come from the\n                 centre-circle anchor, "
+                      "whose implied camera height is 62-72 m\n"
+                      "                 against 15.6-15.9 m from two "
+                      "independent methods. Run\n                 "
+                      "score_hand_labels.py with --goal-weights and "
+                      "--corners for\n                 goal-based geometry "
+                      "and xG.")
             elif not shots:
                 print("  none found. Recall is unmeasured: the labelled "
                       "footage available\n                 contains no "
@@ -257,13 +279,15 @@ def main():
                   f"goal line")
             print(f"  goals        : {len(goals)}")
             print(f"  restarts     : {len(restarts)}  {dict(kinds)}")
-            print("  NOTE         : anchors come from the centre circle at "
-                  "midfield and the\n                 ball goes out at the "
-                  "edges, so coverage where this family of\n                 "
-                  "events happens is far below the figure above. On labelled "
-                  "footage\n                 one crossing in three is seen; "
-                  "the misses are frames with no\n                 pitch map "
-                  "at all rather than a geometry error.")
+            print("  QUARANTINED  : these rest on where the ball sits "
+                  "against a line, and\n                 the anchor that "
+                  "places it fails an independent camera-height\n"
+                  "                 check (62-72 m against 15.6-15.9). "
+                  "Treat the counts as\n                 unvalidated. On "
+                  "the labelled windows out-of-play precision is\n"
+                  "                 2 of 11 even on goal-based geometry, "
+                  "because the 1 m margin\n                 is smaller than "
+                  "the 1.8 m placement error it has to judge.")
     except Exception as problem:               # never take the run down
         print(f"  unavailable: {problem}")
 
