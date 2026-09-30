@@ -203,6 +203,43 @@ def locate(circles, ray, start, focal_seed: float, cx: float, cy: float,
     return origin + float(np.median(along)) * direction, report
 
 
+# How far from the halfway line a camera placed by a borrowed height may
+# land, in metres, before the borrow is refused. The five located cameras
+# sit 0.2-0.3 m from it; a borrowed height from the wrong gantry, or a
+# corner line from a different camera, lands tens of metres off.
+MAX_BORROW_OFF_HALFWAY_M = 5.0
+
+
+def borrow_height(ray, heights):
+    """The camera on the corners' line at a height measured on other clips.
+
+    For a clip the centre circle cannot locate -- stoke_1302 shows it on 2
+    frames -- but whose match has other clips that were located. A gantry
+    camera's height does not depend on which goal a clip calibrated from,
+    so it carries across ends where position along the pitch would not.
+    The result is checked, not trusted: it must land on the halfway line,
+    which every located camera does and nothing in this construction forces.
+
+    Returns (position, report), position None if refused.
+    """
+    from .midfield_pose import CENTRE
+
+    origin, direction, _ = ray
+    height = float(np.median(heights))
+    report = {"height_m": height, "from": len(heights)}
+    if abs(direction[1]) < 1e-6:
+        report["refused"] = "corner line is level"
+        return None, report
+    point = origin + (height - origin[1]) / direction[1] * direction
+    off = float(abs(point[2] - CENTRE[2]))
+    report["off_halfway_m"] = off
+    if off > MAX_BORROW_OFF_HALFWAY_M:
+        report["refused"] = (f"lands {off:.1f} m from the halfway line, "
+                             f"{MAX_BORROW_OFF_HALFWAY_M:.0f} m allowed")
+        return None, report
+    return point, report
+
+
 def scan_circles(video_path: str, frames, find_circle, halfway_line,
                  max_arc: int = 300):
     """Centre circles with their halfway line, on the given frames.
@@ -326,6 +363,20 @@ def selftest(verbose: bool = True) -> bool:
                   f"{report.get('refused', 'accepted')} (lines miss by "
                   f"{'-' if miss is None else f'{miss:.1f} m'})   "
                   f"{'ok' if good else 'FAIL'}")
+    # Borrowing a height: the true one lands on the camera; one from a
+    # gantry 12 m higher lands well off the halfway line and is refused.
+    found, report = borrow_height(ray, [truth[1] - 0.2, truth[1] + 0.2])
+    good = found is not None and np.linalg.norm(found - truth) < 0.5
+    ok &= good
+    if verbose:
+        print(f"  borrowed height: {np.round(found, 2) if found is not None else 'refused'}"
+              f"   {'ok' if good else 'FAIL'}")
+    found, report = borrow_height(ray, [truth[1] + 12.0])
+    good = found is None
+    ok &= good
+    if verbose:
+        print(f"  borrowed height 12 m too high: "
+              f"{report.get('refused', 'accepted')}   {'ok' if good else 'FAIL'}")
     return bool(ok)
 
 

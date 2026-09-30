@@ -163,6 +163,21 @@ def report(name, found_times, truth_times):
           f"{hits:8d} {recall:8.2f} {precision:10.2f} {shown:>10s}")
 
 
+def match_name(labels: Path):
+    """The match a label file names in its header, or None.
+
+    "# Stoke City - Huddersfield Town, from 13:02 of the match; ..." gives
+    "Stoke City - Huddersfield Town".
+    """
+    try:
+        first = labels.read_text().splitlines()[0]
+    except (OSError, IndexError):
+        return None
+    if not first.startswith("#"):
+        return None
+    return first.lstrip("# ").split(",")[0].strip() or None
+
+
 def goal_maps(out_dir, info, ball, args):
     """A placer built from the goal detector, calibrated by the corners.
 
@@ -215,11 +230,52 @@ def goal_maps(out_dir, info, ball, args):
         found, report = (locate(with_line, ray, eye, seed, cx, cy)
                          if ray is not None else
                          (None, {"refused": "no corner line"}))
+        store = getattr(args, "camera_store", None)
+        match = match_name(Path(args.labels))
+        clip = Path(out_dir).name.replace("output_", "")
+        if found is None and store and ray is not None and match:
+            # Located clips of the same match lend their camera's height,
+            # which does not depend on which goal a clip calibrated from.
+            from src.camera_position import borrow_height
+
+            known = (json.loads(Path(store).read_text())
+                     if Path(store).exists() else {})
+            heights = [v["camera"][1] for k, v in known.items()
+                       if k != clip and v.get("match") == match
+                       and v.get("how") == "located"]
+            if heights:
+                borrowed, why = borrow_height(ray, heights)
+                if borrowed is None:
+                    print(f"  [camera] circle refused ({report.get('refused')})"
+                          f"; borrowing {why['height_m']:.1f} m from "
+                          f"{why['from']} clips of this match refused too: "
+                          f"{why['refused']}")
+                else:
+                    print(f"  [camera] circle refused ({report.get('refused')})"
+                          f"; placed at {why['height_m']:.1f} m, the height "
+                          f"of {why['from']} located clips of this match: "
+                          f"({borrowed[0]:.1f}, {borrowed[1]:.1f}, "
+                          f"{borrowed[2]:.1f}), {why['off_halfway_m']:.1f} m "
+                          f"from the halfway line, was ({eye[0]:.1f}, "
+                          f"{eye[1]:.1f}, {eye[2]:.1f})")
+                    found, report = borrowed, {"how": "borrowed height"}
         if found is None:
             print(f"  [camera] kept the corners' own position "
                   f"({eye[0]:.1f}, {eye[1]:.1f}, {eye[2]:.1f}): "
                   f"{report.get('refused')}")
+        elif report.get("how") == "borrowed height":
+            located = located_poses(rows, found)
+            eye = found
+            if located:
+                seed = float(np.median([p.focal_px
+                                        for p in located.values()]))
         else:
+            if store and match:
+                known = (json.loads(Path(store).read_text())
+                         if Path(store).exists() else {})
+                known[clip] = {"camera": [round(float(v), 2) for v in found],
+                               "match": match, "how": "located"}
+                Path(store).write_text(json.dumps(known, indent=1))
             located = located_poses(rows, found)
             print(f"  [camera] located at ({found[0]:.1f}, {found[1]:.1f}, "
                   f"{found[2]:.1f}), was ({eye[0]:.1f}, {eye[1]:.1f}, "
@@ -292,6 +348,11 @@ def main():
                     help="hold the camera where the goal corners alone put "
                          "it, instead of locating it with the centre circle "
                          "(for comparison)")
+    ap.add_argument("--camera-store",
+                    help="JSON shared across runs: each located camera is "
+                         "recorded with its match, and a clip the centre "
+                         "circle cannot locate borrows the camera height of "
+                         "located clips from the same match")
     ap.add_argument("--anchor-too", action="store_true",
                     help="also use the centre-circle anchor where the goal "
                          "is out of frame, if the two can be shown to point "
