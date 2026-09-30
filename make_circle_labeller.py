@@ -1,15 +1,15 @@
 """Build a one-file page for clicking the centre circle on midfield frames.
 
-The goal corners give each clip's camera position, and with the position
-held the centre circle and halfway line fix rotation and focal -- validated
-on anchored frames against how tall players look (1.04 and 1.11 against a
-right answer of 1). In the pipeline almost none of those fits pass: 0 of 80
-circles kept a pose on stoke_7001, 0 of 43 on reading_1155.
+Built when the constrained midfield fit was passing almost no frames -- 0 of
+80 circles on stoke_7001 -- to find out whether the circle detector or the
+geometry was at fault. The geometry was: the camera position the fit held
+fixed was 25 m out, and locating it properly (`src/camera_position.py`)
+brought 21-29 of 30 circle frames per clip into agreement. No labels were
+needed for that.
 
-A hand label settles which half is broken. Fitted against the clicked
-points, the same constrained fit either passes -- the detector is the
-problem and the labels are its training and test set -- or it does not, and
-the geometry is.
+It is kept because it is still the way to measure the circle detector
+itself: its hits against hand-clicked arcs, and its false positives, which
+nothing else in the pipeline counts.
 
 ## What is clicked
 
