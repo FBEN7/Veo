@@ -196,6 +196,42 @@ def goal_maps(out_dir, info, ball, args):
     eye = np.mean([p.camera_position() for p in poses.values()], axis=0)
     seed = float(np.median([p.focal_px for p in poses.values()]))
 
+    # The corners fix the camera only to a line. Where on it comes from the
+    # centre circle, when the clip shows enough of it (`camera_position`).
+    circles = None
+    if not getattr(args, "old_camera", False):
+        from check_goal_corners import located_poses, pixels, usable_rows
+        from fit_pitch_anchor import halfway_line
+        from probe_centre_circle import find_circle
+        from src.camera_position import corner_ray, locate, scan_circles
+        from src.goal_placer import POSE_GRID
+
+        cx, cy = info["width"] / 2.0, info["height"] / 2.0
+        ray = corner_ray([pixels(r) for r in usable_rows(rows)], cx, cy)
+        grid = sorted({int(f) - int(f) % POSE_GRID
+                       for f in ball.frame.tolist()})
+        circles = scan_circles(info["path"], grid, find_circle, halfway_line)
+        with_line = [c for c in circles.values() if c[1] is not None]
+        found, report = (locate(with_line, ray, eye, seed, cx, cy)
+                         if ray is not None else
+                         (None, {"refused": "no corner line"}))
+        if found is None:
+            print(f"  [camera] kept the corners' own position "
+                  f"({eye[0]:.1f}, {eye[1]:.1f}, {eye[2]:.1f}): "
+                  f"{report.get('refused')}")
+        else:
+            located = located_poses(rows, found)
+            print(f"  [camera] located at ({found[0]:.1f}, {found[1]:.1f}, "
+                  f"{found[2]:.1f}), was ({eye[0]:.1f}, {eye[1]:.1f}, "
+                  f"{eye[2]:.1f}); {report['agreeing']} of "
+                  f"{report['tried']} circle frames cross the corners' line "
+                  f"(median miss {report['miss_m']:.1f} m, spread "
+                  f"{report['spread_m']:.1f} m)")
+            eye = found
+            if located:
+                seed = float(np.median([p.focal_px
+                                        for p in located.values()]))
+
     goal = build(info["path"], ball.frame.tolist(), eye, seed,
                  info["width"], info["height"], YOLO(args.goal_weights),
                  verbose=True)
@@ -209,7 +245,8 @@ def goal_maps(out_dir, info, ball, args):
         midfield = build_midfield(info["path"], ball.frame.tolist(), eye,
                                   seed, info["width"], info["height"],
                                   find_circle, halfway_line,
-                                  skip=goal.poses, verbose=True)
+                                  skip=goal.poses, circles=circles,
+                                  verbose=True)
         return LandmarkPlacer(goal, midfield)
 
     if not args.anchor_too:
@@ -250,8 +287,11 @@ def main():
                          "in this repository; supply your own.")
     ap.add_argument("--midfield", action="store_true",
                     help="also place the ball at midfield, from the centre "
-                         "circle refitted with the camera held where the "
-                         "goal corners put it")
+                         "circle refitted with the camera held")
+    ap.add_argument("--old-camera", action="store_true",
+                    help="hold the camera where the goal corners alone put "
+                         "it, instead of locating it with the centre circle "
+                         "(for comparison)")
     ap.add_argument("--anchor-too", action="store_true",
                     help="also use the centre-circle anchor where the goal "
                          "is out of frame, if the two can be shown to point "

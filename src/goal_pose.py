@@ -369,6 +369,52 @@ def pose_from_box(box, eye, focal_guess: float, cx: float, cy: float,
     return None if pose.camera_position()[1] <= 0.0 else pose
 
 
+def pose_at(corners, eye, focal_guess: float, cx: float, cy: float,
+            max_nfev: int = 400):
+    """Rotation and focal from four corners, with the camera's position known.
+
+    A single frame's corners fix the camera only to a line: focal and
+    distance trade against each other, and across the plausible focals the
+    reprojection error barely moves (0.6-2 px on stoke_7001 from 1500 to
+    4000 px while the camera slides 50 m). Once `camera_position.locate` has
+    fixed where on that line the camera is, this recovers the rest.
+    """
+    from scipy.optimize import least_squares
+
+    if corners is None or any(c is None for c in corners):
+        return None
+    eye = np.asarray(eye, dtype=np.float64)
+    observed = np.asarray(corners, dtype=np.float64)
+    target = np.array([GOAL_WIDTH_M / 2.0, GOAL_HEIGHT_M / 2.0, 0.0])
+    forward = (target - eye) / np.linalg.norm(target - eye)
+    right = np.cross(forward, np.array([0.0, 1.0, 0.0]))
+    right /= np.linalg.norm(right)
+    start, _ = cv2.Rodrigues(np.vstack([right, np.cross(forward, right),
+                                        forward]))
+
+    def project(q):
+        rot, _ = cv2.Rodrigues(q[:3])
+        focal = np.exp(q[3])
+        camera = np.array([[focal, 0.0, cx], [0.0, focal, cy],
+                           [0.0, 0.0, 1.0]])
+        pts, _ = cv2.projectPoints(MODEL, q[:3], (-rot @ eye).reshape(3, 1),
+                                   camera, None)
+        return pts.reshape(-1, 2)
+
+    fit = least_squares(lambda q: (project(q) - observed).ravel(),
+                        np.concatenate([start.ravel(),
+                                        [np.log(focal_guess)]]),
+                        method="lm", max_nfev=max_nfev)
+    rvec = fit.x[:3].reshape(3, 1)
+    rot, _ = cv2.Rodrigues(rvec)
+    per = fit.fun.reshape(-1, 2)
+    return GoalPose(rvec=rvec, tvec=(-rot @ eye).reshape(3, 1),
+                    focal_px=float(np.exp(fit.x[3])), cx=cx, cy=cy,
+                    reprojection_px=float(np.sqrt(np.mean(np.sum(per ** 2,
+                                                                 axis=1)))),
+                    n_corners=4)
+
+
 def selftest(verbose: bool = True) -> bool:
     """Project a goal from a known camera, then recover the known answer."""
     focal, cx, cy = 1800.0, 640.0, 360.0

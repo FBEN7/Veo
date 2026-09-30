@@ -69,6 +69,11 @@ CONTROLS = [
      [sys.executable, "src/goal_pose.py"],
      "a known camera recovered from a projected goal, three views and a "
      "refusal when only two corners are given"),
+    ("camera from goal and circle",
+     [sys.executable, "-m", "src.camera_position"],
+     "a camera 38 m from its starting guess located to 0.07 m, circle "
+     "frames from a lower or nearer camera refused, and the one "
+     "displacement the geometry cannot see pinned as accepted"),
 ]
 
 PIPELINE = [

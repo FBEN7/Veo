@@ -535,9 +535,14 @@ def combine(goal: "GoalPlacer", anchor, frames, width: int, height: int,
 # --- midfield, from the centre circle ---------------------------------------
 #
 # The goal covers the attacking third. Midfield comes from the centre circle,
-# refitted with the camera's position held at what the goal corners measured
-# (`src/midfield_pose.py`), which predicts player sizes to within 4-11 per
-# cent where the old anchor was off by 20-28 times.
+# refitted with the camera's position held (`src/midfield_pose.py`).
+#
+# Held where, matters more than anything else here. The goal corners alone
+# fix the camera only to a line, and on the one-frame clips the point chosen
+# on it was 25 m off; with that position 2 of 73 circles fitted on
+# stoke_7001 and 0 of 43 on reading_1155. `camera_position.locate` puts the
+# camera where the corners' line and the circle's cross, and the caller
+# passes that in.
 #
 # Both are in the calibrated goal's frame, so combining them needs no
 # orientation check. That is what closed the anchor route: the anchor had its
@@ -559,7 +564,7 @@ FOCAL_RANGE = (0.5, 2.0)
 def build_midfield(video_path: str, frames_wanted, camera_position,
                    focal_seed: float, width: int, height: int,
                    find_circle, halfway_line, skip=(), grid: int = POSE_GRID,
-                   verbose: bool = False):
+                   circles=None, verbose: bool = False):
     """Midfield poses on a grid of frames, from the centre circle.
 
     `find_circle` and `halfway_line` are passed in rather than imported:
@@ -568,8 +573,13 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
 
     `skip` is frames the goal already covers. The goal is preferred there,
     so fitting the circle on them would be work thrown away.
+
+    `circles` is a `camera_position.scan_circles` result, when the caller
+    already has one from locating the camera; the scan is the slow part.
     """
     import cv2
+
+    from .camera_position import scan_circles
 
     from .goal_pose import GoalPose
     from .midfield_pose import fit
@@ -581,43 +591,32 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
 
     from collections import Counter
 
-    cap = cv2.VideoCapture(video_path)
-    poses, tried, circles, previous = {}, 0, 0, None
+    if circles is None:
+        circles = scan_circles(video_path, wanted, find_circle, halfway_line)
+    poses, found, previous = {}, 0, None
     rejected = Counter()
     for index in wanted:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, index)
-        ok, frame = cap.read()
-        if not ok:
-            continue
-        tried += 1
-        circle = find_circle(frame, np.random.default_rng(index))
-        if circle is None:
+        if index not in circles:
             previous = None
             continue
-        circles += 1
-        arc = np.asarray(circle["support"], dtype=float)
-        if len(arc) > 300:
-            arc = arc[np.linspace(0, len(arc) - 1, 300).astype(int)]
-        (ex, ey), _, _ = circle["ellipse"]
-        half = halfway_line(circle["segments"], (ex, ey))
-        if half is None:
+        found += 1
+        arc, half_px = circles[index]
+        if half_px is None:
             # The centre circle is the only circle on the pitch with a line
             # through its middle. The penalty arc -- same 9.15 m radius, and
             # the usual impostor -- has none. Without the halfway line this
             # is not identifiably the centre circle, so it is not used.
             #
-            # The first version fitted every circle the detector returned.
-            # On stoke_7001 that was 80, of which 71 fitted at a median
-            # 26 px against an 8 px gate, identically from a warm or a cold
-            # start: bad fits of things that were not the centre circle. The
-            # validation run that scored 1.11 there had only ever refitted
-            # frames the old anchor accepted, and that acceptance was doing
-            # this job.
+            # This gate was added believing that stoke_7001's 71 failed fits
+            # of 80 were impostors. They were not: 73 of the 80 had a
+            # halfway line, and 66 of those fitted the circle alone at
+            # 8 px or better. What failed was the camera position they were
+            # fitted with, 25 m from where the camera was
+            # (`camera_position`). The gate stays because the reasoning
+            # above holds; it is not what explained those failures.
             rejected["no halfway line"] += 1
             previous = None
             continue
-        half_px = np.array([[half[0], half[1]], [half[2], half[3]]],
-                           dtype=float)
 
         seed_rot, seed_f = ((previous[0], previous[1]) if previous
                             else (None, focal_seed))
@@ -637,7 +636,6 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
         poses[index] = GoalPose(rvec=rvec, tvec=(-rot @ eye).reshape(3, 1),
                                 focal_px=focal, cx=cx, cy=cy,
                                 reprojection_px=rms, n_corners=0)
-    cap.release()
 
     fitted = len(poses)
     # A lone circle pose is kept. A goal pose comes from four noisy box
@@ -652,7 +650,7 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
     poses = smooth(poses, grid, min_neighbours=1)
     if verbose:
         detail = ", ".join(f"{k} {v}" for k, v in rejected.items())
-        print(f"  [midfield] circle on {circles} of {tried} frames the goal "
+        print(f"  [midfield] circle on {found} of {len(wanted)} frames the goal "
               f"does not cover; rejected: {detail or 'none'}; "
               f"{fitted} fitted, {len(poses)} kept after agreement")
     return GoalPlacer(poses, grid,

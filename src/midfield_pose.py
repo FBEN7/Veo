@@ -63,8 +63,11 @@ def look_at(eye, target, up=np.array([0.0, 1.0, 0.0])):
     return np.vstack([right, np.cross(forward, right), forward])
 
 
-def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
-    """Rotation, focal and arc residual in pixels, camera position fixed.
+def _scorer(arc_px, halfway_px, cx, cy):
+    """Residuals of a candidate camera against an observed arc and line.
+
+    Shared by `fit`, where the camera's position is fixed, and `fit_free`,
+    where it is not; only what is free differs.
 
     Residuals are taken in the image: the whole circle is projected through
     the candidate camera and each observed arc pixel is scored by its
@@ -72,13 +75,7 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
     solution; in the image a camera that squashes the circle to a point is
     far from most of the arc. Only observed pixels are scored, never the
     other way round, since players hide part of the circle.
-
-    `seed_rot` starts from a neighbouring frame's answer. Consecutive frames
-    differ by a fraction of a degree, so this is both faster and less likely
-    to settle somewhere odd than starting from a camera aimed at the spot.
     """
-    from scipy.optimize import least_squares
-
     theta = np.linspace(0.0, 2 * np.pi, 720, endpoint=False)
     circle = np.column_stack([CENTRE[0] + CIRCLE_RADIUS_M * np.cos(theta),
                               np.zeros_like(theta),
@@ -87,7 +84,7 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
                      [CENTRE[0] + 40.0, 0.0, CENTRE[2]]])
     far = 400.0
 
-    def project(points, rot, focal):
+    def project(points, rot, focal, eye):
         cam = rot @ (points - eye).T
         front = cam[2] > 1e-6
         img = camera(focal, cx, cy) @ cam
@@ -95,13 +92,8 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
             uv = (img[:2] / img[2]).T
         return uv, front
 
-    start = seed_rot if seed_rot is not None else look_at(eye, CENTRE)
-    rvec0, _ = cv2.Rodrigues(start)
-
-    def residuals(q):
-        rot, _ = cv2.Rodrigues(q[:3])
-        focal = float(np.exp(q[3]))
-        uv, front = project(circle, rot, focal)
+    def residuals(rot, focal, eye):
+        uv, front = project(circle, rot, focal, eye)
         # Distance to the projected curve itself, not to its nearest sample:
         # 720 samples leave about a pixel between neighbours, which read as
         # 0.99 px of error on a fit that was otherwise exact. Segments join
@@ -121,7 +113,7 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
                           .sum(-1)).min(axis=1)
         out = [arc]
         if halfway_px is not None:
-            huv, hfront = project(half, rot, focal)
+            huv, hfront = project(half, rot, focal, eye)
             if hfront.all():
                 a, b = huv
                 normal = np.array([b[1] - a[1], a[0] - b[0]])
@@ -130,6 +122,27 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
             else:
                 out.append(np.full(len(halfway_px), far))
         return np.concatenate(out)
+
+    return residuals
+
+
+def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
+    """Rotation, focal and arc residual in pixels, camera position fixed.
+
+    `seed_rot` starts from a neighbouring frame's answer. Consecutive frames
+    differ by a fraction of a degree, so this is both faster and less likely
+    to settle somewhere odd than starting from a camera aimed at the spot.
+    """
+    from scipy.optimize import least_squares
+
+    eye = np.asarray(eye, dtype=float)
+    score = _scorer(arc_px, halfway_px, cx, cy)
+    start = seed_rot if seed_rot is not None else look_at(eye, CENTRE)
+    rvec0, _ = cv2.Rodrigues(start)
+
+    def residuals(q):
+        rot, _ = cv2.Rodrigues(q[:3])
+        return score(rot, float(np.exp(q[3])), eye)
 
     seed_f = float(np.clip(focal0, MIN_FOCAL_PX * 1.001, MAX_FOCAL_PX * 0.999))
     got = least_squares(
@@ -140,3 +153,39 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy, seed_rot=None):
     rot, _ = cv2.Rodrigues(got.x[:3])
     arc_rms = float(np.sqrt(np.mean(got.fun[:len(arc_px)] ** 2)))
     return rot, float(np.exp(got.x[3])), arc_rms
+
+
+def fit_free(arc_px, halfway_px, eye0, focal0, cx, cy, reach_m: float = 150.0,
+             max_height_m: float = 80.0):
+    """As `fit`, with the camera's position free as well.
+
+    The circle and halfway line do not fix a position: sliding the camera
+    along its line of sight to the centre spot while zooming keeps the
+    picture the same. What they do fix is that line -- a ray from the
+    centre spot out to the camera -- and that is what this is for
+    (`camera_position.locate`). The position returned is one point on it.
+    Returns (position, rotation, focal, arc rms px).
+    """
+    from scipy.optimize import least_squares
+
+    eye0 = np.asarray(eye0, dtype=float)
+    score = _scorer(arc_px, halfway_px, cx, cy)
+    rvec0, _ = cv2.Rodrigues(look_at(eye0, CENTRE))
+
+    def residuals(q):
+        rot, _ = cv2.Rodrigues(q[:3])
+        return score(rot, float(np.exp(q[3])), q[4:7])
+
+    lo = np.array([-np.inf] * 3 + [np.log(MIN_FOCAL_PX),
+                                   eye0[0] - reach_m, 1.0, eye0[2] - reach_m])
+    hi = np.array([np.inf] * 3 + [np.log(MAX_FOCAL_PX),
+                                  eye0[0] + reach_m, max_height_m,
+                                  eye0[2] + reach_m])
+    seed_f = float(np.clip(focal0, MIN_FOCAL_PX * 1.01, MAX_FOCAL_PX * 0.99))
+    x0 = np.concatenate([rvec0.ravel(), [np.log(seed_f)], eye0])
+    x0 = np.clip(x0, lo + 1e-6, hi - 1e-6)
+    got = least_squares(residuals, x0, bounds=(lo, hi), method="trf",
+                        max_nfev=800)
+    rot, _ = cv2.Rodrigues(got.x[:3])
+    arc_rms = float(np.sqrt(np.mean(got.fun[:len(arc_px)] ** 2)))
+    return got.x[4:7].copy(), rot, float(np.exp(got.x[3])), arc_rms

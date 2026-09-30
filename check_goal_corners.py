@@ -137,6 +137,28 @@ def looks_mirrored(corners) -> bool:
     return bool(corners[0][0] > corners[3][0])
 
 
+def usable_rows(rows):
+    """Corner frames from the main camera with all four corners clicked."""
+    return [r for r in rows
+            if r["id"] not in REPLAY_CAMERAS
+            and not looks_mirrored(r["corners"])
+            and all(c is not None for c in r["corners"])]
+
+
+def located_poses(rows, eye):
+    """Corner poses with the camera held at a located position."""
+    from src.goal_pose import pose_at
+
+    out = {}
+    for row in usable_rows(rows):
+        cx, cy = row["width"] / 2.0, row["height"] / 2.0
+        guess = focal_from_rectangle(pixels(row), cx, cy) or 2500.0
+        pose = pose_at(pixels(row), eye, guess, cx, cy)
+        if pose is not None:
+            out[row["id"]] = pose
+    return out
+
+
 def poses_for_clip(rows, plane, verbose: bool = False):
     """Best pose available for each frame of one clip, keyed by frame id.
 
@@ -155,10 +177,7 @@ def poses_for_clip(rows, plane, verbose: bool = False):
     unobtainable -- it was simply being asked for from the one source that
     could not supply it.
     """
-    usable = [r for r in rows
-              if r["id"] not in REPLAY_CAMERAS
-              and not looks_mirrored(r["corners"])
-              and all(c is not None for c in r["corners"])]
+    usable = usable_rows(rows)
     if not usable:
         return {}
 
@@ -190,7 +209,13 @@ def poses_for_clip(rows, plane, verbose: bool = False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--corners", required=True)
+    ap.add_argument("--cameras",
+                    help="JSON of located camera positions by clip, as "
+                         "score_hand_labels prints them")
     args = ap.parse_args()
+    cameras = ({k: np.asarray(v, dtype=float) for k, v in
+                json.loads(Path(args.cameras).read_text()).items()}
+               if args.cameras else None)
 
     rows = load(Path(args.corners))
     planes: dict[str, GroundPlane] = {}
@@ -266,15 +291,20 @@ def main():
           "independent.\n  The spread is the test the clicks could fail "
           "outright: one gantry,\n  several frames, solved separately.")
 
-    shot_table(rows, planes)
+    shot_table(rows, planes, cameras)
 
 
 # The moment of the labelled shot in every window cut around one.
 SHOT_FRAME = 481
 
 
-def shot_table(rows, planes):
+def shot_table(rows, planes, cameras=None):
     """Distance and angle at each labelled shot moment.
+
+    `cameras` maps a clip to a located camera position
+    (`src.camera_position`). Where given, the shot frame's pose is refitted
+    with the camera held there instead of wherever the corners' focal
+    guess put it.
 
     The position measured is the **shooter's feet**, not the ball. A player
     is unambiguously standing on the pitch, which is the assumption the
@@ -307,8 +337,12 @@ def shot_table(rows, planes):
             continue
         total += 1
         plane = planes.get(clip)
-        pose = poses_for_clip(group, plane).get(shot[0]["id"])
-        label = "yes" if plane else "no"
+        if cameras and clip in cameras:
+            pose = located_poses(group, cameras[clip]).get(shot[0]["id"])
+            label = "loc"
+        else:
+            pose = poses_for_clip(group, plane).get(shot[0]["id"])
+            label = "yes" if plane else "no"
         if pose is None:
             print(f"  {clip:>14s} {label:>6s}   no pose")
             continue
