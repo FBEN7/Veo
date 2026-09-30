@@ -1,5 +1,11 @@
 # Critical Bug Found: Event Detection Coordinate Mismatch
 
+> **Historical.** Written before the project measured accuracy against
+> labels. Its claims -- including any of "100%", "complete" or "ready" --
+> were not checked against ground truth and several were later refuted.
+> The current, measured state is in `EVENT_ACCURACY.md` (see its opening
+> summary) and `DOCS.md` indexes what is current.
+
 ## Problem
 - **Possession changes detected:** 88 (good!)
 - **Pass events recorded:** 0 (bad!)

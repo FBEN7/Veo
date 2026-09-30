@@ -1,5 +1,11 @@
 # Deployment Readiness: Pixel Coordinate Fix
 
+> **Historical.** Written before the project measured accuracy against
+> labels. Its claims -- including any of "100%", "complete" or "ready" --
+> were not checked against ground truth and several were later refuted.
+> The current, measured state is in `EVENT_ACCURACY.md` (see its opening
+> summary) and `DOCS.md` indexes what is current.
+
 **Date:** August 6, 2026  
 **Status:** ✅ READY FOR PRODUCTION DEPLOYMENT  
 **Commits Pending Push:** 26

@@ -1,5 +1,11 @@
 # Pixel Coordinate Event Detection Fix
 
+> **Historical.** Written before the project measured accuracy against
+> labels. Its claims -- including any of "100%", "complete" or "ready" --
+> were not checked against ground truth and several were later refuted.
+> The current, measured state is in `EVENT_ACCURACY.md` (see its opening
+> summary) and `DOCS.md` indexes what is current.
+
 ## Executive Summary
 
 **Problem:** Despite achieving 100% ball detection accuracy with HSV color detection, event detection was returning 0 events.
