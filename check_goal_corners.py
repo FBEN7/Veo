@@ -289,11 +289,18 @@ def shot_table(rows, planes):
     for row in rows:
         by_clip.setdefault(row["clip"], []).append(row)
 
+    model = None
+    model_path = Path("models/xg_xghub.json")
+    if model_path.exists():
+        from src.xg import XGModel
+        model = XGModel.load(model_path)
+
     print(f"\n\nAt the shot moment, frame {SHOT_FRAME}, from the shooter's "
           f"feet.\n")
     print(f"  {'window':>14s} {'plane':>6s} {'distance':>9s} {'angle':>6s} "
-          f"{'reproj':>8s}")
+          f"{'reproj':>8s} {'xG':>6s}")
     got = total = 0
+    scored = []
     for clip, group in sorted(by_clip.items()):
         shot = [r for r in group if r["frame"] == SHOT_FRAME]
         if not shot:
@@ -321,8 +328,19 @@ def shot_table(rows, planes):
             print(f"  {clip:>14s} {label:>6s}   refused, beyond the pitch")
             continue
         got += 1
+        shown = "-"
+        if model is not None:
+            # Same conventions the model was fitted under: distance to the
+            # middle of the goal, and the angle the two posts subtend. Both
+            # are what `shot_geometry` returns, so nothing is converted
+            # except degrees to radians.
+            value = float(model.predict(
+                distance_m=[geom[0]],
+                angle_rad=[np.radians(geom[1])])[0])
+            scored.append((clip, geom[0], geom[1], value))
+            shown = f"{value:.3f}"
         print(f"  {clip:>14s} {label:>6s} {geom[0]:8.1f} m {geom[1]:5.0f}d "
-              f"{pose.reprojection_px:6.2f}px")
+              f"{pose.reprojection_px:6.2f}px {shown:>6s}")
 
     print(f"\n  {got} of {total} shot moments carry a measured distance and "
           f"angle.")
@@ -332,6 +350,20 @@ def shot_table(rows, planes):
           "single-frame rows are the\n  weaker ones for that reason; the "
           "bundled rows are constrained by a\n  camera that has to be in one "
           "place across several frames.")
+
+    if scored:
+        total_xg = sum(v for _, _, _, v in scored)
+        print(f"\n  Total xG over {len(scored)} labelled shots: "
+              f"{total_xg:.2f}, so about one goal in "
+              f"{1.0 / max(total_xg, 1e-9):.0f} of these sets.")
+        print("\n  The model is the reduced xGHub fit in "
+              "models/xg_xghub.json: classical\n  geometry only, held out by "
+              "match, AUC 0.766 and Brier 0.0859 against a\n  0.0976 base "
+              "rate. The orientation features that are xGHub's actual\n  "
+              "contribution need pose estimation this pipeline does not have.")
+        print("\n  These are six shots. The number is what the geometry "
+              "implies, not a\n  measurement of anything about these "
+              "matches.")
 
 
 if __name__ == "__main__":
