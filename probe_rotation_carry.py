@@ -68,6 +68,13 @@ than a pose carried from somewhere else.
 
     python probe_rotation_carry.py --corners goal_corners.json \
         --goal-weights best.pt
+
+Later: the 1.8 m floor was itself wrong. It compared box poses with corner
+poses that shared a mislocated camera; with the camera located and boxes
+read as the labels drew them, box poses sit 0.53 m median from the corner
+poses (`probe_truncated_box.py`). Carrying still fails -- 6 of 9 gaps break
+on cuts, which no floor changes -- but the margin by which it fails where
+it does cross is larger than stated here.
 """
 
 from __future__ import annotations

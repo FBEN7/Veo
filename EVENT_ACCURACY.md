@@ -805,6 +805,48 @@ it. Either is too fast for a ball on the grass; it was most likely in the
 air, which stretches any ground projection. The ceiling is not being raised
 to recover it. The earlier "1 of 8" should be read as a cross.
 
+### What a goal box is: the placer was reading it wrong
+
+Every goal pose away from the corner-labelled frames comes from a detected
+box and the located camera (`goal_pose.pose_from_box`). It assumed the box
+encloses the goal. **It does not.** The hand-drawn boxes the detector
+learned from run from the top of the left post to the base of the right
+post -- one diagonal of the goal's slanted outline:
+
+| box read as | worst-edge error against the clicked corners, 25 frames |
+|---|---|
+| enclosing the goal | median 12.5 px; 45-62 px on every Reading frame and stoke_7001 |
+| left post top to right post base | **median 3.5 px**, 24 of 25 (the exception is the replay camera) |
+
+Where the crossbar is level the two nearly coincide, which is why
+stoke_4207 and stoke_1302 were close and the others were not. The detector
+reproduces the labels, so it draws the diagonal too.
+
+The box is now read that way. Two further changes handle goals **cut off
+by the frame edge**, whose box edge on that side is the frame's: that side
+is scored one-sidedly (the goal must reach at least that far), roll is held
+near zero -- a gantry camera does not roll, measured -1.7 to +0.2 degrees on
+the corner frames -- so three real edges suffice, and a pose that would put
+more than half the goal outside the picture is refused.
+
+Measured by `probe_truncated_box.py` on real frames with the located
+cameras: median metres between where a box pose and the corner pose put a
+grid of ground points across the penalty area.
+
+| | before | after |
+|---|---|---|
+| whole boxes, 15 corner frames | 18.44 m (90th pct 22.12) | **0.53 m (90th pct 1.05)** |
+| the same boxes cut by a pretend frame edge | 31.66 m (38.35) | **1.09 m (3.54)** |
+| stoke_1302 frame 638, a 34 px sliver of goal | 23-34 m off painted lines | refused |
+
+**This retires the "1.8 m median, 3.2 m at the 90th percentile" figure**
+quoted above and in several probes as the box pose's error. It was measured
+against corner poses sharing the same wrong camera, so it compared two
+wrong answers with each other; against the located camera the old box
+reading was 18 m out. Conclusions that leaned on 1.8 m as a floor -- the
+rotation-carry comparison, and out-of-play's "the margin is smaller than
+the error" -- are revisited where they stand.
+
 ### Out of play: why it cannot be fixed on this footage
 
 Precision is 2 of 11 and recall 2 of 3, and the attempt to improve it ended
