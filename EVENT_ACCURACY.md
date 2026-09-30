@@ -17,6 +17,31 @@ Reproduce with:
 SoccerNet data is under a non-commercial NDA. It is a measuring instrument --
 nothing derived from it belongs in the product or in this repository.
 
+## Current state -- read this first
+
+This document is chronological: findings are appended as they are made, and
+later sections correct earlier ones rather than rewriting them. The state as
+of the latest measurement:
+
+| | result | section |
+|---|---|---|
+| Camera position | located on 6 of 6 clips; three Reading clips agree to 1.1 m | "Where the camera is" |
+| Goal-box poses | 0.53 m median from corner poses (was 18 m) | "What a goal box is" |
+| Ball placed on the pitch | 7-44% of frames by clip | "What it changes" |
+| Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
+| Out of play | precision 2 of 3, recall 2 of 4 | "The continuity check" |
+| Shots and goals detected | 0 of 10, 0 of 2 | "Where the camera is" |
+| Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
+
+Superseded, and kept only as history: anything placed by the centre-circle
+**anchor** (quarantined: its camera sits 62-72 m up), the **1.8 m** box-pose
+error (it compared two poses sharing a wrong camera), the **"1 of 8" shots**
+(a cross) and **"1 of 2" goals** (crowd detections), and the out-of-play
+reasoning that the margin was smaller than the placement error.
+
+The limit now is the ball: detected too sparsely around shots to fit a
+strike, and placed as if on the grass when it is in the air.
+
 ## Pass outcomes are close to a coin flip
 
 The model reports 50%, 61%, 51% and 55% of passes as intercepted across the

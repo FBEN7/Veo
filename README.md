@@ -103,45 +103,74 @@ pas qu'il marche sur du football.
 Le pipeline d'origine (ci-dessus) produit un rapport. Ce qui suit a été
 ajouté ensuite et, surtout, **mesuré** : chaque chiffre vient d'un contrôle
 reproductible, et les limites sont écrites au même endroit que les
-résultats. Les documents détaillés sont en anglais.
+résultats. Les documents détaillés sont en anglais ; `EVENT_ACCURACY.md`
+commence par un résumé de l'état actuel.
 
 | | état | où c'est mesuré |
 |---|---|---|
-| Tirs et xG | **ne trouve aucun tir réel** (0 sur 10) | `EVENT_ACCURACY.md` |
-| Buts | **aucun but réel détecté** (0 sur 2) | `EVENT_ACCURACY.md` |
-| Occasions et passes décisives | fonctionne | `EVENT_ACCURACY.md` |
-| Équipes (maillots) | 0.99 | `TEAM_ASSIGNMENT.md` |
-| Équipes (écarter les non-joueurs) | 0.80 | `TEAM_ASSIGNMENT.md` |
-| Ballon sorti, buts, coups de pied arrêtés | **ne fonctionne pas** | `EVENT_ACCURACY.md` |
+| Position du ballon sur le terrain | 7 à 44 % des images selon le clip ; erreur médiane **0,5 m** | `EVENT_ACCURACY.md` |
+| Position de la caméra | 5 clips sur 6 localisés, le 6e par la hauteur du même match | `EVENT_ACCURACY.md` |
+| Distance, angle et xG des tirs | les 6 tirs annotés, xG total 0,47 | `EVENT_ACCURACY.md` |
+| Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
+| Ballon sorti | précision **2 sur 3**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
+| Tirs et buts détectés | **0 sur 10 et 0 sur 2** | `EVENT_ACCURACY.md` |
+| Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
+| Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
+| Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |
 
-Deux précisions qui comptent plus que le tableau.
+### La géométrie : d'où viennent les mètres
 
-**Les tirs.** Le rappel a fini par être mesuré, sur six fenêtres découpées
-autour de tirs annotés, dans deux matchs : **0 tir trouvé sur 10, et 0 but
-sur 2**. Aucune fausse alerte non
-plus, mais un détecteur qui ne se déclenche jamais obtient ce score-là
-aussi.
+Tout ce qui est en mètres dépend de savoir où est la caméra et où elle
+regarde. Trois étapes, chacune vérifiée contre quelque chose qu'elle ne voit
+pas :
 
-La cause n'est pas le détecteur de tirs. Sur deux des trois fenêtres la
-couverture est bonne (61 % du ballon positionné) et le ballon est quand
-même placé à quarante mètres de sa vraie position : le repère vient du rond
-central, la caméra est zoomée dans la surface quand il y a un tir, et le
-rond central n'est plus dans l'image. Détail dans `EVENT_ACCURACY.md`.
+1. **Les coins des cages**, cliqués une fois par clip, donnent une droite
+   sur laquelle se trouve la caméra — pas un point : focale et distance se
+   compensent.
+2. **Le rond central et la ligne médiane** donnent une seconde droite. La
+   caméra est à leur croisement (`src/camera_position.py`). Vérifié sur des
+   lignes peintes que rien n'ajuste : le côté des six mètres à 0,6 et 0,0 m,
+   la ligne de surface droite à 16,8 m pour 16,5.
+3. **Le détecteur de cages**, image par image, donne le reste de la pose.
+   Les boîtes annotées vont du haut du poteau gauche au pied du poteau
+   droit, pas autour de la cage ; les lire ainsi a fait passer l'erreur de
+   18 m à 0,5 m.
 
-Ce qui reste vrai : un tir simulé, placé dans la vraie trajectoire du
-ballon, est retrouvé à 0.3 m près et son xG à 0.007 près. Cela mesure la
-géométrie et le modèle xG, pas la détection — le tir simulé était inséré à
-travers un repère valide, ce qui garantissait silencieusement une bonne
-carte.
+### Ce qui ne marche pas encore
 
-**Le ballon sorti.** Correct sur entrée synthétique, 1 sur 3 sur du vrai
-football, avec 4 à 6 fausses alertes par 90 secondes. La cause est connue et
-n'est pas la géométrie : les repères viennent du rond central, donc du milieu
-du terrain, et le ballon sort sur les côtés. Sur les deux sorties manquées,
-le ballon est détecté 74 et 51 fois et positionné zéro fois. Les coups de
-pied arrêtés en héritent, puisqu'une sortie manquée est une remise en jeu
-manquée.
+**Les tirs.** Aucun tir réel détecté (0 sur 10). La géométrie n'est plus en
+cause : le ballon est trop rarement détecté autour des tirs pour ajuster une
+trajectoire. Le seul « tir » trouvé un temps était le centre qui le
+précédait.
 
-Le reste du dépôt suit la même règle : `VEO_FOOTAGE.md` contient aussi les
-corrections d'erreurs commises en cours de route, y compris celles qui
-annulent une conclusion publiée la veille.
+**Le ballon en l'air.** Placer le ballon suppose qu'il est au sol ; en l'air,
+il est projeté bien trop loin. C'est la limite qui revient : elle a coûté un
+tir et une sortie réelle. Une estimation de la hauteur par la trajectoire
+(`src/ball_height.py`) marche sur des vols simulés d'une seconde mais pas
+encore sur ces vols-ci, trop courts.
+
+**Le ballon sorti** est passé de 3 sur 15 à 2 sur 3 en précision, en
+exigeant que le ballon soit suivi *en train de franchir* la ligne : les
+fausses alertes étaient des panneaux publicitaires pris pour le ballon.
+Quatre sorties annotées ne suffisent pas à valider un détecteur.
+
+### Reproduire
+
+```bash
+# Coins des cages (une page à cliquer, envoyée en fichier, jamais publiée)
+python make_corner_labeller.py --labels goal_labels.json
+
+# Scorer un clip contre des annotations écrites à la main
+python score_hand_labels.py labels.txt --out output_clip \
+    --goal-weights best.pt --corners goal_corners.json \
+    --midfield --camera-store cameras.json
+```
+
+Les poids du détecteur de cages, les annotations et les vidéos viennent de
+SoccerNet, sous accord non commercial : ils ne sont pas dans ce dépôt, et
+rien qui en dérive ne doit y entrer.
+
+Le reste du dépôt suit la même règle : `VEO_FOOTAGE.md` et
+`EVENT_ACCURACY.md` contiennent aussi les corrections d'erreurs commises en
+cours de route, y compris celles qui annulent une conclusion publiée la
+veille.
