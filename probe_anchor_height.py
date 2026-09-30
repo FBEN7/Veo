@@ -35,6 +35,42 @@ meaningless number, so `selftest` builds a camera of known height, projects
 the pitch through it, forms the homography and recovers the height. It runs
 first and this refuses to report clip numbers if it fails.
 
+## What it found: the anchor does not corroborate
+
+    clip            anchors   anchor m   players m
+    reading_0737         31       62.2        15.9
+    stoke_1302            1       62.7        40.1
+    stoke_4207            1       72.2        24.8
+    stoke_7001           31       70.9        21.9
+
+reading_0737 is the row that carries the conclusion: 31 consistent anchors,
+a height fit worth having (R^2 0.16), and the goal corners agreeing with the
+players at 15.6 against 15.9. The anchor says 62.2.
+
+The focal is not the explanation. Implied height rises monotonically with
+it -- 40.3 m at 1200 px, 62.2 at the ground plane's 1851, 100.8 at the
+corner bundle's 3000 -- and the focal that would bring the anchor down to
+15.9 m is 473 px, a 107-degree lens on a camera filming from a gantry.
+
+Nor is it a scale error. Placing players through the same anchors puts 16 of
+them across 20 m and along 37 m, from x = 35 to 56 -- straddling the halfway
+line, which is exactly where an anchor fitted to the centre circle should
+be. Nothing sprawls off the pitch.
+
+Both hold at once because a homography with the wrong **tilt** still maps
+the visible trapezoid onto a believable patch of pitch while distorting
+depth inside it. That is the diagnosis: perspective, not scale.
+
+## What follows
+
+Anchor-derived absolute positions should not be trusted along the viewing
+direction. Possession is a nearest-player comparison and is relative, so it
+is largely unaffected; out-of-play and set pieces rest on where the ball is
+against a line, and are.
+
+The anchor returning 62 to 72 m across two stadiums, rather than scattering,
+says this is systematic in how it is built rather than noise in any clip.
+
     python probe_anchor_height.py [--clips stoke_1302 reading_0737]
 """
 

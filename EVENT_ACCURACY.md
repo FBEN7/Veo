@@ -620,6 +620,51 @@ a line through.
 
 Geometry is no longer what is failing. Better ball tracking is.
 
+### The anchor, checked against two independent camera heights
+
+The anchor underpins possession, out-of-play and set pieces and had never
+been checked against anything outside itself. `probe_anchor_height.py`
+decomposes its homography into a camera pose -- inverted it is
+`K [r1 r2 t]` up to scale -- and compares the implied camera height with two
+estimates that use no anchor at all.
+
+| clip | anchors | anchor | player sizes |
+|---|---|---|---|
+| reading_0737 | 31 | **62.2 m** | 15.9 |
+| stoke_1302 | 1 | 62.7 m | 40.1 |
+| stoke_4207 | 1 | 72.2 m | 24.8 |
+| stoke_7001 | 31 | **70.9 m** | 21.9 |
+
+reading_0737 carries the conclusion: 31 consistent anchors, the only height
+fit worth having (R² 0.16), and the hand-clicked goal corners agreeing with
+the players at **15.6 against 15.9 m**. The anchor says 62.2.
+
+**It is not the focal.** Implied height rises monotonically with focal --
+40.3 m at 1200 px, 62.2 at the ground plane's 1851, 100.8 at the corner
+bundle's 3000 -- and the focal that would bring the anchor to 15.9 m is
+473 px, a 107° lens on a gantry camera.
+
+**It is not the scale.** Players placed through the same anchors span 20 m
+across and 37 m along, x from 35 to 56 m, straddling the halfway line --
+exactly where an anchor fitted to the centre circle should sit. Nothing
+sprawls off the pitch.
+
+Both hold because a homography with the wrong **tilt** maps the visible
+trapezoid onto a believable patch of pitch while distorting depth inside it.
+Perspective, not scale. The anchor returning 62-72 m across two stadiums
+rather than scattering says this is systematic in its construction.
+
+**What follows.** Anchor-derived absolute positions should not be trusted
+along the viewing direction. Possession is a nearest-player comparison and
+is relative, so it is largely unaffected. Out-of-play and set pieces rest on
+where the ball is against a line, and are affected — which is consistent
+with out-of-play never having exceeded 1 of 3.
+
+The decomposition is verified before any clip is read: a camera of known
+height projects the pitch, the homography is rebuilt from that projection
+and the height recovered exactly, to 0.000 m at 15.6, 24.8 and 40.1 m. The
+probe refuses to report clip numbers if that fails.
+
 ### Combining the two landmarks: measured, and refused
 
 The goal covers the attacking third and the anchor covers midfield, so using
