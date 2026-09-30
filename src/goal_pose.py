@@ -305,33 +305,98 @@ def bundle(frames, focal_guess: float, cx: float, cy: float,
     return eye, poses, rms
 
 
+# A box edge this close to the frame's edge, in pixels, is the frame's edge:
+# the goal runs on past it, and the box says nothing about where it ends.
+FRAME_EDGE_PX = 3.0
+
+# How much a degree of camera roll costs, in pixels of box residual.
+#
+# A gantry camera pans, tilts and zooms; it does not roll. Measured on the
+# fifteen corner-labelled frames with the camera located, roll sits between
+# -1.7 and +0.2 degrees. Without this the fit has four unknowns and a box
+# has four numbers, so a truncated box -- three real numbers -- leaves it
+# free to trade roll for everything else. At 3 px a degree, the measured
+# roll costs a few pixels, well inside the fit's usual residual.
+ROLL_PX_PER_DEG = 3.0
+
+# The most of the goal's width, as a share, the fit may place beyond the
+# frame's edge. Past half, the box is a post and a sliver of crossbar, and
+# the pose is extrapolated from it rather than measured: on stoke_1302 frame
+# 638, a 34 px strip of goal at the right edge, the fit put the six-yard box
+# on the wrong side of the goal.
+MAX_OUTSIDE_SHARE = 0.5
+
+# Fewer real edges than this and the pose is refused. Three edges and no
+# roll fix pan, tilt and zoom; two do not.
+MIN_BOX_EDGES = 3
+
+
+# What a goal box is. Not the rectangle enclosing the goal: the hand labels
+# the detector was trained on run from the top of the left post to the base
+# of the right post, one diagonal of the goal's slanted outline. Measured on
+# the 25 frames with both a box and clicked corners, that reads each box to
+# a median 3.5 px on its worst edge; the enclosing rectangle misses by
+# 12.5 px, and by 45-62 px wherever the crossbar slopes -- every Reading
+# clip and stoke_7001. The detector learned the labels, so it draws the
+# same thing. Indices into `MODEL`.
+BOX_FROM, BOX_TO = 1, 3          # left post top, right post base
+
+
+def roll_deg(rot) -> float:
+    """How far the camera's horizontal axis tips out of level, in degrees."""
+    return float(np.degrees(np.arcsin(np.clip(rot[0, 1], -1.0, 1.0))))
+
+
 def pose_from_box(box, eye, focal_guess: float, cx: float, cy: float,
-                  max_nfev: int = 600):
+                  max_nfev: int = 600, frame_size=None):
     """Pose on a frame with no corners, from a detected box and a fixed camera.
 
     Corners exist on 25 hand-labelled frames and nowhere else, which would
-    confine metric geometry to those frames. But `bundle` establishes
-    something that carries: a clip's camera position, to sub-pixel
-    reprojection. Position fixed leaves rotation and focal unknown -- four
-    numbers -- and a detected goal box is also four numbers. So the box is
-    enough, once the clip has been calibrated once.
+    confine metric geometry to those frames. But a clip's camera position
+    carries (`camera_position`). Position fixed leaves pan, tilt, zoom and
+    roll -- and a gantry camera does not roll, so three -- which a detected
+    goal box over-determines.
+
+    The box is read as the labels drew it, left post top to right post base
+    (`BOX_FROM`, `BOX_TO`). Until that was checked it was read as the
+    rectangle enclosing the goal, which put box poses a median 18 m from the
+    corner poses across a penalty-area grid (`probe_truncated_box.py`).
 
     That is what connects the working goal detector (6 of 6 at the shot
     moments) to metric distance on frames nobody clicked.
 
-    Measured against the corner-derived pose on the 12 frames that have
-    both, started from a neutral guess that knows nothing of the true
-    rotation: median disagreement 1.8 m, 90th percentile 3.2 m. Usable for
-    xG bands, weaker than corners, and not a substitute for calibrating the
-    clip in the first place.
+    **Truncated boxes.** When the goal runs off the edge of the picture, the
+    box's edge on that side is the frame's, not the goal's. The first version
+    fitted it anyway, as if the goal ended there: on stoke_1302 frames
+    619-672, with the goal cut off at the right, that put the six-yard box
+    corner 11 to 22 m from where it is. Given `frame_size` (width, height),
+    an edge within `FRAME_EDGE_PX` of the border is scored one-sidedly --
+    the projected goal must reach at least that far, and is not pulled back
+    to it -- and the pose is refused below `MIN_BOX_EDGES` real edges, or
+    when the fit puts more than `MAX_OUTSIDE_SHARE` of the goal outside.
 
     `box` is (x0, y0, x1, y1) in pixels. `eye` is the camera position in
-    goal-frame metres. Returns a GoalPose, or None if it flips.
+    goal-frame metres. Returns a GoalPose, or None if it flips or too little
+    of the goal is in frame. `reprojection_px` is over the real edges only.
     """
     from scipy.optimize import least_squares
 
     eye = np.asarray(eye, dtype=np.float64)
     observed = np.asarray(box, dtype=np.float64)
+
+    # Which edges are the frame's. Sign: +1 means the projected goal may
+    # extend beyond the observed edge in the increasing direction (right or
+    # bottom), -1 in the decreasing one (left or top), 0 a real edge.
+    beyond = np.zeros(4)
+    if frame_size is not None:
+        width, height = frame_size
+        beyond[0] = -1.0 if observed[0] <= FRAME_EDGE_PX else 0.0
+        beyond[1] = -1.0 if observed[1] <= FRAME_EDGE_PX else 0.0
+        beyond[2] = 1.0 if observed[2] >= width - FRAME_EDGE_PX else 0.0
+        beyond[3] = 1.0 if observed[3] >= height - FRAME_EDGE_PX else 0.0
+    real = beyond == 0.0
+    if real.sum() < MIN_BOX_EDGES:
+        return None
 
     def bbox(rvec, focal):
         rot, _ = cv2.Rodrigues(rvec)
@@ -340,8 +405,14 @@ def pose_from_box(box, eye, focal_guess: float, cx: float, cy: float,
                            [0.0, 0.0, 1.0]])
         pts, _ = cv2.projectPoints(MODEL, rvec, tvec, camera, None)
         pts = pts.reshape(-1, 2)
-        return np.array([pts[:, 0].min(), pts[:, 1].min(),
-                         pts[:, 0].max(), pts[:, 1].max()])
+        return np.concatenate([pts[BOX_FROM], pts[BOX_TO]])
+
+    def residuals(q):
+        diff = bbox(q[:3], np.exp(q[3])) - observed
+        # A truncated edge only objects when the goal stops short of it.
+        diff = np.where(real, diff, np.minimum(0.0, beyond * diff))
+        rot, _ = cv2.Rodrigues(q[:3])
+        return np.append(diff, ROLL_PX_PER_DEG * roll_deg(rot))
 
     # Start looking straight at the goal centre. This knows nothing about
     # the true rotation, which is the point: seeding from a known-good pose
@@ -356,15 +427,22 @@ def pose_from_box(box, eye, focal_guess: float, cx: float, cy: float,
                                         forward]))
 
     fit = least_squares(
-        lambda q: bbox(q[:3], np.exp(q[3])) - observed,
-        np.concatenate([start.ravel(), [np.log(focal_guess)]]),
-        method="lm", max_nfev=max_nfev)
+        residuals, np.concatenate([start.ravel(), [np.log(focal_guess)]]),
+        method="trf", max_nfev=max_nfev)
 
     rvec = fit.x[:3].reshape(3, 1)
     rot, _ = cv2.Rodrigues(rvec)
+    edges = fit.fun[:4][real]
+    if not real.all():
+        fitted = bbox(fit.x[:3], np.exp(fit.x[3]))
+        span = abs(fitted[2] - fitted[0])
+        clipped_x = np.clip(fitted[[0, 2]], 0.0, frame_size[0])
+        inside = abs(clipped_x[1] - clipped_x[0])
+        if span <= 0 or 1.0 - inside / span > MAX_OUTSIDE_SHARE:
+            return None
     pose = GoalPose(rvec=rvec, tvec=(-rot @ eye).reshape(3, 1),
                     focal_px=float(np.exp(fit.x[3])), cx=cx, cy=cy,
-                    reprojection_px=float(np.sqrt(np.mean(fit.fun ** 2))),
+                    reprojection_px=float(np.sqrt(np.mean(edges ** 2))),
                     n_corners=0)
     return None if pose.camera_position()[1] <= 0.0 else pose
 
@@ -493,8 +571,7 @@ def selftest(verbose: bool = True) -> bool:
     eye = np.array([-25.0, 16.0, 30.0])
     corners, _ = _synthetic(eye, [3.0, 0.0, 14.0], focal=1900.0)
     corners = np.asarray(corners)
-    box = (corners[:, 0].min(), corners[:, 1].min(),
-           corners[:, 0].max(), corners[:, 1].max())
+    box = tuple(np.concatenate([corners[BOX_FROM], corners[BOX_TO]]))
     from_box = pose_from_box(box, eye, 1500.0, 640.0, 360.0)
     from_corners = solve([tuple(p) for p in corners], 1900.0, 640.0, 360.0)
     if from_box is None or from_corners is None:
@@ -510,6 +587,52 @@ def selftest(verbose: bool = True) -> bool:
             print(f"  {'box, no corners':>18s}  distance {b[0]:5.2f} m "
                   f"against {a[0]:5.2f} from corners, gap {gap:.2f} m   "
                   f"{'ok' if good else 'WRONG'}")
+
+    # A goal cut off by the frame's right edge. The camera is aimed so the
+    # right post, 31% of the box's width, falls outside a 1280 px picture;
+    # the box then ends at the border, not at the post.
+    focal_t, cx_t, cy_t = 2600.0, 640.0, 360.0
+    eye_t = np.array([-60.0, 19.0, 50.0])
+    aim = np.array([-19.0, 0.0, -2.0]) - eye_t
+    aim /= np.linalg.norm(aim)
+    side = np.cross(aim, np.array([0.0, 1.0, 0.0]))
+    side /= np.linalg.norm(side)
+    rot_t = np.vstack([side, np.cross(aim, side), aim])
+    rvec_t, _ = cv2.Rodrigues(rot_t)
+    tvec_t = (-rot_t @ eye_t).reshape(3, 1)
+    cam_t = np.array([[focal_t, 0, cx_t], [0, focal_t, cy_t], [0, 0, 1.0]])
+    goal_px, _ = cv2.projectPoints(MODEL, rvec_t, tvec_t, cam_t, None)
+    goal_px = goal_px.reshape(-1, 2)
+    spot = np.array([GOAL_WIDTH_M / 2.0 + 9.16, 0.0, 5.5])  # six-yard corner
+    spot_px, _ = cv2.projectPoints(spot.reshape(1, 3), rvec_t, tvec_t,
+                                   cam_t, None)
+    spot_px = spot_px.reshape(2)
+    cut = (goal_px[BOX_FROM, 0], goal_px[BOX_FROM, 1],
+           min(goal_px[BOX_TO, 0], 1280.0), goal_px[BOX_TO, 1])
+    truncated = goal_px[BOX_TO, 0] > 1280.0
+    for label, size, want in (("truncated, edge known", (1280, 720), True),
+                              ("truncated, fitted as real", None, False)):
+        pose = pose_from_box(cut, eye_t, 1500.0, cx_t, cy_t, frame_size=size)
+        got = None if pose is None else ground_point(pose, *spot_px)
+        err = (float("inf") if got is None else
+               float(np.hypot(got[0] - spot[0], got[1] - spot[2])))
+        good = truncated and ((err < 0.5) == want)
+        ok &= good
+        if verbose:
+            print(f"  {label:>26s}  six-yard corner off by {err:5.2f} m "
+                  f"({'should be' if want else 'expected to be'} "
+                  f"{'under' if want else 'over'} 0.5)   "
+                  f"{'ok' if good else 'WRONG'}")
+
+    # Most of the goal outside: refused rather than extrapolated.
+    sliver = (1250.0, cut[1], 1280.0, cut[3])
+    good = pose_from_box(sliver, eye_t, 1500.0, cx_t, cy_t,
+                         frame_size=(1280, 720)) is None
+    ok &= good
+    if verbose:
+        print(f"  {'mostly outside the frame':>26s}  "
+              f"{'refused' if good else 'accepted'}   "
+              f"{'ok' if good else 'WRONG'}")
 
     # Two corners must refuse rather than guess.
     if solve([(0.0, 0.0), None, None, (10.0, 0.0)], focal, cx, cy) is not None:

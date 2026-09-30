@@ -270,7 +270,8 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
         box = result.boxes.xyxy.cpu().numpy()[int(np.argmax(scores))]
         detected += 1
         pose = pose_from_box(box, camera_position, focal_seed,
-                             width / 2.0, height / 2.0)
+                             width / 2.0, height / 2.0,
+                             frame_size=(width, height))
         if pose is None or pose.reprojection_px > MAX_BOX_RESIDUAL_PX:
             continue
         poses[index] = pose
