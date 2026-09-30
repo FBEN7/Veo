@@ -53,8 +53,21 @@ from src import pitch_model as pm
 GOAL_HALF_M = 3.66
 
 # How far past the line the ball must be before it counts as having left.
-# A ball on the line is still in play, and the anchor is good to 0.7 m, so
-# this keeps a ball hovering near the touchline from flickering in and out.
+#
+# One metre was chosen against the anchor's claimed 0.7 m self-agreement.
+# Both halves of that justification have since failed. The anchor's implied
+# camera height is 62-72 m against 15.6 and 15.9 from two independent
+# methods (`probe_anchor_height.py`), so its self-agreement says nothing
+# about its accuracy; and the goal placer that replaced it is measured at
+# 1.8 m median error, 3.2 m at the ninetieth percentile.
+#
+# So this margin asks the geometry to resolve a distance smaller than its
+# own uncertainty, and no value of it works. Measured on the labelled
+# crossings, true and false detections are indistinguishable by how far past
+# the line the ball is -- matched at 2.4 and 7.8 m against false at 1.8 to
+# 7.6 -- so raising it removes real crossings before invented ones. It is
+# left at 1.0 rather than tuned, because tuning it on two true positives
+# would be fitting noise.
 MARGIN_M = 1.0
 
 # Two crossings closer together than this are one event seen twice.

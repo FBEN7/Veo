@@ -620,6 +620,43 @@ a line through.
 
 Geometry is no longer what is failing. Better ball tracking is.
 
+### Out of play: why it cannot be fixed on this footage
+
+Precision is 2 of 11 and recall 2 of 3, and the attempt to improve it ended
+in a negative result worth recording so it is not retried blind.
+
+Every detected crossing was characterised three ways and compared against
+the labels:
+
+| | matched (2) | false (9) |
+|---|---|---|
+| metres past the line | 2.4, 7.8 | 1.8 … 7.6 |
+| consecutive readings outside | 3, 20 | 3, 3, 3, 3, 4, 4, 6, 11, 13 |
+| seconds until the ball is back inside | 1.3, 3.1 | 0.1 … 2.4, 7.7 |
+
+**All three overlap.** The first was expected to separate them and does the
+opposite: the falsest detection is 6.9 m out and one of the two real ones is
+2.4 m, so raising the margin removes a true crossing before an invented one.
+
+The cause is a mismatch of scales rather than a badly chosen threshold. The
+margin that defines "out" is 1 m; the placement it judges is measured at
+**1.8 m median error and 3.2 m at the ninetieth percentile**. The test asks
+the geometry to resolve a distance smaller than its own uncertainty. Balls
+near a touchline are also usually airborne -- crosses and clearances -- which
+is exactly where the ground projection is worst.
+
+A 1.25 s cut on "seconds until back inside" would lift precision from 0.18
+to 0.40. It is not applied. That threshold sits between two true positives
+and has false positives on both sides of it, so it is fitted to two events
+and would not survive a sixth clip.
+
+**What would actually settle it** is more labelled crossings. The SoccerNet
+ball annotations carry 85 OUT events across the two matches, but only three
+fall inside the ninety-second windows that exist locally. Cutting windows
+around the other 82 needs the full match video, which the data agreement
+does not permit holding. Until then out-of-play has three labelled events,
+and three cannot validate a detector or choose a threshold for one.
+
 ### The anchor, checked against two independent camera heights
 
 The anchor underpins possession, out-of-play and set pieces and had never
