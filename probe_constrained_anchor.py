@@ -194,7 +194,7 @@ def old_predicted_heights(feet_px, rot, eye, focal, cx, cy, up):
     return np.array(out)
 
 
-def measure(clip: str, corners: Path, frames: int):
+def measure(clip: str, corners: Path, frames: int, camera=None):
     from fit_pitch_anchor import anchored_frames, halfway_line
     from probe_centre_circle import find_circle
     from check_goal_corners import load, poses_for_clip
@@ -214,6 +214,14 @@ def measure(clip: str, corners: Path, frames: int):
     eye = np.mean([p.camera_position() for p in poses.values()], axis=0)
     focal0 = float(np.median([p.focal_px for p in poses.values()]))
     old_focal = plane.focal_px if plane else focal0
+    if camera is not None:
+        # A located camera (`src.camera_position`) in place of wherever the
+        # corners' focal guess put it.
+        from check_goal_corners import located_poses
+        eye = np.asarray(camera, dtype=float)
+        located = located_poses(rows, eye)
+        if located:
+            focal0 = float(np.median([p.focal_px for p in located.values()]))
 
     tracks = pd.read_parquet(out / "tracks.parquet")
     players = tracks[(tracks.cls == "player") & (tracks.crop_h > 5)]
@@ -366,7 +374,13 @@ def main():
                     default=["reading_0737", "stoke_7001"])
     ap.add_argument("--corners", required=True)
     ap.add_argument("--frames", type=int, default=240)
+    ap.add_argument("--cameras",
+                    help="JSON of located camera positions by clip; without "
+                         "it the camera is held where the corners alone put "
+                         "it, as in the results above")
     args = ap.parse_args()
+    cameras = json.loads(Path(args.cameras).read_text()) if args.cameras \
+        else {}
 
     print("Checking the fit and both height predictions on a known "
           "camera.\n")
@@ -378,7 +392,8 @@ def main():
           "for a\n1.75 m player at that spot. Right pose: a constant near 1, "
           "tightly.\n")
     for clip in args.clips:
-        got = measure(clip, Path(args.corners), args.frames)
+        got = measure(clip, Path(args.corners), args.frames,
+                      cameras.get(clip))
         if got is None:
             print(f"  {clip}: no corner calibration")
             continue
