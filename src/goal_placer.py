@@ -123,6 +123,33 @@ MAX_BOX_RESIDUAL_PX = 40.0
 POSE_GRID = 4
 
 
+# How far either side of a frame to look for poses to interpolate between.
+# Two grid steps: across a missing pose, not across a gap where the goal was
+# out of view long enough for the camera to have gone somewhere else.
+INTERPOLATE_REACH = 2 * POSE_GRID
+
+
+def interpolate(a, b, w: float):
+    """A pose between two of the same camera, `w` of the way from a to b.
+
+    Rotation vectors are blended componentwise and focal geometrically. That
+    is only right for small rotations, which a broadcast camera makes over a
+    few frames; the camera's position is shared, so it is kept.
+    """
+    import cv2
+
+    rvec = (1.0 - w) * a.rvec.reshape(3) + w * b.rvec.reshape(3)
+    focal = float(np.exp((1.0 - w) * np.log(a.focal_px)
+                         + w * np.log(b.focal_px)))
+    rot, _ = cv2.Rodrigues(rvec.reshape(3, 1))
+    eye = a.camera_position()
+    return a.__class__(rvec=rvec.reshape(3, 1), tvec=(-rot @ eye).reshape(3, 1),
+                       focal_px=focal, cx=a.cx, cy=a.cy,
+                       reprojection_px=max(a.reprojection_px,
+                                           b.reprojection_px),
+                       n_corners=0)
+
+
 def to_pitch(x: float, z: float):
     """Goal-frame metres to pitch metres, with the calibrated goal at x = 0."""
     return z, x + (pm.PITCH_WIDTH_M - GOAL_WIDTH_M) / 2.0
@@ -148,15 +175,34 @@ class GoalPlacer:
         return len(self.poses)
 
     def pose_at(self, frame: int):
+        """The camera on a frame: interpolated between the grid poses around it.
+
+        Poses are solved every `grid` frames. Reusing the nearest one in
+        between froze a panning camera for a few frames and then jumped it,
+        and measured on stoke_4207 that step was most of the placement
+        noise: a player's position jittered 0.27 m median frame to frame
+        (1.09 m at the 90th percentile), and 0.15 m (0.47 m) with rotation
+        and zoom interpolated instead. Where only one side has a pose, the
+        nearest within half a grid step is used as before.
+        """
         index = int(frame)
         pose = self.poses.get(index)
         if pose is not None:
             return pose
-        for offset in range(1, self.grid // 2 + 1):
-            for candidate in (self.poses.get(index - offset),
-                              self.poses.get(index + offset)):
-                if candidate is not None:
-                    return candidate
+        before = after = None
+        for offset in range(1, INTERPOLATE_REACH + 1):
+            if before is None and index - offset in self.poses:
+                before = index - offset
+            if after is None and index + offset in self.poses:
+                after = index + offset
+            if before is not None and after is not None:
+                break
+        if before is not None and after is not None:
+            return interpolate(self.poses[before], self.poses[after],
+                               (index - before) / (after - before))
+        for near in (before, after):
+            if near is not None and abs(near - index) <= self.grid // 2:
+                return self.poses[near]
         return None
 
     def place(self, frame, px, py):

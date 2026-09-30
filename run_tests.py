@@ -72,6 +72,10 @@ CONTROLS = [
      [sys.executable, "src/goal_pose.py"],
      "a known camera recovered from a projected goal, three views and a "
      "refusal when only two corners are given"),
+    ("poses between grid frames",
+     [sys.executable, "test_pose_interpolation.py"],
+     "a panning, zooming camera placed between solved poses to 7 mm, where "
+     "reusing the nearest pose is 0.8 m out"),
     ("camera from goal and circle",
      [sys.executable, "-m", "src.camera_position"],
      "a camera 38 m from its starting guess located to 0.07 m, circle "
