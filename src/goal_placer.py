@@ -190,7 +190,8 @@ class GoalPlacer:
         return np.array([x, y])
 
 
-def smooth(poses: dict, grid: int, steps: int = SMOOTH_STEPS) -> dict:
+def smooth(poses: dict, grid: int, steps: int = SMOOTH_STEPS,
+           min_neighbours: int = None) -> dict:
     """Average each pose with its neighbours in time.
 
     Only rotation and focal are averaged; the camera position is shared and
@@ -208,7 +209,9 @@ def smooth(poses: dict, grid: int, steps: int = SMOOTH_STEPS) -> dict:
                 for j in range(max(0, i - steps),
                                min(len(order), i + steps + 1))
                 if abs(order[j] - index) <= steps * grid]
-        if len(near) < MIN_POSE_NEIGHBOURS:
+        needed = (MIN_POSE_NEIGHBOURS if min_neighbours is None
+                  else min_neighbours)
+        if len(near) < needed:
             continue
         rvec = np.mean([p.rvec.reshape(3) for p in near], axis=0)
         focal = float(np.mean([p.focal_px for p in near]))
@@ -576,8 +579,11 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
     skip = set(skip)
     wanted = sorted({int(f) - int(f) % grid for f in frames_wanted} - skip)
 
+    from collections import Counter
+
     cap = cv2.VideoCapture(video_path)
     poses, tried, circles, previous = {}, 0, 0, None
+    rejected = Counter()
     for index in wanted:
         cap.set(cv2.CAP_PROP_POS_FRAMES, index)
         ok, frame = cap.read()
@@ -594,17 +600,36 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
             arc = arc[np.linspace(0, len(arc) - 1, 300).astype(int)]
         (ex, ey), _, _ = circle["ellipse"]
         half = halfway_line(circle["segments"], (ex, ey))
-        half_px = (None if half is None else
-                   np.array([[half[0], half[1]], [half[2], half[3]]],
-                            dtype=float))
+        if half is None:
+            # The centre circle is the only circle on the pitch with a line
+            # through its middle. The penalty arc -- same 9.15 m radius, and
+            # the usual impostor -- has none. Without the halfway line this
+            # is not identifiably the centre circle, so it is not used.
+            #
+            # The first version fitted every circle the detector returned.
+            # On stoke_7001 that was 80, of which 71 fitted at a median
+            # 26 px against an 8 px gate, identically from a warm or a cold
+            # start: bad fits of things that were not the centre circle. The
+            # validation run that scored 1.11 there had only ever refitted
+            # frames the old anchor accepted, and that acceptance was doing
+            # this job.
+            rejected["no halfway line"] += 1
+            previous = None
+            continue
+        half_px = np.array([[half[0], half[1]], [half[2], half[3]]],
+                           dtype=float)
 
         seed_rot, seed_f = ((previous[0], previous[1]) if previous
                             else (None, focal_seed))
         rot, focal, rms = fit(arc, half_px, eye, seed_f, cx, cy,
                               seed_rot=seed_rot)
-        if rms > MAX_CIRCLE_RMS_PX or not (
-                FOCAL_RANGE[0] * focal_seed <= focal
+        if rms > MAX_CIRCLE_RMS_PX:
+            rejected["circle fit"] += 1
+            previous = None
+            continue
+        if not (FOCAL_RANGE[0] * focal_seed <= focal
                 <= FOCAL_RANGE[1] * focal_seed):
+            rejected["focal"] += 1
             previous = None
             continue
         previous = (rot, focal)
@@ -614,10 +639,22 @@ def build_midfield(video_path: str, frames_wanted, camera_position,
                                 reprojection_px=rms, n_corners=0)
     cap.release()
 
-    poses = smooth(poses, grid)
+    fitted = len(poses)
+    # A lone circle pose is kept. A goal pose comes from four noisy box
+    # numbers, so agreement with its neighbours is the only corroboration
+    # it has, and the goal path demands three. A circle pose comes from an
+    # over-determined fit to hundreds of arc pixels plus the halfway line,
+    # and carries its own measured residual, which the 8 px gate has
+    # already judged. Demanding neighbours as well threw away every clean
+    # circle on stoke_7001: nine passed the fit, a median 32 frames apart,
+    # and the three-in-sixteen-frames rule removed all nine. Neighbours are
+    # still averaged and still checked for agreement wherever they exist.
+    poses = smooth(poses, grid, min_neighbours=1)
     if verbose:
+        detail = ", ".join(f"{k} {v}" for k, v in rejected.items())
         print(f"  [midfield] circle on {circles} of {tried} frames the goal "
-              f"does not cover, {len(poses)} kept a pose")
+              f"does not cover; rejected: {detail or 'none'}; "
+              f"{fitted} fitted, {len(poses)} kept after agreement")
     return GoalPlacer(poses, grid,
                       far_limit_m=pm.PITCH_LENGTH_M + OFF_PITCH_MARGIN_M)
 
