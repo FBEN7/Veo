@@ -168,7 +168,10 @@ python score_hand_labels.py labels.txt --out output_clip \
 
 Les poids du détecteur de cages, les annotations et les vidéos viennent de
 SoccerNet, sous accord non commercial : ils ne sont pas dans ce dépôt, et
-rien qui en dérive ne doit y entrer.
+rien qui en dérive ne doit y entrer. Les scripts les cherchent dans
+`VEO_DATA_DIR` (par défaut `./data`) et gardent leurs résultats
+intermédiaires dans `VEO_CACHE_DIR` (par défaut `./.cache`), deux dossiers
+ignorés par git.
 
 Le reste du dépôt suit la même règle : `VEO_FOOTAGE.md` et
 `EVENT_ACCURACY.md` contiennent aussi les corrections d'erreurs commises en
