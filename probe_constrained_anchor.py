@@ -36,6 +36,46 @@ Stated before running: the refit is right if its predicted-to-observed
 ratio sits near a constant close to 1 with a tight spread, and the old
 anchor's does not.
 
+## What it found: the refit fixes the tilt
+
+    clip          pose         observed / predicted    spread     n
+    reading_0737  old anchor   19.97                   0.90     341
+                  refit         1.04  (IQR 0.96-1.09)  0.13     387
+    stoke_7001    old anchor   28.30                   0.82     213
+                  refit         1.11  (IQR 1.02-1.20)  0.16     280
+
+The refit predicts how tall a player should appear to within 4 and 11
+per cent at the median, over hundreds of players it never saw. A ratio a
+little above one is expected rather than suspicious: detector boxes carry
+some margin and footballers average nearer 1.80 m than the 1.75 assumed.
+
+The spread is the part that tests the tilt. A pose tilted wrongly gets near
+players and far players wrong by different amounts, so the ratio wanders
+with depth. The refit's holds within about 15 per cent from player to
+player; the old anchor's wanders over a factor of two.
+
+The refitted focal lands at 2657 and 1943 px against 3103 and 1677 from
+the corner bundle, and inside the 2331-3295 that `fit_pitch_anchor`'s
+vanishing points gave -- three routes to one number, in the same range. The
+circle fit's median error is about 4 px, reasonable for painted lines a
+few pixels wide with players standing on them.
+
+What made the difference is removing a freedom rather than adding
+information. The circle was always there; asked to fix the tilt on its own
+it could not, and with the camera's position supplied by the goal corners
+it no longer has to.
+
+One consequence reaches beyond midfield. These poses are expressed in the
+calibrated goal's own frame -- the circle is placed 52.5 m out from that
+goal line -- so they share a frame with the goal placer by construction.
+The half-turn ambiguity that closed off combining the two landmarks
+yesterday does not arise.
+
+Limits: validated on two clips; it needs the centre circle in frame, so it
+covers circle frames rather than all of midfield; it needs one round of
+corner labels per clip for the camera position; and it assumes a 105 m
+pitch, which EFL grounds depart from by up to about 5 m.
+
     python probe_constrained_anchor.py --corners goal_corners.json
 """
 
@@ -461,7 +501,7 @@ def main():
         if focals:
             print(f"    refit focal   median {np.median(focals):.0f} px "
                   f"(corner bundle {got['focal0']:.0f}), circle fit rms "
-                  f"{np.median(rms):.2f} m")
+                  f"{np.median(rms):.2f} px")
         print(f"    old anchor    {describe(got['old'])}")
         print(f"    refit         {describe(got['new'])}\n")
     print("  'spread' is the interquartile range over the median: how much "

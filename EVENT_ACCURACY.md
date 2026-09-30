@@ -620,6 +620,50 @@ a line through.
 
 Geometry is no longer what is failing. Better ball tracking is.
 
+### The anchor, refitted: midfield geometry that passes an independent check
+
+The anchor's tilt came from a horizon measured on penalty-area frames and
+carried to midfield by the camera's displacement -- a step
+`fit_pitch_anchor.py` itself says "treats a turn as a slide". Carrying a pose
+directly also failed (`probe_rotation_carry.py`: 6 of 9 gaps broken by cuts,
+6.5-20.6 m off where it crossed, against a 1.8 m floor).
+
+`probe_constrained_anchor.py` drops the carried horizon. The goal corners fix
+the camera's position per clip; a midfield frame then has four unknowns --
+rotation and focal -- which the centre circle's observed arc and the halfway
+line over-determine. Player sizes never enter the fit, so they test it:
+
+| clip | pose | observed ÷ predicted player height | spread | n |
+|---|---|---|---|---|
+| reading_0737 | old anchor | 19.97 | 0.90 | 341 |
+| reading_0737 | **refit** | **1.04** (IQR 0.96–1.09) | **0.13** | 387 |
+| stoke_7001 | old anchor | 28.30 | 0.82 | 213 |
+| stoke_7001 | **refit** | **1.11** (IQR 1.02–1.20) | **0.16** | 280 |
+
+Within 4 and 11 per cent at the median, over hundreds of players the fit
+never saw. The spread tests the tilt specifically: a wrongly tilted pose gets
+near and far players wrong by different amounts, so the ratio wanders with
+depth, and the refit's does not. The refitted focal (2657, 1943 px) sits with
+the corner bundle's (3103, 1677) and the anchor's own vanishing points
+(2331-3295).
+
+**No manual midfield labelling is needed.** The fix was to remove a freedom,
+not to add information.
+
+**The poses share the goal's frame by construction** -- the circle is placed
+52.5 m out from the calibrated goal line -- so the half-turn ambiguity that
+closed off combining goal and midfield geometry does not arise for them.
+
+Limits: two clips; circle frames only, not all of midfield; one round of
+corner labels per clip; a 105 m pitch assumed, which EFL grounds depart from
+by up to about 5 m.
+
+Two bugs were caught on the way, both by making the synthetic check harder
+rather than by reading code: a ground-space residual that let the focal
+collapse to infinity and score a perfect 0.00 m, and a homography
+decomposition that kept whichever of H and -H came out, landing on real
+anchors with the camera looking away from the pitch.
+
 ### Out of play: why it cannot be fixed on this footage
 
 Precision is 2 of 11 and recall 2 of 3, and the attempt to improve it ended
