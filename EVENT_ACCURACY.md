@@ -708,7 +708,7 @@ position held (`goal_pose.pose_at`), and both placers use it.
 | reading_2519 | 21 / 30 | (-63.0, 19.1, 52.4) | 0.5 m | 0.2 m | (-57.8, 17.7, 48.8) |
 | stoke_4207 | 11 / 11 | (76.2, 19.8, 52.7) | 1.3 m | 0.3 m | (53.5, 14.2, 36.0) |
 | stoke_7001 | 21 / 30 | (-70.8, 20.3, 52.2) | 1.6 m | 0.7 m | (-36.2, 11.4, 27.5) |
-| stoke_1302 | 2 -- refused | kept | | | (33.1, 8.5, 20.2) |
+| stoke_1302 | 2 -- refused; height borrowed, below | (80.0, 20.1, 53.2) | | | (33.1, 8.5, 20.2) |
 
 Checks nothing in the fit forced:
 
@@ -735,11 +735,53 @@ accepted. Out of that plane the lines miss: 7.8 m for a camera 8 m lower,
 It also inherits a 105 m pitch, which puts the centre spot at 52.5 m; on a
 100-102 m pitch the camera moves 1-2.5 m along the pitch.
 
+#### stoke_1302: a height borrowed from the same match
+
+stoke_1302 shows the centre circle with its halfway line on 2 frames, too
+few to vote. Its match (Stoke v Huddersfield, from the label file's
+header) has two located clips, and a gantry camera's height does not depend
+on which goal a clip calibrated from. So its camera goes on its own corner
+line at their median height, 20.1 m: (80.0, 20.1, 53.2), against
+(33.1, 8.5, 20.2) from the corners alone.
+
+That is checked, not trusted: the result must land within 5 m of the
+halfway line, which nothing in the construction forces. It lands 0.7 m
+from it. Two other ways of choosing the point on the same line agree:
+on the halfway line (79.0, 19.8, 52.5), and at stoke_4207's distance out
+(76.2, 19.1, 50.5).
+
+#### Painted lines, which no fit has seen
+
+The strongest check, because the lines are laws-of-the-game distances and
+nothing here fits to them. Clicked on the shot frames, placed through the
+corner pose with each camera:
+
+| clip | landmark | truth | corners alone | located |
+|---|---|---|---|---|
+| stoke_1302 | six-yard box, far corner | (5.5, 24.8) | 1.0 m off | **0.6 m** |
+| stoke_1302 | six-yard box, near corner | (5.5, 43.2) | 2.0 m off | **0.0 m** |
+| reading_1155 | penalty-area line, 3 points | x = 16.5 | x = 13.0, 13.9, 17.5 | **x = 16.8, 16.8, 16.8** |
+| reading_1155 | penalty-area corner | y = 13.8 | y = 18.3 | **y = 13.9** |
+
+The corners-alone camera bends the penalty line through 4.5 m; the located
+one keeps it straight and 0.3 m out. Clicks are by eye on a 1280 px frame
+and good to a few pixels.
+
+stoke_1302's ball placement **falls**, 10% to 7%, and the loss is not the
+camera's. 44 of the 50 lost points are one stretch, frames 619-672, where
+the ball is in the air at head height and the goal is cut off at the frame
+edge, so its detected box is truncated. A pose from a truncated box is
+wrong whichever camera it is held at -- on that stretch the six-yard corner
+lands 11 m off with the old camera and 22 m with the new -- and the new
+camera is the one that puts the ball off the pitch and refuses it.
+Truncated goal boxes are a separate flaw in `pose_from_box`, not addressed
+here.
+
 #### What it changes
 
 | clip | ball placed, before | after | midfield poses, before | after |
 |---|---|---|---|---|
-| stoke_1302 | 10% | 10% | 0 | 0 (camera refused) |
+| stoke_1302 | 10% | 7% (see above) | 0 | 2 (height borrowed) |
 | stoke_4207 | 43% | 45% | 0 | 11 |
 | stoke_7001 | 3% | **16%** | 0 | 53 |
 | reading_1155 | 12% | **21%** | 0 | 34 |
@@ -747,7 +789,8 @@ It also inherits a 105 m pitch, which puts the centre spot at 52.5 m; on a
 | reading_0737 | - | 26% | - | 85 |
 
 xG at the six labelled shot moments barely moves -- distances shift by
-0.1 to 1.6 m and the total goes from 0.49 to 0.46. That is expected: near
+0.1 to 1.6 m and the total goes from 0.49 to 0.47 (stoke_1302 16.0 to
+15.4 m, 0.092 to 0.098). That is expected: near
 the goal the goal's own image pins the geometry, and the camera's position
 matters most far from it.
 
