@@ -277,8 +277,6 @@ def selftest(verbose: bool = True) -> bool:
     Also that a circle seen from somewhere off the corners' line is refused
     rather than averaged into a position.
     """
-    import cv2
-
     from .goal_pose import GOAL_HEIGHT_M, GOAL_WIDTH_M, MODEL, pose_at
     from .midfield_pose import CENTRE, CIRCLE_RADIUS_M, camera, look_at
 

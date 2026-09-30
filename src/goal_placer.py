@@ -57,7 +57,6 @@ from __future__ import annotations
 import numpy as np
 
 from . import pitch_model as pm
-from . import shot_geometry as sg
 from .goal_pose import GOAL_WIDTH_M, ground_point, pose_from_box
 
 # The detector's measured operating point, chosen against its 124 goal-less

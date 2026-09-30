@@ -281,8 +281,9 @@ def selftest(verbose: bool = True) -> bool:
     a pixel of detector noise.
     """
     from .goal_pose import GoalPose
-    from .midfield_pose import camera, look_at
     import cv2
+
+    from .midfield_pose import look_at
 
     rng = np.random.default_rng(11)
     eye = np.array([-64.0, 18.8, 52.3])

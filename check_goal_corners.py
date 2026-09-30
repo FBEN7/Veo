@@ -41,8 +41,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from goal_pose import (GOAL_HEIGHT_M, GOAL_WIDTH_M,  # noqa: E402
-                       bundle, shot_geometry, solve)
+from goal_pose import bundle, shot_geometry, solve  # noqa: E402
 from ground_plane import GroundPlane  # noqa: E402
 from propagate_goal_labels import DIRS  # noqa: E402
 
