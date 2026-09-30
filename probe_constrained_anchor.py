@@ -67,7 +67,12 @@ CENTRE = np.array([GOAL_WIDTH_M / 2.0, 0.0, pm.PITCH_LENGTH_M / 2.0])
 # How heavily a halfway-line point counts against an arc pixel. There are
 # hundreds of arc pixels and two line endpoints, so without this the line
 # would be ignored.
-HALFWAY_WEIGHT = 25.0
+HALFWAY_WEIGHT = 5.0
+
+# What a broadcast lens can be, in pixels at 1280 wide: about 90 degrees
+# across at the short end and 6 at the long. Outside this the fit has run
+# somewhere no camera goes.
+MIN_FOCAL_PX, MAX_FOCAL_PX = 600.0, 12000.0
 
 
 def camera(focal, cx, cy):
@@ -86,8 +91,42 @@ def to_ground(pixels, rot, eye, focal, cx, cy):
 
 
 def fit(arc_px, halfway_px, eye, focal0, cx, cy):
-    """Rotation and focal, with the camera's position held fixed."""
+    """Rotation and focal, with the camera's position held fixed.
+
+    Residuals are measured in the image, and the first version measuring
+    them on the ground is worth recording, because it failed in a way that
+    looked like success. It asked each arc pixel to back-project exactly
+    9.15 m from the centre spot. Let the focal run towards infinity and
+    every ray becomes parallel, every arc pixel lands on the same ground
+    point, and if the optimiser puts that point 9.15 m out every residual
+    is zero. On reading_0737 it did exactly that: a focal of 1.4e10 px and a
+    fit error of 0.00 m. The synthetic check had started beside the true
+    answer and never went near the collapse.
+
+    In the image the collapse is not available. The whole circle is
+    projected through the candidate camera and each observed arc pixel is
+    scored by its distance to that projected curve; a camera that squashes
+    the circle to a point is far from most of them. The focal is also
+    bounded to what a broadcast lens can be. Only the observed arc is
+    scored, never the other way round, because players hide part of the
+    circle and the hidden part must not count against the fit.
+    """
     from scipy.optimize import least_squares
+
+    theta = np.linspace(0.0, 2 * np.pi, 720, endpoint=False)
+    circle = np.column_stack([CENTRE[0] + CIRCLE_RADIUS_M * np.cos(theta),
+                              np.zeros_like(theta),
+                              CENTRE[2] + CIRCLE_RADIUS_M * np.sin(theta)])
+    half = np.array([[CENTRE[0] - 40.0, 0.0, CENTRE[2]],
+                     [CENTRE[0] + 40.0, 0.0, CENTRE[2]]])
+
+    def project(points, rot, focal):
+        cam = rot @ (points - eye).T
+        front = cam[2] > 1e-6
+        img = camera(focal, cx, cy) @ cam
+        with np.errstate(divide="ignore", invalid="ignore"):
+            uv = (img[:2] / img[2]).T
+        return uv, front
 
     forward = CENTRE - eye
     forward /= np.linalg.norm(forward)
@@ -95,27 +134,51 @@ def fit(arc_px, halfway_px, eye, focal0, cx, cy):
     right /= np.linalg.norm(right)
     start, _ = cv2.Rodrigues(np.vstack([right, np.cross(forward, right),
                                         forward]))
+    far = 400.0                     # a miss worth a lot, but finite
 
     def residuals(q):
         rot, _ = cv2.Rodrigues(q[:3])
         focal = float(np.exp(q[3]))
-        out = []
-        hits = to_ground(arc_px, rot, eye, focal, cx, cy)
-        radial = np.hypot(hits[:, 0] - CENTRE[0], hits[:, 2] - CENTRE[2])
-        out.append(np.nan_to_num(radial - CIRCLE_RADIUS_M, nan=50.0))
+        uv, front = project(circle, rot, focal)
+        # Distance to the projected curve itself, not to its nearest
+        # sample: 720 samples leave about a pixel between neighbours, which
+        # the first version measured as fit error -- a 0.99 px floor under a
+        # fit that was otherwise exact. Segments join consecutive samples
+        # only where both are in front of the camera, so a circle partly
+        # behind the lens is not closed with a chord across the gap.
+        nxt = np.roll(np.arange(len(uv)), -1)
+        keep = front & front[nxt]
+        if keep.sum() < 20:
+            arc = np.full(len(arc_px), far)
+        else:
+            a, ab = uv[keep], uv[nxt][keep] - uv[keep]
+            ap = arc_px[:, None, :] - a[None, :, :]
+            along = np.clip((ap * ab[None]).sum(-1)
+                            / np.maximum((ab ** 2).sum(-1), 1e-12)[None],
+                            0.0, 1.0)
+            nearest = a[None] + along[..., None] * ab[None]
+            arc = np.sqrt(((arc_px[:, None, :] - nearest) ** 2)
+                          .sum(-1)).min(axis=1)
+        out = [arc]
         if halfway_px is not None:
-            line = to_ground(halfway_px, rot, eye, focal, cx, cy)
-            out.append(HALFWAY_WEIGHT * np.nan_to_num(
-                line[:, 2] - CENTRE[2], nan=50.0))
+            huv, hfront = project(half, rot, focal)
+            if hfront.all():
+                a, b = huv
+                normal = np.array([b[1] - a[1], a[0] - b[0]])
+                normal /= max(np.linalg.norm(normal), 1e-9)
+                out.append(HALFWAY_WEIGHT * ((halfway_px - a) @ normal))
+            else:
+                out.append(np.full(len(halfway_px), far))
         return np.concatenate(out)
 
-    got = least_squares(residuals,
-                        np.concatenate([start.ravel(), [np.log(focal0)]]),
-                        method="trf", max_nfev=400)
+    got = least_squares(
+        residuals, np.concatenate([start.ravel(), [np.log(focal0)]]),
+        bounds=([-np.inf] * 3 + [np.log(MIN_FOCAL_PX)],
+                [np.inf] * 3 + [np.log(MAX_FOCAL_PX)]),
+        method="trf", max_nfev=600)
     rot, _ = cv2.Rodrigues(got.x[:3])
-    radial_rms = float(np.sqrt(np.mean(
-        got.fun[:len(arc_px)] ** 2)))
-    return rot, float(np.exp(got.x[3])), radial_rms
+    arc_rms = float(np.sqrt(np.mean(got.fun[:len(arc_px)] ** 2)))
+    return rot, float(np.exp(got.x[3])), arc_rms
 
 
 def predicted_heights(feet_px, rot, eye, focal, cx, cy, up):
@@ -140,28 +203,38 @@ def predicted_heights(feet_px, rot, eye, focal, cx, cy, up):
 def old_anchor_pose(h_img_to_plane, focal, cx, cy):
     """Full pose from an anchor homography, in the anchor's pitch frame.
 
-    The same decomposition `probe_anchor_height` checks against a known
-    camera, carried one step further to the rotation, so the old anchor can
-    be put through the identical player-size test.
+    Returns (rotation, camera position, up). H and -H are the same
+    homography and give two poses, one with the pitch in front of the
+    camera and one with it behind. The first version never chose between
+    them: it kept whichever came out, flipped the sign if the camera landed
+    below the pitch, and on real anchors produced a camera 59 m up whose
+    rays pointed *away* from the pitch -- so every player back-projected to
+    nothing and the old anchor reported "nothing measurable". The
+    synthetic check had passed, because its camera happened to fall on the
+    right branch both ways.
+
+    The physical choice is the one that puts visible pitch in front of the
+    camera, so that is what decides it. Up is then whichever side of the
+    plane the camera is on -- which way the anchor's own axes point is its
+    business, and the magnitude of the height does not change.
     """
-    h = np.linalg.inv(np.asarray(h_img_to_plane, dtype=float))
+    h_img = np.asarray(h_img_to_plane, dtype=float)
+    h = np.linalg.inv(h_img)
     m = np.linalg.inv(camera(focal, cx, cy)) @ h
     scale = 2.0 / (np.linalg.norm(m[:, 0]) + np.linalg.norm(m[:, 1]))
     r1, r2, t = m[:, 0] * scale, m[:, 1] * scale, m[:, 2] * scale
-    rot = np.column_stack([r1, r2, np.cross(r1, r2)])
-    u, _, vt = np.linalg.svd(rot)
+    u, _, vt = np.linalg.svd(np.column_stack([r1, r2, np.cross(r1, r2)]))
     rot = u @ vt
-    if np.linalg.det(rot) < 0:
-        rot = u @ np.diag([1.0, 1.0, -1.0]) @ vt
+
+    # A point the camera certainly sees: the pitch under the image centre.
+    seen = h_img @ np.array([cx, cy, 1.0])
+    seen = np.array([seen[0] / seen[2], seen[1] / seen[2], 0.0])
+    if (rot @ seen + t)[2] < 0:
+        rot = rot @ np.diag([-1.0, -1.0, 1.0])
         t = -t
     eye = -rot.T @ t
-    if eye[2] < 0:
-        # H and -H are the same homography. Negating it negates r1, r2 and
-        # t while r3 = r1 x r2 survives, which works out to exactly this:
-        # flip the first two rotation columns, and the camera's height.
-        rot = rot @ np.diag([-1.0, -1.0, 1.0])
-        eye = np.array([eye[0], eye[1], -eye[2]])
-    return rot, eye
+    up = np.array([0.0, 0.0, 1.0 if eye[2] > 0 else -1.0])
+    return rot, eye, up
 
 
 def to_ground_plane_z(pixels, rot, eye, focal, cx, cy):
@@ -175,7 +248,7 @@ def to_ground_plane_z(pixels, rot, eye, focal, cx, cy):
     return hits.T
 
 
-def old_predicted_heights(feet_px, rot, eye, focal, cx, cy):
+def old_predicted_heights(feet_px, rot, eye, focal, cx, cy, up):
     ground = to_ground_plane_z(feet_px, rot, eye, focal, cx, cy)
     k = camera(focal, cx, cy)
     out = []
@@ -183,7 +256,7 @@ def old_predicted_heights(feet_px, rot, eye, focal, cx, cy):
         if not np.all(np.isfinite(g)):
             out.append(np.nan)
             continue
-        head = g + np.array([0.0, 0.0, PLAYER_HEIGHT_M])
+        head = g + PLAYER_HEIGHT_M * up
         pg = k @ (rot @ (g - eye))
         ph = k @ (rot @ (head - eye))
         if pg[2] <= 0 or ph[2] <= 0:
@@ -247,9 +320,9 @@ def measure(clip: str, corners: Path, frames: int):
 
         new_pred = predicted_heights(feet, rot, eye, focal, cx, cy,
                                      np.array([0.0, 1.0, 0.0]))
-        o_rot, o_eye = old_anchor_pose(homography, old_focal, cx, cy)
+        o_rot, o_eye, o_up = old_anchor_pose(homography, old_focal, cx, cy)
         old_pred = old_predicted_heights(feet, o_rot, o_eye, old_focal,
-                                         cx, cy)
+                                         cx, cy, o_up)
         for p, s in zip(new_pred, seen):
             if np.isfinite(p) and p > 1:
                 new_ratio.append(s / p)
@@ -270,15 +343,23 @@ def _look_at(eye, target, up):
 
 
 def selftest(verbose: bool = True) -> bool:
-    """A known camera, a projected circle and player, recovered exactly."""
+    """A known camera, a projected circle and player, recovered exactly.
+
+    Both halves are set up to fail the way the first version did on real
+    footage, since passing only the easy case is how both bugs got past
+    the first draft: the refit starts far from the answer, and the old
+    anchor is given pitch axes that put its camera on the negative side.
+    """
     cx, cy, true_focal = 640.0, 360.0, 2600.0
     eye = np.array([-20.0, 15.6, 18.0])       # goal frame, 15.6 m up
-    rot = _look_at(eye, CENTRE, np.array([0.0, 1.0, 0.0]))
+    # Aimed 8 m off the centre spot, so the seed -- which looks straight at
+    # the spot -- starts several degrees wrong.
+    rot = _look_at(eye, CENTRE + np.array([6.0, 0.0, 5.0]),
+                   np.array([0.0, 1.0, 0.0]))
     k = camera(true_focal, cx, cy)
 
     def project(points):
-        cam = (rot @ (points - eye).T)
-        img = k @ cam
+        img = k @ (rot @ (points - eye).T)
         return (img[:2] / img[2]).T
 
     theta = np.linspace(0.3, 2.6, 120)           # a partial arc, as seen
@@ -290,18 +371,16 @@ def selftest(verbose: bool = True) -> bool:
     arc_px, half_px = project(arc_world), project(half_world)
 
     ok = True
-    got_rot, got_f, rms = fit(arc_px, half_px, eye, 1900.0, cx, cy)
+    got_rot, got_f, rms = fit(arc_px, half_px, eye, 1200.0, cx, cy)
     angle = float(np.degrees(np.arccos(np.clip(
         (np.trace(got_rot @ rot.T) - 1) / 2, -1, 1))))
-    good = angle < 0.05 and abs(got_f - true_focal) < 5 and rms < 0.05
+    good = angle < 0.05 and abs(got_f - true_focal) < 5 and rms < 0.5
     ok &= good
     if verbose:
-        print(f"  refit from a partial arc, focal seeded at 1900: rotation "
+        print(f"  refit, aimed 8 m off and focal seeded at 1200: rotation "
               f"err {angle:.3f} deg, focal {got_f:.0f} (true 2600), "
-              f"rms {rms:.3f} m   {'ok' if good else 'WRONG'}")
+              f"rms {rms:.2f} px   {'ok' if good else 'WRONG'}")
 
-    # A player standing 6 m from the centre spot: predicted box height must
-    # equal the projected one.
     foot = CENTRE + np.array([6.0, 0.0, -4.0])
     head = foot + np.array([0.0, PLAYER_HEIGHT_M, 0.0])
     true_h = abs(project(head[None])[0, 1] - project(foot[None])[0, 1])
@@ -313,31 +392,35 @@ def selftest(verbose: bool = True) -> bool:
         print(f"  player height, goal frame: predicted {pred:.2f} px, "
               f"projected {true_h:.2f}   {'ok' if good else 'WRONG'}")
 
-    # The old anchor's path: a camera in the pitch frame (z up), its
-    # image-to-plane homography, decomposed and asked the same question.
-    p_eye = np.array([40.0, -20.0, 15.6])
-    p_rot = _look_at(p_eye, np.array([52.5, 34.0, 0.0]),
-                     np.array([0.0, 0.0, 1.0]))
-    p_t = -p_rot @ p_eye
-    plane_to_img = k @ np.column_stack([p_rot[:, 0], p_rot[:, 1], p_t])
-    for sign in (1.0, -1.0):                 # H and -H must agree
-        d_rot, d_eye = old_anchor_pose(sign * np.linalg.inv(plane_to_img),
-                                       true_focal, cx, cy)
-        g = np.array([50.0, 30.0, 0.0])
-        top = g + np.array([0.0, 0.0, PLAYER_HEIGHT_M])
+    # The old anchor's path, on both sides of its own plane: the real
+    # anchors put the camera on the negative side of theirs.
+    for height in (15.6, -15.6):
+        p_eye = np.array([40.0, -20.0, height])
+        up = np.array([0.0, 0.0, 1.0 if height > 0 else -1.0])
+        p_rot = _look_at(p_eye, np.array([52.5, 34.0, 0.0]), up)
+        p_t = -p_rot @ p_eye
+        plane_to_img = k @ np.column_stack([p_rot[:, 0], p_rot[:, 1], p_t])
+
         def proj(x):
             v = k @ (p_rot @ (x - p_eye))
             return v[:2] / v[2]
-        true_h = abs(proj(top)[1] - proj(g)[1])
-        pred = old_predicted_heights(proj(g)[None], d_rot, d_eye,
-                                     true_focal, cx, cy)[0]
-        good = (abs(pred - true_h) < 0.01
-                and abs(d_eye[2] - 15.6) < 0.01)
-        ok &= good
-        if verbose:
-            print(f"  old-anchor path, H sign {sign:+.0f}: camera "
-                  f"{d_eye[2]:.2f} m up, player {pred:.2f} px vs "
-                  f"{true_h:.2f}   {'ok' if good else 'WRONG'}")
+
+        g = np.array([50.0, 30.0, 0.0])
+        true_h = abs(proj(g + PLAYER_HEIGHT_M * up)[1] - proj(g)[1])
+        for sign in (1.0, -1.0):               # H and -H must agree
+            d_rot, d_eye, d_up = old_anchor_pose(
+                sign * np.linalg.inv(plane_to_img), true_focal, cx, cy)
+            pred = old_predicted_heights(proj(g)[None], d_rot, d_eye,
+                                         true_focal, cx, cy, d_up)[0]
+            good = (abs(pred - true_h) < 0.01
+                    and abs(abs(d_eye[2]) - 15.6) < 0.01)
+            ok &= good
+            if verbose:
+                print(f"  old anchor, camera on the "
+                      f"{'+' if height > 0 else '-'} side, H sign "
+                      f"{sign:+.0f}: |height| {abs(d_eye[2]):.2f} m, player "
+                      f"{pred:.2f} px vs {true_h:.2f}   "
+                      f"{'ok' if good else 'WRONG'}")
     return ok
 
 
