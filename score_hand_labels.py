@@ -199,6 +199,19 @@ def goal_maps(out_dir, info, ball, args):
     goal = build(info["path"], ball.frame.tolist(), eye, seed,
                  info["width"], info["height"], YOLO(args.goal_weights),
                  verbose=True)
+    if getattr(args, "midfield", False):
+        # The centre circle, refitted with the camera held where the goal
+        # corners put it. Same frame as the goal, so no orientation check.
+        from fit_pitch_anchor import halfway_line
+        from probe_centre_circle import find_circle
+        from src.goal_placer import LandmarkPlacer, build_midfield
+
+        midfield = build_midfield(info["path"], ball.frame.tolist(), eye,
+                                  seed, info["width"], info["height"],
+                                  find_circle, halfway_line,
+                                  skip=goal.poses, verbose=True)
+        return LandmarkPlacer(goal, midfield)
+
     if not args.anchor_too:
         return goal
 
@@ -235,6 +248,10 @@ def main():
                          "circle. The weights are trained on footage under "
                          "a non-commercial agreement and are therefore not "
                          "in this repository; supply your own.")
+    ap.add_argument("--midfield", action="store_true",
+                    help="also place the ball at midfield, from the centre "
+                         "circle refitted with the camera held where the "
+                         "goal corners put it")
     ap.add_argument("--anchor-too", action="store_true",
                     help="also use the centre-circle anchor where the goal "
                          "is out of frame, if the two can be shown to point "
@@ -294,7 +311,15 @@ def main():
     restarts = set_pieces.find_restarts(ball, maps, info["fps"], outs)
 
     print(f"\n  ball placed on the pitch: {placed} of {len(ball)} "
-          f"({placed / max(len(ball), 1):.0%})\n")
+          f"({placed / max(len(ball), 1):.0%})")
+    if hasattr(maps, "used"):
+        # Counted across every detector that asked, so these are placement
+        # requests rather than distinct ball positions; the split is what
+        # matters.
+        total = max(sum(maps.used.values()), 1)
+        print("  placed by: " + ", ".join(
+            f"{k} {v / total:.0%}" for k, v in maps.used.items()))
+    print()
     print(f"  {'event':>12s} {'labelled':>9s} {'found':>7s} {'matched':>8s} "
           f"{'recall':>8s} {'precision':>10s} {'delay':>10s}")
 

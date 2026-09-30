@@ -92,32 +92,11 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from src import pitch_model as pm  # noqa: E402
-from src.goal_pose import GOAL_WIDTH_M  # noqa: E402
+from src import pitch_model as pm  # noqa: E402,F401
+from src.midfield_pose import (CENTRE, CIRCLE_RADIUS_M,  # noqa: E402
+                               camera, fit)
 
-CIRCLE_RADIUS_M = 9.15
 PLAYER_HEIGHT_M = 1.75
-
-# The centre spot in the goal frame: X across the goal line from the left
-# post, Y up, Z out onto the pitch. Half a standard pitch from the goal line.
-# EFL pitches run 100-105 m, so this is uncertain by about 2.5 m -- stated
-# rather than hidden, and small against the 40-odd metres being corrected.
-CENTRE = np.array([GOAL_WIDTH_M / 2.0, 0.0, pm.PITCH_LENGTH_M / 2.0])
-
-# How heavily a halfway-line point counts against an arc pixel. There are
-# hundreds of arc pixels and two line endpoints, so without this the line
-# would be ignored.
-HALFWAY_WEIGHT = 5.0
-
-# What a broadcast lens can be, in pixels at 1280 wide: about 90 degrees
-# across at the short end and 6 at the long. Outside this the fit has run
-# somewhere no camera goes.
-MIN_FOCAL_PX, MAX_FOCAL_PX = 600.0, 12000.0
-
-
-def camera(focal, cx, cy):
-    return np.array([[focal, 0.0, cx], [0.0, focal, cy], [0.0, 0.0, 1.0]])
-
 
 def to_ground(pixels, rot, eye, focal, cx, cy):
     """Image pixels to the plane Y = 0 of the goal frame, vectorised."""
@@ -128,97 +107,6 @@ def to_ground(pixels, rot, eye, focal, cx, cy):
     hits = eye[:, None] + t * rays
     hits[:, ~(t > 0)] = np.nan
     return hits.T
-
-
-def fit(arc_px, halfway_px, eye, focal0, cx, cy):
-    """Rotation and focal, with the camera's position held fixed.
-
-    Residuals are measured in the image, and the first version measuring
-    them on the ground is worth recording, because it failed in a way that
-    looked like success. It asked each arc pixel to back-project exactly
-    9.15 m from the centre spot. Let the focal run towards infinity and
-    every ray becomes parallel, every arc pixel lands on the same ground
-    point, and if the optimiser puts that point 9.15 m out every residual
-    is zero. On reading_0737 it did exactly that: a focal of 1.4e10 px and a
-    fit error of 0.00 m. The synthetic check had started beside the true
-    answer and never went near the collapse.
-
-    In the image the collapse is not available. The whole circle is
-    projected through the candidate camera and each observed arc pixel is
-    scored by its distance to that projected curve; a camera that squashes
-    the circle to a point is far from most of them. The focal is also
-    bounded to what a broadcast lens can be. Only the observed arc is
-    scored, never the other way round, because players hide part of the
-    circle and the hidden part must not count against the fit.
-    """
-    from scipy.optimize import least_squares
-
-    theta = np.linspace(0.0, 2 * np.pi, 720, endpoint=False)
-    circle = np.column_stack([CENTRE[0] + CIRCLE_RADIUS_M * np.cos(theta),
-                              np.zeros_like(theta),
-                              CENTRE[2] + CIRCLE_RADIUS_M * np.sin(theta)])
-    half = np.array([[CENTRE[0] - 40.0, 0.0, CENTRE[2]],
-                     [CENTRE[0] + 40.0, 0.0, CENTRE[2]]])
-
-    def project(points, rot, focal):
-        cam = rot @ (points - eye).T
-        front = cam[2] > 1e-6
-        img = camera(focal, cx, cy) @ cam
-        with np.errstate(divide="ignore", invalid="ignore"):
-            uv = (img[:2] / img[2]).T
-        return uv, front
-
-    forward = CENTRE - eye
-    forward /= np.linalg.norm(forward)
-    right = np.cross(forward, np.array([0.0, 1.0, 0.0]))
-    right /= np.linalg.norm(right)
-    start, _ = cv2.Rodrigues(np.vstack([right, np.cross(forward, right),
-                                        forward]))
-    far = 400.0                     # a miss worth a lot, but finite
-
-    def residuals(q):
-        rot, _ = cv2.Rodrigues(q[:3])
-        focal = float(np.exp(q[3]))
-        uv, front = project(circle, rot, focal)
-        # Distance to the projected curve itself, not to its nearest
-        # sample: 720 samples leave about a pixel between neighbours, which
-        # the first version measured as fit error -- a 0.99 px floor under a
-        # fit that was otherwise exact. Segments join consecutive samples
-        # only where both are in front of the camera, so a circle partly
-        # behind the lens is not closed with a chord across the gap.
-        nxt = np.roll(np.arange(len(uv)), -1)
-        keep = front & front[nxt]
-        if keep.sum() < 20:
-            arc = np.full(len(arc_px), far)
-        else:
-            a, ab = uv[keep], uv[nxt][keep] - uv[keep]
-            ap = arc_px[:, None, :] - a[None, :, :]
-            along = np.clip((ap * ab[None]).sum(-1)
-                            / np.maximum((ab ** 2).sum(-1), 1e-12)[None],
-                            0.0, 1.0)
-            nearest = a[None] + along[..., None] * ab[None]
-            arc = np.sqrt(((arc_px[:, None, :] - nearest) ** 2)
-                          .sum(-1)).min(axis=1)
-        out = [arc]
-        if halfway_px is not None:
-            huv, hfront = project(half, rot, focal)
-            if hfront.all():
-                a, b = huv
-                normal = np.array([b[1] - a[1], a[0] - b[0]])
-                normal /= max(np.linalg.norm(normal), 1e-9)
-                out.append(HALFWAY_WEIGHT * ((halfway_px - a) @ normal))
-            else:
-                out.append(np.full(len(halfway_px), far))
-        return np.concatenate(out)
-
-    got = least_squares(
-        residuals, np.concatenate([start.ravel(), [np.log(focal0)]]),
-        bounds=([-np.inf] * 3 + [np.log(MIN_FOCAL_PX)],
-                [np.inf] * 3 + [np.log(MAX_FOCAL_PX)]),
-        method="trf", max_nfev=600)
-    rot, _ = cv2.Rodrigues(got.x[:3])
-    arc_rms = float(np.sqrt(np.mean(got.fun[:len(arc_px)] ** 2)))
-    return rot, float(np.exp(got.x[3])), arc_rms
 
 
 def predicted_heights(feet_px, rot, eye, focal, cx, cy, up):

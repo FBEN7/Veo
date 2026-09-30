@@ -135,9 +135,15 @@ class GoalPlacer:
     #: Which goal the calibration belongs to, in the detector's frame.
     side = "left"
 
-    def __init__(self, poses: dict, grid: int = POSE_GRID):
+    def __init__(self, poses: dict, grid: int = POSE_GRID,
+                 far_limit_m: float = pm.PITCH_LENGTH_M / 2.0):
         self.poses = poses
         self.grid = grid
+        # How far from the calibrated goal a placement may be. Halfway for
+        # a goal-derived pose, which extrapolates badly the further it
+        # reaches; a midfield pose is measured at halfway and gets the
+        # whole pitch.
+        self.far_limit_m = far_limit_m
 
     def __len__(self) -> int:
         return len(self.poses)
@@ -176,7 +182,7 @@ class GoalPlacer:
         # this placer knows where one goal is, and `MAX_SHOT_DISTANCE_M` is
         # 35 m, so a point in the far half is not a shot at this goal
         # whatever else it is.
-        if not (-OFF_PITCH_MARGIN_M <= x <= pm.PITCH_LENGTH_M / 2.0):
+        if not (-OFF_PITCH_MARGIN_M <= x <= self.far_limit_m):
             return None
         if not (-OFF_PITCH_MARGIN_M <= y
                 <= pm.PITCH_WIDTH_M + OFF_PITCH_MARGIN_M):
@@ -520,3 +526,132 @@ def combine(goal: "GoalPlacer", anchor, frames, width: int, height: int,
     if verbose:
         print(f"  [both] combining, anchor {'turned' if flip else 'as-is'}")
     return CombinedPlacer(goal, anchor, flip)
+
+
+
+# --- midfield, from the centre circle ---------------------------------------
+#
+# The goal covers the attacking third. Midfield comes from the centre circle,
+# refitted with the camera's position held at what the goal corners measured
+# (`src/midfield_pose.py`), which predicts player sizes to within 4-11 per
+# cent where the old anchor was off by 20-28 times.
+#
+# Both are in the calibrated goal's frame, so combining them needs no
+# orientation check. That is what closed the anchor route: the anchor had its
+# own pitch axes, and whether its x = 0 was the calibrated goal could not be
+# settled on footage where the two landmarks never share a frame.
+
+# A circle fit worse than this, in pixels, is not describing the centre
+# circle. The validation clips sat at about 4 px median; the usual intruder
+# is the penalty arc, which has the same 9.15 m radius and, fitted as if it
+# were at halfway, cannot match the projected curve.
+MAX_CIRCLE_RMS_PX = 8.0
+
+# How far the refitted focal may stray from the clip's corner-bundle focal.
+# A zoom moves it, so this is loose; a fit outside it has matched the wrong
+# circle by trading focal against rotation.
+FOCAL_RANGE = (0.5, 2.0)
+
+
+def build_midfield(video_path: str, frames_wanted, camera_position,
+                   focal_seed: float, width: int, height: int,
+                   find_circle, halfway_line, skip=(), grid: int = POSE_GRID,
+                   verbose: bool = False):
+    """Midfield poses on a grid of frames, from the centre circle.
+
+    `find_circle` and `halfway_line` are passed in rather than imported:
+    they live with the probes that measured them, and this module stays
+    importable without them.
+
+    `skip` is frames the goal already covers. The goal is preferred there,
+    so fitting the circle on them would be work thrown away.
+    """
+    import cv2
+
+    from .goal_pose import GoalPose
+    from .midfield_pose import fit
+
+    eye = np.asarray(camera_position, dtype=float)
+    cx, cy = width / 2.0, height / 2.0
+    skip = set(skip)
+    wanted = sorted({int(f) - int(f) % grid for f in frames_wanted} - skip)
+
+    cap = cv2.VideoCapture(video_path)
+    poses, tried, circles, previous = {}, 0, 0, None
+    for index in wanted:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, index)
+        ok, frame = cap.read()
+        if not ok:
+            continue
+        tried += 1
+        circle = find_circle(frame, np.random.default_rng(index))
+        if circle is None:
+            previous = None
+            continue
+        circles += 1
+        arc = np.asarray(circle["support"], dtype=float)
+        if len(arc) > 300:
+            arc = arc[np.linspace(0, len(arc) - 1, 300).astype(int)]
+        (ex, ey), _, _ = circle["ellipse"]
+        half = halfway_line(circle["segments"], (ex, ey))
+        half_px = (None if half is None else
+                   np.array([[half[0], half[1]], [half[2], half[3]]],
+                            dtype=float))
+
+        seed_rot, seed_f = ((previous[0], previous[1]) if previous
+                            else (None, focal_seed))
+        rot, focal, rms = fit(arc, half_px, eye, seed_f, cx, cy,
+                              seed_rot=seed_rot)
+        if rms > MAX_CIRCLE_RMS_PX or not (
+                FOCAL_RANGE[0] * focal_seed <= focal
+                <= FOCAL_RANGE[1] * focal_seed):
+            previous = None
+            continue
+        previous = (rot, focal)
+        rvec, _ = cv2.Rodrigues(rot)
+        poses[index] = GoalPose(rvec=rvec, tvec=(-rot @ eye).reshape(3, 1),
+                                focal_px=focal, cx=cx, cy=cy,
+                                reprojection_px=rms, n_corners=0)
+    cap.release()
+
+    poses = smooth(poses, grid)
+    if verbose:
+        print(f"  [midfield] circle on {circles} of {tried} frames the goal "
+              f"does not cover, {len(poses)} kept a pose")
+    return GoalPlacer(poses, grid,
+                      far_limit_m=pm.PITCH_LENGTH_M + OFF_PITCH_MARGIN_M)
+
+
+class LandmarkPlacer:
+    """The goal where it is visible, the centre circle where it is not.
+
+    Both poses are in the calibrated goal's frame, so a point placed by
+    either is in the same coordinates with no conversion and no guess about
+    which way the pitch runs.
+    """
+
+    side = "left"
+
+    def __init__(self, goal: "GoalPlacer", midfield: "GoalPlacer"):
+        self.goal = goal
+        self.midfield = midfield
+        self.used = {"goal": 0, "midfield": 0}
+
+    def __len__(self):
+        return len(self.goal) + len(self.midfield)
+
+    @property
+    def poses(self):
+        merged = dict(self.midfield.poses)
+        merged.update(self.goal.poses)
+        return merged
+
+    def place(self, frame, px, py):
+        point = self.goal.place(frame, px, py)
+        if point is not None:
+            self.used["goal"] += 1
+            return point
+        point = self.midfield.place(frame, px, py)
+        if point is not None:
+            self.used["midfield"] += 1
+        return point
