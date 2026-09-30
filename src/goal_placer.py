@@ -676,6 +676,10 @@ class LandmarkPlacer:
     def __len__(self):
         return len(self.goal) + len(self.midfield)
 
+    def pose_at(self, frame: int):
+        """The goal pose where there is one, the midfield pose otherwise."""
+        return self.goal.pose_at(frame) or self.midfield.pose_at(frame)
+
     @property
     def poses(self):
         merged = dict(self.midfield.poses)

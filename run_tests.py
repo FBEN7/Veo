@@ -74,6 +74,10 @@ CONTROLS = [
      "a camera 38 m from its starting guess located to 0.07 m, circle "
      "frames from a lower or nearer camera refused, and the one "
      "displacement the geometry cannot see pinned as accepted"),
+    ("ball height from its flight",
+     [sys.executable, "-m", "src.ball_height"],
+     "a cross and a long ball recognised as in the air and a pass as on "
+     "the grass, from a located camera, with half the frames missing"),
 ]
 
 PIPELINE = [

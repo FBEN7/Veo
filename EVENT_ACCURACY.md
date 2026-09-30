@@ -911,6 +911,58 @@ by physics rather than by threshold takes precision from 0.20 to 0.67.
 The section below is kept as it was written; its conclusion about the
 margin rested on the retired 1.8 m figure.
 
+### Ball height: tried two ways, and neither measures these flights yet
+
+Placing the ball assumes it is on the grass; an airborne ball projects far
+beyond itself. That turned a cross into a 45-57 m/s "shot" and cost a real
+out-of-play crossing. Two independent estimates of height were tried.
+
+**From the flight's shape** (`src/ball_height.py`). Between touches a ball
+follows a parabola, and gravity is a known acceleration in metres, so a run
+of rays from a posed camera pins the flight in 3-D. Each window is fitted as
+a flight and as a roll, and flight is believed only where it fits clearly
+better, fits well near the frame asked about, and is something a football
+can do (under 30 m up, under 45 m/s, near the pitch).
+
+On synthetic flights from a located camera it works, and how long a flight
+is seen decides everything:
+
+| window | flights recognised | median height error | rolling balls |
+|---|---|---|---|
+| 0.48 s | 16-17 of 30 | 2.4-2.7 m | all |
+| 0.8 s | 34-36 of 40 | 0.4 m | all |
+| 1.0 s | 40 of 40 | 0.22-0.26 m | all |
+
+It survives pose wobble: with per-frame camera noise of 5.5 px a flight
+still misfits rolling by 9-12 px over a second, and no grass pass is taken
+for a flight. The first real run exposed two faults the controls then
+pinned: a window straddling a kick was "explained" as a flight 20-55 m up,
+and a window half still ball and half flight let rolling pass for a ball
+1.8 m up. Now such frames are left unknown.
+
+**On stoke_4207 it identifies the dribble as rolling** (62.8-64.4 s, 3-D
+position within 0.2 m of the grass placement) **and declines the cross**:
+only 0.6 s of the flight is tracked before the ball is lost, under the
+0.8-1 s it needs, and the per-frame box poses wobble by 6 px (a still
+ball misfits by 6.1 px through them). It refuses rather than guessing,
+which is right, and measures nothing here.
+
+**From the ball's apparent size.** A ball is 0.22 m across, so its size
+gives its range along the ray. Checked where the answer is known -- the
+dribble, on the grass -- the detector's box is about 20% larger than that,
+putting a grounded ball 2.5-4.7 m up. The bias could be calibrated out on
+frames the flight fit calls rolling. What cannot be, from what is stored, is
+motion blur: in flight the ball crosses about 19 px a frame and its box
+grows from about 12 to 15-18 px, so size overstates height exactly on the
+frames that matter.
+
+**What would make either work.** Smoothing the camera pose over time -- a
+pan is smooth, the 6 px wobble is the box fit -- would let shorter flights
+be fitted. Re-detecting the ball with both box dimensions would separate
+blur, which stretches along the motion, from size, which the other
+dimension still shows. Neither is done; the height module is committed as
+the validated part and is not yet used by any detector.
+
 ### Out of play: why it cannot be fixed on this footage
 
 Precision is 2 of 11 and recall 2 of 3, and the attempt to improve it ended
