@@ -58,11 +58,17 @@ GOAL_HALF_M = 3.66
 # Both halves of that justification have since failed. The anchor's implied
 # camera height is 62-72 m against 15.6 and 15.9 from two independent
 # methods (`probe_anchor_height.py`), so its self-agreement says nothing
-# about its accuracy; and the goal placer that replaced it is measured at
-# 1.8 m median error, 3.2 m at the ninetieth percentile.
+# about its accuracy; and the goal placer that replaced it was measured at
+# 1.8 m median error -- a figure later retired, since it compared two poses
+# sharing a mislocated camera. Against the located camera, box poses sit
+# 0.53 m median from the corner poses (`probe_truncated_box.py`).
 #
-# So this margin asks the geometry to resolve a distance smaller than its
-# own uncertainty, and no value of it works. Measured on the labelled
+# At that error the margin is no longer the problem, and re-measured it
+# still does not separate true crossings from false: the false ones sit 6-7
+# m out because the tracked "ball" is a hoarding or the stand, not the ball
+# (EVENT_ACCURACY.md, "Out of play, re-measured"). Before that, the reading
+# was that this margin asks the geometry to resolve a distance smaller than
+# its own uncertainty, and that no value of it works. Measured on the labelled
 # crossings, true and false detections are indistinguishable by how far past
 # the line the ball is -- matched at 2.4 and 7.8 m against false at 1.8 to
 # 7.6 -- so raising it removes real crossings before invented ones. It is

@@ -285,9 +285,9 @@ def main():
                   "                 check (62-72 m against 15.6-15.9). "
                   "Treat the counts as\n                 unvalidated. On "
                   "the labelled windows out-of-play precision is\n"
-                  "                 2 of 11 even on goal-based geometry, "
-                  "because the 1 m margin\n                 is smaller than "
-                  "the 1.8 m placement error it has to judge.")
+                  "                 3 of 15 even on goal-based geometry, "
+                  "because the tracked ball\n                 near a "
+                  "touchline is often a hoarding or the stand.")
     except Exception as problem:               # never take the run down
         print(f"  unavailable: {problem}")
 

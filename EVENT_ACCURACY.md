@@ -847,6 +847,40 @@ reading was 18 m out. Conclusions that leaned on 1.8 m as a floor -- the
 rotation-carry comparison, and out-of-play's "the margin is smaller than
 the error" -- are revisited where they stand.
 
+### Out of play, re-measured on the corrected geometry: the ball, not the line
+
+With the camera located and boxes read correctly, placement error is about
+0.5 m median (1.05 m at the 90th percentile) rather than 1.8 m, so the
+argument below -- a 1 m margin asked to resolve less than its own error --
+no longer holds. Re-measured on six windows:
+
+**Recall 3 of 4, precision 3 of 15.** Barely different, which is itself the
+finding. Every detected crossing, on the scorer's own placer:
+
+| | matched (3) | false (12) |
+|---|---|---|
+| metres past the line | 1.7, 7.1, 7.9 | 2.0 ... 7.2, eight of them over 4 m |
+| consecutive readings outside | 3, 11, 14 | 2 ... 60 |
+| seconds until back inside | 0.7, 1.0, 3.1 | 0.1 ... 58 |
+
+Still overlapping on every axis -- and the false ones are not marginal: most
+sit 6-7 m past the line, where a 0.5 m placement error cannot put them.
+Rendered, the four checked (reading_2519 9.9 s, reading_1155 20.0 s,
+stoke_7001 41.8 s, reading_0737 60.4 s) are **not the ball**: the tracked
+candidate is on the advertising hoardings or in the stand behind the line.
+The geometry is right to call those points out of the pitch; the ball
+tracker gave it the wrong object.
+
+So out-of-play is now limited by ball identity near the touchline, not by
+geometry or by the margin. What would address it is a continuity test --
+a real ball crosses the line from a tracked position inside it, within
+what a ball can travel; a hoarding appears outside without ever having
+been inside -- which is physics, not a threshold fitted to three events.
+Not yet built.
+
+The section below is kept as it was written; its conclusion about the
+margin rested on the retired 1.8 m figure.
+
 ### Out of play: why it cannot be fixed on this footage
 
 Precision is 2 of 11 and recall 2 of 3, and the attempt to improve it ended
