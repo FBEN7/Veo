@@ -936,6 +936,25 @@ by physics rather than by threshold takes precision from 0.20 to 0.67.
 The section below is kept as it was written; its conclusion about the
 margin rested on the retired 1.8 m figure.
 
+### The camera between grid frames: interpolated, not frozen
+
+Goal poses are solved every 4 frames and were reused unchanged in between,
+so a panning camera stood still for a few frames and then jumped. Measured
+without labels -- a player's feet are on the grass and cannot move more than
+about 0.4 m between frames, so the frame-to-frame jitter of their placed
+positions is pose noise plus the detector's own -- on every player track:
+
+| clip | nearest pose, median / 90th pct | interpolated |
+|---|---|---|
+| stoke_4207 | 0.27 / 1.09 m | **0.15 / 0.47 m** |
+| stoke_7001 | 0.25 / 1.17 m | **0.15 / 0.51 m** |
+| reading_1155 | 0.21 / 0.84 m | **0.12 / 0.49 m** |
+
+A still ball on stoke_4207 misfits a rolling model by 4.2 px instead of 6.2.
+Stronger averaging (over 3 or 4 grid steps) and local quadratic fits add
+nothing further; what remains is most likely the detector's jitter on where
+the feet are, which pose smoothing cannot reach.
+
 ### Ball height: tried two ways, and neither measures these flights yet
 
 Placing the ball assumes it is on the grass; an airborne ball projects far
