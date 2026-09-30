@@ -16,8 +16,9 @@ from src.dynamic_homography import create_dynamic_homography_loader
 from src.auto_calibrate import auto_calibrate
 from src import events as ev_module
 import numpy as np
+from src.paths import DATA_DIR
 
-VIDEO_PATH = "/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b/863b1c91-08fd33_4.mp4"
+VIDEO_PATH = str(DATA_DIR / "863b1c91-08fd33_4.mp4")
 OUTPUT_DIR = Path("output_hsv_test")
 DB_PATH = OUTPUT_DIR / "match_hsv.db"
 REPORT_PATH = OUTPUT_DIR / "report_hsv.pdf"

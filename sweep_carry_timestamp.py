@@ -35,8 +35,9 @@ import numpy as np
 import score_soccernet as sc
 import sweep_pass_thresholds as sw
 from src import events as ev
+from src.paths import DATA_DIR
 
-UPLOADS = Path("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
+UPLOADS = DATA_DIR
 STOKE = UPLOADS / "34498b39-Labels-ball.json"
 READING = UPLOADS / "53f06df4-Labels-ball.json"
 

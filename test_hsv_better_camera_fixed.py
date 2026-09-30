@@ -17,9 +17,10 @@ from src import stats, events as ev_module
 from src.database import MatchDatabase
 from src.auto_calibrate import auto_calibrate
 from src.dynamic_homography import create_dynamic_homography_loader
+from src.paths import DATA_DIR
 
 # Use the better camera angle video
-VIDEO_PATH = "/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b/a382328e-08fd33_4.mp4"
+VIDEO_PATH = str(DATA_DIR / "a382328e-08fd33_4.mp4")
 OUTPUT_DIR = Path("output_hsv_better_camera_fixed")
 
 def main():

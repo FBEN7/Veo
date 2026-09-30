@@ -62,6 +62,7 @@ import pandas as pd
 from detect_ball_events import CLIP_SOURCES
 from src import events as ev_module
 from src import stats
+from src.paths import DATA_DIR
 
 # Actions after which the ball is dead until the next action.
 STOPPERS = ("OUT", "GOAL")
@@ -73,7 +74,7 @@ PROXY_RADIUS_M = 3.0
 # behaviour the report ships, which is the baseline this is against.
 GAPS_S = (0.0, 1.0, 2.0, 5.0)
 
-LABEL_DIR = Path("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
+LABEL_DIR = DATA_DIR
 
 
 def truth_timeline(source: str, offset_s: float, duration_s: float,

@@ -48,6 +48,7 @@ import pandas as pd
 import detect_shots
 from probe_pitch_lines import CLIPS
 from src import pitch_model as pm
+from src.paths import DATA_DIR
 
 # Half the goal mouth: 7.32 m between the posts.
 GOAL_HALF_M = 3.66
@@ -244,8 +245,7 @@ def find_ball_events(ball: pd.DataFrame, maps, fps: float,
 
 def labelled(kind: str, source: str, offset_s: float, duration_s: float):
     """Labels of one kind inside a clip, from that clip's own match."""
-    path = (Path("/root/.claude/uploads/"
-                 "cd4d7e67-1dd4-5fa1-975c-2f5b3217663b") / source)
+    path = DATA_DIR / source
     if not path.exists():
         return []
     blob = json.loads(path.read_text())

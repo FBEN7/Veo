@@ -25,9 +25,9 @@ import pandas as pd
 import score_soccernet as sc
 import sweep_pass_thresholds as sw
 from src import events as ev
+from src.paths import DATA_DIR
 
-LABELS = ("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b/"
-          "34498b39-Labels-ball.json")
+LABELS = str(DATA_DIR / "34498b39-Labels-ball.json")
 TOL = 1.0
 
 

@@ -33,6 +33,7 @@ from pathlib import Path
 import numpy as np
 
 from score_soccernet import run_pipeline
+from src.paths import DATA_DIR
 
 DURATION_S = 90.0
 
@@ -56,7 +57,7 @@ WINDOWS = [
     ("reading 5115", "output_soccernet_reading", "53f06df4-Labels-ball.json", 5115.0),
 ]
 
-UPLOADS = Path("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
+UPLOADS = DATA_DIR
 
 
 def truth_passes(labels_path: Path, offset_s: float, skip_dead: bool):

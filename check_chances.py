@@ -35,8 +35,9 @@ from pathlib import Path
 import numpy as np
 
 from src import chances as ch
+from src.paths import DATA_DIR
 
-UPLOADS = Path("/root/.claude/uploads/cd4d7e67-1dd4-5fa1-975c-2f5b3217663b")
+UPLOADS = DATA_DIR
 
 # What football produces, and what this is judged against.
 ASSISTED_SHARE = (0.45, 0.75)

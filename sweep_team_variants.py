@@ -48,9 +48,9 @@ from analyse_pass_outcome import (UPLOADS, WINDOWS, TOLERANCE_S, match,
                                   truth_passes, best_team_mapping)
 from experiment_teams import VARIANTS, sample_pixels
 from score_soccernet import run_pipeline
+from src.paths import CACHE_DIR
 
-CACHE = Path("/tmp/claude-0/-home-user-Veo/"
-             "cd4d7e67-1dd4-5fa1-975c-2f5b3217663b/scratchpad/team_pixels")
+CACHE = CACHE_DIR / "team_pixels"
 
 
 def pixels_for(window_name: str, clip: str, raw: pd.DataFrame):
