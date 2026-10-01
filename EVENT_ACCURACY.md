@@ -1073,6 +1073,34 @@ reading_2519 -- and more candidates are more chances to take a logo or a
 boot for the ball. The limit is telling the ball from what looks like it,
 which more candidates make harder rather than easier.
 
+### A ball classifier: separates balls from logos, and learns the grass
+
+`src/ball_classifier.py` judges the candidate itself: a crop 2.5 times its
+box, a small CNN. Trained on the Roboflow football-players dataset (CC BY
+4.0) -- 565 hand-labelled balls, and 667 of the detector's own look-alikes
+from the same images -- and held out on three whole source matches it
+scores AUC 0.956 (precision 0.81, recall 0.95 at 0.5). On stoke_1302 at
+38 s it scores the hoarding candidates 0.00 and those on the pitch 0.86,
+and the path leaves the hoardings.
+
+On the six labelled windows it lost every event:
+
+| | before | with the classifier |
+|---|---|---|
+| shots found | 3 of 10 | 0 of 10 |
+| goals found | 1 of 2 | 0 of 2 |
+| out of play | 2 of 4, 0 false | 1 of 4, 1 false |
+
+On reading_1155's goal it scores the ball at the strike, on grass, 1.0 --
+and the same ball in the top corner of the net, and lying in it after, 0.0,
+with look-alikes nearby at 0.5-0.7. Nearly every training ball is on grass,
+so grass became part of what a ball is, and the held-out test could not
+show it because its balls were on grass too. The failure is the grass
+weighting's again, learned rather than written. Reverted; the classifier
+and its training script are kept unwired, since what it lacks is training
+balls against the net, the stands and the hoardings -- examples these
+public labels barely contain and a labelling round on this footage could.
+
 ### The camera between grid frames: interpolated, not frozen
 
 Goal poses are solved every 4 frames and were reused unchanged in between,

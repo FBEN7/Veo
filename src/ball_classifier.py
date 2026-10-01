@@ -16,6 +16,20 @@ Trained by `train_ball_classifier.py` on the Roboflow football-players
 dataset (CC BY 4.0, roboflow-jvuqo/football-players-detection-3zvbc):
 hand-labelled balls as positives, and as negatives everything the same
 detector proposes in those images that is not the labelled ball.
+
+## Measured, and not used
+
+Held out on three whole source matches it scores AUC 0.956. Wired into the
+ball path on six labelled windows it lost every event -- shots 3 of 10 to
+0, goals 1 of 2 to 0, out of play 2 of 4 to 1 with a false one -- and the
+reason is the one the grass weighting had. On reading_1155's goal it scores
+the ball at the strike, on grass, 1.0, and the same ball in the top corner
+of the net and lying in it afterwards 0.0, while look-alikes around it
+score 0.5-0.7. Nearly every training ball is on grass, so grass became part
+of what a ball is; the held-out test agreed because its balls were on grass
+too. What it lacks are balls against the net, the stands and the hoardings,
+which these public labels barely contain. It is kept, unwired, for that:
+retrained with such examples it is the same experiment with the gap closed.
 """
 
 from __future__ import annotations
@@ -96,68 +110,3 @@ class BallClassifier:
         with torch.no_grad():
             logits = self.model(to_tensor(crops)).squeeze(1)
         return torch.sigmoid(logits).numpy()
-
-
-SCORES_FILE = "ball_scores.parquet"
-
-
-def score_clip(out_dir: Path, info: dict, verbose: bool = True):
-    """Score every stored ball candidate in a clip, cached next to the tracks.
-
-    Returns the cache path, or None without trained weights. The scores are
-    derived from the clip's footage, so like every run output they are not
-    committed.
-    """
-    import cv2
-    import pandas as pd
-
-    out_dir = Path(out_dir)
-    cache = out_dir / SCORES_FILE
-    if cache.exists():
-        return cache
-    if not WEIGHTS.exists():
-        if verbose:
-            print(f"  [ball classifier] no weights at {WEIGHTS}; run "
-                  f"train_ball_classifier.py")
-        return None
-    tracks = pd.read_parquet(out_dir / "tracks.parquet")
-    balls = tracks[tracks.cls == "ball"]
-    by_frame = {int(f): g for f, g in balls.groupby("frame")}
-    model = BallClassifier()
-    cap = cv2.VideoCapture(info["path"])
-    rows, index = [], -1
-    for frame_no in sorted(by_frame):
-        while index < frame_no:
-            ok, image = cap.read()
-            index += 1
-            if not ok:
-                break
-        if not ok:
-            break
-        group = by_frame[frame_no]
-        crops, keep = [], []
-        for row in group.itertuples():
-            patch = crop(image, float(row.px), float(row.py),
-                         float(row.crop_h))
-            if patch is not None:
-                crops.append(patch)
-                keep.append(row)
-        for row, p in zip(keep, model.score(crops)):
-            rows.append({"frame": frame_no, "px": float(row.px),
-                         "py": float(row.py), "p_ball": float(p)})
-    cap.release()
-    pd.DataFrame(rows).to_parquet(cache)
-    if verbose:
-        print(f"  [ball classifier] scored {len(rows)} ball candidates")
-    return cache
-
-
-def with_scores(tracks, out_dir: Path):
-    """The tracks with a `p_ball` column where a cached score exists."""
-    import pandas as pd
-
-    cache = Path(out_dir) / SCORES_FILE
-    if not cache.exists():
-        return tracks
-    scores = pd.read_parquet(cache)
-    return tracks.merge(scores, on=["frame", "px", "py"], how="left")
