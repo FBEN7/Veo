@@ -113,7 +113,7 @@ commence par un résumé de l'état actuel.
 | Distance, angle et xG des tirs | les 6 tirs annotés, xG total 0,47 | `EVENT_ACCURACY.md` |
 | Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
 | Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
-| Tirs et buts détectés | **0 sur 10 et 0 sur 2** sur le ballon lui-même : les 3 tirs et le but annoncés étaient des sosies du ballon (gilets jaunes des stadiers derrière le but) | `EVENT_ACCURACY.md` |
+| Tirs et buts détectés | **0 sur 10 et 0 sur 2**, aucune fausse alerte : les tirs sont lus sur la trajectoire du ballon frappé ; les 3 tirs et le but annoncés auparavant étaient des sosies (stadiers en gilet jaune derrière le but) | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
 | Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |

@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | **0 of 10, 0 of 2 on the ball itself**: the 3 and 1 once reported were look-alikes behind the goal, matched in time | "Full resolution and the classifier together" |
+| Shots and goals detected | **0 of 10, 0 of 2**, no false ones: the 3 and 1 once reported were look-alikes behind the goal; shots are now read from the ball's own flight | "Shots read from the struck ball's own flight" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1193,6 +1193,43 @@ rule that a change must gain events, with the result recorded; a shot
 detector that requires its crossing to continue the strike's own track --
 as the out-of-play check already does -- is what would let the better path
 count.
+
+### Shots read from the struck ball's own flight
+
+Rebuilt as proposed. A crossing must now come from the strike's own ball:
+sightings on the strike's tracked segment, fitted as one flight from the
+strike's spot under gravity, grown one sighting at a time while it stays
+one flight short of the line, and carried on to the line. A ball "in the
+net" must also lie within the net's depth.
+
+Allowing a single sighting first, the reader again found three crossings,
+and all three were rendered: two stewards in yellow vests in the stand
+behind stoke_4207's goal, and a yellow object behind reading_1155's net,
+each linked into the strike's own track. One sighting fits any flight
+exactly, so nothing can refuse it. At least two are now required
+(`MIN_FLIGHT_SIGHTINGS`); a flight through something behind the goal then
+reaches the line before it and is refused. The controls cover each case,
+including a steward on the strike's own track.
+
+Six windows, every crossing found checked against the clicks:
+
+| ball path | shots | goals | out of play |
+|---|---|---|---|
+| stored detections | 0 of 10 | 0 of 2 | 2 of 4, 0 false |
+| + full resolution | 0 of 10 | 0 of 2 | 2 of 4, 3 false |
+| + full resolution + classifier | 0 of 10 on the ball | 0 of 2 | 2 of 4, 4 false |
+
+The one shot the last row matched (reading_0737, 21.3 s) was fitted to a
+look-alike and the keeper's clearance; its sightings are not the clicked
+ball. So no false shot or goal is reported any more, and no real one is
+found: the detector does not see the ball twice in flight between the
+strike and the line on any of the twelve moments. Full resolution and the
+classifier stay unwired, since they add false outs and no event.
+
+What would find shots is more sightings of the ball in flight, which is a
+detector problem, not a reading problem: a ball detector trained on this
+footage (the 138 clicks are a start), or a dedicated small-object
+detector run at full resolution near the goal.
 
 ### The camera between grid frames: interpolated, not frozen
 
