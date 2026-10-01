@@ -64,10 +64,6 @@ CONTROLS = [
     ("per-player ball metrics",
      [sys.executable, "test_player_metrics.py"],
      "an intercepted pass credits the interceptor and not the passer"),
-    ("full-resolution ball candidates",
-     [sys.executable, "test_ball_densify.py"],
-     "frames within half a grid step of a goal pose are scanned, and cached "
-     "candidates join the stored tracks"),
     ("the ball's path",
      [sys.executable, "src/ball_path.py"],
      "a ball among distractors the detector scores higher, where taking the "

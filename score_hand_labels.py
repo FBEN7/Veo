@@ -163,14 +163,6 @@ def report(name, found_times, truth_times):
           f"{hits:8d} {recall:8.2f} {precision:10.2f} {shown:>10s}")
 
 
-def ball_path_only(out_dir: Path, info):
-    """The ball's path from the stored detections alone."""
-    from src import ball_path
-
-    tracks = pd.read_parquet(Path(out_dir) / "tracks.parquet")
-    return ball_path.track(tracks, float(info["fps"]))
-
-
 def match_name(labels: Path):
     """The match a label file names in its header, or None.
 
@@ -361,13 +353,6 @@ def main():
                          "recorded with its match, and a clip the centre "
                          "circle cannot locate borrows the camera height of "
                          "located clips from the same match")
-    ap.add_argument("--no-full-res", action="store_true",
-                    help="skip re-detecting the ball at full resolution where "
-                         "the goal is in view, and ignore any cached "
-                         "full-resolution candidates (for comparison)")
-    ap.add_argument("--no-ball-classifier", action="store_true",
-                    help="choose the ball's path without the ball "
-                         "classifier's scores (for comparison)")
     ap.add_argument("--anchor-too", action="store_true",
                     help="also use the centre-circle anchor where the goal "
                          "is out of frame, if the two can be shown to point "
@@ -404,12 +389,7 @@ def main():
     import detect_set_pieces as set_pieces
     import detect_shots
 
-    if not args.no_ball_classifier:
-        from src.ball_classifier import score_clip
-
-        score_clip(out_dir, info)
-    ball = detect_shots.ball_track(out_dir,
-                                   classifier=not args.no_ball_classifier)
+    ball = detect_shots.ball_track(out_dir)
     if ball.empty:
         raise SystemExit("no ball track in that output directory")
     if args.goal_weights and args.corners:
@@ -424,24 +404,6 @@ def main():
         maps = detect_shots.anchors_for(out_dir, info, ball.frame.tolist(),
                                         rng, frames,
                                         reproduce=args.reproduce)
-    if hasattr(maps, "pose_at") and not args.no_full_res:
-        # Re-detect the ball at the footage's own width where the goal is in
-        # view, then choose the path again with the extra candidates.
-        from src.ball_densify import densify, goal_view_frames
-        from src.goal_placer import POSE_GRID
-
-        goal_poses = getattr(maps, "goal", maps).poses
-        profile = out_dir / "profile.json"
-        conf = (json.loads(profile.read_text())["conf_ball"]
-                if profile.exists() else 0.1)
-        densify(out_dir, info,
-                goal_view_frames(goal_poses, POSE_GRID, int(info["n_frames"])),
-                conf)
-        ball = detect_shots.ball_track(out_dir,
-                                       classifier=not args.no_ball_classifier)
-    elif args.no_full_res:
-        # The comparison: the stored detections alone, as before.
-        ball = ball_path_only(out_dir, info)
     shots, placed = detect_shots.find_shots(ball, maps, info["fps"])
     if hasattr(maps, "pose_at"):
         # With a camera pose per frame, shots are read where they cross the
@@ -506,8 +468,9 @@ def main():
                   f"{shot['speed_ms']:4.0f} m/s{extra}")
 
     print("\n  Shots are read where they cross the goal plane; across six "
-          "labelled\n  windows that finds 3 of 10 shots and 1 of 2 goals "
-          "(EVENT_ACCURACY.md).\n  The 'goal' row is a separate detector, "
+          "labelled\n  windows the ones matched were look-alikes behind the "
+          "goal, not the ball\n  (EVENT_ACCURACY.md); check each crossing "
+          "pixel by eye.\n  The 'goal' row is a separate detector, "
           "the ball crossing the line on\n  the grass, and misses goals "
           "scored in the air. Out of play is expected\n  to be thin on a "
           "camera that follows the ball; a measured zero is still\n  worth "

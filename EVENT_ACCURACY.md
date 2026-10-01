@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | **3 of 10, 1 of 2**, no false ones | "Shots at the goal plane" |
+| Shots and goals detected | **0 of 10, 0 of 2 on the ball itself**: the 3 and 1 once reported were look-alikes behind the goal, matched in time | "Full resolution and the classifier together" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1144,6 +1144,55 @@ Full resolution was reverted earlier because its extra candidates were
 mostly look-alikes the path then followed. A classifier that ranks the
 clicked ball first every time is the missing half of that experiment, so
 the two together are what to measure next.
+
+### Full resolution and the classifier together, and what the clicks say about the baseline
+
+Both at once: full-resolution candidates where the goal is in view, every
+candidate scored by the clip's own held-out model. Measured first on the
+path itself, frame by frame against the 138 clicks:
+
+| path | on the clicked ball | somewhere else | no point |
+|---|---|---|---|
+| stored detections (the baseline) | 40 | 59 | 39 |
+| + full resolution | 45 | 63 | 30 |
+| + full resolution + classifier | **77** | **5** | 56 |
+
+The path is on the ball nearly twice as often, and almost never anywhere
+else. Through the scorer it still finds no shot and no goal -- shots 0 of
+10, goals 0 of 2, out of play 2 of 4 with 4 false (the false outs are the
+full-resolution ones; they came with it the first time too).
+
+The clicks explain that, and it is the baseline that was wrong. Each shot
+the baseline counted was rendered at its crossing:
+
+- **reading_1155, the goal "into the top corner, 2.1 m up":** at 20.0 s the
+  ball is in flight in mid-pitch, where it was clicked; the path's point in
+  the top corner is a yellow object in the stand behind the net. At 21.4 s
+  the ball is in the net, low, and the path is on a yellow bib by the
+  hoardings.
+- **reading_0737, "on target, 2.1 m up":** the crossing sighting, frame 519
+  at (436, 240), is a steward in a yellow vest in the stand behind the
+  goal. The ball is by the far post.
+- **stoke_4207, "off target, 3.4 m up":** the path before the crossing sat
+  120-240 px from the clicked ball, on a look-alike up by the hoardings; the
+  crossing pixel itself was not rendered.
+
+The goal-plane detector reads any sighting whose ray passes through the
+goal mouth as the ball at the line. Everything in the stand behind the goal
+passes that test, and stewards' vests and yellow bibs look like the ball to
+the detector. The three shots and the goal were real events, matched in
+time by look-alikes behind the goal, not by the ball. **On the ball itself
+the baseline finds 0 of 10 shots and 0 of 2 goals** -- the same as the new
+path, which simply stopped following the stewards.
+
+What this leaves: the ball path with both changes is the better path, but
+nothing downstream yet uses the ball that it follows. The shot detector
+needs the ball at the line, and the detector still loses it in flight (on
+reading_1155, nothing between 19.6 s and the net). Reverted again by the
+rule that a change must gain events, with the result recorded; a shot
+detector that requires its crossing to continue the strike's own track --
+as the out-of-play check already does -- is what would let the better path
+count.
 
 ### The camera between grid frames: interpolated, not frozen
 

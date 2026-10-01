@@ -137,11 +137,7 @@ def score_clip(out_dir: Path, info: dict, verbose: bool = True,
             print(f"  [ball classifier] no weights at {WEIGHTS}; run "
                   f"train_ball_classifier.py")
         return None
-    from .ball_densify import with_fullres
-
-    # The full-resolution candidates too, where a run has cached them.
-    tracks = with_fullres(pd.read_parquet(out_dir / "tracks.parquet"),
-                          out_dir)
+    tracks = pd.read_parquet(out_dir / "tracks.parquet")
     balls = tracks[tracks.cls == "ball"]
     by_frame = {int(f): g for f, g in balls.groupby("frame")}
     model = classifier or BallClassifier()
