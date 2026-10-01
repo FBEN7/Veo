@@ -51,6 +51,21 @@ MAX_STRIKE_M = 35.0
 # One shot is reported once.
 MERGE_S = 2.0
 
+# What happens after an on-target crossing decides whether it was a goal.
+# Within this long the ball is either seen in the net -- behind the line and
+# inside the mouth -- or back in play in front of it: parried, held, or
+# cleared off the line.
+AFTERMATH_S = 3.0
+
+# In front of the line by more than this is back in play rather than
+# in the goal mouth with placement noise.
+BACK_IN_PLAY_M = 1.0
+
+# After a goal nothing is a shot until play restarts from the centre, which
+# the laws make a stoppage: the celebration, the walk back, the kick-off.
+# Twenty seconds is short of any real restart.
+RESTART_S = 20.0
+
 PITCH_WIDTH_M = 68.0
 LEFT_POST_Y = (PITCH_WIDTH_M - GOAL_WIDTH_M) / 2.0
 
@@ -143,7 +158,55 @@ def find_shots(ball, placer, fps: float):
                 merged[-1] = shot
             continue
         merged.append(shot)
-    return merged
+
+    sightings = []
+    for row in ball.itertuples():
+        pose = placer.pose_at(int(row.frame))
+        if pose is None:
+            continue
+        sightings.append((float(row.time_s), pose, float(row.px),
+                          float(row.py)))
+
+    out, restart_after = [], -np.inf
+    for shot in merged:
+        if shot["time_s"] < restart_after:
+            continue                     # the ball is in the net, or walking back
+        if shot["outcome"] == "on target" and went_in(shot, sightings):
+            shot["outcome"] = "goal"
+            restart_after = shot["crossing_s"] + RESTART_S
+        out.append(shot)
+    return out
+
+
+def went_in(shot, sightings) -> bool:
+    """Was an on-target crossing followed by the ball in the net?
+
+    In the net: behind the goal line on the grass and inside the mouth at
+    the goal plane. Back in play: on the grass more than a metre in front
+    of the line. A goal needs the first and none of the second within
+    `AFTERMATH_S`; a crossing with nothing seen after it is not called a
+    goal, since a save the camera turned away from looks the same.
+    """
+    from .goal_pose import ground_point
+
+    in_net = False
+    for when, pose, u, v in sightings:
+        if when <= shot["crossing_s"]:
+            continue
+        if when > shot["crossing_s"] + AFTERMATH_S:
+            break
+        grass = ground_point(pose, u, v)
+        if grass is None:
+            continue
+        out_from_line = grass[1]          # Z: metres out onto the pitch
+        if out_from_line > BACK_IN_PLAY_M:
+            return False
+        hit = mouth_crossing(pose, u, v)
+        if (out_from_line < 0.0 and hit is not None
+                and 0.0 <= hit[0] <= GOAL_WIDTH_M
+                and MIN_HEIGHT_M <= hit[1] <= GOAL_HEIGHT_M):
+            in_net = True
+    return in_net
 
 
 def selftest(verbose: bool = True) -> bool:
@@ -199,10 +262,27 @@ def selftest(verbose: bool = True) -> bool:
         ("ball at rest in the box",
          [(k, (3.0, 0.11, 11.0)) for k in range(40)], None),
     )
+    in_net = [(k, (6.5, 0.4, -1.2)) for k in range(30, 60, 3)]
+    saved = [(k, (3.5, 0.11, 4.0 + 0.2 * (k - 30))) for k in range(30, 60, 3)]
+    cases = cases + (
+        ("top corner, then in the net",
+         still + [(28, (6.8, 2.2, 0.0))] + in_net, "goal"),
+        ("top corner, then parried out",
+         still + [(28, (6.8, 2.2, 0.0))] + saved, "on target"),
+        # The ball still in the net seconds later reads as a second shot
+        # from the goalmouth; play has not restarted, so it is not one.
+        ("a goal, then the ball in the net",
+         still + [(28, (6.8, 2.2, 0.0))] + in_net
+         + [(k, (3.0, 0.11, 6.0)) for k in range(120, 126)]
+         + [(132, (4.0, 1.5, 0.0))], "goal only"),
+    )
     ok = True
     for name, points, want in cases:
         got = find_shots(track(points), Placer(), 25.0)
         said = got[0]["outcome"] if got else None
+        if want == "goal only":
+            said = ("goal only" if [g["outcome"] for g in got] == ["goal"]
+                    else ", ".join(g["outcome"] for g in got))
         extra = (f", {got[0]['speed_ms']:.0f} m/s, {got[0]['height_m']:.1f} m "
                  f"up at the line" if got else "")
         good = said == want

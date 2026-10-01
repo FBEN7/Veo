@@ -417,6 +417,12 @@ def main():
     stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])
     outs = [e for e in stoppages if e["event_type"] == "out_of_play"]
     goals = [e for e in stoppages if e["event_type"] == "goal"]
+    if hasattr(maps, "pose_at"):
+        # A goal is an on-target crossing followed by the ball in the net,
+        # read at the goal plane; the grass-crossing rule above misses any
+        # goal scored in the air. Timed at the line, not the strike.
+        goals = [{"time_s": s["crossing_s"], "event_type": "goal"}
+                 for s in shots if s.get("outcome") == "goal"]
     restarts = set_pieces.find_restarts(ball, maps, info["fps"], outs)
 
     print(f"\n  ball placed on the pitch: {placed} of {len(ball)} "
