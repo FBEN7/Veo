@@ -194,7 +194,8 @@ ANCHOR_GRID = 4
 ANCHOR_FRAMES = 240
 
 
-def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
+def ball_track(out_dir: Path, fps: float | None = None,
+               classifier: bool = True) -> pd.DataFrame:
     """The ball's path through a clip, chosen as a trajectory.
 
     This used to take the most confident detection on each frame,
@@ -205,6 +206,12 @@ def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
     marking where the ball was genuinely lost.
     """
     tracks = pd.read_parquet(out_dir / "tracks.parquet")
+    if classifier:
+        # Each candidate's probability of being a ball, where the clip has
+        # been scored (`src/ball_classifier.py`), keeps the path off logos.
+        from src.ball_classifier import with_scores
+
+        tracks = with_scores(tracks, out_dir)
     if fps is None:
         info_path = out_dir / "clip.json"
         fps = (json.loads(info_path.read_text())["fps"]
