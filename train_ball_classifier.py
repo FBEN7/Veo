@@ -77,6 +77,62 @@ def mine(data: Path, cache: Path):
     return x, y, src
 
 
+# A click and a stored candidate this close, in pixels, are the same ball;
+# candidates further than `NEGATIVE_PX` from the click are look-alikes.
+CLICK_MATCH_PX = 12.0
+NEGATIVE_PX = 15.0
+
+
+def mine_clip_labels(labels: Path, cache: Path):
+    """Crops from hand-clicked balls on the clips, and their look-alikes.
+
+    A click is a ball, sized by the stored candidate it lands on or, where
+    the detector missed it, by the clip's median ball box. Stored
+    candidates on the same frame away from the click are look-alikes.
+    Frames marked "not visible" give nothing: "not sure" is not a negative.
+    """
+    if cache.exists():
+        got = np.load(cache)
+        return got["x"], got["y"], got["src"]
+    import cv2
+    import pandas as pd
+
+    rows = json.loads(labels.read_text())["frames"]
+    xs, ys, srcs = [], [], []
+    for clip in sorted({r["clip"] for r in rows}):
+        out = Path(f"output_{clip}")
+        info = json.loads((out / "clip.json").read_text())
+        balls = pd.read_parquet(out / "tracks.parquet")
+        balls = balls[balls.cls == "ball"]
+        typical = float(balls.crop_h.median())
+        cap = cv2.VideoCapture(info["path"])
+        for r in sorted((r for r in rows if r["clip"] == clip
+                         and r.get("ball")), key=lambda r: r["frame"]):
+            cap.set(cv2.CAP_PROP_POS_FRAMES, int(r["frame"]))
+            ok, image = cap.read()
+            if not ok:
+                continue
+            cx, cy = r["ball"][0] * r["width"], r["ball"][1] * r["height"]
+            here = balls[balls.frame == r["frame"]]
+            gap = np.hypot(here.px.to_numpy() - cx, here.py.to_numpy() - cy)
+            size = (float(here.crop_h.iloc[int(np.argmin(gap))])
+                    if len(gap) and gap.min() <= CLICK_MATCH_PX else typical)
+            patch = crop(image, cx, cy, size)
+            if patch is not None:
+                xs.append(patch); ys.append(1); srcs.append(clip)
+            for row, g in zip(here.itertuples(), gap):
+                if g <= NEGATIVE_PX:
+                    continue
+                patch = crop(image, float(row.px), float(row.py),
+                             float(row.crop_h))
+                if patch is not None:
+                    xs.append(patch); ys.append(0); srcs.append(clip)
+        cap.release()
+    x, y, src = np.stack(xs), np.array(ys), np.array(srcs)
+    np.savez_compressed(cache, x=x, y=y, src=src)
+    return x, y, src
+
+
 def train(x, y, epochs: int = 40, seed: int = 0):
     import torch
 
@@ -125,10 +181,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--cache", default=".cache/ball_crops.npz")
+    ap.add_argument("--clip-labels",
+                    help="ball_labels.json from make_ball_labeller.py: adds "
+                         "the clips' own balls, and scores each clip with a "
+                         "model that never saw its labels")
     args = ap.parse_args()
     Path(args.cache).parent.mkdir(parents=True, exist_ok=True)
 
     x, y, src = mine(Path(args.data), Path(args.cache))
+    if args.clip_labels:
+        leave_one_clip_out(x, y, Path(args.clip_labels),
+                           Path(args.cache).with_name("clip_crops.npz"))
+        return
     test = np.isin(src, list(HELD_OUT))
     print(f"\n  {int(y.sum())} balls and {int((y == 0).sum())} look-alikes "
           f"from {len(set(src))} matches; held out "
@@ -150,6 +214,35 @@ def main():
         "data": "Roboflow football-players-detection v1 (CC BY 4.0)"},
         indent=1))
     print(f"\n  trained on all {len(y)} crops -> {WEIGHTS}")
+
+
+def leave_one_clip_out(pub_x, pub_y, labels: Path, cache: Path):
+    """Train without each clip's labels, test and score that clip with it.
+
+    The clips are then scored by models that never saw their answers, so
+    the event measurement on them stays a test.
+    """
+    from src.ball_classifier import BallClassifier, score_clip
+
+    cx, cy, csrc = mine_clip_labels(labels, cache)
+    print(f"\n  clip labels: {int(cy.sum())} balls and "
+          f"{int((cy == 0).sum())} look-alikes on {len(set(csrc))} clips\n")
+    print(f"  {'held-out clip':>14s} {'balls':>6s} {'look-alikes':>12s} "
+          f"{'AUC public only':>16s} {'AUC + other clips':>18s}")
+    public = train(pub_x, pub_y)
+    for clip in sorted(set(csrc)):
+        test = csrc == clip
+        model = train(np.concatenate([pub_x, cx[~test]]),
+                      np.concatenate([pub_y, cy[~test]]))
+        before = evaluate(public, cx[test], cy[test])[0]
+        after = evaluate(model, cx[test], cy[test])[0]
+        print(f"  {clip:>14s} {int(cy[test].sum()):6d} "
+              f"{int((cy[test] == 0).sum()):12d} {before:16.3f} "
+              f"{after:18.3f}", flush=True)
+        out = Path(f"output_{clip}")
+        info = json.loads((out / "clip.json").read_text())
+        score_clip(out, info, verbose=False,
+                   classifier=BallClassifier(model=model), overwrite=True)
 
 
 if __name__ == "__main__":
