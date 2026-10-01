@@ -204,11 +204,7 @@ def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
     through the same detections instead, and carries a `segment` column
     marking where the ball was genuinely lost.
     """
-    # The grass-annotated tracks where they exist: the same detections, with
-    # how much grass surrounds each, which keeps the path off the hoardings.
-    grass = out_dir / "tracks_grass.parquet"
-    tracks = pd.read_parquet(grass if grass.exists()
-                             else out_dir / "tracks.parquet")
+    tracks = pd.read_parquet(out_dir / "tracks.parquet")
     if fps is None:
         info_path = out_dir / "clip.json"
         fps = (json.loads(info_path.read_text())["fps"]

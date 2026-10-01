@@ -1010,6 +1010,45 @@ false shot after it is gone under the restart rule. reading_0737's
 on-target shot stays a shot. The other goal, reading_2519, has 2 placed
 positions in the 3 s around it.
 
+#### Confirmed by the kick-off
+
+After a goal the next restart is a kick-off from the centre spot, before
+anything else happens. A goal is now confirmed when the ball is seen still
+on the spot (within 3 m, for 1 s) after it; refuted and downgraded to "on
+target" when another shot comes first; and reported unconfirmed when the
+clip ends or no kick-off is seen. reading_1155's goal is confirmed by its
+kick-off inside the 90 s clip. Controls cover all three verdicts.
+
+### The hoardings: a real cause, and a fix that cost more than it gained
+
+Three of the four sparse shot moments are not short of detections: the
+detector has a ball candidate on 45-50 of the 50 frames around them, at the
+stored resolution and at full resolution alike. The path was running along
+the advertising hoardings on the far side while the ball was among the
+players -- on stoke_1302 at 38 s the chosen candidates had a median 0.11 of
+grass around them against 0.95 for those left out, at the same detector
+confidence. A printed logo looks more like a ball to the detector than a
+ball on grass does. (Re-detecting at full resolution helps the other two:
+stoke_4207 at 66 s goes from 21 to 47 frames with a candidate.)
+
+Weighting each candidate by the grass around it fixed the hoardings and was
+reverted, because measured on all six windows it lost more than it gained:
+
+| | before | grass-weighted |
+|---|---|---|
+| shots found | 3 of 10 | 2 of 10 |
+| goals found | 1 of 2 | 0 of 2 |
+| false goals | 0 | 1 (flagged "no kick-off seen") |
+| out of play | 2 of 4 | 1 of 4 |
+
+It gained reading_2519's shot and lost reading_1155's top-corner goal,
+reading_0737's shot, stoke_4207's ball over the bar and an out-of-play
+crossing. Those events happen where the ball leaves the grass background --
+the net behind a goal, the stands above the bar, the hoardings past the
+line -- so a preference for grass removes exactly the frames they need.
+Telling a ball from a logo needs something about the object, not its
+background.
+
 ### The camera between grid frames: interpolated, not frozen
 
 Goal poses are solved every 4 frames and were reused unchanged in between,
