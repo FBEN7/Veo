@@ -450,11 +450,13 @@ def main():
                   f"{shot['distance_m']:5.1f} m, "
                   f"{shot['speed_ms']:4.0f} m/s{extra}")
 
-    print("\n  Recall on shots is the number this was built for: nothing in "
-          "this project\n  has ever shown the shot detector finding one it "
-          "was not given. Out of\n  play is expected to score zero on a "
-          "camera that follows the ball, and a\n  measured zero is still "
-          "worth writing down.")
+    print("\n  Shots are read where they cross the goal plane; across six "
+          "labelled\n  windows that finds 3 of 10 shots and 1 of 2 goals "
+          "(EVENT_ACCURACY.md).\n  The 'goal' row is a separate detector, "
+          "the ball crossing the line on\n  the grass, and misses goals "
+          "scored in the air. Out of play is expected\n  to be thin on a "
+          "camera that follows the ball; a measured zero is still\n  worth "
+          "writing down.")
 
 
 if __name__ == "__main__":
