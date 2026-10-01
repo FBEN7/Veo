@@ -108,11 +108,11 @@ commence par un résumé de l'état actuel.
 
 | | état | où c'est mesuré |
 |---|---|---|
-| Position du ballon sur le terrain | 7 à 44 % des images selon le clip ; erreur médiane **0,5 m** | `EVENT_ACCURACY.md` |
+| Position du ballon sur le terrain | 8 à 45 % des images selon le clip ; erreur médiane **0,5 m** | `EVENT_ACCURACY.md` |
 | Position de la caméra | 5 clips sur 6 localisés, le 6e par la hauteur du même match | `EVENT_ACCURACY.md` |
 | Distance, angle et xG des tirs | les 6 tirs annotés, xG total 0,47 | `EVENT_ACCURACY.md` |
 | Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
-| Ballon sorti | précision **2 sur 3**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
+| Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
 | Tirs et buts détectés | **0 sur 10 et 0 sur 2** | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
@@ -139,9 +139,11 @@ pas :
 ### Ce qui ne marche pas encore
 
 **Les tirs.** Aucun tir réel détecté (0 sur 10). La géométrie n'est plus en
-cause : le ballon est trop rarement détecté autour des tirs pour ajuster une
-trajectoire. Le seul « tir » trouvé un temps était le centre qui le
-précédait.
+cause, et le ballon n'est rare que pour 2 des 12 moments annotés : sur les
+autres, il est suivi sur 31 à 47 des 50 images. Le détecteur n'accepte qu'un
+ballon dirigé vers le cadre, donc un tir à côté ou au-dessus ne compte
+jamais ; l'analyse tir par tir reste à faire. Le seul « tir » trouvé un temps
+était le centre qui le précédait.
 
 **Le ballon en l'air.** Placer le ballon suppose qu'il est au sol ; en l'air,
 il est projeté bien trop loin. C'est la limite qui revient : elle a coûté un
@@ -149,9 +151,10 @@ tir et une sortie réelle. Une estimation de la hauteur par la trajectoire
 (`src/ball_height.py`) marche sur des vols simulés d'une seconde mais pas
 encore sur ces vols-ci, trop courts.
 
-**Le ballon sorti** est passé de 3 sur 15 à 2 sur 3 en précision, en
-exigeant que le ballon soit suivi *en train de franchir* la ligne : les
-fausses alertes étaient des panneaux publicitaires pris pour le ballon.
+**Le ballon sorti** est passé de 3 sur 15 à 2 sur 2 en précision, en
+exigeant que le ballon soit suivi *en train de franchir* la ligne (les
+fausses alertes étaient des panneaux publicitaires pris pour le ballon) et
+en interpolant la caméra entre les images où sa pose est calculée.
 Quatre sorties annotées ne suffisent pas à valider un détecteur.
 
 ### Reproduire

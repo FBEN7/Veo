@@ -27,9 +27,9 @@ of the latest measurement:
 |---|---|---|
 | Camera position | located on 6 of 6 clips; three Reading clips agree to 1.1 m | "Where the camera is" |
 | Goal-box poses | 0.53 m median from corner poses (was 18 m) | "What a goal box is" |
-| Ball placed on the pitch | 7-44% of frames by clip | "What it changes" |
+| Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
-| Out of play | precision 2 of 3, recall 2 of 4 | "The continuity check" |
+| Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
 | Shots and goals detected | 0 of 10, 0 of 2 | "Where the camera is" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 
@@ -39,8 +39,13 @@ error (it compared two poses sharing a wrong camera), the **"1 of 8" shots**
 (a cross) and **"1 of 2" goals** (crowd detections), and the out-of-play
 reasoning that the margin was smaller than the placement error.
 
-The limit now is the ball: detected too sparsely around shots to fit a
-strike, and placed as if on the grass when it is in the air.
+The limits now are shot detection and the ball in the air. Sparse ball
+detection explains only 2 of the 12 labelled shot and goal moments -- on the
+other 10 the ball is on the tracked path in 31-47 of the 50 frames around
+them -- and the shot detector accepts only a ball heading into the goal
+mouth, so a shot wide or over never counts. Tracing each labelled shot
+through its conditions is the next step. An airborne ball is still placed
+as if on the grass.
 
 ## Pass outcomes are close to a coin flip
 
