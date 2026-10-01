@@ -32,6 +32,7 @@ of the latest measurement:
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
 | Shots and goals detected | **3 of 10, 1 of 2**, no false ones | "Shots at the goal plane" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
+| Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
 Superseded, and kept only as history: anything placed by the centre-circle
 **anchor** (quarantined: its camera sits 62-72 m up), the **1.8 m** box-pose
@@ -1091,15 +1092,58 @@ On the six labelled windows it lost every event:
 | goals found | 1 of 2 | 0 of 2 |
 | out of play | 2 of 4, 0 false | 1 of 4, 1 false |
 
-On reading_1155's goal it scores the ball at the strike, on grass, 1.0 --
-and the same ball in the top corner of the net, and lying in it after, 0.0,
-with look-alikes nearby at 0.5-0.7. Nearly every training ball is on grass,
-so grass became part of what a ball is, and the held-out test could not
-show it because its balls were on grass too. The failure is the grass
-weighting's again, learned rather than written. Reverted; the classifier
-and its training script are kept unwired, since what it lacks is training
-balls against the net, the stands and the hoardings -- examples these
-public labels barely contain and a labelling round on this footage could.
+On reading_1155's goal it scores the ball at the strike, on grass, 1.0,
+and what was taken for the same ball in the top corner of the net 0.0. The
+reading at the time was that grass had become part of what a ball is.
+Reverted, and kept unwired for a labelling round on this footage. That
+reading turned out wrong; see the next section.
+
+### The ball clicked by hand: the classifier is right, the detector is blind
+
+The six windows were labelled by hand: every 5th frame from 1 s before to
+2 s after each labelled shot, goal and out, 190 frames, 138 with the ball
+visible (`make_ball_labeller.py`). Each click is a ball; every stored
+candidate on that frame away from it is a look-alike, 205 in all.
+Training on them could not be scored on the same clips, so it is leave one
+clip out (`train_ball_classifier.py --clip-labels`): each clip is tested
+and scored by a model trained on the public data and the other five
+clips only.
+
+| held-out clip | balls | look-alikes | AUC, public only | AUC, + other clips |
+|---|---|---|---|---|
+| reading_0737 | 32 | 38 | 0.922 | 0.975 |
+| reading_1155 | 16 | 36 | 0.812 | 0.969 |
+| reading_2519 | 12 | 28 | 0.997 | 1.000 |
+| stoke_1302 | 31 | 39 | 0.897 | 0.959 |
+| stoke_4207 | 28 | 40 | 0.961 | 0.922 |
+| stoke_7001 | 19 | 24 | 0.954 | 0.961 |
+
+Wired in with those scores, the windows still lose every shot and goal:
+shots 0 of 10, goals 0 of 2, out of play 2 of 4 with 1 false, against 3 of
+10, 1 of 2 and 2 of 4 with none. Reverted again.
+
+The clicks say why, and it is not the classifier. On the frames where the
+stored candidates include the clicked ball, it ranks the ball first 63
+times of 63 (ties counted as first). But they include it on only 63 of the
+138 frames -- 4 of 16 on reading_1155, none of 12 on reading_2519. The
+"ball in the net" it scored 0.0 was not the ball: the clicks put the ball
+in flight across the goal at 20-23 s with no candidate on it. With the
+look-alikes scored down, the path has nothing left to follow through the
+flight, and the flight is where the goal plane is crossed.
+
+Run again on the clicked frames alone, the detector finds the ball more
+often at higher input sizes:
+
+| input size | clicked balls proposed |
+|---|---|
+| 640 | 53 of 138 |
+| 1280 | 90 of 138 |
+| 1920 | 92 of 138 |
+
+Full resolution was reverted earlier because its extra candidates were
+mostly look-alikes the path then followed. A classifier that ranks the
+clicked ball first every time is the missing half of that experiment, so
+the two together are what to measure next.
 
 ### The camera between grid frames: interpolated, not frozen
 

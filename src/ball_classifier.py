@@ -19,17 +19,16 @@ detector proposes in those images that is not the labelled ball.
 
 ## Measured, and not used
 
-Held out on three whole source matches it scores AUC 0.956. Wired into the
-ball path on six labelled windows it lost every event -- shots 3 of 10 to
-0, goals 1 of 2 to 0, out of play 2 of 4 to 1 with a false one -- and the
-reason is the one the grass weighting had. On reading_1155's goal it scores
-the ball at the strike, on grass, 1.0, and the same ball in the top corner
-of the net and lying in it afterwards 0.0, while look-alikes around it
-score 0.5-0.7. Nearly every training ball is on grass, so grass became part
-of what a ball is; the held-out test agreed because its balls were on grass
-too. What it lacks are balls against the net, the stands and the hoardings,
-which these public labels barely contain. It is kept, unwired, for that:
-retrained with such examples it is the same experiment with the gap closed.
+Held out on three whole source matches it scores AUC 0.956. Retrained with
+the balls clicked on the six labelled windows, each clip held out in turn,
+it scores 0.92-1.00, and wherever the stored candidates include the clicked
+ball it ranks it first, 63 times of 63. Wired into the ball path it still
+lost every shot and goal (EVENT_ACCURACY.md, "The ball clicked by hand"):
+the detector proposes the ball on only 63 of the 138 clicked frames, so
+scoring down the look-alikes leaves the path nothing to follow through the
+ball's flight. It is kept, unwired, for when the detector finds more of
+the ball -- full resolution finds 90 of the 138, and brings back the
+look-alikes this classifier is for.
 """
 
 from __future__ import annotations
