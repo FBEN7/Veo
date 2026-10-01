@@ -105,6 +105,12 @@ NODE_REWARD = 1.0
 # grass behind the ball: the net, the stands over the bar, the hoardings
 # beyond the line. See EVENT_ACCURACY.md.
 
+# What a candidate the ball classifier is sure is not a ball loses, as a
+# share of `NODE_REWARD` -- equal to it, as with the grass weighting that
+# failed, but judged on the object rather than its background. Uses the
+# `p_ball` column where tracks carry one (`src/ball_classifier.py`).
+CLASSIFIER_WEIGHT = NODE_REWARD
+
 # A segment shorter than this is not a track, it is a coincidence.
 MIN_SEGMENT = 4
 
@@ -162,6 +168,10 @@ def choose(candidates: pd.DataFrame, fps: float, px_per_m: float,
 
     n = len(rows)
     cost = CONFIDENCE_WEIGHT * (1.0 - conf) - NODE_REWARD
+    if "p_ball" in rows.columns:
+        p_ball = rows.p_ball.to_numpy(float)
+        p_ball = np.where(np.isfinite(p_ball), np.clip(p_ball, 0.0, 1.0), 1.0)
+        cost = cost + CLASSIFIER_WEIGHT * (1.0 - p_ball)
     best = cost.copy()
     came = np.full(n, -1, dtype=int)
 

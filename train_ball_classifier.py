@@ -222,6 +222,8 @@ def leave_one_clip_out(pub_x, pub_y, labels: Path, cache: Path):
     The clips are then scored by models that never saw their answers, so
     the event measurement on them stays a test.
     """
+    import torch
+
     from src.ball_classifier import BallClassifier, score_clip
 
     cx, cy, csrc = mine_clip_labels(labels, cache)
@@ -239,6 +241,8 @@ def leave_one_clip_out(pub_x, pub_y, labels: Path, cache: Path):
         print(f"  {clip:>14s} {int(cy[test].sum()):6d} "
               f"{int((cy[test] == 0).sum()):12d} {before:16.3f} "
               f"{after:18.3f}", flush=True)
+        # Kept, so the clip can be rescored without retraining.
+        torch.save(model.state_dict(), cache.with_name(f"loco_{clip}.pt"))
         out = Path(f"output_{clip}")
         info = json.loads((out / "clip.json").read_text())
         score_clip(out, info, verbose=False,
