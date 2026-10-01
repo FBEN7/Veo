@@ -204,12 +204,7 @@ def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
     through the same detections instead, and carries a `segment` column
     marking where the ball was genuinely lost.
     """
-    from src.ball_densify import with_fullres
-
-    # Plus any full-resolution candidates found where the goal is in view
-    # (`src/ball_densify.py`), when a run has cached them.
-    tracks = with_fullres(pd.read_parquet(out_dir / "tracks.parquet"),
-                          out_dir)
+    tracks = pd.read_parquet(out_dir / "tracks.parquet")
     if fps is None:
         info_path = out_dir / "clip.json"
         fps = (json.loads(info_path.read_text())["fps"]

@@ -1017,7 +1017,10 @@ anything else happens. A goal is now confirmed when the ball is seen still
 on the spot (within 3 m, for 1 s) after it; refuted and downgraded to "on
 target" when another shot comes first; and reported unconfirmed when the
 clip ends or no kick-off is seen. reading_1155's goal is confirmed by its
-kick-off inside the 90 s clip. Controls cover all three verdicts.
+kick-off inside the 90 s clip, at 85.1 s, 65 s after the goal -- checked by
+eye on the frames: the ball on the centre spot, the teams in their halves,
+the ball still for the two seconds rendered. Controls cover all three
+verdicts.
 
 ### The hoardings: a real cause, and a fix that cost more than it gained
 
@@ -1048,6 +1051,27 @@ the net behind a goal, the stands above the bar, the hoardings past the
 line -- so a preference for grass removes exactly the frames they need.
 Telling a ball from a logo needs something about the object, not its
 background.
+
+### Full-resolution re-detection: tried and reverted
+
+The clips were detected at 640 or 960 px on 1280 px footage, and at the
+footage's own width the detector found a candidate on 47 of 50 frames
+around stoke_4207's shot at 66 s where the stored detections had 21. So the
+same detector was run at full width on every frame where the goal was in
+view, its new candidates joining the stored ones. Six windows:
+
+| | before | full resolution |
+|---|---|---|
+| shots found | 3 of 10, 0 false | 3 of 10, 0 false |
+| goals found | 1 of 2 | 0 of 2 |
+| out of play | 2 of 4, 0 false | 3 of 4, 4 false |
+
+It recovered stoke_4207's airborne out-of-play crossing and found no new
+shot; it lost reading_1155's goal and added four false crossings on three
+windows. Full width finds many more candidates -- 1,364 new ones on
+reading_2519 -- and more candidates are more chances to take a logo or a
+boot for the ball. The limit is telling the ball from what looks like it,
+which more candidates make harder rather than easier.
 
 ### The camera between grid frames: interpolated, not frozen
 
