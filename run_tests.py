@@ -81,6 +81,10 @@ CONTROLS = [
      "a camera 38 m from its starting guess located to 0.07 m, circle "
      "frames from a lower or nearer camera refused, and the one "
      "displacement the geometry cannot see pinned as accepted"),
+    ("shots at the goal plane",
+     [sys.executable, "-m", "src.goal_plane"],
+     "a shot into the top corner and one wide found where they cross the "
+     "line, a ball rolled to the keeper and one at rest not"),
     ("ball height from its flight",
      [sys.executable, "-m", "src.ball_height"],
      "a cross and a long ball recognised as in the air and a pass as on "
