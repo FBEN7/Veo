@@ -113,7 +113,7 @@ commence par un résumé de l'état actuel.
 | Distance, angle et xG des tirs | les 6 tirs annotés, xG total 0,47 | `EVENT_ACCURACY.md` |
 | Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
 | Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
-| Tirs et buts détectés | **0 sur 10 et 0 sur 2** | `EVENT_ACCURACY.md` |
+| Tirs et buts détectés | **3 sur 10 et 1 sur 2**, 1 faux tir | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
 | Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |
@@ -138,12 +138,13 @@ pas :
 
 ### Ce qui ne marche pas encore
 
-**Les tirs.** Aucun tir réel détecté (0 sur 10). La géométrie n'est plus en
-cause, et le ballon n'est rare que pour 2 des 12 moments annotés : sur les
-autres, il est suivi sur 31 à 47 des 50 images. Le détecteur n'accepte qu'un
-ballon dirigé vers le cadre, donc un tir à côté ou au-dessus ne compte
-jamais ; l'analyse tir par tir reste à faire. Le seul « tir » trouvé un temps
-était le centre qui le précédait.
+**Les tirs.** 3 tirs sur 10 et le but de reading_1155 sont trouvés, pour un
+seul faux tir. Le détecteur précédent n'en trouvait aucun : il plaçait le
+ballon au sol, et 5 des 12 moments annotés avaient le ballon en l'air. Le
+nouveau (`src/goal_plane.py`) lit le tir là où il franchit la ligne de but,
+dans le plan vertical du cadre, ce qui donne aussi sa hauteur : le but de
+reading_1155 entre à 2,1 m, en lucarne. Sur les 7 manqués, 4 n'ont presque
+aucune position du ballon autour du tir.
 
 **Le ballon en l'air.** Placer le ballon suppose qu'il est au sol ; en l'air,
 il est projeté bien trop loin. C'est la limite qui revient : elle a coûté un

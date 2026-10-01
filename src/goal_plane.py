@@ -93,7 +93,7 @@ def find_shots(ball, placer, fps: float):
         point = placer.place(row.frame, row.px, row.py)
         if point is not None:
             grass.append((float(row.time_s), float(point[0]),
-                          float(point[1])))
+                          float(point[1]), int(row.frame)))
 
     found = []
     for row in ball.itertuples():
@@ -110,24 +110,26 @@ def find_shots(ball, placer, fps: float):
         when = float(row.time_s)
         # The strike: the latest grass reading in shooting range before this.
         strike = None
-        for t, x, y in reversed(grass):
+        for t, x, y, f in reversed(grass):
             if t >= when:
                 continue
             if when - t > LOOKBACK_S:
                 break
             if MIN_STRIKE_M <= x <= MAX_STRIKE_M:
-                strike = (t, x, y)
+                strike = (t, x, y, f)
                 break
         if strike is None:
             continue
-        t0, x0, y0 = strike
+        t0, x0, y0, f0 = strike
         travel = float(np.linalg.norm([x0 - 0.0, y0 - (LEFT_POST_Y + X),
                                        0.11 - Y]))
         speed = travel / (when - t0)
         if not MIN_SPEED_MS <= speed <= MAX_SPEED_MS:
             continue
-        found.append({"frame": int(row.frame), "time_s": t0,
-                      "crossing_s": when, "x": x0, "y": y0,
+        # `frame` is the strike's, as for the ground detector: it is where
+        # the shooter is looked for.
+        found.append({"frame": f0, "time_s": t0, "crossing_frame":
+                      int(row.frame), "crossing_s": when, "x": x0, "y": y0,
                       "across_m": X, "height_m": Y, "speed_ms": speed,
                       "outcome": outcome, "goal": "left",
                       "distance_m": float(np.hypot(

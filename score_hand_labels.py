@@ -405,6 +405,14 @@ def main():
                                         rng, frames,
                                         reproduce=args.reproduce)
     shots, placed = detect_shots.find_shots(ball, maps, info["fps"])
+    if hasattr(maps, "pose_at"):
+        # With a camera pose per frame, shots are read where they cross the
+        # goal plane (`src/goal_plane.py`): a ball in the air is placed far
+        # beyond itself on the grass, and five of the twelve labelled shot
+        # and goal moments were in the air.
+        from src import goal_plane
+
+        shots = goal_plane.find_shots(ball, maps, info["fps"])
     shots = detect_shots.score(detect_shots.attribute(shots, out_dir, ball))
     stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])
     outs = [e for e in stoppages if e["event_type"] == "out_of_play"]

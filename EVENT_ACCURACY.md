@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | 0 of 10, 0 of 2 | "Where the camera is" |
+| Shots and goals detected | **3 of 10, 1 of 2**, 1 false shot | "Shots at the goal plane" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 
 Superseded, and kept only as history: anything placed by the centre-circle
@@ -39,13 +39,9 @@ error (it compared two poses sharing a wrong camera), the **"1 of 8" shots**
 (a cross) and **"1 of 2" goals** (crowd detections), and the out-of-play
 reasoning that the margin was smaller than the placement error.
 
-The limits now are shot detection and the ball in the air. Sparse ball
-detection explains only 2 of the 12 labelled shot and goal moments -- on the
-other 10 the ball is on the tracked path in 31-47 of the 50 frames around
-them -- and the shot detector accepts only a ball heading into the goal
-mouth, so a shot wide or over never counts. Tracing each labelled shot
-through its conditions is the next step. An airborne ball is still placed
-as if on the grass.
+The limits now: four labelled shot moments have almost no placed ball
+positions, and outside the goal plane an airborne ball is still placed as
+if on the grass.
 
 ## Pass outcomes are close to a coin flip
 
@@ -940,6 +936,52 @@ by physics rather than by threshold takes precision from 0.20 to 0.67.
 
 The section below is kept as it was written; its conclusion about the
 margin rested on the retired 1.8 m figure.
+
+### Shots at the goal plane: 3 of 10 and the goal, where there had been none
+
+Every labelled shot and goal was traced through the ground-based shot
+detector's conditions. Sparse ball detection explains only some of the
+misses -- on 10 of the 12 moments the ball is on the tracked path in 31-47 of
+the 50 frames around them. What the trace found:
+
+| cause | moments |
+|---|---|
+| ball in the air: 56-112 m/s on the grass, direction skewed | 5 |
+| 2-5 placed positions in the 3 s around it | 4 |
+| no fast movement toward goal in the window | 3 |
+
+Rendered, reading_1155's goal is a strike on the edge of the box, no
+detections in flight, and the next sighting in the top corner of the net.
+Projected onto the grass, that sighting lands 2.9 m wide of the post and
+makes the strike 72 m/s.
+
+`src/goal_plane.py` reads a shot where it crosses the goal line instead. The
+mouth is a vertical rectangle in the goal's frame, so a sighting's ray can
+meet that plane rather than the grass, giving position across the mouth and
+height at the line. A shot is a sighting whose ray crosses near the mouth
+(within 3 m wide, 2 m over), from the last grass reading in shooting range
+inside 1.5 s, at 10-45 m/s. All physical limits; none chosen on the labels.
+
+| | ground detector | goal plane |
+|---|---|---|
+| labelled shots found | 0 of 10 | **3 of 10** |
+| labelled goals found | 0 of 2 | **1 of 2** |
+| false shots, six windows | 0 | **1** |
+
+The three: reading_1155's goal, on target, 2.1 m up at the line from
+17.6 m; reading_0737 at 00:20, on target, 2.0 m up from 7.9 m; and
+stoke_4207 at 01:06, off target, 2.8 m up -- over the 2.44 m bar, which
+agrees with the labels' out of play a second later. The false shot is on
+reading_1155 four seconds after the goal, most likely the ball still in the
+net; it is recorded, not ruled out by a threshold fitted to it.
+
+Of the seven missed, four are the moments with 2-5 placed positions, which
+no detector reading positions can recover. A cross passing 3 m up within
+about 5 m of goal would also read as an off-target shot; the controls show
+one 8 m out does not.
+
+The scorer now uses this detector wherever the placer has a camera pose
+per frame.
 
 ### The camera between grid frames: interpolated, not frozen
 
