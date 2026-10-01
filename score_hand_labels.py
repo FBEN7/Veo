@@ -493,6 +493,12 @@ def main():
             if "outcome" in shot:
                 extra += (f", {shot['outcome']}, {shot['height_m']:.1f} m "
                           f"up at the line")
+            if "crossing_frame" in shot:
+                # The sighting read as the ball at the line, to check by eye.
+                at = ball[ball.frame == shot["crossing_frame"]]
+                if not at.empty:
+                    extra += (f", crossing frame {shot['crossing_frame']} at "
+                              f"px ({at.px.iloc[0]:.0f}, {at.py.iloc[0]:.0f})")
             if shot.get("goal_check"):
                 extra += f" [{shot['goal_check']}]"
             print(f"    t={shot['time_s']:6.1f}s  "
