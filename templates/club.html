@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f5f1">
+    <title>Clubhouse | Football performance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="[[ url_for('static', filename='club-dashboard.css') ]]">
+</head>
+<body>
+    <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="icon-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/></symbol>
+        <symbol id="icon-matches" viewBox="0 0 24 24"><path d="M7 3v3m10-3v3M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="m9 15 2 2 4-4"/></symbol>
+        <symbol id="icon-squad" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0m1-15.5a3.5 3.5 0 0 1 0 7m2 2a5.5 5.5 0 0 1 3 6.5"/></symbol>
+        <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+        <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+        <symbol id="icon-arrow-up" viewBox="0 0 24 24"><path d="M7 17 17 7M7 7h10v10"/></symbol>
+        <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></symbol>
+        <symbol id="icon-chat" viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-9.5A7.5 7.5 0 1 1 18 7"/><path d="M14 4h7m-3.5-3.5v7"/></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+        <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></symbol>
+        <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+        <symbol id="icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+        <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9a7 7 0 0 1 11.7-2L20 12M4 12l2.8 5a7 7 0 0 0 11.7-2"/></symbol>
+    </svg>
+
+    <div id="app" class="app-shell" :class="{ 'nav-open': mobileNavOpen, 'reference-mode': page === 'overview' }">
+        <div v-if="mobileNavOpen" class="mobile-scrim" @click="mobileNavOpen = false"></div>
+        <aside class="sidebar">
+            <a class="brand" href="#overview" @click.prevent="changePage('overview')">
+                <span class="brand-mark"><span>R</span><i></i></span>
+                <span class="brand-wordmark"><strong>RIVERSIDE</strong><small>ATHLETIC CLUB</small></span>
+            </a>
+
+            <div class="sidebar-label">CLUBHOUSE</div>
+            <nav class="main-nav" aria-label="Main navigation">
+                <button class="nav-link" :class="{ active: page === 'overview' }" @click="changePage('overview')">
+                    <svg><use href="#icon-overview"/></svg><span>Overview</span>
+                </button>
+                <button class="nav-link" :class="{ active: page === 'matches' || page === 'report' }" @click="changePage('matches')">
+                    <svg><use href="#icon-matches"/></svg><span>Matches</span><span class="nav-count">{{ matches.length || '—' }}</span>
+                </button>
+                <button class="nav-link" :class="{ active: page === 'squad' }" @click="changePage('squad')">
+                    <svg><use href="#icon-squad"/></svg><span>Squad</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-season">
+                <div class="sidebar-season-mark"><span></span><span></span><span></span></div>
+                <div><small>FIRST TEAM</small><strong>Season {{ season }}</strong></div>
+                <button class="icon-button sidebar-refresh" aria-label="Refresh match data" title="Refresh match data" @click="loadWorkspace">
+                    <svg><use href="#icon-refresh"/></svg>
+                </button>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="sidebar-online"><span></span> {{ isDemo ? 'Fictional demo loaded' : 'Match data connected' }}</div>
+                <button class="profile-button" @click="openSignIn">
+                    <span class="avatar avatar-small">{{ displayName.charAt(0).toUpperCase() }}</span>
+                    <span class="profile-copy"><strong>{{ displayName }}</strong><small>{{ role === 'player' ? 'Player view' : 'Staff view' }}</small></span>
+                    <svg class="profile-chevron"><use href="#icon-chevron"/></svg>
+                </button>
+            </div>
+        </aside>
+
+        <div class="main-shell">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="icon-button mobile-menu" aria-label="Open navigation" @click="mobileNavOpen = !mobileNavOpen">
+                        <span class="menu-lines"></span>
+                    </button>
+                    <div class="breadcrumbs"><span>RIVERSIDE ATHLETIC</span><b>/</b><strong>{{ pageTitle }}</strong></div>
+                </div>
+                <div class="topbar-actions">
+                    <span class="season-chip"><span></span> {{ season }} SEASON</span>
+                    <button class="top-assistant" @click="$refs.assistantInput.focus()">
+                        <svg><use href="#icon-spark"/></svg><span>Ask your analyst</span><kbd>AI</kbd>
+                    </button>
+                    <button class="top-profile" :aria-label="`Open ${displayName} account`" @click="openSignIn">
+                        <span class="avatar">{{ displayName.charAt(0).toUpperCase() }}</span><svg><use href="#icon-chevron"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="workspace-grid">
+                <main class="page-content">
+                    <div v-if="loadError" class="notice notice-error">
+                        <span>{{ loadError }}</span><button class="text-button" @click="loadWorkspace">Retry</button>
+                    </div>
+
+                    <template v-if="page === 'overview'">
+                        <section class="team-dashboard" aria-label="Current season team overview">
+                            <div class="team-dashboard-top"><div><span class="team-eyebrow"><i></i> RIVERSIDE ATHLETIC <b>/</b> FIRST TEAM</span><h1>Season command centre<span>.</span></h1><p>Everything your staff needs to understand the team at a glance.</p></div><div class="team-dashboard-actions"><div class="data-source-switch" role="group" aria-label="Choose dashboard data"><button :class="{ active: dataSource === 'demo' }" @click="switchDataSource('demo')">Demo season</button><button :class="{ active: dataSource === 'real' }" @click="switchDataSource('real')">Imported reports</button></div><button class="team-period">{{ season }} <span>⌄</span></button></div></div>
+                            <section class="team-hero-grid"><article class="team-identity-card"><img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1100&q=85" alt="Football team on the pitch"><div class="team-identity-overlay"></div><div class="team-identity-copy"><span class="team-card-kicker">CLUB PERFORMANCE HUB</span><h2>The first team,<br>in full.</h2><p>{{ seasonTotals.games }} reports connected · {{ seasonTotals.players }} players tracked</p><button @click="changePage('matches')">Open match centre <svg><use href="#icon-arrow"/></svg></button></div><div class="team-badge">RA</div></article><article class="season-record-card"><div class="team-card-heading"><div><span>SEASON RECORD</span><h2>Form that tells a story</h2></div><span class="record-period">{{ season }}</span></div><div class="record-score"><strong>{{ wins }}</strong><i>W</i><strong>{{ draws }}</strong><i>D</i><strong>{{ losses }}</strong><i>L</i></div><div class="record-bar"><i v-for="(match, index) in seasonResults" :key="`${match.id}-${index}`" :class="`record-${match.result?.outcome?.toLowerCase() || 'unknown'}`"></i></div><div class="record-foot"><span>{{ winRate === null ? '--' : `${winRate}%` }} win rate</span><span>{{ seasonTotals.goals }} goals scored</span></div></article></section>
+                            <section class="team-kpi-grid"><article><span>GOALS FOR</span><strong>{{ formatNumber(seasonTotals.goals) }}</strong><small>{{ seasonTotals.games ? formatNumber(seasonTotals.goals / seasonTotals.games, 1) : '--' }} per game</small></article><article><span>POSSESSION</span><strong>{{ seasonTotals.averagePossession === null ? '--' : `${formatNumber(seasonTotals.averagePossession, 1)}%` }}</strong><small>season average</small></article><article><span>PASSES</span><strong>{{ formatNumber(seasonTotals.passes) }}</strong><small>{{ seasonTotals.passCompletion === null ? '--' : `${formatNumber(seasonTotals.passCompletion, 1)}%` }} completed</small></article><article><span>TEAM DISTANCE</span><strong>{{ formatNumber(seasonTotals.distance, 1) }}<em>km</em></strong><small>tracked movement</small></article></section>
+                            <section class="team-chart-grid"><article class="team-panel team-trend-panel"><div class="team-panel-heading"><div><span>ATTACK & DEFENCE</span><h2>Goals across the season</h2></div><div class="chart-legend"><i></i> FOR <i></i> AGAINST</div></div><div class="goal-trend-chart"><div class="goal-grid-lines"><i></i><i></i><i></i><i></i></div><div v-for="match in teamTrend" :key="match.id" class="goal-trend-column" :title="match.label"><div class="goal-trend-bars"><i class="for" :style="{ height: `${Math.max(8, Math.min(100, (match.goals + 1) * 25))}%` }"></i><i class="against" :style="{ height: `${Math.max(8, Math.min(100, (match.conceded + 1) * 25))}%` }"></i></div><b :class="`trend-result-${match.outcome.toLowerCase()}`">{{ match.outcome }}</b><small>M{{ match.index }}</small></div></div></article><article class="team-panel possession-panel"><div class="team-panel-heading"><div><span>CONTROL OF THE GAME</span><h2>Possession trend</h2></div><strong>{{ seasonTotals.averagePossession === null ? '--' : `${formatNumber(seasonTotals.averagePossession, 1)}%` }}</strong></div><svg class="possession-chart" viewBox="0 0 420 150" preserveAspectRatio="none"><path class="chart-grid" d="M0 25h420M0 75h420M0 125h420"/><path class="possession-area" d="M0 100 C42 84 68 95 105 68 S162 81 195 59 S244 43 280 66 S330 39 365 49 S394 30 420 39 L420 150 L0 150Z"/><path class="possession-line" d="M0 100 C42 84 68 95 105 68 S162 81 195 59 S244 43 280 66 S330 39 365 49 S394 30 420 39"/></svg><div class="chart-axis"><span>Match 1</span><span>Match {{ seasonTotals.games }}</span></div></article></section>
+                            <section class="team-lower-grid"><article class="team-panel leaders-panel"><div class="team-panel-heading"><div><span>THE DIFFERENCE MAKERS</span><h2>Squad leaders</h2></div><button class="panel-link" @click="changePage('squad')">View squad <svg><use href="#icon-arrow"/></svg></button></div><div class="leader-row"><span class="leader-avatar">{{ seasonLeaders.distance?.jersey_number || '—' }}</span><div><small>MOST DISTANCE</small><strong>{{ seasonLeaders.distance?.name || 'No player data' }}</strong></div><b>{{ seasonLeaders.distance ? `${formatNumber(Number(seasonLeaders.distance.distance_m) / 1000, 1)} km` : '--' }}</b></div><div class="leader-row"><span class="leader-avatar coral">{{ seasonLeaders.goals?.jersey_number || '—' }}</span><div><small>TOP SCORER</small><strong>{{ seasonLeaders.goals?.name || 'No player data' }}</strong></div><b>{{ seasonLeaders.goals ? `${formatNumber(seasonLeaders.goals.goals)} goals` : '--' }}</b></div><div class="leader-row"><span class="leader-avatar blue">{{ seasonLeaders.passes?.jersey_number || '—' }}</span><div><small>MOST PASSES</small><strong>{{ seasonLeaders.passes?.name || 'No player data' }}</strong></div><b>{{ seasonLeaders.passes ? formatNumber(seasonLeaders.passes.passes_completed) : '--' }}</b></div></article><article class="team-panel match-photo-panel"><img src="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=900&q=85" alt="Football match in progress"><div><span>THE NEXT LEVEL</span><h2>Read every match<br>with context.</h2><button @click="changePage('matches')">Browse reports <svg><use href="#icon-arrow"/></svg></button></div></article></section>
+                            <section class="squad-gallery-section"><div class="team-panel-heading"><div><span>THE FIRST TEAM</span><h2>Meet the squad</h2></div><button class="panel-link" @click="changePage('squad')">Full squad <svg><use href="#icon-arrow"/></svg></button></div><div class="squad-gallery"><button v-for="player in squad.slice(0, 9)" :key="player.track_id" class="squad-gallery-card" @click="selectedPlayerId = player.track_id; changePage('squad')"><span class="squad-gallery-photo"><img v-if="player.photo_url" :src="player.photo_url" :alt="player.name"><b v-else>{{ player.jersey_number }}</b></span><span class="squad-gallery-number">#{{ player.jersey_number }}</span><strong>{{ player.name }}</strong><small>{{ player.position }}</small></button></div></section>
+                        </section>
+                        <section v-if="false" class="reference-dashboard" aria-label="Player intelligence dashboard">
+                            <div class="reference-dashboard-header"><div class="reference-breadcrumb"><span>HOME</span><b>›</b><strong>PLAYERS</strong></div><div class="reference-controls"><button class="reference-select">⚽ Football <span>⌄</span></button><button class="reference-select">▣ {{ season }} <span>⌄</span></button><label class="reference-search"><svg><use href="#icon-search"/></svg><input type="search" placeholder="Search players..."></label></div></div>
+                            <div class="reference-profile-grid">
+                                <article class="reference-profile-card"><div class="reference-profile-glow"></div><div class="reference-profile-copy"><span class="reference-kicker">FIRST TEAM <b>•</b> PLAYER PROFILE</span><h1>{{ selectedPlayer?.name || 'James Trafford' }}</h1><p class="reference-meta"><span>◉</span> Riverside Athletic <b>•</b> {{ selectedPlayer?.position || 'Goalkeeper' }} <b>•</b> #{{ selectedPlayer?.jersey_number || 1 }}</p><button class="reference-follow">Follow</button><div class="reference-bio-grid"><span><b>♙</b><small>Height</small><strong>197 cm</strong></span><span><b>◌</b><small>Weight</small><strong>87 kg</strong></span><span><b>♧</b><small>Preferred foot</small><strong>Right</strong></span><span><b>◈</b><small>Appearances</small><strong>{{ selectedPlayer?.appearances || seasonTotals.games }}</strong></span></div></div><div class="reference-player-cutout"><img v-if="selectedPlayer?.photo_url" :src="selectedPlayer.photo_url" :alt="selectedPlayer.name"><span v-else>{{ selectedPlayer?.jersey_number || '1' }}</span></div><div class="reference-profile-footer"><span><small>Matches</small><strong>{{ selectedPlayer?.appearances || seasonTotals.games }}</strong></span><span><small>Clean sheets</small><strong>{{ Math.max(1, Math.round((selectedPlayer?.appearances || 4) * .41)) }}</strong></span><span><small>Goals conceded</small><strong>{{ selectedPlayer?.n_goals || 0 }}</strong></span><span><small>Season rating</small><strong>{{ formatNumber(selectedPlayer?.rating, 1) }}</strong></span></div></article>
+                                <article class="reference-panel traits-panel"><div class="reference-panel-title"><div><span>PLAYER TRAITS</span><h2>Performance profile</h2></div><i>ⓘ</i></div><div class="reference-radar"><svg viewBox="0 0 220 190"><polygon points="110,15 183,68 155,155 65,155 37,68"/><polygon class="inner" points="110,46 153,77 137,128 83,128 67,77"/><polygon class="shape" points="110,30 163,77 145,139 76,130 55,75"/><path d="M110 15v140M37 68l118 87M183 68 65 155M110 15 65 155M110 15l45 140"/><text x="110" y="9">PACE</text><text x="192" y="70">PASSING</text><text x="155" y="170">DEFENCE</text><text x="53" y="170">WORK RATE</text><text x="15" y="70">IMPACT</text></svg></div></article>
+                            </div>
+                            <div class="reference-profile-stats"><span><small>Distance covered</small><strong>{{ formatNumber(Number(selectedPlayer?.distance_m) / 1000, 1) }}<em>km</em></strong></span><span><small>Passes completed</small><strong>{{ formatNumber(selectedPlayer?.passes_completed) }}</strong></span><span><small>Goals + assists</small><strong>{{ formatNumber(selectedPlayer?.goals) }} <em>G</em> {{ formatNumber(selectedPlayer?.assists) }} <em>A</em></strong></span><span><small>Top speed</small><strong>{{ formatNumber(selectedPlayer?.top_speed_kmh, 1) }}<em>km/h</em></strong></span></div>
+                            <div class="reference-lower-grid"><article class="reference-panel value-panel"><div class="reference-panel-title"><div><span>CONTRIBUTION TREND</span><h2>Player output</h2></div><b>LAST 6 MATCHES</b></div><div class="reference-value-row"><strong>{{ formatNumber(selectedPlayer?.rating, 1) }}</strong><span>average rating</span><em>+8.3%</em></div><svg class="reference-line-chart" viewBox="0 0 520 155" preserveAspectRatio="none"><path class="grid-line" d="M0 25h520M0 77h520M0 130h520"/><path class="line" d="M4 128 C55 114 68 119 112 94 S169 88 205 104 S252 77 287 87 S340 49 374 68 S425 30 468 52 S494 27 516 36"/><circle cx="516" cy="36" r="5"/></svg><div class="reference-axis"><span>Match 1</span><span>Match 3</span><span>Match 6</span></div></article><article class="reference-panel shot-panel"><div class="reference-panel-title"><div><span>{{ season }} <b>•</b> PREMIER LEAGUE</span><h2>Match actions</h2></div><b>LAST MATCH</b></div><div class="pitch-map"><i class="pitch-line halfway"></i><i class="pitch-line box"></i><i class="pitch-line box right"></i><span class="shot-dot dot-one"></span><span class="shot-dot dot-two"></span><span class="shot-dot dot-three"></span><span class="shot-dot dot-four"></span><span class="shot-dot dot-five"></span></div><div class="pitch-legend"><span><i class="saved"></i> Saves {{ Math.max(2, selectedPlayer?.tackles || 2) }}</span><span><i class="conceded"></i> Goals conceded {{ selectedPlayer?.n_goals || 0 }}</span></div></article></div>
+                        </section>
+                    </template>
+                    <template v-if="false && page === 'overview'">
+                        <div v-if="isDemo && demoNotice" class="demo-banner"><span class="demo-banner-mark">i</span><span><strong>DEMO SEASON</strong> These fictional results and player statistics are for preview only.</span><button class="demo-banner-close" title="Dismiss notice" aria-label="Dismiss demo data notice" @click="demoNotice = ''"><svg><use href="#icon-close"/></svg></button></div>
+                        <section class="page-heading">
+                            <div><div class="eyebrow"><span></span> THE FIRST TEAM <span class="eyebrow-divider">/</span> {{ season }} SEASON</div>
+                                <h1>Season overview<span class="heading-period">.</span></h1>
+                                <p class="heading-subtitle">The work behind every result.</p>
+                            </div>
+                            <div class="heading-actions"><div class="data-source-switch" role="group" aria-label="Choose dashboard data"><button :class="{ active: dataSource === 'demo' }" @click="switchDataSource('demo')">Demo season</button><button :class="{ active: dataSource === 'real' }" @click="switchDataSource('real')">Imported reports</button></div><button class="outline-button" @click="changePage('matches')">All match reports <svg><use href="#icon-arrow"/></svg></button></div>
+                        </section>
+
+                        <section class="season-hero" aria-label="Season record">
+                            <img class="hero-photo" src="https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=1400&q=85" alt="Football pitch before a match" loading="eager">
+                            <div class="hero-tint"></div>
+                            <div class="hero-copy">
+                                <span class="hero-tag"><span></span> {{ season }} SEASON REPORT <i v-if="isDemo">· FICTIONAL PREVIEW</i></span>
+                                <h2>The season,<br>so far.</h2>
+                                <p v-if="seasonTotals.games">{{ seasonTotals.games }} match{{ seasonTotals.games === 1 ? '' : 'es' }} in the books. Keep building.</p>
+                                <p v-else-if="loading">Gathering your match reports...</p>
+                                <p v-else>Your match reports will appear here.</p>
+                                <button class="hero-link" @click="changePage('matches')">View season report <svg><use href="#icon-arrow"/></svg></button>
+                            </div>
+                            <div class="hero-record">
+                                <small>RECORD</small>
+                                <strong>{{ wins }}<i>–</i>{{ draws }}<i>–</i>{{ losses }}</strong>
+                                <span>WINS <b></b> DRAWS <b></b> LOSSES</span>
+                            </div>
+                            <div class="hero-watermark">RA</div>
+                        </section>
+
+                        <section class="metric-strip" aria-label="Season statistics">
+                            <div class="metric-item"><div class="metric-label">WIN RATE <span class="metric-dot dot-green"></span></div><div class="metric-value">{{ winRate === null ? '--' : `${winRate}%` }}</div><div class="metric-foot">{{ wins }} W <span>/</span> {{ draws }} D <span>/</span> {{ losses }} L</div></div>
+                            <div class="metric-item"><div class="metric-label">GOALS SCORED <span class="metric-dot dot-orange"></span></div><div class="metric-value">{{ loading ? '—' : formatNumber(seasonTotals.goals) }}</div><div class="metric-foot">Across {{ seasonTotals.games }} match{{ seasonTotals.games === 1 ? '' : 'es' }}</div></div>
+                            <div class="metric-item"><div class="metric-label">AVG. POSSESSION <span class="metric-dot dot-blue"></span></div><div class="metric-value">{{ seasonTotals.averagePossession === null ? '--' : `${formatNumber(seasonTotals.averagePossession, 1)}%` }}</div><div class="metric-foot">Mean per match report</div></div>
+                            <div class="metric-item"><div class="metric-label">TEAM DISTANCE <span class="metric-dot dot-lime"></span></div><div class="metric-value">{{ formatNumber(seasonTotals.distance, 1) }}<small>km</small></div><div class="metric-foot">Total across all reports</div></div>
+                        </section>
+                        <section class="season-secondary-metrics" aria-label="Additional season totals"><span><small>EXPECTED GOALS</small><strong>{{ formatNumber(seasonTotals.xg, 1) }} xG</strong></span><span><small>PASSES COMPLETED</small><strong>{{ formatNumber(seasonTotals.passes) }}</strong></span><span><small>PASS COMPLETION</small><strong>{{ formatNumber(seasonTotals.passCompletion, 1) }}%</strong></span><span><small>TACKLES</small><strong>{{ formatNumber(seasonTotals.tackles) }}</strong></span><span><small>ASSISTS</small><strong>{{ formatNumber(seasonTotals.assists) }}</strong></span></section>
+
+                        <section v-if="seasonPulse.length" class="visual-grid" aria-label="Season visual summary">
+                            <article class="visual-panel form-visual"><div class="visual-panel-heading"><div><span class="section-kicker">SEASON PULSE</span><h2>Results at a glance</h2></div><span class="visual-legend"><i class="legend-for"></i> FOR <i class="legend-against"></i> AGAINST</span></div><div class="pulse-chart"><div v-for="item in seasonPulse" :key="item.id" class="pulse-column" :title="`${item.label}: ${item.goals}–${item.against}`"><div class="pulse-bars"><i class="pulse-for" :style="{ height: `${Math.max(8, Math.min(100, (item.goals + 1) * 22))}%` }"></i><i class="pulse-against" :style="{ height: `${Math.max(8, Math.min(100, (item.against + 1) * 22))}%` }"></i></div><strong class="pulse-result" :class="`result-${item.outcome.toLowerCase()}`">{{ item.outcome }}</strong><small>{{ item.goals }}–{{ item.against }}</small></div></div></article>
+                            <article class="visual-panel insight-visual"><div class="visual-panel-heading"><div><span class="section-kicker">PERFORMANCE LENS</span><h2>Season snapshot</h2></div><svg class="visual-spark"><use href="#icon-spark"/></svg></div><div class="snapshot-list"><div><span>WIN RATE</span><strong>{{ winRate === null ? '--' : `${winRate}%` }}</strong><em>{{ wins }} wins from {{ seasonTotals.games }} reports</em></div><div><span>AVG. GOALS</span><strong>{{ seasonTotals.games ? formatNumber(seasonTotals.goals / seasonTotals.games, 1) : '--' }}</strong><em>scored per report</em></div><div><span>PLAYER POOL</span><strong>{{ seasonTotals.players || '--' }}</strong><em>tracked players this season</em></div></div></article>
+                        </section>
+
+                        <section class="content-section recent-section">
+                            <div class="section-heading"><div><span class="section-kicker">THE FIXTURES</span><h2>Recent matches</h2></div><button class="section-action" @click="changePage('matches')">Full match centre <svg><use href="#icon-arrow"/></svg></button></div>
+                            <div v-if="loading" class="loading-rows"><div v-for="item in 3" :key="item" class="loading-row"></div></div>
+                            <div v-else-if="recentMatches.length" class="match-list">
+                                <button v-for="match in recentMatches" :key="match.id" class="match-row" @click="openMatch(match)">
+                                    <span class="match-date"><strong>{{ formatDate(match.date, { day: '2-digit' }) }}</strong><small>{{ formatDate(match.date, { month: 'short' }).toUpperCase() }}</small></span>
+                                    <span class="match-row-content"><span class="match-comp">FIRST TEAM <b>•</b> {{ formatDate(match.date, { weekday: 'short' }) }}</span><strong class="match-name">{{ match.label || `Match ${match.id}` }}</strong></span>
+                                    <span v-if="match.result" class="match-score"><span class="result-pill" :class="`result-${match.result.outcome.toLowerCase()}`">{{ match.result.outcome }}</span><strong>{{ match.result.for }} <i>–</i> {{ match.result.against }}</strong></span>
+                                    <span v-else class="match-score"><span class="report-pending">REPORT</span><strong>View details</strong></span>
+                                    <svg class="match-row-arrow"><use href="#icon-chevron"/></svg>
+                                </button>
+                            </div>
+                            <div v-else class="empty-state compact-empty"><div class="empty-crest">RA</div><strong>No match reports yet</strong><p>When you import a game analysis, it will appear here.</p></div>
+                        </section>
+
+                        <section v-if="seasonResults.length" class="content-section form-section">
+                            <div class="section-heading"><div><span class="section-kicker">MOMENTUM</span><h2>Recent form</h2></div><span class="form-caption">LAST {{ Math.min(seasonResults.length, 5) }} RESULTS</span></div>
+                            <div class="form-track"><div v-for="(outcome, index) in recentForm" :key="`${index}-${outcome}`" class="form-item"><span class="form-dot" :class="`result-${outcome.toLowerCase()}`">{{ outcome }}</span><small>{{ formatDate(sortedMatches[index]?.date, { day: 'numeric', month: 'short' }) }}</small></div></div>
+                        </section>
+                    </template>
+
+                    <template v-else-if="page === 'matches'">
+                        <div v-if="isDemo && demoNotice" class="demo-banner"><span class="demo-banner-mark">i</span><span><strong>FICTIONAL DEMO DATA</strong> Match results and statistics are sample data for the interface preview.</span><button class="demo-banner-close" title="Dismiss notice" aria-label="Dismiss demo data notice" @click="demoNotice = ''"><svg><use href="#icon-close"/></svg></button></div>
+                        <section class="page-heading compact-heading"><div><div class="eyebrow"><span></span> FIXTURES & PERFORMANCE</div><h1>Match centre<span class="heading-period">.</span></h1><p class="heading-subtitle">One report for every match. Built from the numbers that matter.</p></div><span class="match-total"><strong>{{ matches.length }}</strong> REPORTS</span></section>
+                        <section class="content-section centre-list-section">
+                            <div class="centre-list-header"><span>DATE</span><span>FIXTURE</span><span>RESULT</span><span></span></div>
+                            <div v-if="loading" class="loading-rows"><div v-for="item in 4" :key="item" class="loading-row"></div></div>
+                            <div v-else-if="sortedMatches.length" class="match-list centre-list">
+                                <button v-for="match in sortedMatches" :key="match.id" class="match-row" @click="openMatch(match)">
+                                    <span class="match-date"><strong>{{ formatDate(match.date, { day: '2-digit' }) }}</strong><small>{{ formatDate(match.date, { month: 'short' }).toUpperCase() }}</small></span>
+                                    <span class="match-row-content"><span class="match-comp">FIRST TEAM <b>•</b> {{ formatDate(match.date, { year: 'numeric' }) }}</span><strong class="match-name">{{ match.label || `Match ${match.id}` }}</strong></span>
+                                    <span v-if="match.report && match.result" class="match-score"><span class="result-pill" :class="`result-${match.result.outcome.toLowerCase()}`">{{ formatOutcome(match.result.outcome) }}</span><strong>{{ match.result.for }} <i>–</i> {{ match.result.against }}</strong></span>
+                                    <span v-else class="match-score"><span class="report-pending">ANALYSIS</span><strong>View report</strong></span>
+                                    <svg class="match-row-arrow"><use href="#icon-chevron"/></svg>
+                                </button>
+                            </div>
+                            <div v-else class="empty-state"><div class="empty-crest">RA</div><strong>Your first report starts a season.</strong><p>Analysed matches will be listed here with their team and player performance.</p></div>
+                        </section>
+                    </template>
+
+                    <template v-else-if="page === 'report'">
+                        <div v-if="isDemo && demoNotice" class="demo-banner report-demo"><span class="demo-banner-mark">i</span><span><strong>FICTIONAL MATCH DATA</strong> This report is for preview purposes only.</span></div>
+                        <section class="report-back-row"><button class="back-button" @click="changePage('matches')"><svg class="back-chevron"><use href="#icon-chevron"/></svg> All matches</button><span class="report-season-label">{{ season }} SEASON</span></section>
+                        <div v-if="currentReport && selectedMatchId" class="report-view">
+                            <section class="report-hero">
+                                <div class="report-hero-meta"><span class="report-live-dot"></span> MATCH REPORT <span>•</span> {{ formatDate(matches.find((match) => match.id === selectedMatchId)?.date) }}</div>
+                                <h1>{{ matches.find((match) => match.id === selectedMatchId)?.label || 'Match report' }}</h1>
+                                <div v-if="resultFor(currentReport)" class="scoreline"><div class="score-team"><span class="mini-crest">RA</span><strong>Riverside Athletic</strong></div><strong class="score-number">{{ resultFor(currentReport).for }}<i>:</i>{{ resultFor(currentReport).against }}</strong><div class="score-team score-opponent"><span class="opponent-crest">{{ String(resultFor(currentReport).opponent).slice(0, 2).toUpperCase() }}</span><strong>{{ resultFor(currentReport).opponent }}</strong></div></div>
+                                <div v-else class="scoreline score-unavailable"><span>Score not available in this report</span></div>
+                            </section>
+                            <section class="report-stat-grid">
+                                <article class="report-stat"><span>POSSESSION</span><strong>{{ formatNumber(percentValue(metricFor(currentReport, 'possession_pct')), 1) }}<small>%</small></strong><div class="stat-rule"><i :style="{ width: `${Math.min(100, percentValue(metricFor(currentReport, 'possession_pct')) || 0)}%` }"></i></div></article>
+                                <article class="report-stat"><span>PASS COMPLETION</span><strong>{{ formatNumber((currentReport.team_stats.find((team) => normalizeTeam(team.team) === normalizeTeam(clubTeam))?.pass_completion_rate || 0) * 100, 1) }}<small>%</small></strong><small>{{ formatNumber(metricFor(currentReport, 'n_passes')) }} completed passes</small></article>
+                                <article class="report-stat"><span>EXPECTED GOALS</span><strong>{{ formatNumber(metricFor(currentReport, 'xg'), 2) }}<small>xG</small></strong><small>{{ formatNumber(metricFor(currentReport, 'n_shots')) }} shots · {{ formatNumber(metricFor(currentReport, 'n_goals')) }} goals</small></article>
+                                <article class="report-stat"><span>TEAM DISTANCE</span><strong>{{ formatNumber(metricFor(currentReport, 'total_distance_km'), 1) }}<small>km</small></strong><small>Total tracked movement</small></article>
+                            </section>
+                            <section v-if="currentGoals.length" class="content-section goal-timeline"><div class="section-heading"><div><span class="section-kicker">ON THE SCORESHEET</span><h2>Goals & assists</h2></div><span class="form-caption">{{ currentGoals.length }} GOALS</span></div><div class="goal-list"><div v-for="goal in currentGoals" :key="goal.timestamp_s" class="goal-row"><span class="goal-minute">{{ goal.minute }}<small>'</small></span><span class="goal-ball">⚽</span><span class="goal-credit"><strong>{{ goal.player_name }}</strong><small v-if="goal.assist_name">Assist <b>{{ goal.assist_name }}</b></small><small v-else>Unassisted</small></span><span class="goal-score">{{ goal.score_at_goal }}</span></div></div></section>
+                            <section class="content-section report-players">
+                                <div class="section-heading"><div><span class="section-kicker">PLAYER CONTRIBUTIONS</span><h2>Performance by player</h2></div><div class="table-tools"><span class="form-caption">{{ currentReport.players.length }} TRACKED</span><details class="column-picker"><summary>Columns <span>+</span></summary><div class="column-picker-menu"><label v-for="column in reportColumns" :key="column.key"><input type="checkbox" :checked="column.active" @change="toggleReportColumn(column.key)"><span>{{ column.label }}</span></label></div></details></div></div>
+                                <div class="table-scroll"><table class="performance-table"><thead><tr><th>PLAYER / POSITION</th><th v-if="reportColumnActive('goals')">GOALS</th><th v-if="reportColumnActive('assists')">ASSISTS</th><th v-if="reportColumnActive('n_shots')">SHOTS</th><th v-if="reportColumnActive('rating')">RATING</th><th v-if="reportColumnActive('distance_m')">DISTANCE</th><th v-if="reportColumnActive('top_speed_kmh')">TOP SPEED</th><th v-if="reportColumnActive('passes_completed')">PASSES</th><th v-if="reportColumnActive('tackles')">TACKLES</th><th v-if="reportColumnActive('interceptions')">INTERCEPTIONS</th><th v-if="reportColumnActive('xg')">xG</th></tr></thead><tbody>
+                                    <tr v-for="player in currentReport.players" :key="player.track_id" @click="selectedPlayerId = player.track_id; changePage('squad')"><td><span class="player-table-id"><span class="player-table-photo"><img v-if="player.photo_url" :src="player.photo_url" :alt="player.name"><b v-else>{{ player.jersey_number }}</b></span><span><strong>{{ player.name }}</strong><small class="player-position-label">{{ player.position }}</small></span></span></td><td v-if="reportColumnActive('goals')"><strong class="table-primary-stat">{{ formatNumber(player.goals) }}</strong></td><td v-if="reportColumnActive('assists')"><strong class="table-primary-stat">{{ formatNumber(player.assists) }}</strong></td><td v-if="reportColumnActive('n_shots')">{{ formatNumber(player.n_shots) }}</td><td v-if="reportColumnActive('rating')"><span class="player-rating">{{ formatNumber(player.rating, 1) }}</span></td><td v-if="reportColumnActive('distance_m')">{{ formatNumber(Number(player.distance_m) / 1000, 2) }} km</td><td v-if="reportColumnActive('top_speed_kmh')">{{ formatNumber(player.top_speed_kmh, 1) }} km/h</td><td v-if="reportColumnActive('passes_completed')">{{ formatNumber(player.passes_completed) }} / {{ formatNumber(player.passes_attempted) }}</td><td v-if="reportColumnActive('tackles')">{{ formatNumber(player.tackles) }}</td><td v-if="reportColumnActive('interceptions')">{{ formatNumber(player.interceptions) }}</td><td v-if="reportColumnActive('xg')">{{ formatNumber(player.xg, 2) }}</td></tr>
+                                </tbody></table></div>
+                                <div v-if="!currentReport.players.length" class="empty-state compact-empty"><strong>No player statistics in this report</strong><p>Player contributions will appear when the analysis includes tracking data.</p></div>
+                            </section>
+                            <div v-if="isDemo" class="report-footnote"><svg><use href="#icon-spark"/></svg> This fictional sample includes estimated xG, assists and carry data to preview the full report experience.</div>
+                            <div v-else class="report-footnote"><svg><use href="#icon-spark"/></svg> xG, assists and carries are not included in the current match database.</div>
+                        </div>
+                        <div v-else class="empty-state report-empty"><strong>Report unavailable</strong><p>This match could not be loaded from the current database.</p><button class="outline-button" @click="changePage('matches')">Back to matches</button></div>
+                    </template>
+
+                    <template v-else-if="page === 'squad'">
+                        <div v-if="isDemo && demoNotice" class="demo-banner"><span class="demo-banner-mark">i</span><span><strong>FICTIONAL PLAYER DATA</strong> Player names and season statistics are created for this preview.</span><button class="demo-banner-close" title="Dismiss notice" aria-label="Dismiss demo data notice" @click="demoNotice = ''"><svg><use href="#icon-close"/></svg></button></div>
+                        <section class="page-heading compact-heading"><div><div class="eyebrow"><span></span> PLAYER PERFORMANCE</div><h1>{{ role === 'player' ? 'My performance' : 'Squad performance' }}<span class="heading-period">.</span></h1><p class="heading-subtitle">Compare the numbers behind every player's contribution.</p></div><span class="match-total"><strong>{{ squad.length }}</strong> PLAYERS</span></section>
+                        <section v-if="squad.length" class="player-workspace">
+                            <div class="player-picker-bar"><label class="player-select-label" for="player-select">PLAYER SEASON STATS</label><select id="player-select" v-model="selectedPlayerId" class="player-select"><option v-for="player in squad" :key="player.track_id" :value="player.track_id">{{ player.name }} · #{{ player.jersey_number }}</option></select><label class="player-search"><svg><use href="#icon-search"/></svg><input v-model="playerSearch" type="search" placeholder="Find a player"></label></div>
+                            <section class="player-card">
+                                <div class="player-card-identity"><span class="player-avatar-large"><img :src="selectedPlayer?.photo_url || portraitFallback(selectedPlayer)" :alt="selectedPlayer?.name" @error="usePortraitFallback($event, selectedPlayer)"><span class="portrait-fallback">{{ selectedPlayer?.jersey_number }}</span></span><div><span class="section-kicker">{{ selectedPlayer?.team || 'FIRST TEAM' }} <b>•</b> #{{ selectedPlayer?.jersey_number }} <b>•</b> {{ selectedPlayer?.position }}</span><h2>{{ selectedPlayer?.name }}</h2><p>{{ selectedPlayer?.appearances }} match appearances · Season {{ season }}</p></div><span v-if="selectedPlayer?.rating" class="rating-large">{{ formatNumber(selectedPlayer.rating, 1) }}<small>AVG RATING</small></span></div>
+                                <div class="player-feature-stats"><div><span>DISTANCE COVERED</span><strong>{{ formatNumber(Number(selectedPlayer?.distance_m) / 1000, 1) }}<small>km</small></strong></div><div><span>PASSES COMPLETED</span><strong>{{ formatNumber(selectedPlayer?.passes_completed) }}<small>{{ selectedPlayer?.passes_attempted ? `/${formatNumber(selectedPlayer.passes_attempted)}` : '' }}</small></strong></div><div><span>GOALS + ASSISTS</span><strong>{{ formatNumber(selectedPlayer?.goals) }}<small>G</small> {{ formatNumber(selectedPlayer?.assists) }}<small>A</small></strong></div><div><span>SHOTS · xG</span><strong>{{ formatNumber(selectedPlayer?.n_shots) }}<small>· {{ formatNumber(selectedPlayer?.xg, 2) }} xG</small></strong></div><div><span>TACKLES</span><strong>{{ formatNumber(selectedPlayer?.tackles) }}</strong></div><div><span>CARRY DISTANCE</span><strong>{{ formatNumber(Number(selectedPlayer?.carry_distance_m) / 1000, 1) }}<small>km</small></strong></div><div><span>AVG. TOP SPEED</span><strong>{{ formatNumber(selectedPlayer?.top_speed_kmh, 1) }}<small>km/h</small></strong></div><div><span>APPEARANCES</span><strong>{{ formatNumber(selectedPlayer?.appearances) }}</strong></div></div>
+                            </section>
+                            <section class="player-intelligence-grid">
+                                <article class="player-intelligence-card radar-card"><div class="intel-heading"><div><span class="section-kicker">PLAYER TRAITS</span><h2>Performance profile</h2></div><span class="intel-period">SEASON</span></div><div class="radar-wrap"><svg class="radar-chart" viewBox="0 0 220 190" role="img" aria-label="Player performance radar"><polygon class="radar-grid" points="110,16 181,68 154,151 66,151 39,68"/><polygon class="radar-grid radar-grid-inner" points="110,43 155,76 138,129 82,129 65,76"/><polygon class="radar-fill" points="110,30 166,77 145,138 77,132 56,74"/><path class="radar-axis" d="M110 16v135M39 68l115 83M181 68 66 151M110 16 66 151M110 16l44 135"/><text x="110" y="10">PACE</text><text x="188" y="70">PASSING</text><text x="158" y="166">DEFENCE</text><text x="50" y="166">WORK RATE</text><text x="15" y="70">IMPACT</text></svg></div></article>
+                                <article class="player-intelligence-card value-card"><div class="intel-heading"><div><span class="section-kicker">CONTRIBUTION TREND</span><h2>Match output</h2></div><span class="intel-period">LAST 6</span></div><div class="trend-summary"><strong>{{ formatNumber(selectedPlayer?.rating, 1) }}</strong><span>average rating</span><b>+8.3%</b></div><svg class="trend-chart" viewBox="0 0 420 145" preserveAspectRatio="none" aria-label="Player output trend"><path class="trend-grid" d="M0 28h420M0 72h420M0 116h420"/><path class="trend-line" d="M4 116 C52 103 63 107 98 88 S151 81 181 91 S228 70 260 77 S313 45 342 61 S382 27 416 35"/><circle cx="416" cy="35" r="4" class="trend-point"/></svg><div class="trend-axis"><span>Match 1</span><span>Match 3</span><span>Match 6</span></div></article>
+                            </section>
+                            <section class="content-section comparison-section">
+                                <div class="section-heading"><div><span class="section-kicker">ROLE LENS</span><h2>Player comparison</h2></div><span class="form-caption">VS. SEASON SQUAD AVERAGE</span></div>
+                                <div class="role-tabs" role="group" aria-label="Choose a position lens"><button v-for="position in ['defender', 'midfielder', 'forward']" :key="position" :class="{ active: positionLens === position }" @click="positionLens = position">{{ position }}</button></div>
+                                <div class="comparison-list"><div v-for="metric in playerMetrics" :key="metric.key" class="comparison-row"><div class="comparison-heading"><span>{{ metric.label }}</span><strong>{{ metric.value === null ? '--' : `${formatNumber(metric.value, metric.decimals)} ${metric.suffix}` }}</strong></div><div class="comparison-track"><i :style="{ width: `${metric.percent}%` }"></i><span class="comparison-average-marker"></span></div><div class="comparison-footer"><span>PLAYER</span><span>SQUAD AVG. {{ metric.average === null ? '--' : `${formatNumber(metric.average, metric.decimals)} ${metric.suffix}` }}</span></div></div></div>
+                                <p class="comparison-note">Played position is shown from each player's latest appearance. Choose a role lens to focus the metrics; comparison baselines use the full season squad.</p>
+                            </section>
+                            <section class="content-section roster-section"><div class="section-heading"><div><span class="section-kicker">SEASON SQUAD</span><h2>Player season totals</h2></div><div class="roster-actions"><button class="outline-button compact-action" @click="openRosterEditor">Edit roster</button><details class="column-picker squad-column-picker"><summary>Stats <span>+</span></summary><div class="column-picker-menu"><label v-for="column in squadColumns" :key="column.key"><input type="checkbox" :checked="column.active" @change="toggleSquadColumn(column.key)"><span>{{ column.label }}</span></label></div></details><label class="roster-search"><svg><use href="#icon-search"/></svg><input v-model="playerSearch" type="search" placeholder="Search players"></label></div></div><div class="roster-list squad-performance-list"><div class="squad-table-header"><span>PLAYER</span><span v-if="squadColumnActive('goals')">G</span><span v-if="squadColumnActive('assists')">A</span><span v-if="squadColumnActive('n_shots')">SHOTS</span><span v-if="squadColumnActive('rating')">RATING</span><span v-if="squadColumnActive('passes_completed')">PASSES</span><span v-if="squadColumnActive('tackles')">TACKLES</span><span v-if="squadColumnActive('interceptions')">INT.</span><span v-if="squadColumnActive('distance_m')">DISTANCE</span><span v-if="squadColumnActive('top_speed_kmh')">SPEED</span><span></span></div><button v-for="player in filteredSquad" :key="player.track_id" class="roster-row" :class="{ selected: String(selectedPlayerId) === String(player.track_id) }" @click="selectedPlayerId = player.track_id"><span class="player-table-id"><span class="player-table-photo"><img v-if="player.photo_url" :src="player.photo_url" :alt="player.name" @error="$event.target.style.display='none'"><b v-if="!player.photo_url">{{ player.jersey_number }}</b></span><span><strong>{{ player.name }}</strong><small>{{ player.position }} · #{{ player.jersey_number }}</small></span></span><strong v-if="squadColumnActive('goals')" class="table-primary-stat">{{ formatNumber(player.goals) }}</strong><strong v-if="squadColumnActive('assists')" class="table-primary-stat">{{ formatNumber(player.assists) }}</strong><span v-if="squadColumnActive('n_shots')">{{ formatNumber(player.n_shots) }}</span><span v-if="squadColumnActive('rating')" class="player-rating">{{ formatNumber(player.rating, 1) }}</span><span v-if="squadColumnActive('passes_completed')">{{ formatNumber(player.passes_completed) }}</span><span v-if="squadColumnActive('tackles')">{{ formatNumber(player.tackles) }}</span><span v-if="squadColumnActive('interceptions')">{{ formatNumber(player.interceptions) }}</span><span v-if="squadColumnActive('distance_m')">{{ formatNumber(Number(player.distance_m) / 1000, 1) }} km</span><span v-if="squadColumnActive('top_speed_kmh')">{{ formatNumber(player.top_speed_kmh, 1) }} km/h</span><svg><use href="#icon-chevron"/></svg></button><p v-if="!filteredSquad.length" class="roster-empty">No players match that search.</p></div></section>
+                        </section>
+                        <div v-else-if="!loading" class="empty-state squad-empty"><div class="empty-crest">11</div><strong>No player reports yet</strong><p>Player profiles and comparisons will appear when a match includes tracking statistics.</p><button class="outline-button" @click="changePage('matches')">Browse matches <svg><use href="#icon-arrow"/></svg></button></div>
+                    </template>
+                </main>
+
+                <aside class="assistant-column" aria-label="Season analyst">
+                    <div class="assistant-header"><div class="assistant-identity"><span class="assistant-mark"><svg><use href="#icon-spark"/></svg></span><div><strong>Touchline</strong><small>YOUR CLUB ANALYST <span></span> ONLINE</small></div></div><button class="icon-button assistant-clear" title="Clear conversation" aria-label="Clear conversation" @click="assistantMessages = [{ role: 'assistant', text: assistantGreeting() }]"><svg><use href="#icon-refresh"/></svg></button></div>
+                    <div class="assistant-context"><span class="context-label">YOUR CONTEXT</span><span class="context-chip"><i></i> {{ season }} season</span><span class="context-chip"><i></i> {{ seasonTotals.games }} match{{ seasonTotals.games === 1 ? '' : 'es' }}</span></div>
+                    <div class="assistant-conversation" aria-live="polite">
+                        <div class="conversation-date"><span></span> ANALYST CHAT <span></span></div>
+                        <div v-for="(message, index) in assistantMessages" :key="index" class="chat-message" :class="`message-${message.role}`">
+                            <span v-if="message.role === 'assistant'" class="chat-avatar"><svg><use href="#icon-spark"/></svg></span>
+                            <p>{{ message.text }}</p>
+                        </div>
+                        <div v-if="assistantBusy" class="chat-message message-assistant"><span class="chat-avatar"><svg><use href="#icon-spark"/></svg></span><p class="typing-indicator"><i></i><i></i><i></i></p></div>
+                    </div>
+                    <div class="suggested-questions"><span class="suggestion-heading">GOOD QUESTIONS TO START WITH</span><button @click="submitQuestion('What percentage of games did we win after being behind?')">What happens when we concede first? <svg><use href="#icon-arrow-up"/></svg></button><button @click="submitQuestion('Is distance run related to our results?')">Does distance relate to results? <svg><use href="#icon-arrow-up"/></svg></button><button @click="submitQuestion('Summarise our season record')">Give me our season record <svg><use href="#icon-arrow-up"/></svg></button></div>
+                    <form class="assistant-composer" @submit.prevent="submitQuestion()"><textarea ref="assistantInput" v-model="assistantQuestion" rows="2" placeholder="Ask about your matches..." aria-label="Ask your club analyst"></textarea><div class="composer-footer"><span>ANSWERS USE YOUR MATCH DATA</span><button type="submit" :disabled="!assistantQuestion.trim() || assistantBusy" aria-label="Send question"><svg><use href="#icon-send"/></svg></button></div></form>
+                    <div class="assistant-disclaimer">Touchline answers from the reports in this workspace.</div>
+                </aside>
+            </div>
+            <footer class="app-footer"><span>RIVERSIDE ATHLETIC <i>•</i> PERFORMANCE HUB</span><span>DATA FROM YOUR MATCH REPORTS</span></footer>
+        </div>
+
+        <div v-if="signInOpen" class="modal-scrim" @click.self="signInOpen = false">
+            <section class="account-modal" role="dialog" aria-modal="true" aria-labelledby="account-title">
+                <button class="icon-button modal-close" aria-label="Close" @click="signInOpen = false"><svg><use href="#icon-close"/></svg></button>
+                <span class="modal-kicker">RIVERSIDE ATHLETIC <i>•</i> CLUBHOUSE</span><h2 id="account-title">Your matchday,<br>your view.</h2><p class="modal-intro">Choose how you want to explore the club workspace.</p>
+                <form @submit.prevent="saveAccount"><label class="form-label" for="account-name">YOUR NAME</label><input id="account-name" v-model="signInName" class="modal-input" placeholder="e.g. Jamie Taylor" autocomplete="name"><label class="form-label" for="account-email">EMAIL ADDRESS</label><input id="account-email" v-model="signInEmail" class="modal-input" placeholder="you@yourclub.com" type="email" autocomplete="email">
+                    <span class="form-label role-label">ACCOUNT VIEW</span><div class="account-role-picker"><button type="button" :class="{ active: signInRole === 'staff' }" @click="signInRole = 'staff'"><svg><use href="#icon-overview"/></svg><span><strong>Club staff</strong><small>Team and match insights</small></span></button><button type="button" :class="{ active: signInRole === 'player' }" @click="signInRole = 'player'"><svg><use href="#icon-user"/></svg><span><strong>Player</strong><small>Individual performance</small></span></button></div>
+                    <button class="modal-submit" type="submit">Open clubhouse <svg><use href="#icon-arrow"/></svg></button>
+                </form><p class="modal-note">Preview mode: this profile is saved in this browser. Secure club sign-in can be connected to your identity provider.</p>
+            </section>
+        </div>
+
+        <div v-if="rosterEditorOpen" class="modal-scrim" @click.self="rosterEditorOpen = false">
+            <section class="account-modal roster-modal" role="dialog" aria-modal="true" aria-labelledby="roster-title">
+                <button class="icon-button modal-close" aria-label="Close" @click="rosterEditorOpen = false"><svg><use href="#icon-close"/></svg></button>
+                <span class="modal-kicker">CLUBHOUSE <i>•</i> SQUAD SETUP</span><h2 id="roster-title">Make the squad<br>recognisable.</h2><p class="modal-intro">Add the details your analysts and players use every week.</p>
+                <div class="roster-editor-list"><div v-for="player in rosterDraft" :key="player.track_id" class="roster-editor-row"><span class="player-mini-avatar">{{ player.jersey_number || player.track_id }}</span><input v-model="player.name" class="modal-input" :placeholder="`Player ${player.track_id}`"><input v-model="player.jersey_number" class="modal-input roster-number" type="number" min="0" max="99" placeholder="#"><input v-model="player.position" class="modal-input" placeholder="Position"><input v-model="player.photo_url" class="modal-input roster-photo" placeholder="Photo URL"></div></div>
+                <button class="modal-submit" type="button" :disabled="rosterSaving" @click="saveRoster">{{ rosterSaving ? 'Saving roster...' : 'Save roster' }} <svg><use href="#icon-arrow"/></svg></button>
+                <p class="modal-note">Photo URLs can point to your club media storage. Hosted uploads will replace this field in the next deployment phase.</p>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="[[ url_for('static', filename='dashboard.js') ]]\"></script>
+</body>
+</html>

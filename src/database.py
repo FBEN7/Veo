@@ -40,6 +40,19 @@ CREATE TABLE IF NOT EXISTS matches (
     created_at  TEXT    NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS players (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    track_id            INTEGER NOT NULL UNIQUE,
+    jersey_number       INTEGER,
+    name                TEXT,
+    position            TEXT,
+    preferred_position   TEXT,
+    photo_url            TEXT,
+    notes               TEXT,
+    active              INTEGER NOT NULL DEFAULT 1,
+    created_at          TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS events (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     match_id          INTEGER NOT NULL REFERENCES matches(id),
@@ -166,6 +179,7 @@ CREATE INDEX IF NOT EXISTS idx_possessions_match ON possessions(match_id);
 CREATE INDEX IF NOT EXISTS idx_duels_match     ON duels(match_id);
 CREATE INDEX IF NOT EXISTS idx_pass_seq_match  ON pass_sequences(match_id);
 CREATE INDEX IF NOT EXISTS idx_zone_match      ON zone_stats(match_id);
+CREATE INDEX IF NOT EXISTS idx_players_track   ON players(track_id);
 """
 
 
@@ -218,6 +232,44 @@ class MatchDatabase:
         with self._connect() as conn:
             conn.executescript(_DDL)
         print(f"[DB] Initialised → {self.db_path}")
+
+    def upsert_players(self, roster: list[dict[str, Any]]) -> None:
+        """Create or update club roster identity data."""
+        self.init()
+        now = datetime.now(timezone.utc).isoformat()
+        rows = [
+            (
+                self._safe_int(player.get("track_id")),
+                player.get("jersey_number"),
+                player.get("name"),
+                player.get("position"),
+                player.get("preferred_position"),
+                player.get("photo_url"),
+                player.get("notes"),
+                1 if player.get("active", True) else 0,
+                now,
+            )
+            for player in roster
+            if player.get("track_id") is not None
+        ]
+        if not rows:
+            return
+        with self._connect() as conn:
+            conn.executemany(
+                """INSERT INTO players
+                   (track_id, jersey_number, name, position, preferred_position,
+                    photo_url, notes, active, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(track_id) DO UPDATE SET
+                    jersey_number=excluded.jersey_number,
+                    name=excluded.name,
+                    position=excluded.position,
+                    preferred_position=excluded.preferred_position,
+                    photo_url=excluded.photo_url,
+                    notes=excluded.notes,
+                    active=excluded.active""",
+                rows,
+            )
 
     # ------------------------------------------------------------------
     # Inserts

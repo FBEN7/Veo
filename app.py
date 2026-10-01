@@ -11,11 +11,21 @@ from datetime import datetime
 from flask import Flask, render_template, jsonify, request, send_file
 from flask_cors import CORS
 import io
+from src.demo_season import build_demo_season
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+app.jinja_env.variable_start_string = '[['
+app.jinja_env.variable_end_string = ']]'
 CORS(app)
 
 DB_PATH = "output/match.db"
+
+
+def ensure_database_schema():
+    """Keep older analysis databases compatible with the dashboard."""
+    from src.database import MatchDatabase
+
+    MatchDatabase(DB_PATH).init()
 
 # ============================================================================
 # Database Helpers
@@ -23,6 +33,7 @@ DB_PATH = "output/match.db"
 
 def get_db():
     """Get database connection."""
+    ensure_database_schema()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
@@ -38,7 +49,7 @@ def dict_from_row(row):
 @app.route('/')
 def index():
     """Serve main dashboard."""
-    return render_template('index.html')
+    return render_template('club.html')
 
 @app.route('/api/health')
 def health():
@@ -62,6 +73,120 @@ def get_matches():
         return jsonify([dict(m) for m in matches])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/demo/season')
+def get_demo_season():
+    """Return a deterministic fictional season for the club interface preview."""
+    return jsonify(build_demo_season())
+
+
+def build_real_season():
+    """Build the same report shape as the demo, using analysed matches."""
+    conn = get_db()
+    matches = conn.execute(
+        "SELECT id, label, date, duration_s FROM matches ORDER BY date DESC, id DESC"
+    ).fetchall()
+    reports = {}
+    for match in matches:
+        match_id = match['id']
+        teams = conn.execute(
+            "SELECT * FROM team_stats WHERE match_id=? ORDER BY id", (match_id,)
+        ).fetchall()
+        players = conn.execute(
+            """SELECT ps.track_id, ps.team, ps.distance_m, ps.top_speed_kmh,
+                      ps.n_sprints, ps.minutes_tracked, ps.n_passes, ps.n_shots,
+                      ps.n_goals, ps.possession_pct, ps.rating,
+                      p.jersey_number, p.name, p.position, p.preferred_position,
+                      p.photo_url,
+                      a.passes_total AS passes_attempted,
+                      a.passes_completed, a.pass_completion_rate,
+                      a.shots AS advanced_shots, a.shots_on_target,
+                      a.goals AS advanced_goals, a.dribbles, a.tackles,
+                      a.interceptions, a.clearances
+               FROM player_stats ps
+               LEFT JOIN players p ON p.track_id = ps.track_id
+               LEFT JOIN player_period_stats a
+                 ON a.match_id = ps.match_id AND a.player_track_id = ps.track_id
+               WHERE ps.match_id=? ORDER BY ps.team, ps.distance_m DESC""",
+            (match_id,),
+        ).fetchall()
+        player_rows = [dict(player) for player in players]
+        for player in player_rows:
+            player['jersey_number'] = player['jersey_number'] if player['jersey_number'] is not None else player['track_id']
+            player['name'] = player['name'] or f"Player {player['track_id']}"
+            player['position'] = player['position'] or 'Unassigned'
+            player['photo_url'] = player['photo_url'] or f"https://i.pravatar.cc/320?img={((int(player['track_id']) - 1) % 70) + 1}"
+            player['passes_completed'] = player['passes_completed'] if player['passes_completed'] is not None else player['n_passes']
+            player['passes_attempted'] = player['passes_attempted'] if player['passes_attempted'] is not None else player['n_passes']
+            player['n_shots'] = player['advanced_shots'] if player['advanced_shots'] is not None else player['n_shots']
+            player['goals'] = player['advanced_goals'] if player['advanced_goals'] is not None else player['n_goals']
+            player['xg'] = None
+            player['assists'] = None
+            player['carries'] = None
+            player['carry_distance_m'] = None
+        team_rows = [dict(team) for team in teams]
+        for team in team_rows:
+            team_players = [player for player in player_rows if player['team'] == team['team']]
+            attempted = sum(player['passes_attempted'] or 0 for player in team_players)
+            completed = sum(player['passes_completed'] or 0 for player in team_players)
+            team['pass_completion_rate'] = completed / attempted if attempted else None
+            team['tackles'] = sum(player['tackles'] or 0 for player in team_players)
+            team['xg'] = None
+            team['assists'] = None
+        goals = conn.execute(
+            """SELECT timestamp_s, team, player_track_id
+               FROM events WHERE match_id=? AND event_type='goal'
+               ORDER BY timestamp_s""", (match_id,)
+        ).fetchall()
+        event_counts = conn.execute(
+            "SELECT event_type, COUNT(*) AS count FROM events WHERE match_id=? GROUP BY event_type",
+            (match_id,),
+        ).fetchall()
+        reports[match_id] = {
+            'match': dict(match),
+            'team_stats': team_rows,
+            'players': player_rows,
+            'goals': [dict(goal) for goal in goals],
+            'events': {row['event_type']: row['count'] for row in event_counts},
+            'data_notice': 'Stats are based on the metrics available in this analysis.',
+        }
+    conn.close()
+    return {
+        'demo': False,
+        'matches': [dict(match) for match in matches],
+        'reports': reports,
+        'club_team': None,
+        'data_notice': 'Real match analysis loaded. Some advanced metrics may be unavailable for older matches.',
+    }
+
+
+@app.route('/api/season')
+def get_season():
+    """Return demo data by default, or real analysed data when explicitly selected."""
+    if request.args.get('source', 'demo').lower() != 'real':
+        return jsonify(build_demo_season())
+    season = build_real_season()
+    if season['matches']:
+        return jsonify(season)
+    return jsonify(build_demo_season())
+
+
+@app.route('/api/roster', methods=['GET', 'PUT'])
+def roster():
+    """Read or update the local club roster identity data."""
+    if request.method == 'PUT':
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, list):
+            return jsonify({'error': 'Roster must be a JSON list'}), 400
+        from src.database import MatchDatabase
+        MatchDatabase(DB_PATH).upsert_players(payload)
+    conn = get_db()
+    players = conn.execute(
+        """SELECT track_id, jersey_number, name, position, preferred_position,
+                  photo_url, notes, active FROM players ORDER BY jersey_number, name"""
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(player) for player in players])
 
 @app.route('/api/matches/<int:match_id>')
 def get_match(match_id):
@@ -88,7 +213,7 @@ def get_match_summary(match_id):
 
         # Team stats
         team_stats = conn.execute(
-            "SELECT team, possession_pct, n_passes, n_shots, n_goals FROM team_stats WHERE match_id=?",
+            "SELECT team, possession_pct, total_distance_km, n_passes, n_shots, n_goals FROM team_stats WHERE match_id=?",
             (match_id,)
         ).fetchall()
 
@@ -100,7 +225,7 @@ def get_match_summary(match_id):
 
         # Top performers
         top_players = conn.execute(
-            """SELECT track_id, team, distance_m, max_speed_kmh, n_passes, n_shots
+            """SELECT track_id, team, distance_m, top_speed_kmh AS max_speed_kmh, n_passes, n_shots
                FROM player_stats WHERE match_id=? ORDER BY distance_m DESC LIMIT 11""",
             (match_id,)
         ).fetchall()
@@ -135,9 +260,17 @@ def get_player_stats(match_id):
     try:
         conn = get_db()
         players = conn.execute(
-            """SELECT track_id, team, distance_m, top_speed_kmh, n_sprints,
-                      minutes_tracked, n_passes, n_shots, n_goals, possession_pct, rating
-               FROM player_stats WHERE match_id=? ORDER BY team, distance_m DESC""",
+                        """SELECT ps.track_id, ps.team, ps.distance_m, ps.top_speed_kmh, ps.n_sprints,
+                                            ps.minutes_tracked, ps.n_passes, ps.n_shots, ps.n_goals,
+                                            ps.possession_pct, ps.rating,
+                                            p.jersey_number, p.name, p.position, p.preferred_position, p.photo_url,
+                                            a.passes_total, a.passes_completed, a.pass_completion_rate,
+                                            a.dribbles, a.tackles, a.interceptions, a.clearances
+                             FROM player_stats ps
+                             LEFT JOIN players p ON p.track_id = ps.track_id
+                             LEFT JOIN player_period_stats a
+                                 ON a.match_id = ps.match_id AND a.player_track_id = ps.track_id
+                             WHERE ps.match_id=? ORDER BY ps.team, ps.distance_m DESC""",
             (match_id,)
         ).fetchall()
         conn.close()
