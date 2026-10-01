@@ -96,3 +96,68 @@ class BallClassifier:
         with torch.no_grad():
             logits = self.model(to_tensor(crops)).squeeze(1)
         return torch.sigmoid(logits).numpy()
+
+
+SCORES_FILE = "ball_scores.parquet"
+
+
+def score_clip(out_dir: Path, info: dict, verbose: bool = True):
+    """Score every stored ball candidate in a clip, cached next to the tracks.
+
+    Returns the cache path, or None without trained weights. The scores are
+    derived from the clip's footage, so like every run output they are not
+    committed.
+    """
+    import cv2
+    import pandas as pd
+
+    out_dir = Path(out_dir)
+    cache = out_dir / SCORES_FILE
+    if cache.exists():
+        return cache
+    if not WEIGHTS.exists():
+        if verbose:
+            print(f"  [ball classifier] no weights at {WEIGHTS}; run "
+                  f"train_ball_classifier.py")
+        return None
+    tracks = pd.read_parquet(out_dir / "tracks.parquet")
+    balls = tracks[tracks.cls == "ball"]
+    by_frame = {int(f): g for f, g in balls.groupby("frame")}
+    model = BallClassifier()
+    cap = cv2.VideoCapture(info["path"])
+    rows, index = [], -1
+    for frame_no in sorted(by_frame):
+        while index < frame_no:
+            ok, image = cap.read()
+            index += 1
+            if not ok:
+                break
+        if not ok:
+            break
+        group = by_frame[frame_no]
+        crops, keep = [], []
+        for row in group.itertuples():
+            patch = crop(image, float(row.px), float(row.py),
+                         float(row.crop_h))
+            if patch is not None:
+                crops.append(patch)
+                keep.append(row)
+        for row, p in zip(keep, model.score(crops)):
+            rows.append({"frame": frame_no, "px": float(row.px),
+                         "py": float(row.py), "p_ball": float(p)})
+    cap.release()
+    pd.DataFrame(rows).to_parquet(cache)
+    if verbose:
+        print(f"  [ball classifier] scored {len(rows)} ball candidates")
+    return cache
+
+
+def with_scores(tracks, out_dir: Path):
+    """The tracks with a `p_ball` column where a cached score exists."""
+    import pandas as pd
+
+    cache = Path(out_dir) / SCORES_FILE
+    if not cache.exists():
+        return tracks
+    scores = pd.read_parquet(cache)
+    return tracks.merge(scores, on=["frame", "px", "py"], how="left")
