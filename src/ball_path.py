@@ -97,6 +97,21 @@ CONFIDENCE_WEIGHT = 0.6
 # maximise points explained, minus the implausibility of explaining them.
 NODE_REWARD = 1.0
 
+# What a candidate with no grass around it loses, as a share of
+# `NODE_REWARD`. Equal to it: a candidate surrounded by stands or hoardings
+# is worth no more than skipping its frame, so it can bridge a gap but never
+# win on the detector's confidence alone.
+#
+# Traced through every labelled shot that went unplaced, three of the
+# twelve had the path running along the advertising hoardings while the
+# ball was among the players -- on stoke_1302 the chosen candidates had a
+# median 0.11 of grass around them against 0.95 for the ones left out, at
+# the same confidence. A printed logo looks more like a ball to the detector
+# than a ball on grass does. The same picks put out-of-play crossings 6-7 m
+# past the line. Uses the `grass_frac` column where tracks carry one
+# (`ball_pitch_filter.annotate_grass_fraction`); without it, nothing changes.
+GRASS_WEIGHT = NODE_REWARD
+
 # A segment shorter than this is not a track, it is a coincidence.
 MIN_SEGMENT = 4
 
@@ -154,6 +169,10 @@ def choose(candidates: pd.DataFrame, fps: float, px_per_m: float,
 
     n = len(rows)
     cost = CONFIDENCE_WEIGHT * (1.0 - conf) - NODE_REWARD
+    if "grass_frac" in rows.columns:
+        grass = rows.grass_frac.to_numpy(float)
+        grass = np.where(np.isfinite(grass), np.clip(grass, 0.0, 1.0), 1.0)
+        cost = cost + GRASS_WEIGHT * (1.0 - grass)
     best = cost.copy()
     came = np.full(n, -1, dtype=int)
 
@@ -299,6 +318,34 @@ def selftest(verbose: bool = True) -> bool:
         print(f"  {'cheapest path':>20s}  {n_path:3d} points, "
               f"{off_path:.0%} off the ball   "
               f"{'ok' if ok else 'WRONG'}")
+
+    # A hoarding: a steady, confident detection along the far side, moving
+    # as the camera pans, against the ball on the grass at lower confidence.
+    # Both are plausible paths; only the grass tells them apart, as on
+    # stoke_1302's shot at 38 s.
+    rows = []
+    for i in range(n):
+        rows.append({"frame": i, "cls": "ball", "px": true_x[i],
+                     "py": true_y[i], "confidence": 0.3, "grass_frac": 0.95,
+                     "crop_h": 10.0})
+        rows.append({"frame": i, "cls": "ball", "px": 300.0 + 4.0 * i,
+                     "py": 120.0, "confidence": 0.6, "grass_frac": 0.1,
+                     "crop_h": 10.0})
+    for i in range(0, n, 4):
+        rows.append({"frame": i, "cls": "player", "px": 500.0, "py": 400.0,
+                     "confidence": 0.9,
+                     "crop_h": PLAYER_HEIGHT_M * px_per_m})
+    frame = pd.DataFrame(rows)
+    blind = track(frame.drop(columns="grass_frac"), fps)
+    seeing = track(frame, fps)
+    off_blind, _ = strays(blind)
+    off_seeing, n_seeing = strays(seeing)
+    good = off_seeing < 0.02 and n_seeing > 0.9 * n and off_blind > 0.5
+    ok &= good
+    if verbose:
+        print(f"  {'hoarding, no grass':>20s}  {off_blind:.0%} off the ball")
+        print(f"  {'hoarding, grass':>20s}  {off_seeing:.0%} off the ball   "
+              f"{'ok' if good else 'WRONG'}")
     return ok
 
 
