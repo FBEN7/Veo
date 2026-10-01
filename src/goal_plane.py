@@ -66,6 +66,17 @@ BACK_IN_PLAY_M = 1.0
 # Twenty seconds is short of any real restart.
 RESTART_S = 20.0
 
+# The kick-off that follows a goal: the ball still on the centre spot. Within
+# this radius of the spot, allowing for midfield placement error, and still
+# -- moving less than `KICKOFF_DRIFT_M` -- for at least `KICKOFF_STILL_S`
+# with `KICKOFF_READINGS` readings, which a ball merely rolling through the
+# centre circle does not do.
+CENTRE_SPOT = (52.5, 34.0)       # pitch metres: halfway, mid-width
+KICKOFF_RADIUS_M = 3.0
+KICKOFF_DRIFT_M = 1.5
+KICKOFF_STILL_S = 1.0
+KICKOFF_READINGS = 10
+
 PITCH_WIDTH_M = 68.0
 LEFT_POST_Y = (PITCH_WIDTH_M - GOAL_WIDTH_M) / 2.0
 
@@ -167,15 +178,61 @@ def find_shots(ball, placer, fps: float):
         sightings.append((float(row.time_s), pose, float(row.px),
                           float(row.py)))
 
-    out, restart_after = [], -np.inf
+    out, restart_after, pending = [], -np.inf, None
     for shot in merged:
         if shot["time_s"] < restart_after:
             continue                     # the ball is in the net, or walking back
+        if pending is not None:
+            # Something happened at the goal before the kick-off that should
+            # have followed it: it was not a goal.
+            pending["outcome"] = "on target"
+            pending["goal_check"] = "no kick-off before the next shot"
+            pending = None
         if shot["outcome"] == "on target" and went_in(shot, sightings):
             shot["outcome"] = "goal"
-            restart_after = shot["crossing_s"] + RESTART_S
+            kickoff = kickoff_after(shot["crossing_s"], grass)
+            if kickoff is not None:
+                shot["goal_check"] = "kick-off"
+                shot["kickoff_s"] = kickoff
+                restart_after = kickoff
+            else:
+                shot["goal_check"] = "unconfirmed"
+                restart_after = shot["crossing_s"] + RESTART_S
+                pending = shot
         out.append(shot)
+    if pending is not None:
+        pending["goal_check"] = (
+            "unconfirmed: no kick-off seen"
+            if grass_after(pending["crossing_s"] + RESTART_S, grass)
+            else "unconfirmed: the clip ends")
     return out
+
+
+def kickoff_after(when: float, grass):
+    """When play restarted from the centre spot after `when`, or None.
+
+    `grass` is (time, x, y, frame) readings in pitch metres. A kick-off is the
+    ball still on the spot: within `KICKOFF_RADIUS_M` of it for at least
+    `KICKOFF_STILL_S`, drifting less than `KICKOFF_DRIFT_M`.
+    """
+    near = [(t, x, y) for t, x, y, _ in grass
+            if t > when and np.hypot(x - CENTRE_SPOT[0],
+                                     y - CENTRE_SPOT[1]) <= KICKOFF_RADIUS_M]
+    for i, (t0, x0, y0) in enumerate(near):
+        run = [(t, x, y) for t, x, y in near[i:]
+               if t - t0 <= KICKOFF_STILL_S + 0.5]
+        span = run[-1][0] - t0
+        if span < KICKOFF_STILL_S or len(run) < KICKOFF_READINGS:
+            continue
+        xs = np.array([r[1] for r in run]); ys = np.array([r[2] for r in run])
+        if np.max(np.hypot(xs - xs.mean(), ys - ys.mean())) <= KICKOFF_DRIFT_M:
+            return float(t0)
+    return None
+
+
+def grass_after(when: float, grass) -> bool:
+    """Is the ball placed anywhere after `when`?"""
+    return any(t > when for t, _, _, _ in grass)
 
 
 def went_in(shot, sightings) -> bool:
@@ -305,6 +362,25 @@ def selftest(verbose: bool = True) -> bool:
         ok &= good
         if verbose:
             print(f"  {name:>28s}  {said or 'no shot'}{extra}   "
+                  f"{'ok' if good else 'WRONG'}")
+    # The kick-off that confirms a goal, and its absence that refutes one.
+    goal = still + [(28, (6.8, 2.2, 0.0))] + in_net
+    spot = [(k, (3.66, 0.11, 52.5)) for k in range(1000, 1040)]
+    another = ([(k, (3.0, 0.11, 18.0)) for k in range(700, 710)]
+               + [(725, (6.8, 2.2, 0.0))])
+    for name, points, want in (
+            ("goal, then a kick-off", goal + spot, ("goal", "kick-off")),
+            ("goal, then another shot first", goal + another,
+             ("on target", "no kick-off before the next shot")),
+            ("goal, and the clip ends", goal,
+             ("goal", "unconfirmed: the clip ends"))):
+        got = find_shots(track(points), Placer(), 25.0)
+        said = (got[0]["outcome"], got[0].get("goal_check")) if got else None
+        good = said == want
+        ok &= good
+        if verbose:
+            print(f"  {name:>28s}  {said[0] if said else 'no shot'}"
+                  f"{' (' + said[1] + ')' if said and said[1] else ''}   "
                   f"{'ok' if good else 'WRONG'}")
     return bool(ok)
 

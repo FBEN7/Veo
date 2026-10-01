@@ -452,6 +452,11 @@ def main():
         print("\n  Shots found, with what the model makes of them:")
         for shot in shots:
             extra = f", xG {shot['xg']:.3f}" if "xg" in shot else ""
+            if "outcome" in shot:
+                extra += (f", {shot['outcome']}, {shot['height_m']:.1f} m "
+                          f"up at the line")
+            if shot.get("goal_check"):
+                extra += f" [{shot['goal_check']}]"
             print(f"    t={shot['time_s']:6.1f}s  "
                   f"{shot['distance_m']:5.1f} m, "
                   f"{shot['speed_ms']:4.0f} m/s{extra}")
