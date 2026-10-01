@@ -182,14 +182,22 @@ def went_in(shot, sightings) -> bool:
     """Was an on-target crossing followed by the ball in the net?
 
     In the net: behind the goal line on the grass and inside the mouth at
-    the goal plane. Back in play: on the grass more than a metre in front
-    of the line. A goal needs the first and none of the second within
-    `AFTERMATH_S`; a crossing with nothing seen after it is not called a
-    goal, since a save the camera turned away from looks the same.
+    the goal plane. Back in play: on the pitch, more than a metre in front
+    of the line. Within `AFTERMATH_S` the ball must be seen in the net, and
+    more often than back in play.
+
+    A majority rather than a veto because the tracker is not reliable while
+    the ball sits still in the net. On reading_1155's goal it was seen in
+    the net for half a second and then hopped to a hoarding beyond the
+    touchline and, for three frames, to something by the post; the first
+    version took the first stray reading in front of the line as the ball
+    back in play and called the goal a save. A crossing with nothing seen
+    after it is not a goal: a save the camera turned away from looks the
+    same.
     """
     from .goal_pose import ground_point
 
-    in_net = False
+    in_net = in_play = 0
     for when, pose, u, v in sightings:
         if when <= shot["crossing_s"]:
             continue
@@ -198,15 +206,17 @@ def went_in(shot, sightings) -> bool:
         grass = ground_point(pose, u, v)
         if grass is None:
             continue
-        out_from_line = grass[1]          # Z: metres out onto the pitch
+        across, out_from_line = grass
+        on_pitch = -LEFT_POST_Y <= across <= PITCH_WIDTH_M - LEFT_POST_Y
         if out_from_line > BACK_IN_PLAY_M:
-            return False
+            in_play += on_pitch
+            continue
         hit = mouth_crossing(pose, u, v)
         if (out_from_line < 0.0 and hit is not None
                 and 0.0 <= hit[0] <= GOAL_WIDTH_M
                 and MIN_HEIGHT_M <= hit[1] <= GOAL_HEIGHT_M):
-            in_net = True
-    return in_net
+            in_net += 1
+    return in_net > 0 and in_net > in_play
 
 
 def selftest(verbose: bool = True) -> bool:
@@ -271,6 +281,12 @@ def selftest(verbose: bool = True) -> bool:
          still + [(28, (6.8, 2.2, 0.0))] + saved, "on target"),
         # The ball still in the net seconds later reads as a second shot
         # from the goalmouth; play has not restarted, so it is not one.
+        # The tracker leaving the ball in the net: a hoarding beyond the
+        # touchline, and a three-frame blip by the post, as on the real goal.
+        ("a goal, then the tracker strays",
+         still + [(28, (6.8, 2.2, 0.0))] + in_net[:5]
+         + [(k, (-38.0, 0.11, 7.0)) for k in range(46, 52)]
+         + [(k, (7.4, 0.11, 1.5)) for k in range(52, 55)], "goal"),
         ("a goal, then the ball in the net",
          still + [(28, (6.8, 2.2, 0.0))] + in_net
          + [(k, (3.0, 0.11, 6.0)) for k in range(120, 126)]
