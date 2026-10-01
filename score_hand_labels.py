@@ -353,9 +353,6 @@ def main():
                          "recorded with its match, and a clip the centre "
                          "circle cannot locate borrows the camera height of "
                          "located clips from the same match")
-    ap.add_argument("--no-ball-classifier", action="store_true",
-                    help="choose the ball's path without the ball "
-                         "classifier's scores (for comparison)")
     ap.add_argument("--anchor-too", action="store_true",
                     help="also use the centre-circle anchor where the goal "
                          "is out of frame, if the two can be shown to point "
@@ -392,12 +389,7 @@ def main():
     import detect_set_pieces as set_pieces
     import detect_shots
 
-    if not args.no_ball_classifier:
-        from src.ball_classifier import score_clip
-
-        score_clip(out_dir, info)
-    ball = detect_shots.ball_track(out_dir,
-                                   classifier=not args.no_ball_classifier)
+    ball = detect_shots.ball_track(out_dir)
     if ball.empty:
         raise SystemExit("no ball track in that output directory")
     if args.goal_weights and args.corners:
