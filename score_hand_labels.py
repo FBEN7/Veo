@@ -486,6 +486,15 @@ def main():
         report(kind, [r["time_s"] for r in restarts
                       if r["event_type"] == kind], times(kind))
 
+    if outs:
+        print("\n  Out of play found, to check by eye:")
+        for o in outs:
+            at = ball[ball.frame == o["frame"]]
+            pixel = (f" at px ({at.px.iloc[0]:.0f}, {at.py.iloc[0]:.0f})"
+                     if not at.empty else "")
+            print(f"    t={o['time_s']:6.1f}s  frame {o['frame']}{pixel}, "
+                  f"placed ({o['x']:.1f}, {o['y']:.1f}) m")
+
     if times("shot") and shots:
         print("\n  Shots found, with what the model makes of them:")
         for shot in shots:
