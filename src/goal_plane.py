@@ -51,6 +51,25 @@ MAX_STRIKE_M = 35.0
 # One shot is reported once.
 MERGE_S = 2.0
 
+# The struck ball's own flight. Reading the crossing from whatever sighting
+# happens to lie in the goal mouth's line of sight was measured to read
+# stewards: every shot and goal the first version matched on six windows
+# was a yellow vest or bib in the stand behind the goal, seen through the
+# mouth at the right moment (EVENT_ACCURACY.md, "Full resolution and the
+# classifier together"). So a crossing now has to be the strike's own
+# ball: sightings on the same tracked segment as the strike, after it,
+# fitted as one flight from the strike's spot under gravity -- three
+# unknowns, the velocity, against two per sighting -- and carried to the
+# goal line where the ball itself was not seen. A single sighting is read
+# where its ray meets the goal plane, as before, but only on the strike's
+# segment.
+MIN_FLIGHT_SIGHTINGS = 2
+# A flight that misfits its sightings by more than this, in pixels, is not
+# one flight: the ball was touched, or a sighting is something else. Pose
+# noise alone reaches about 6 px on stoke_4207 (`ball_height.py`).
+MAX_FLIGHT_RMS_PX = 8.0
+BALL_RADIUS_M = 0.11
+
 # What happens after an on-target crossing decides whether it was a goal.
 # Within this long the ball is either seen in the net -- behind the line and
 # inside the mouth -- or back in play in front of it: parried, held, or
@@ -60,6 +79,13 @@ AFTERMATH_S = 3.0
 # In front of the line by more than this is back in play rather than
 # in the goal mouth with placement noise.
 BACK_IN_PLAY_M = 1.0
+
+# How far behind the line the ball can be and still be in the net, in
+# metres: a net is about 2 m deep at the grass, plus placement error. A
+# sighting further back is the stand -- a steward's vest seen through the
+# goal reads as "behind the line, inside the mouth" too, but placed on the
+# grass it lands metres beyond the net.
+NET_DEPTH_M = 3.0
 
 # After a goal nothing is a shot until play restarts from the centre, which
 # the laws make a stoppage: the celebration, the walk back, the kick-off.
@@ -121,43 +147,43 @@ def find_shots(ball, placer, fps: float):
             grass.append((float(row.time_s), float(point[0]),
                           float(point[1]), int(row.frame)))
 
+    rows = list(ball.itertuples())
+    has_segments = "segment" in ball.columns
     found = []
-    for row in ball.itertuples():
-        pose = placer.pose_at(int(row.frame))
-        if pose is None:
+    for k, row in enumerate(rows):
+        point = placer.place(row.frame, row.px, row.py)
+        if point is None:
             continue
-        hit = mouth_crossing(pose, float(row.px), float(row.py))
-        if hit is None:
+        t0, x0, y0, f0 = (float(row.time_s), float(point[0]),
+                          float(point[1]), int(row.frame))
+        if not MIN_STRIKE_M <= x0 <= MAX_STRIKE_M:
             continue
-        X, Y = hit
-        outcome = classify(X, Y)
-        if outcome is None:
-            continue
-        when = float(row.time_s)
-        # The strike: the latest grass reading in shooting range before this.
-        strike = None
-        for t, x, y, f in reversed(grass):
-            if t >= when:
+        segment = int(row.segment) if has_segments else 0
+        after = []
+        for later in rows[k + 1:]:
+            if float(later.time_s) - t0 > LOOKBACK_S:
+                break
+            if has_segments and int(later.segment) != segment:
                 continue
-            if when - t > LOOKBACK_S:
-                break
-            if MIN_STRIKE_M <= x <= MAX_STRIKE_M:
-                strike = (t, x, y, f)
-                break
-        if strike is None:
+            pose = placer.pose_at(int(later.frame))
+            if pose is not None:
+                after.append((float(later.time_s), int(later.frame), pose,
+                              float(later.px), float(later.py)))
+        start = np.array([y0 - LEFT_POST_Y, BALL_RADIUS_M, x0])
+        crossing = read_crossing(start, t0, after, fps)
+        if crossing is None:
             continue
-        t0, x0, y0, f0 = strike
-        travel = float(np.linalg.norm([x0 - 0.0, y0 - (LEFT_POST_Y + X),
-                                       0.11 - Y]))
-        speed = travel / (when - t0)
-        if not MIN_SPEED_MS <= speed <= MAX_SPEED_MS:
+        X, Y, when, frame, speed, how, used = crossing
+        outcome = classify(X, Y)
+        if outcome is None or not MIN_SPEED_MS <= speed <= MAX_SPEED_MS:
             continue
         # `frame` is the strike's, as for the ground detector: it is where
         # the shooter is looked for.
-        found.append({"frame": f0, "time_s": t0, "crossing_frame":
-                      int(row.frame), "crossing_s": when, "x": x0, "y": y0,
+        found.append({"frame": f0, "time_s": t0, "crossing_frame": frame,
+                      "crossing_s": when, "x": x0, "y": y0,
                       "across_m": X, "height_m": Y, "speed_ms": speed,
-                      "outcome": outcome, "goal": "left",
+                      "outcome": outcome, "goal": "left", "read": how,
+                      "sightings": used,
                       "distance_m": float(np.hypot(
                           x0, y0 - PITCH_WIDTH_M / 2.0))})
 
@@ -206,6 +232,98 @@ def find_shots(ball, placer, fps: float):
             if grass_after(pending["crossing_s"] + RESTART_S, grass)
             else "unconfirmed: the clip ends")
     return out
+
+
+def struck_flight(start, t0: float, after):
+    """The velocity of a ball struck from `start` at `t0`, fitted to its
+    sightings `after` (time, frame, pose, u, v). (velocity, rms px) or None.
+
+    Solved linearly first -- a point on a ray satisfies d x (p - eye) = 0,
+    linear in the velocity because the start and gravity are known -- then
+    refined on pixel residuals.
+    """
+    from scipy.optimize import least_squares
+
+    from .ball_height import GRAVITY_MS2, _project, ray
+
+    rows, rhs = [], []
+    for when, _, pose, u, v in after:
+        dt = when - t0
+        eye, d = ray(pose, u, v)
+        cross = np.array([[0, -d[2], d[1]], [d[2], 0, -d[0]],
+                          [-d[1], d[0], 0]])
+        fall = np.array([0.0, -0.5 * GRAVITY_MS2 * dt ** 2, 0.0])
+        rows.append(cross * dt)
+        rhs.append(cross @ (eye - start - fall))
+    try:
+        guess = np.linalg.lstsq(np.vstack(rows), np.concatenate(rhs),
+                                rcond=None)[0]
+    except np.linalg.LinAlgError:
+        return None
+
+    def residuals(vel):
+        out = []
+        for when, _, pose, u, v in after:
+            dt = when - t0
+            p = start + vel * dt
+            p[1] -= 0.5 * GRAVITY_MS2 * dt ** 2
+            out.append(_project(pose, p[None])[0] - (u, v))
+        return np.concatenate(out)
+
+    got = least_squares(residuals, guess, method="lm", max_nfev=200)
+    return got.x, float(np.sqrt(np.mean(got.fun ** 2)))
+
+
+def read_crossing(start, t0: float, after, fps: float):
+    """Where the ball struck from `start` crosses the goal line.
+
+    (X, Y, time, frame, speed, how, frames used) or None. The sightings are taken in
+    order and the flight grown one at a time, for as long as it stays one
+    flight that has not yet reached the line: after the line the net stops
+    the ball, and no parabola continues through that, and a sighting the
+    flight cannot explain is the ball touched or something else. One
+    sighting is read where its ray meets the goal plane; more are the
+    fitted flight carried on to the line.
+    """
+    best = None
+    for n in range(1, len(after) + 1):
+        got = _crossing_from(start, t0, after[:n], fps)
+        if got is None:
+            if n > 1:
+                break
+            continue
+        best = got
+    return best
+
+
+def _crossing_from(start, t0: float, seen, fps: float):
+    from .ball_height import GRAVITY_MS2
+
+    if len(seen) == 1:
+        when, frame, pose, u, v = seen[0]
+        hit = mouth_crossing(pose, u, v)
+        if hit is None or when <= t0:
+            return None
+        X, Y = hit
+        travel = float(np.linalg.norm([start[0] - X, start[1] - Y,
+                                       start[2]]))
+        return (X, Y, when, frame, travel / (when - t0),
+                "sighting at the line", [frame])
+    fitted = struck_flight(start, t0, seen)
+    if fitted is None:
+        return None
+    vel, rms = fitted
+    if rms > MAX_FLIGHT_RMS_PX or vel[2] >= 0.0:
+        return None
+    dt = -start[2] / vel[2]
+    if dt > LOOKBACK_S or seen[-1][0] - t0 > dt + 0.5 / fps:
+        return None
+    X = start[0] + vel[0] * dt
+    Y = start[1] + vel[1] * dt - 0.5 * GRAVITY_MS2 * dt ** 2
+    frame = int(seen[0][1] + round((t0 + dt - seen[0][0]) * fps))
+    return (float(X), float(Y), t0 + dt, frame, float(np.linalg.norm(vel)),
+            f"flight fitted to {len(seen)} sightings, {rms:.1f} px",
+            [s[1] for s in seen])
 
 
 def kickoff_after(when: float, grass):
@@ -269,7 +387,7 @@ def went_in(shot, sightings) -> bool:
             in_play += on_pitch
             continue
         hit = mouth_crossing(pose, u, v)
-        if (out_from_line < 0.0 and hit is not None
+        if (-NET_DEPTH_M <= out_from_line < 0.0 and hit is not None
                 and 0.0 <= hit[0] <= GOAL_WIDTH_M
                 and MIN_HEIGHT_M <= hit[1] <= GOAL_HEIGHT_M):
             in_net += 1
@@ -313,9 +431,25 @@ def selftest(verbose: bool = True) -> bool:
 
     def track(points):
         rows = [{"frame": k, "time_s": k / 25.0,
-                 "px": pixel(p)[0], "py": pixel(p)[1]}
-                for k, p in points]
+                 "px": pixel(p)[0], "py": pixel(p)[1],
+                 "segment": rest[0] if rest else 0}
+                for k, p, *rest in points]
         return pd.DataFrame(rows)
+
+    def flight(target, frames, strike=9, at=(3.0, 0.11, 18.0), arrive=28):
+        """Points on the parabola from `at` at frame `strike` to `target`
+        at frame `arrive`, at `frames`."""
+        dt = (arrive - strike) / 25.0
+        p0, p1 = np.array(at), np.array(target)
+        vel = (p1 - p0) / dt
+        vel[1] += 0.5 * 9.81 * dt
+        out = []
+        for k in frames:
+            t = (k - strike) / 25.0
+            p = p0 + vel * t
+            p[1] -= 0.5 * 9.81 * t * t
+            out.append((k, tuple(p)))
+        return out
 
     # Goal frame points: (X across, Y up, Z out).
     still = [(k, (3.0, 0.11, 18.0)) for k in range(10)]
@@ -348,6 +482,20 @@ def selftest(verbose: bool = True) -> bool:
          still + [(28, (6.8, 2.2, 0.0))] + in_net
          + [(k, (3.0, 0.11, 6.0)) for k in range(120, 126)]
          + [(132, (4.0, 1.5, 0.0))], "goal only"),
+    )
+    # The ball lost before the line, as it is on most real shots: seen three
+    # times early in its flight and never again. And a steward in the stand
+    # behind the goal, still, on a track of its own -- what every shot the
+    # first version found turned out to be.
+    early = flight((6.8, 2.2, 0.0), (12, 15, 18))
+    steward = [(k, (10.52, 1.09, -4.18), 1) for k in range(24, 48)]
+    cases = cases + (
+        ("seen only early in flight", still + early, "on target"),
+        ("seen early, going wide",
+         still + flight((10.0, 1.0, 0.0), (12, 15, 18)), "off target"),
+        ("struck, lost, a steward behind", still + steward, None),
+        ("seen early, then a steward",
+         still + early + [(k, p) for k, p, _ in steward], "on target"),
     )
     ok = True
     for name, points, want in cases:
