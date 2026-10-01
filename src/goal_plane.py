@@ -3,10 +3,9 @@
 Placing the ball assumes it is on the grass. A shot is often not: traced
 through every labelled shot and goal on six windows, the detector's fastest
 movement around five of the twelve read 56-112 m/s, because the ball was in
-the air. Rendered, reading_1155's goal is a strike at the edge of the box,
-no detections in flight, and the next sighting in the top corner of the net
--- which, projected to the grass, lands 2.9 m wide of the post and makes
-the strike 72 m/s. The ground-based detector rejects it twice over.
+the air. (What first prompted this -- a sighting "in the top corner" of
+reading_1155's goal -- turned out to be an object in the stand behind the
+net; see `MIN_FLIGHT_SIGHTINGS`.)
 
 A shot on goal has to pass through the goal mouth, a vertical rectangle
 7.32 by 2.44 m on the goal line. That plane is known exactly in the goal's
@@ -60,9 +59,14 @@ MERGE_S = 2.0
 # ball: sightings on the same tracked segment as the strike, after it,
 # fitted as one flight from the strike's spot under gravity -- three
 # unknowns, the velocity, against two per sighting -- and carried to the
-# goal line where the ball itself was not seen. A single sighting is read
-# where its ray meets the goal plane, as before, but only on the strike's
-# segment.
+# goal line where the ball itself was not seen.
+#
+# At least two sightings: one fits any flight exactly -- three unknowns,
+# and the plane supplies the third equation -- so nothing can refuse it.
+# Measured: with one allowed, the three crossings the reader found on six
+# windows were all stewards or a yellow object in the stand behind the
+# goal, linked into the strike's own track. With two, a flight through
+# something behind the goal reaches the line before it and is refused.
 MIN_FLIGHT_SIGHTINGS = 2
 # A flight that misfits its sightings by more than this, in pixels, is not
 # one flight: the ball was touched, or a sighting is something else. Pose
@@ -281,17 +285,13 @@ def read_crossing(start, t0: float, after, fps: float):
     order and the flight grown one at a time, for as long as it stays one
     flight that has not yet reached the line: after the line the net stops
     the ball, and no parabola continues through that, and a sighting the
-    flight cannot explain is the ball touched or something else. One
-    sighting is read where its ray meets the goal plane; more are the
-    fitted flight carried on to the line.
+    flight cannot explain is the ball touched or something else.
     """
     best = None
-    for n in range(1, len(after) + 1):
+    for n in range(MIN_FLIGHT_SIGHTINGS, len(after) + 1):
         got = _crossing_from(start, t0, after[:n], fps)
         if got is None:
-            if n > 1:
-                break
-            continue
+            break
         best = got
     return best
 
@@ -299,16 +299,6 @@ def read_crossing(start, t0: float, after, fps: float):
 def _crossing_from(start, t0: float, seen, fps: float):
     from .ball_height import GRAVITY_MS2
 
-    if len(seen) == 1:
-        when, frame, pose, u, v = seen[0]
-        hit = mouth_crossing(pose, u, v)
-        if hit is None or when <= t0:
-            return None
-        X, Y = hit
-        travel = float(np.linalg.norm([start[0] - X, start[1] - Y,
-                                       start[2]]))
-        return (X, Y, when, frame, travel / (when - t0),
-                "sighting at the line", [frame])
     fitted = struck_flight(start, t0, seen)
     if fitted is None:
         return None
@@ -453,11 +443,14 @@ def selftest(verbose: bool = True) -> bool:
 
     # Goal frame points: (X across, Y up, Z out).
     still = [(k, (3.0, 0.11, 18.0)) for k in range(10)]
+    # Struck from `still`, seen twice just before the line, top corner.
+    corner = flight((6.8, 2.2, 0.0), (25, 28))
     cases = (
         ("shot into the top corner",
-         still + [(28, (6.8, 2.2, 0.0))], "on target"),
+         still + corner, "on target"),
         ("shot wide of the post",
-         still + [(26, (9.5, 0.6, 0.0))], "off target"),
+         still + flight((9.5, 0.6, 0.0), (23, 26), arrive=26),
+         "off target"),
         ("ball rolling to the keeper",
          still + [(60, (3.6, 0.11, 0.0))], None),
         ("ball at rest in the box",
@@ -467,21 +460,22 @@ def selftest(verbose: bool = True) -> bool:
     saved = [(k, (3.5, 0.11, 4.0 + 0.2 * (k - 30))) for k in range(30, 60, 3)]
     cases = cases + (
         ("top corner, then in the net",
-         still + [(28, (6.8, 2.2, 0.0))] + in_net, "goal"),
+         still + corner + in_net, "goal"),
         ("top corner, then parried out",
-         still + [(28, (6.8, 2.2, 0.0))] + saved, "on target"),
+         still + corner + saved, "on target"),
         # The ball still in the net seconds later reads as a second shot
         # from the goalmouth; play has not restarted, so it is not one.
         # The tracker leaving the ball in the net: a hoarding beyond the
         # touchline, and a three-frame blip by the post, as on the real goal.
         ("a goal, then the tracker strays",
-         still + [(28, (6.8, 2.2, 0.0))] + in_net[:5]
+         still + corner + in_net[:5]
          + [(k, (-38.0, 0.11, 7.0)) for k in range(46, 52)]
          + [(k, (7.4, 0.11, 1.5)) for k in range(52, 55)], "goal"),
         ("a goal, then the ball in the net",
-         still + [(28, (6.8, 2.2, 0.0))] + in_net
+         still + corner + in_net
          + [(k, (3.0, 0.11, 6.0)) for k in range(120, 126)]
-         + [(132, (4.0, 1.5, 0.0))], "goal only"),
+         + flight((4.0, 1.5, 0.0), (129, 132), strike=125, at=(3.0, 0.11, 6.0),
+                  arrive=132), "goal only"),
     )
     # The ball lost before the line, as it is on most real shots: seen three
     # times early in its flight and never again. And a steward in the stand
@@ -494,6 +488,10 @@ def selftest(verbose: bool = True) -> bool:
         ("seen early, going wide",
          still + flight((10.0, 1.0, 0.0), (12, 15, 18)), "off target"),
         ("struck, lost, a steward behind", still + steward, None),
+        # The same steward linked into the strike's own track, as on the
+        # real windows: a flight through it would reach the line first.
+        ("a steward on the strike's track",
+         still + [(k, p) for k, p, _ in steward], None),
         ("seen early, then a steward",
          still + early + [(k, p) for k, p, _ in steward], "on target"),
     )
@@ -512,10 +510,10 @@ def selftest(verbose: bool = True) -> bool:
             print(f"  {name:>28s}  {said or 'no shot'}{extra}   "
                   f"{'ok' if good else 'WRONG'}")
     # The kick-off that confirms a goal, and its absence that refutes one.
-    goal = still + [(28, (6.8, 2.2, 0.0))] + in_net
+    goal = still + corner + in_net
     spot = [(k, (3.66, 0.11, 52.5)) for k in range(1000, 1040)]
     another = ([(k, (3.0, 0.11, 18.0)) for k in range(700, 710)]
-               + [(725, (6.8, 2.2, 0.0))])
+               + flight((6.8, 2.2, 0.0), (722, 725), strike=709, arrive=725))
     for name, points, want in (
             ("goal, then a kick-off", goal + spot, ("goal", "kick-off")),
             ("goal, then another shot first", goal + another,
