@@ -113,7 +113,7 @@ commence par un résumé de l'état actuel.
 | Distance, angle et xG des tirs | les 6 tirs annotés, xG total 0,47 | `EVENT_ACCURACY.md` |
 | Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
 | Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
-| Tirs et buts détectés | **3 sur 10 et 1 sur 2**, 1 faux tir | `EVENT_ACCURACY.md` |
+| Tirs et buts détectés | **3 sur 10 et 1 sur 2**, aucune fausse alerte | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
 | Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |
@@ -138,8 +138,10 @@ pas :
 
 ### Ce qui ne marche pas encore
 
-**Les tirs.** 3 tirs sur 10 et le but de reading_1155 sont trouvés, pour un
-seul faux tir. Le détecteur précédent n'en trouvait aucun : il plaçait le
+**Les tirs.** 3 tirs sur 10 et le but de reading_1155 sont trouvés, sans
+fausse alerte. Un but est un tir cadré suivi du ballon vu dans les filets ;
+après un but, rien ne compte comme tir pendant 20 s, le temps de
+l'engagement. Le détecteur précédent n'en trouvait aucun : il plaçait le
 ballon au sol, et 5 des 12 moments annotés avaient le ballon en l'air. Le
 nouveau (`src/goal_plane.py`) lit le tir là où il franchit la ligne de but,
 dans le plan vertical du cadre, ce qui donne aussi sa hauteur : le but de

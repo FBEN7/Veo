@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | **3 of 10, 1 of 2**, 1 false shot | "Shots at the goal plane" |
+| Shots and goals detected | **3 of 10, 1 of 2**, no false ones | "Shots at the goal plane" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 
 Superseded, and kept only as history: anything placed by the centre-circle
@@ -982,6 +982,33 @@ one 8 m out does not.
 
 The scorer now uses this detector wherever the placer has a camera pose
 per frame.
+
+#### Goals at the goal plane too
+
+The scorer's goal row came from the ball crossing the line on the grass,
+which misses any goal scored in the air. A goal is now an on-target
+crossing after which, within 3 s, the ball is seen in the net -- behind the
+line, inside the mouth -- more often than back in play on the pitch more
+than 1 m in front of it. After a goal nothing counts as a shot for 20 s,
+short of any kick-off.
+
+The first version vetoed a goal on any reading in front of the line. On
+reading_1155 the ball sat in the net for half a second and the tracker
+then hopped to a hoarding beyond the touchline and, for three frames, to
+something by the post; the goal was called a save, and the ball still in
+the net four seconds later was called the goal. Requiring in-play readings
+to be on the pitch, and the net to win a majority, fixed it; a control now
+pins that case.
+
+| | before | goal plane |
+|---|---|---|
+| goals found | 0 of 2 | **1 of 2**, no false goal |
+| shots found | 3 of 10, 1 false | **3 of 10, no false shot** |
+
+reading_1155's top-corner goal is a goal, 0.9 s from the label, and the
+false shot after it is gone under the restart rule. reading_0737's
+on-target shot stays a shot. The other goal, reading_2519, has 2 placed
+positions in the 3 s around it.
 
 ### The camera between grid frames: interpolated, not frozen
 
