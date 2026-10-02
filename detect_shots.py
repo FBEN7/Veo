@@ -205,10 +205,18 @@ def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
     marking where the ball was genuinely lost.
     """
     tracks = pd.read_parquet(out_dir / "tracks.parquet")
+    info_path = out_dir / "clip.json"
+    info = json.loads(info_path.read_text()) if info_path.exists() else None
+    if info is not None and Path(info.get("path", "")).exists():
+        # A broadcast replay is play shown again, not play: no event may be
+        # read from it (`src/replays.py`). Footage without the broadcast's
+        # wipes, such as Veo's, loses nothing.
+        from src import replays
+
+        spans = replays.for_clip(out_dir, info)
+        tracks = tracks[~replays.in_replay(tracks.frame.to_numpy(), spans)]
     if fps is None:
-        info_path = out_dir / "clip.json"
-        fps = (json.loads(info_path.read_text())["fps"]
-               if info_path.exists() else 25.0)
+        fps = float(info["fps"]) if info is not None else 25.0
     return ball_path.track(tracks, float(fps))
 
 

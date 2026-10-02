@@ -81,6 +81,10 @@ CONTROLS = [
      "a camera 38 m from its starting guess located to 0.07 m, circle "
      "frames from a lower or nearer camera refused, and the one "
      "displacement the geometry cannot see pinned as accepted"),
+    ("broadcast replays",
+     [sys.executable, "-m", "src.replays"],
+     "a replay is found between two wipes, one without a partner runs to "
+     "the end, and footage without wipes has none"),
     ("shots at the goal plane",
      [sys.executable, "-m", "src.goal_plane"],
      "a shot into the top corner and one wide found where they cross the "

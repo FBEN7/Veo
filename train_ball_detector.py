@@ -9,7 +9,8 @@ exactly that ball.
 
 ## Data
 
-- The clicks from `make_ball_labeller.py` and `make_ball_labeller2.py`: a
+- The clicks from `make_ball_labeller.py` and `make_ball_labeller2.py`,
+  outside broadcast replays (`src/replays.py`): a
   box at each click, sized by the stored candidate it lands on or by the
   clip's typical ball box. Frames marked "not visible" are kept with no box,
   as are other parts of every clicked frame -- the stewards, logos and
@@ -74,6 +75,8 @@ def load_clicks(paths):
     """{(clip, frame): (x, y, size) or None}, later rounds overriding."""
     import pandas as pd
 
+    from src import replays
+
     out, typical = {}, {}
     for path in paths:
         for r in json.loads(Path(path).read_text())["frames"]:
@@ -82,6 +85,14 @@ def load_clicks(paths):
             out[(r["clip"], int(r["frame"]))] = (
                 None if not r.get("ball") else
                 (r["ball"][0] * r["width"], r["ball"][1] * r["height"]))
+    # Replays are not footage a Veo camera produces: their clicks are
+    # neither trained on nor tested (`src/replays.py`).
+    for clip in sorted({c for c, _ in out}):
+        info = json.loads((Path(f"output_{clip}") / "clip.json").read_text())
+        spans = replays.for_clip(Path(f"output_{clip}"), info)
+        for key in [k for k in out if k[0] == clip]:
+            if replays.in_replay([key[1]], spans)[0]:
+                del out[key]
     sized = {}
     for clip in sorted({c for c, _ in out}):
         balls = pd.read_parquet(Path(f"output_{clip}") / "tracks.parquet")
