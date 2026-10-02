@@ -1231,6 +1231,46 @@ detector problem, not a reading problem: a ball detector trained on this
 footage (the 138 clicks are a start), or a dedicated small-object
 detector run at full resolution near the goal.
 
+### A ball detector trained on this footage: first test
+
+`train_ball_detector.py` fine-tunes a one-class detector (yolov8n) on
+640-px tiles cut at the footage's own scale -- a box at every click, the
+rest of each clicked frame and every "not visible" frame as negatives --
+plus the Roboflow ball class, and runs it on whole frames at 1280. It is
+tested by match: trained on one match's clicks, scored on the other's.
+
+First test, trained on the 78 first-round Stoke clicks and the public
+data only, 30 epochs, scored on the 74 first-round Reading frames (60 with
+the ball visible):
+
+| confidence | COCO yolov8m (current): ball found, false | fine-tuned: ball found, false |
+|---|---|---|
+| 0.05 | 32 of 60, 396 | **42 of 60, 123** |
+| 0.10 | 28 of 60, 228 | **40 of 60, 84** |
+| 0.25 | 21 of 60, 74 | **38 of 60, 37** |
+
+A hit is within 8 px of the click; a false detection is further than
+15 px from it, or any on a "not visible" frame. At the strictest setting
+it finds nearly twice as many balls with half the false detections.
+
+A second labelling round (`make_ball_labeller2.py`) added 271 balls and
+104 "not visible" frames, every 2nd frame around each event and 12 frames
+per clip where the ball path had none.
+
+### Replays
+
+The labelled clips are broadcasts, and broadcasts show replays; a Veo
+recording does not. Every replay on the six clips is framed by the EFL
+wipe (large white discs): two bursts of 21-27% near-white pixels about
+1.5 s long, before and after, where ordinary play stays under 3%.
+`src/replays.py` pairs the wipes into replay spans -- stoke_1302 1266-1458,
+stoke_7001 1670-2060, reading_0737 718-984, reading_1155 921-1698,
+reading_2519 923-1387, stoke_4207 from 2150 to the end -- matching those
+seen by eye. No labelled event falls inside one; 13 clicks do. The ball
+track drops replay frames and the detector training drops replay clicks.
+It depends on this broadcaster's wipe: other footage must be checked
+before its "no replays" is believed.
+
 ### The camera between grid frames: interpolated, not frozen
 
 Goal poses are solved every 4 frames and were reused unchanged in between,
