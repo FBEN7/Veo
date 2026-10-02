@@ -341,6 +341,10 @@ def main():
                          "circle. The weights are trained on footage under "
                          "a non-commercial agreement and are therefore not "
                          "in this repository; supply your own.")
+    ap.add_argument("--ball-detectors",
+                    help="directory of train_ball_detector.py runs: each clip "
+                         "is searched for the ball by the detector trained "
+                         "without its match (<dir>/without_<match>)")
     ap.add_argument("--midfield", action="store_true",
                     help="also place the ball at midfield, from the centre "
                          "circle refitted with the camera held")
@@ -389,7 +393,16 @@ def main():
     import detect_set_pieces as set_pieces
     import detect_shots
 
-    ball = detect_shots.ball_track(out_dir)
+    if args.ball_detectors:
+        # Searched by a detector that never saw this match's clicks.
+        from src.ball_detector import run_clip
+
+        held_out = out_dir.name.replace("output_", "").split("_")[0]
+        weights = (Path(args.ball_detectors) / f"without_{held_out}" / "run"
+                   / "weights" / "best.pt")
+        run_clip(out_dir, info, weights)
+    ball = detect_shots.ball_track(out_dir,
+                                   ball_detector=bool(args.ball_detectors))
     if ball.empty:
         raise SystemExit("no ball track in that output directory")
     if args.goal_weights and args.corners:

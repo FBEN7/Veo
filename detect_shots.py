@@ -194,7 +194,8 @@ ANCHOR_GRID = 4
 ANCHOR_FRAMES = 240
 
 
-def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
+def ball_track(out_dir: Path, fps: float | None = None,
+               ball_detector: bool = False) -> pd.DataFrame:
     """The ball's path through a clip, chosen as a trajectory.
 
     This used to take the most confident detection on each frame,
@@ -205,6 +206,12 @@ def ball_track(out_dir: Path, fps: float | None = None) -> pd.DataFrame:
     marking where the ball was genuinely lost.
     """
     tracks = pd.read_parquet(out_dir / "tracks.parquet")
+    if ball_detector:
+        # The fine-tuned detector's candidates in place of COCO's ball rows,
+        # where a run has cached them (`src/ball_detector.py`).
+        from src.ball_detector import with_candidates
+
+        tracks = with_candidates(tracks, out_dir)
     info_path = out_dir / "clip.json"
     info = json.loads(info_path.read_text()) if info_path.exists() else None
     if info is not None and Path(info.get("path", "")).exists():
