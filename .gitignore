@@ -59,4 +59,5 @@ circle_labels.json
 # Intermediate results (src/paths.py CACHE_DIR)
 .cache/
 ball_labeller.html
+ball_labeller2.html
 ball_labels.json
