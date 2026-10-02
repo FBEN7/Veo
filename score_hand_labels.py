@@ -345,6 +345,10 @@ def main():
                     help="directory of train_ball_detector.py runs: each clip "
                          "is searched for the ball by the detector trained "
                          "without its match (<dir>/without_<match>)")
+    ap.add_argument("--shot-trace",
+                    help="write every strike the goal-plane reader "
+                         "considered, and what its flight fits made of it, "
+                         "to this JSON file")
     ap.add_argument("--midfield", action="store_true",
                     help="also place the ball at midfield, from the centre "
                          "circle refitted with the camera held")
@@ -425,7 +429,10 @@ def main():
         # and goal moments were in the air.
         from src import goal_plane
 
-        shots = goal_plane.find_shots(ball, maps, info["fps"])
+        trace = [] if args.shot_trace else None
+        shots = goal_plane.find_shots(ball, maps, info["fps"], trace=trace)
+        if trace is not None:
+            Path(args.shot_trace).write_text(json.dumps(trace, indent=1))
     shots = detect_shots.score(detect_shots.attribute(shots, out_dir, ball))
     stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])
     outs = [e for e in stoppages if e["event_type"] == "out_of_play"]

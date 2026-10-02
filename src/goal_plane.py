@@ -137,12 +137,13 @@ def classify(X: float, Y: float):
     return None
 
 
-def find_shots(ball, placer, fps: float):
+def find_shots(ball, placer, fps: float, trace: list | None = None):
     """Shots at the calibrated goal, from sightings at its plane.
 
     `placer` needs `place(frame, px, py)` for the grass and `pose_at(frame)`
     for the camera. Returns a list of dicts with the strike and the
-    crossing, earliest first.
+    crossing, earliest first. With `trace`, a list, every strike considered
+    is appended to it with what each fitted flight made of it.
     """
     grass = []
     for row in ball.itertuples():
@@ -175,6 +176,8 @@ def find_shots(ball, placer, fps: float):
                               float(later.px), float(later.py)))
         start = np.array([y0 - LEFT_POST_Y, BALL_RADIUS_M, x0])
         crossing = read_crossing(start, t0, after, fps)
+        if trace is not None:
+            trace.append(_trace_strike(start, t0, f0, after, crossing))
         if crossing is None:
             continue
         X, Y, when, frame, speed, how, used = crossing
@@ -236,6 +239,29 @@ def find_shots(ball, placer, fps: float):
             if grass_after(pending["crossing_s"] + RESTART_S, grass)
             else "unconfirmed: the clip ends")
     return out
+
+
+def _trace_strike(start, t0, f0, after, crossing):
+    """What became of one strike: each flight fitted, and the crossing."""
+    fits = []
+    for n in range(MIN_FLIGHT_SIGHTINGS, len(after) + 1):
+        got = struck_flight(start, t0, after[:n])
+        if got is None:
+            fits.append({"n": n, "fit": None})
+            continue
+        vel, rms = got
+        dt = (-start[2] / vel[2]) if vel[2] < 0 else None
+        fits.append({"n": n, "rms_px": round(rms, 1),
+                     "vel": [round(float(v), 1) for v in vel],
+                     "to_line_s": None if dt is None else round(float(dt), 2),
+                     "last_s": round(after[n - 1][0] - t0, 2)})
+    return {"strike_frame": f0, "strike_s": round(t0, 2),
+            "strike_m": [round(float(start[2]), 1),
+                         round(float(start[0] + LEFT_POST_Y), 1)],
+            "sightings_after": [s[1] for s in after],
+            "fits": fits[:6],
+            "crossing": None if crossing is None else
+            [round(float(v), 2) for v in crossing[:5]]}
 
 
 def struck_flight(start, t0: float, after):
