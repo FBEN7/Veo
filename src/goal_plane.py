@@ -300,46 +300,56 @@ def struck_flight(start, t0: float, after):
             out.append(_project(pose, p[None])[0] - (u, v))
         return np.concatenate(out)
 
-    got = least_squares(residuals, guess, method="lm", max_nfev=200)
+    # No faster than a struck ball: without the bound, sightings close in
+    # time fit hundreds of m/s along the line of sight as well as the truth.
+    bound = MAX_SPEED_MS
+    got = least_squares(residuals, np.clip(guess, -bound * 0.99, bound * 0.99),
+                        bounds=(-bound, bound), method="trf", max_nfev=200)
     return got.x, float(np.sqrt(np.mean(got.fun ** 2)))
 
 
 def read_crossing(start, t0: float, after, fps: float):
     """Where the ball struck from `start` crosses the goal line.
 
-    (X, Y, time, frame, speed, how, frames used) or None. The sightings are taken in
-    order and the flight grown one at a time, for as long as it stays one
-    flight that has not yet reached the line: after the line the net stops
-    the ball, and no parabola continues through that, and a sighting the
-    flight cannot explain is the ball touched or something else.
+    (X, Y, time, frame, speed, how, frames used) or None. The flight is
+    fitted to the first n sightings for n = 2, 3, ... and the crossing is
+    read from the longest run that is still one flight short of the line.
+    A run that misfits by more than `MAX_FLIGHT_RMS_PX` ends the search:
+    the ball was touched, reached the net, or a sighting is something else.
+    A short run whose fit puts the line before its last sighting does not:
+    two sightings 0.04 s apart fit almost any speed along the line of
+    sight, and the first version, which stopped there, never got past two
+    sightings of flights the fine-tuned detector saw on every frame.
     """
     best = None
     for n in range(MIN_FLIGHT_SIGHTINGS, len(after) + 1):
-        got = _crossing_from(start, t0, after[:n], fps)
-        if got is None:
+        got, rms = _crossing_from(start, t0, after[:n], fps)
+        if rms is None or rms > MAX_FLIGHT_RMS_PX:
             break
-        best = got
+        if got is not None:
+            best = got
     return best
 
 
 def _crossing_from(start, t0: float, seen, fps: float):
+    """(crossing or None, rms px or None) for a flight fitted to `seen`."""
     from .ball_height import GRAVITY_MS2
 
     fitted = struck_flight(start, t0, seen)
     if fitted is None:
-        return None
+        return None, None
     vel, rms = fitted
-    if rms > MAX_FLIGHT_RMS_PX or vel[2] >= 0.0:
-        return None
+    if vel[2] >= 0.0 or np.linalg.norm(vel) > MAX_SPEED_MS:
+        return None, rms
     dt = -start[2] / vel[2]
     if dt > LOOKBACK_S or seen[-1][0] - t0 > dt + 0.5 / fps:
-        return None
+        return None, rms
     X = start[0] + vel[0] * dt
     Y = start[1] + vel[1] * dt - 0.5 * GRAVITY_MS2 * dt ** 2
     frame = int(seen[0][1] + round((t0 + dt - seen[0][0]) * fps))
-    return (float(X), float(Y), t0 + dt, frame, float(np.linalg.norm(vel)),
-            f"flight fitted to {len(seen)} sightings, {rms:.1f} px",
-            [s[1] for s in seen])
+    return ((float(X), float(Y), t0 + dt, frame, float(np.linalg.norm(vel)),
+             f"flight fitted to {len(seen)} sightings, {rms:.1f} px",
+             [s[1] for s in seen]), rms)
 
 
 def kickoff_after(when: float, grass):
@@ -445,9 +455,11 @@ def selftest(verbose: bool = True) -> bool:
             return None if hit is None else np.array(
                 [hit[1], hit[0] + LEFT_POST_Y])
 
-    def track(points):
+    def track(points, noise_px=0.0):
+        jitter = np.random.default_rng(1)
         rows = [{"frame": k, "time_s": k / 25.0,
-                 "px": pixel(p)[0], "py": pixel(p)[1],
+                 "px": pixel(p)[0] + jitter.normal(0, noise_px),
+                 "py": pixel(p)[1] + jitter.normal(0, noise_px),
                  "segment": rest[0] if rest else 0}
                 for k, p, *rest in points]
         return pd.DataFrame(rows)
@@ -521,7 +533,28 @@ def selftest(verbose: bool = True) -> bool:
         ("seen early, then a steward",
          still + early + [(k, p) for k, p, _ in steward], "on target"),
     )
+    # Seen on every frame after the strike, with a pixel of detector noise,
+    # as the fine-tuned detector sees real shots: two sightings 0.04 s
+    # apart then fit almost any speed along the line of sight, and the
+    # first version stopped there.
+    dense = [(k, p) for k, p in flight((6.8, 2.2, 0.0), range(10, 26))]
+    rolling = [(k, (3.0 - 0.2 * k, 0.11, 18.0 + 0.1 * k)) for k in range(10)]
+    noisy = (
+        ("every frame of the flight, noisy", rolling + dense, "on target", 1.0),
+        ("every frame, going wide, noisy",
+         rolling + flight((10.0, 1.0, 0.0), range(10, 26)), "off target", 1.0),
+    )
     ok = True
+    for name, points, want, noise in noisy:
+        got = find_shots(track(points, noise), Placer(), 25.0)
+        said = got[0]["outcome"] if got else None
+        extra = (f", {got[0]['speed_ms']:.0f} m/s, {got[0]['height_m']:.1f} m "
+                 f"up at the line" if got else "")
+        good = said == want
+        ok &= good
+        if verbose:
+            print(f"  {name:>28s}  {said or 'no shot'}{extra}   "
+                  f"{'ok' if good else 'WRONG'}")
     for name, points, want in cases:
         got = find_shots(track(points), Placer(), 25.0)
         said = got[0]["outcome"] if got else None
