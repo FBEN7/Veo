@@ -288,8 +288,12 @@ def goal_maps(out_dir, info, ball, args):
                 seed = float(np.median([p.focal_px
                                         for p in located.values()]))
 
+    from src.goal_placer import MIN_BOX_CONFIDENCE
+
     goal = build(info["path"], ball.frame.tolist(), eye, seed,
                  info["width"], info["height"], YOLO(args.goal_weights),
+                 conf=(args.goal_conf if getattr(args, "goal_conf", None)
+                       is not None else MIN_BOX_CONFIDENCE),
                  verbose=True)
     if getattr(args, "midfield", False):
         # The centre circle, refitted with the camera held where the goal
@@ -349,6 +353,9 @@ def main():
                     help="write every strike the goal-plane reader "
                          "considered, and what its flight fits made of it, "
                          "to this JSON file")
+    ap.add_argument("--goal-conf", type=float,
+                    help="lowest goal-box confidence solved for a camera "
+                         "pose (default: goal_placer.MIN_BOX_CONFIDENCE)")
     ap.add_argument("--midfield", action="store_true",
                     help="also place the ball at midfield, from the centre "
                          "circle refitted with the camera held")

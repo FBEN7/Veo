@@ -158,10 +158,17 @@ def find_shots(ball, placer, fps: float, trace: list | None = None):
     for k, row in enumerate(rows):
         point = placer.place(row.frame, row.px, row.py)
         if point is None:
+            if trace is not None:
+                trace.append({"frame": int(row.frame), "skipped": "not placed",
+                              "pose": placer.pose_at(int(row.frame))
+                              is not None})
             continue
         t0, x0, y0, f0 = (float(row.time_s), float(point[0]),
                           float(point[1]), int(row.frame))
         if not MIN_STRIKE_M <= x0 <= MAX_STRIKE_M:
+            if trace is not None:
+                trace.append({"frame": f0, "skipped": "out of range",
+                              "at_m": [round(x0, 1), round(y0, 1)]})
             continue
         segment = int(row.segment) if has_segments else 0
         after = []
