@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | **0 of 10, 0 of 2**, no false ones: the 3 and 1 once reported were look-alikes behind the goal; shots are now read from the ball's own flight | "Shots read from the struck ball's own flight" |
+| Shots and goals detected | **1 of 10** real (COCO) and **3 of 10** with the fine-tuned ball detector, 1 false each; goals 0 of 2 | "Attempts seen only briefly" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1318,6 +1318,39 @@ What remains is upstream of the reader: camera poses from a goal
 detector trained on 150 frames, which fails at sharp angles, and blocked
 shots, which a reader of goal-line crossings can only catch through the
 flight's first few sightings.
+
+### Attempts seen only briefly
+
+Four sightings in 0.16 s fit almost any speed along the line of sight, so
+a blocked shot's flight cannot be read from one camera; its direction can.
+Every straight flight from the strike through the sightings lies in the
+plane through the camera, the strike and the ball. When the full flight
+gives no shot, a strike now counts as an **attempt** (on or off target
+unknown) if that plane cuts the goal mouth with the off-target margins,
+the sightings are one ball -- the longest run from the strike on a
+straight, steady path in the picture within 6 px, placed on the pitch --
+moving towards the goal line at 12-60 m/s, from within the width of the
+penalty area.
+
+Its first version, without the one-ball checks, found four real shots
+and five false ones (sightings jumping between players, on the far
+hoardings, and a steward at 121 m/s). With them, six windows, each found
+shot's sightings compared with the clicks:
+
+| ball candidates | real shots found | false | goals |
+|---|---|---|---|
+| COCO (current) | 1 of 10 (reading_0737 65.3 s, blocked) | 1 | 0 of 2 |
+| fine-tuned | **3 of 10** | 1 | 0 of 2 |
+
+The fine-tuned three are reading_0737 at 20.5 s (off target, 1-3 px from
+the clicks), reading_1155 at 19.9 s (the strike of its goal, read as an
+attempt, 2-30 px) and reading_2519 at 19.6 s (the goal from close range,
+1-12 px). The false one is stoke_7001 at 48.2 s, sightings at the far
+touchline where no shot is labelled. stoke_4207 at 64.4 s is matched by
+the scorer within its time window but is the long ball arriving before
+the labelled shot, and is not counted here. The fine-tuned run still adds
+four false outs, so it stays unwired. Neither goal is read as a goal: the
+ball is seen too briefly at or in the net.
 
 ### The camera between grid frames: interpolated, not frozen
 
