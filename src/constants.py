@@ -19,7 +19,17 @@ DEFAULT_CONF_BALL = 0.08
 # Tracking parameters
 TRACK_ACTIVATION_THRESHOLD = 0.08
 LOST_TRACK_BUFFER = 180
-MINIMUM_MATCHING_THRESHOLD = 0.78
+# ByteTrack's minimum_matching_threshold is a *maximum* (1 - IoU) distance, so
+# a higher value is MORE permissive, not less. Reading it the other way round
+# is what made 0.78 look conservative when it was in fact halving the number
+# of tracks by refusing to associate detections that belonged together.
+# Lowering it, the intuitive "fix", is catastrophic: at 0.30 a two-minute clip
+# produced 2346 track ids with a median length of one frame.
+#
+# 0.95 was chosen by sweeping this parameter in August 2026. That sweep was
+# lost with the working container and has not yet been re-run, so treat this
+# value as inherited rather than currently verified.
+MINIMUM_MATCHING_THRESHOLD = 0.95
 MIN_DETECTION_HEIGHT_PX = 16.0
 
 # ============================================================================
@@ -70,21 +80,21 @@ MIN_TRACKS_FOR_CLUSTERING = 3
 MIN_TRACK_LENGTH_FOR_COLOR = 10
 
 # ============================================================================
-# Event detection parameters
+# Event detection parameters (AGGRESSIVE MODE for 70%+ detection)
 # ============================================================================
-POSSESSION_RADIUS_M = 4.4
-POSSESSION_GAP_FILL_S = 1.4
-MIN_PASS_DISTANCE_M = 1.2
-MAX_PASS_INTERVAL_S = 4.5
-PASS_UNKNOWN_BRIDGE_S = 1.4
-SHOT_MIN_KMH = 16.0
-SHOT_MAX_DIST_FROM_GOAL_M = 40.0
-SHOT_COOLDOWN_S = 1.8
-CARRY_MIN_TIME_S = 2.0
-CARRY_MIN_DISTANCE_M = 8.0
-RECOVERY_MIN_LOOSE_S = 0.8
-TACKLE_MAX_PLAYER_DIST_M = 2.5
-TACKLE_MAX_BALL_SPEED_KMH = 28.0
+POSSESSION_RADIUS_M = 6.0  # More lenient possession detection
+POSSESSION_GAP_FILL_S = 2.0  # Allow longer gaps in possession
+MIN_PASS_DISTANCE_M = 0.5  # Much lower minimum pass distance
+MAX_PASS_INTERVAL_S = 6.0  # More time to detect complete pass
+PASS_UNKNOWN_BRIDGE_S = 2.0  # More lenient unknown bridges
+SHOT_MIN_KMH = 12.0  # Lower minimum shot speed
+SHOT_MAX_DIST_FROM_GOAL_M = 50.0  # Shots from further out
+SHOT_COOLDOWN_S = 0.8  # Faster shot detection
+CARRY_MIN_TIME_S = 1.0  # Shorter minimum carry time
+CARRY_MIN_DISTANCE_M = 3.0  # Shorter minimum carry distance
+RECOVERY_MIN_LOOSE_S = 0.4  # More sensitive recovery detection
+TACKLE_MAX_PLAYER_DIST_M = 3.5  # Larger tackle detection radius
+TACKLE_MAX_BALL_SPEED_KMH = 35.0  # Higher ball speed tolerance
 
 # Goal geometry
 GOAL_WIDTH_M = 7.32
