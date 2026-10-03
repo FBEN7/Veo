@@ -300,11 +300,17 @@ def struck_flight(start, t0: float, after):
             out.append(_project(pose, p[None])[0] - (u, v))
         return np.concatenate(out)
 
-    # No faster than a struck ball: without the bound, sightings close in
-    # time fit hundreds of m/s along the line of sight as well as the truth.
+    # No faster than a struck ball, and not downward: it leaves the grass.
+    # From a camera 70 m away and 19 m up, a ball moving away along the line
+    # of sight looks much like one moving down it, and without these bounds
+    # real flights fitted the speed cap with the ball heading into the
+    # ground (traced on stoke_7001 and reading_1155: vertical -12 m/s).
     bound = MAX_SPEED_MS
-    got = least_squares(residuals, np.clip(guess, -bound * 0.99, bound * 0.99),
-                        bounds=(-bound, bound), method="trf", max_nfev=200)
+    lower = np.array([-bound, 0.0, -bound])
+    upper = np.array([bound, bound, bound])
+    start_guess = np.clip(guess, lower + 1e-3, upper - 1e-3)
+    got = least_squares(residuals, start_guess, bounds=(lower, upper),
+                        method="trf", max_nfev=200)
     return got.x, float(np.sqrt(np.mean(got.fun ** 2)))
 
 
