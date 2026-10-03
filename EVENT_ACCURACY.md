@@ -1271,6 +1271,54 @@ track drops replay frames and the detector training drops replay clicks.
 It depends on this broadcaster's wipe: other footage must be checked
 before its "no replays" is believed.
 
+### The fine-tuned detector, both ways, and what still stops shots
+
+Trained with all 409 clicks (outside replays), each match scored by the
+model that never saw it:
+
+| test match | confidence | COCO: found, false | fine-tuned: found, false |
+|---|---|---|---|
+| Stoke (228 balls, 328 frames) | 0.10 | 123, 413 | **143, 183** |
+| Stoke | 0.25 | 103, 190 | **132, 74** |
+| Reading (172 balls, 224 frames) | 0.10 | 62, 648 | **82, 223** |
+| Reading | 0.25 | 40, 216 | **77, 93** |
+
+With it the ball path sits on the clicked ball on 10-30 frames around
+most labelled shots, where it had sat on look-alikes. Three faults then
+showed in the shot reader, each traced on real shots and fixed with a
+control: two sightings 0.04 s apart fitted 500-5000 m/s along the line of
+sight and the reader stopped there (speed now bounded, the flight grown
+past bad short fits); with the speed bounded, fits put the ball heading
+into the ground at the cap (a struck ball now leaves the grass upward or
+flat); and the reason for the rest was found in the camera, not the
+reader. Six windows, every crossing checked against the clicks:
+
+| ball candidates | shots | goals | out of play |
+|---|---|---|---|
+| COCO (current) | 1 of 10 | 0 of 2 | 2 of 4, 0 false |
+| fine-tuned | 1 of 10 real (2 matched) | 0 of 2 | 2 of 4, 4 false |
+
+The real one is reading_0737 at 20.5 s, its four sightings 1-2 px from
+the clicks. The second match, stoke_4207 at 64.4 s, is on the ball but is
+the long ball arriving before the labelled shot, and is not counted.
+
+Rendered, the twelve labelled moments are of three kinds: shots that
+reach the line (stoke_1302 20 s, stoke_4207 66 s, reading_0737 20 s and
+the two goals), shots blocked in a crowded box that never near it
+(stoke_7001 20 s and 21 s, stoke_4207 20 s, probably reading_0737 65 s),
+and one run to the byline (stoke_1302 38 s). On stoke_7001 no strike is
+even considered: frames 483-535 have no camera pose, because the goal
+detector scores the goal there at 0.09-0.25, under its 0.15 cut-off, and
+smoothing drops the few that pass for want of neighbours -- though each
+fits its box to under a pixel. At a 0.05 cut-off poses rise on four clips
+(stoke_7001 79 to 103 grid frames) but no shot is gained and the
+fine-tuned run adds a fifth false out; the cut-off stays at 0.15.
+
+What remains is upstream of the reader: camera poses from a goal
+detector trained on 150 frames, which fails at sharp angles, and blocked
+shots, which a reader of goal-line crossings can only catch through the
+flight's first few sightings.
+
 ### The camera between grid frames: interpolated, not frozen
 
 Goal poses are solved every 4 frames and were reused unchanged in between,
