@@ -74,6 +74,26 @@ MIN_FLIGHT_SIGHTINGS = 2
 MAX_FLIGHT_RMS_PX = 8.0
 BALL_RADIUS_M = 0.11
 
+# An attempt seen only briefly. A shot blocked in a crowded box is seen for a
+# few frames and then sent elsewhere; four sightings in 0.16 s fit almost
+# any speed along the line of sight, so its flight -- and whether it was on
+# target -- cannot be read from one camera. Its direction can: every
+# straight flight from the strike through those sightings lies in the one
+# plane through the camera, the strike and the ball. If that plane cuts
+# the goal mouth (with the off-target margins), the ball moves towards the
+# goal on the grass at a struck ball's pace, and the strike is inside the
+# width of the penalty area, it is counted as an attempt, outcome unknown.
+AIM_WINDOW_S = 0.3
+AIM_MIN_SIGHTINGS = 3
+# Ground speed from the sightings placed on the grass: exact for a low shot,
+# an overestimate for a lofted one. A dribble or a short pass is slower.
+AIM_MIN_GROUND_SPEED_MS = 12.0
+# Towards the goal: at least this share of the ground velocity is towards
+# the goal line. A pass across the box is not.
+AIM_TOWARDS_SHARE = 0.6
+# Half the width of the penalty area: a strike from wider is a cross.
+AIM_MAX_OFF_CENTRE_M = 20.0
+
 # What happens after an on-target crossing decides whether it was a goal.
 # Within this long the ball is either seen in the net -- behind the line and
 # inside the mouth -- or back in play in front of it: parried, held, or
@@ -185,12 +205,21 @@ def find_shots(ball, placer, fps: float, trace: list | None = None):
         crossing = read_crossing(start, t0, after, fps)
         if trace is not None:
             trace.append(_trace_strike(start, t0, f0, after, crossing))
-        if crossing is None:
-            continue
-        X, Y, when, frame, speed, how, used = crossing
-        outcome = classify(X, Y)
-        if outcome is None or not MIN_SPEED_MS <= speed <= MAX_SPEED_MS:
-            continue
+        outcome = None
+        if crossing is not None:
+            X, Y, when, frame, speed, how, used = crossing
+            outcome = classify(X, Y)
+            if not MIN_SPEED_MS <= speed <= MAX_SPEED_MS:
+                outcome = None
+        if outcome is None:
+            aim = aimed_attempt(start, t0, after)
+            if aim is None:
+                continue
+            speed, when, used = aim
+            X = Y = float("nan")
+            frame = used[-1]
+            how = f"aimed at the goal, {len(used)} sightings"
+            outcome = "attempt"
         # `frame` is the strike's, as for the ground detector: it is where
         # the shooter is looked for.
         found.append({"frame": f0, "time_s": t0, "crossing_frame": frame,
@@ -204,8 +233,8 @@ def find_shots(ball, placer, fps: float, trace: list | None = None):
     merged = []
     for shot in found:
         if merged and shot["time_s"] - merged[-1]["time_s"] < MERGE_S:
-            if (merged[-1]["outcome"] != "on target"
-                    and shot["outcome"] == "on target"):
+            rank = {"on target": 2, "off target": 1, "attempt": 0}
+            if rank[shot["outcome"]] > rank[merged[-1]["outcome"]]:
                 merged[-1] = shot
             continue
         merged.append(shot)
@@ -269,6 +298,54 @@ def _trace_strike(start, t0, f0, after, crossing):
             "fits": fits[:6],
             "crossing": None if crossing is None else
             [round(float(v), 2) for v in crossing[:5]]}
+
+
+def aimed_attempt(start, t0: float, after):
+    """A brief strike towards the goal mouth: (ground speed, time, frames).
+
+    See `AIM_WINDOW_S`. None when the sightings do not show one.
+    """
+    from .ball_height import ray
+    from .goal_pose import ground_point
+
+    if abs(start[0] + LEFT_POST_Y - PITCH_WIDTH_M / 2.0) > AIM_MAX_OFF_CENTRE_M:
+        return None
+    seen = [s for s in after if s[0] - t0 <= AIM_WINDOW_S]
+    if len(seen) < AIM_MIN_SIGHTINGS:
+        return None
+    normals, ground = [], []
+    for when, frame, pose, u, v in seen:
+        eye, d = ray(pose, u, v)
+        n = np.cross(d, start - eye)
+        if np.linalg.norm(n) < 1e-9:
+            return None
+        n = n / np.linalg.norm(n)
+        if normals and float(np.dot(n, normals[0][0])) < 0:
+            n = -n
+        normals.append((n, eye))
+        g = ground_point(pose, u, v)
+        if g is not None:
+            ground.append((when - t0, g[0] - start[0], g[1] - start[2]))
+    if len(ground) < AIM_MIN_SIGHTINGS:
+        return None
+    t = np.array([g[0] for g in ground])
+    vel = np.array([np.sum(t * np.array([g[i] for g in ground]))
+                    / np.sum(t * t) for i in (1, 2)])
+    speed = float(np.hypot(*vel))
+    if speed < AIM_MIN_GROUND_SPEED_MS or -vel[1] < AIM_TOWARDS_SHARE * speed:
+        return None
+    # The plane through the camera holding every straight flight from the
+    # strike through the sightings, and where it meets the goal plane Z = 0.
+    n = np.mean([m for m, _ in normals], axis=0)
+    eye = normals[0][1]
+    c = float(np.dot(n, eye))
+    corners = [(x, y) for x in (-WIDE_M, GOAL_WIDTH_M + WIDE_M)
+               for y in (MIN_HEIGHT_M, GOAL_HEIGHT_M + OVER_M)]
+    sides = [np.sign(n[0] * x + n[1] * y - c) for x, y in corners]
+    if all(side > 0 for side in sides) or all(side < 0 for side in sides):
+        return None
+    when = t0 + float(start[2]) / max(-vel[1], 1e-6)
+    return speed, when, [s[1] for s in seen]
 
 
 def struck_flight(start, t0: float, after):
@@ -556,6 +633,24 @@ def selftest(verbose: bool = True) -> bool:
         ("every frame of the flight, noisy", rolling + dense, "on target", 1.0),
         ("every frame, going wide, noisy",
          rolling + flight((10.0, 1.0, 0.0), range(10, 26)), "off target", 1.0),
+    )
+    # Blocked: struck at goal, seen for four frames, then a defender sends
+    # it back out. The flight is read from the sightings before the block
+    # and carried to the line, so the attempt still counts as a shot.
+    struck = flight((5.0, 1.0, 0.0), range(10, 14))
+    rebound = [(k, (4.0 - 0.1 * (k - 14), 0.5, 14.0 + 0.4 * (k - 14)))
+               for k in range(14, 26)]
+    # And two that must not count: a hard pass across the box, and one back
+    # out towards midfield, each seen for the same few frames.
+    across = [(k, (3.0 + 0.9 * (k - 9), 0.11, 18.0 - 0.1 * (k - 9)))
+              for k in range(10, 22)]
+    back = [(k, (3.0 + 0.1 * (k - 9), 0.3, 18.0 + 0.8 * (k - 9)))
+            for k in range(10, 22)]
+    noisy = noisy + (
+        ("a shot blocked after 0.16 s", rolling + struck + rebound,
+         "attempt", 1.0),
+        ("a hard pass across the box", rolling + across, None, 1.0),
+        ("a hard pass back out", rolling + back, None, 1.0),
     )
     ok = True
     for name, points, want, noise in noisy:
