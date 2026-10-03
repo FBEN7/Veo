@@ -93,6 +93,16 @@ AIM_MIN_GROUND_SPEED_MS = 12.0
 AIM_TOWARDS_SHARE = 0.6
 # Half the width of the penalty area: a strike from wider is a cross.
 AIM_MAX_OFF_CENTRE_M = 20.0
+# The sightings must be one ball: on a straight path in the picture, at a
+# steady pace, within this many pixels. Measured on six windows, every false
+# attempt the rule first found was sightings jumping between players, or
+# sitting on the hoardings, which a straight-line fit refuses.
+AIM_MAX_PATH_PX = 6.0
+# Faster than any struck ball even allowing for a lofted one placed beyond
+# itself: a steward moving with the camera pan read 121 m/s.
+AIM_MAX_GROUND_SPEED_MS = 60.0
+# Placed sightings stay on the pitch, give or take placement error.
+AIM_PITCH_MARGIN_M = 2.0
 
 # What happens after an on-target crossing decides whether it was a goal.
 # Within this long the ball is either seen in the net -- behind the line and
@@ -328,11 +338,34 @@ def aimed_attempt(start, t0: float, after):
             ground.append((when - t0, g[0] - start[0], g[1] - start[2]))
     if len(ground) < AIM_MIN_SIGHTINGS:
         return None
+    # One ball on one path: a straight line at a steady pace in the picture,
+    # for the longest run from the strike that stays one -- a blocked shot
+    # turns at the block, and only the run before it is the shot.
+    keep = 0
+    for n in range(AIM_MIN_SIGHTINGS, len(seen) + 1):
+        if _path_rms(seen[:n], t0) > AIM_MAX_PATH_PX:
+            break
+        keep = n
+    if keep < AIM_MIN_SIGHTINGS:
+        return None
+    seen = seen[:keep]
+    ground = [g for g in ground if g[0] <= seen[-1][0] - t0 + 1e-9]
+    if len(ground) < AIM_MIN_SIGHTINGS:
+        return None
+    # On the pitch, not the hoardings or the stand.
+    for _, across, out in ground:
+        x = across + start[0]
+        if not (-LEFT_POST_Y - AIM_PITCH_MARGIN_M <= x
+                <= PITCH_WIDTH_M - LEFT_POST_Y + AIM_PITCH_MARGIN_M
+                and out + start[2] >= -AIM_PITCH_MARGIN_M):
+            return None
     t = np.array([g[0] for g in ground])
     vel = np.array([np.sum(t * np.array([g[i] for g in ground]))
                     / np.sum(t * t) for i in (1, 2)])
     speed = float(np.hypot(*vel))
-    if speed < AIM_MIN_GROUND_SPEED_MS or -vel[1] < AIM_TOWARDS_SHARE * speed:
+    if not AIM_MIN_GROUND_SPEED_MS <= speed <= AIM_MAX_GROUND_SPEED_MS:
+        return None
+    if -vel[1] < AIM_TOWARDS_SHARE * speed:
         return None
     # The plane through the camera holding every straight flight from the
     # strike through the sightings, and where it meets the goal plane Z = 0.
@@ -346,6 +379,18 @@ def aimed_attempt(start, t0: float, after):
         return None
     when = t0 + float(start[2]) / max(-vel[1], 1e-6)
     return speed, when, [s[1] for s in seen]
+
+
+def _path_rms(seen, t0: float) -> float:
+    """Pixels off a straight, steady path through the sightings."""
+    ts = np.array([s[0] - t0 for s in seen])
+    design = np.column_stack([np.ones_like(ts), ts])
+    residual = []
+    for axis in (3, 4):
+        values = np.array([s[axis] for s in seen])
+        coef = np.linalg.lstsq(design, values, rcond=None)[0]
+        residual.append(values - design @ coef)
+    return float(np.sqrt(np.mean(np.square(residual)) * 2))
 
 
 def struck_flight(start, t0: float, after):
@@ -646,9 +691,16 @@ def selftest(verbose: bool = True) -> bool:
               for k in range(10, 22)]
     back = [(k, (3.0 + 0.1 * (k - 9), 0.3, 18.0 + 0.8 * (k - 9)))
             for k in range(10, 22)]
+    # Sightings that are not one ball: alternating between two players
+    # towards goal, as the false attempts on the real windows did.
+    jumping = [(k, (2.0 + (6.0 if k % 2 else 0.0), 0.11,
+                    17.0 - 0.6 * (k - 9)))
+               for k in range(10, 18)]
     noisy = noisy + (
         ("a shot blocked after 0.16 s", rolling + struck + rebound,
          "attempt", 1.0),
+        ("sightings jumping between two players", rolling + jumping,
+         None, 1.0),
         ("a hard pass across the box", rolling + across, None, 1.0),
         ("a hard pass back out", rolling + back, None, 1.0),
     )
