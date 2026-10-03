@@ -1352,6 +1352,16 @@ the labelled shot, and is not counted here. The fine-tuned run still adds
 four false outs, so it stays unwired. Neither goal is read as a goal: the
 ball is seen too briefly at or in the net.
 
+Those four false outs, rendered over several seconds each: stoke_1302 at
+22.7 s is the corner flag taken for the ball, play carries on; reading_2519
+at 11.2 s and 15.2 s are a ball in the air placed beyond the far
+touchline during ordinary play; reading_0737 at 54.0 s is placed at the
+corner just before a corner kick is set up -- possibly an out the labels
+do not list, possibly the ball carried to the corner arc. The fine-tuned
+detector needs corner flags among its negatives, and outs near the far
+touchline need the ball's height, before it can replace the COCO
+candidates.
+
 ### The camera between grid frames: interpolated, not frozen
 
 Goal poses are solved every 4 frames and were reused unchanged in between,
