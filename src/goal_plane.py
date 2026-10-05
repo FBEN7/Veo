@@ -406,7 +406,7 @@ def aimed_attempt(start, t0: float, after):
                     / np.sum(t * t) for i in (1, 2)])
     speed = float(np.hypot(*vel))
     if not AIM_MIN_GROUND_SPEED_MS <= speed <= AIM_MAX_GROUND_SPEED_MS:
-        AIM_REFUSAL = "ground speed out of range"
+        AIM_REFUSAL = f"ground speed {speed:.0f} m/s"
         return None
     if -vel[1] < AIM_TOWARDS_SHARE * speed:
         AIM_REFUSAL = "not towards the goal"
