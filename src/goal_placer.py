@@ -284,9 +284,40 @@ def smooth(poses: dict, grid: int, steps: int = SMOOTH_STEPS,
     return out
 
 
+# The corner model (`train_goal_keypoints.py`) is the fallback where the box
+# detector finds no goal or no pose. Measured on three clips neither had
+# seen, at grounds both had: the box detector found 40 of 50 goals at its
+# cut-off, the corner model 48, at 6.5 px from the clicks on the box's two
+# corners against the box's 3.6. So the box is preferred where it fires and
+# the corners fill in where it does not.
+KEYPOINT_CONFIDENCE = 0.15
+# A corner the model is less sure of than this, or within `EDGE_PX` of the
+# picture's edge (where a goal is cut off), is left out of the pose.
+MIN_CORNER_CONFIDENCE = 0.5
+EDGE_PX = 5.0
+
+
+def corners_from_keypoints(result, width: int, height: int):
+    """The best goal's corners from a keypoint model's result, or None."""
+    if result.keypoints is None or not len(result.boxes):
+        return None
+    k = int(np.argmax(result.boxes.conf.cpu().numpy()))
+    xy = result.keypoints.xy[k].cpu().numpy()
+    kconf = (result.keypoints.conf[k].cpu().numpy()
+             if result.keypoints.conf is not None else np.ones(len(xy)))
+    corners = []
+    for (x, y), c in zip(xy, kconf):
+        inside = (EDGE_PX < x < width - EDGE_PX
+                  and EDGE_PX < y < height - EDGE_PX)
+        corners.append((float(x), float(y))
+                       if c >= MIN_CORNER_CONFIDENCE and inside else None)
+    return corners
+
+
 def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
           width: int, height: int, detector, grid: int = POSE_GRID,
-          conf: float = MIN_BOX_CONFIDENCE, verbose: bool = False):
+          conf: float = MIN_BOX_CONFIDENCE, verbose: bool = False,
+          keypoints=None):
     """Solve a pose on a grid of frames, from detected goal boxes.
 
     `detector` is anything with ultralytics' `predict` interface, kept as an
@@ -300,24 +331,39 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
     if not wanted:
         return GoalPlacer({}, grid)
 
+    from .goal_pose import pose_at
+
     cap = cv2.VideoCapture(video_path)
-    poses, tried, detected = {}, 0, 0
+    poses, tried, detected, from_corners = {}, 0, 0, 0
     for index in wanted:
         cap.set(cv2.CAP_PROP_POS_FRAMES, index)
         ok, frame = cap.read()
         if not ok:
             continue
         tried += 1
+        pose = None
         result = detector.predict(frame, conf=conf, verbose=False)[0]
-        if not len(result.boxes):
-            continue
-        scores = result.boxes.conf.cpu().numpy()
-        box = result.boxes.xyxy.cpu().numpy()[int(np.argmax(scores))]
-        detected += 1
-        pose = pose_from_box(box, camera_position, focal_seed,
-                             width / 2.0, height / 2.0,
-                             frame_size=(width, height))
-        if pose is None or pose.reprojection_px > MAX_BOX_RESIDUAL_PX:
+        if len(result.boxes):
+            scores = result.boxes.conf.cpu().numpy()
+            box = result.boxes.xyxy.cpu().numpy()[int(np.argmax(scores))]
+            detected += 1
+            pose = pose_from_box(box, camera_position, focal_seed,
+                                 width / 2.0, height / 2.0,
+                                 frame_size=(width, height))
+            if pose is not None and pose.reprojection_px > MAX_BOX_RESIDUAL_PX:
+                pose = None
+        if pose is None and keypoints is not None:
+            kp = keypoints.predict(frame, conf=KEYPOINT_CONFIDENCE,
+                                   verbose=False)[0]
+            corners = corners_from_keypoints(kp, width, height)
+            if corners is not None:
+                pose = pose_at(corners, camera_position, focal_seed,
+                               width / 2.0, height / 2.0, min_corners=3)
+                if (pose is not None
+                        and pose.reprojection_px > MAX_BOX_RESIDUAL_PX):
+                    pose = None
+                from_corners += pose is not None
+        if pose is None:
             continue
         poses[index] = pose
     cap.release()
@@ -326,7 +372,9 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
 
     if verbose:
         print(f"  [goal] {detected} goals found on {tried} sampled frames, "
-              f"{len(poses)} gave a pose")
+              f"{len(poses)} gave a pose"
+              + (f" ({from_corners} of them from the corner model before "
+                 f"smoothing)" if keypoints is not None else ""))
     return GoalPlacer(poses, grid)
 
 

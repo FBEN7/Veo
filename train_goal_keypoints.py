@@ -199,7 +199,8 @@ def main():
                     help="goal_labels.json from make_goal_labeller2.py")
     ap.add_argument("--corners", required=True,
                     help="goal_corners.json of the second corner round")
-    ap.add_argument("--fold", choices=["stoke", "reading", "all", "clips"],
+    ap.add_argument("--fold", choices=["stoke", "reading", "all", "clips",
+                                       "clips2"],
                     default="all",
                     help="a match held out whole, both, or 'clips': the "
                          "three clips the current box detector was trained "
@@ -218,7 +219,13 @@ def main():
 
     for held_out in (["stoke", "reading"] if args.fold == "all"
                      else [args.fold]):
-        if held_out == "clips":
+        if held_out == "clips2":
+            # The other three clips, so that every clip has a model that
+            # has not seen it.
+            unseen = lambda r: (r["clip"] in MATCH and MATCH[r["clip"]] != "veo"
+                                and r["clip"] not in VAL_CLIPS
+                                and not r["clip"].startswith("soccernet"))
+        elif held_out == "clips":
             # A Veo camera is fixed at one ground, so what matters is a
             # detector that has seen the ground but not the moment. The
             # current box detector held these three clips out of training,

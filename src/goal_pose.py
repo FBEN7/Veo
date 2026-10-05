@@ -448,7 +448,7 @@ def pose_from_box(box, eye, focal_guess: float, cx: float, cy: float,
 
 
 def pose_at(corners, eye, focal_guess: float, cx: float, cy: float,
-            max_nfev: int = 400):
+            max_nfev: int = 400, min_corners: int = 4):
     """Rotation and focal from four corners, with the camera's position known.
 
     A single frame's corners fix the camera only to a line: focal and
@@ -459,10 +459,16 @@ def pose_at(corners, eye, focal_guess: float, cx: float, cy: float,
     """
     from scipy.optimize import least_squares
 
-    if corners is None or any(c is None for c in corners):
+    if corners is None:
+        return None
+    # Corners cut off by the edge of the picture, or not found, are None.
+    # Rotation and focal are four unknowns, so three corners -- six
+    # equations -- still determine them; `min_corners` says how many to ask.
+    have = [i for i, c in enumerate(corners) if c is not None]
+    if len(have) < max(3, min_corners):
         return None
     eye = np.asarray(eye, dtype=np.float64)
-    observed = np.asarray(corners, dtype=np.float64)
+    observed = np.asarray([corners[i] for i in have], dtype=np.float64)
     target = np.array([GOAL_WIDTH_M / 2.0, GOAL_HEIGHT_M / 2.0, 0.0])
     forward = (target - eye) / np.linalg.norm(target - eye)
     right = np.cross(forward, np.array([0.0, 1.0, 0.0]))
@@ -475,8 +481,8 @@ def pose_at(corners, eye, focal_guess: float, cx: float, cy: float,
         focal = np.exp(q[3])
         camera = np.array([[focal, 0.0, cx], [0.0, focal, cy],
                            [0.0, 0.0, 1.0]])
-        pts, _ = cv2.projectPoints(MODEL, q[:3], (-rot @ eye).reshape(3, 1),
-                                   camera, None)
+        pts, _ = cv2.projectPoints(MODEL[have], q[:3],
+                                   (-rot @ eye).reshape(3, 1), camera, None)
         return pts.reshape(-1, 2)
 
     fit = least_squares(lambda q: (project(q) - observed).ravel(),
@@ -490,7 +496,7 @@ def pose_at(corners, eye, focal_guess: float, cx: float, cy: float,
                     focal_px=float(np.exp(fit.x[3])), cx=cx, cy=cy,
                     reprojection_px=float(np.sqrt(np.mean(np.sum(per ** 2,
                                                                  axis=1)))),
-                    n_corners=4)
+                    n_corners=len(have))
 
 
 def selftest(verbose: bool = True) -> bool:
@@ -566,6 +572,31 @@ def selftest(verbose: bool = True) -> bool:
             print(f"  {'one camera, 3 zooms':>18s}  position err {err:.3f} m  "
                   f"residual {rms:.2f} px   focals {focals} "
                   f"(true 1500, 2200, 2900)   {'ok' if good else 'WRONG'}")
+
+    # Three corners and a known camera position: a goal whose fourth corner
+    # is cut off by the picture's edge, as the corner detector returns it.
+    eye = np.array([-25.0, 16.0, 30.0])
+    corners, _ = _synthetic(eye, [3.0, 0.0, 14.0], focal=1900.0)
+    full = pose_at([tuple(p) for p in corners], eye, 1500.0, 640.0, 360.0)
+    three = [tuple(p) for p in corners]
+    three[3] = None
+    part = pose_at(three, eye, 1500.0, 640.0, 360.0, min_corners=3)
+    two = pose_at([three[0], None, three[2], None], eye, 1500.0, 640.0,
+                  360.0, min_corners=3)
+    if full is None or part is None:
+        print("  pose from three corners FAILED")
+        ok = False
+    else:
+        a = shot_geometry(full, 640.0, 540.0)
+        b = shot_geometry(part, 640.0, 540.0)
+        gap = abs(a[0] - b[0])
+        good = gap < 0.1 and abs(part.focal_px - 1900.0) < 20 and two is None
+        ok &= good
+        if verbose:
+            print(f"  {'three corners':>18s}  distance {b[0]:5.2f} m against "
+                  f"{a[0]:5.2f} from four, focal {part.focal_px:.0f} (true "
+                  f"1900); two corners refused: {two is None}   "
+                  f"{'ok' if good else 'WRONG'}")
 
     # A box and a known camera position, with no corners at all.
     eye = np.array([-25.0, 16.0, 30.0])

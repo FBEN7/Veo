@@ -163,6 +163,24 @@ def report(name, found_times, truth_times):
           f"{hits:8d} {recall:8.2f} {precision:10.2f} {shown:>10s}")
 
 
+def goal_keypoints(out_dir: Path, args):
+    """The corner model that never saw this clip, or None.
+
+    `train_goal_keypoints.py --fold clips` holds out the three clips the
+    box detector was trained without; `--fold clips2` the other three.
+    """
+    if not getattr(args, "goal_keypoints", None):
+        return None
+    from ultralytics import YOLO
+
+    from train_goal_detector import VAL_CLIPS
+
+    clip = Path(out_dir).name.replace("output_", "")
+    fold = "without_clips" if clip in VAL_CLIPS else "without_clips2"
+    return YOLO(str(Path(args.goal_keypoints) / fold / "run" / "weights"
+                    / "best.pt"))
+
+
 def match_name(labels: Path):
     """The match a label file names in its header, or None.
 
@@ -294,7 +312,7 @@ def goal_maps(out_dir, info, ball, args):
                  info["width"], info["height"], YOLO(args.goal_weights),
                  conf=(args.goal_conf if getattr(args, "goal_conf", None)
                        is not None else MIN_BOX_CONFIDENCE),
-                 verbose=True)
+                 verbose=True, keypoints=goal_keypoints(out_dir, args))
     if getattr(args, "midfield", False):
         # The centre circle, refitted with the camera held where the goal
         # corners put it. Same frame as the goal, so no orientation check.
@@ -344,6 +362,10 @@ def main():
                          "clip's goal is found by the detector trained "
                          "without its match (<dir>/without_<match>), in "
                          "place of --goal-weights")
+    ap.add_argument("--goal-keypoints",
+                    help="directory of train_goal_keypoints.py runs: where "
+                         "the box detector gives no pose, the goal's corners "
+                         "from the corner model that never saw the clip")
     ap.add_argument("--goal-weights",
                     help="a trained goal detector. With --corners, events "
                          "are placed from the goal instead of the centre "
