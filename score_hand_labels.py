@@ -365,6 +365,9 @@ def main():
     ap.add_argument("--ball-union", action="store_true",
                     help="with --ball-detectors, keep the COCO ball "
                          "candidates as well and let the ball path choose")
+    ap.add_argument("--ball-fill", action="store_true",
+                    help="with --ball-detectors, use COCO's candidates only "
+                         "on frames the fine-tuned detector leaves empty")
     ap.add_argument("--goal-keypoints",
                     help="directory of train_goal_keypoints.py runs: where "
                          "the box detector gives no pose, the goal's corners "
@@ -445,6 +448,8 @@ def main():
     ball = detect_shots.ball_track(
         out_dir, ball_detector=("union" if args.ball_detectors
                                 and args.ball_union
+                                else "fill" if args.ball_detectors
+                                and args.ball_fill
                                 else bool(args.ball_detectors)))
     if ball.empty:
         raise SystemExit("no ball track in that output directory")

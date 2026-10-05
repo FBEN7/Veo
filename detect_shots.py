@@ -212,7 +212,8 @@ def ball_track(out_dir: Path, fps: float | None = None,
         from src.ball_detector import with_candidates
 
         tracks = with_candidates(tracks, out_dir,
-                                 union=ball_detector == "union")
+                                 union=ball_detector == "union",
+                                 fill=ball_detector == "fill")
     info_path = out_dir / "clip.json"
     info = json.loads(info_path.read_text()) if info_path.exists() else None
     if info is not None and Path(info.get("path", "")).exists():

@@ -42,9 +42,11 @@ MIN_SPEED_MS = 10.0
 MAX_SPEED_MS = 45.0
 
 # How far back to look for the strike: where the ball last was on the grass,
-# at least a few metres out and inside shooting range.
+# out from the line and inside shooting range. Half a metre, not the three
+# it was: two labelled shots were struck closer than that, a tap-in and a
+# shot from the byline (stoke_1302 at 38 s, 1.4-2.5 m out).
 LOOKBACK_S = 1.5
-MIN_STRIKE_M = 3.0
+MIN_STRIKE_M = 0.5
 MAX_STRIKE_M = 35.0
 
 # One shot is reported once.
@@ -729,13 +731,26 @@ def selftest(verbose: bool = True) -> bool:
         ("a hard pass across the box", rolling + across, None, 1.0),
         ("a hard pass back out", rolling + back, None, 1.0),
     )
+    # From the byline, 1.5 m out at a tight angle: the labelled shots at
+    # stoke_1302 38 s (struck 1.4-2.5 m from the line) and stoke_4207 66 s
+    # (3.8 m) were never considered while a strike had to be 3 m out.
+    byline_at = (10.0, 0.11, 1.5)
+    byline = [(k, byline_at) for k in range(10)] + flight(
+        (6.0, 0.6, 0.0), range(10, 16), at=byline_at, arrive=16)
+    noisy = noisy + (
+        # Found, not read: over 1.5 m half a pixel of noise moves the
+        # crossing past the post either way, so on or off target is not
+        # what this asks.
+        ("a shot from 1.5 m at the byline", byline, "a shot", 0.5),
+    )
     ok = True
     for name, points, want, noise in noisy:
         got = find_shots(track(points, noise), Placer(), 25.0)
         said = got[0]["outcome"] if got else None
         extra = (f", {got[0]['speed_ms']:.0f} m/s, {got[0]['height_m']:.1f} m "
                  f"up at the line" if got else "")
-        good = said == want
+        good = (said in ("on target", "off target", "attempt")
+                if want == "a shot" else said == want)
         ok &= good
         if verbose:
             print(f"  {name:>28s}  {said or 'no shot'}{extra}   "

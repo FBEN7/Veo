@@ -66,8 +66,13 @@ def run_clip(out_dir: Path, info: dict, weights: Path, conf: float = CONF,
 SAME_PX = 6.0
 
 
+# In `fill`, COCO candidates are used only on frames where the fine-tuned
+# detector has none at this confidence or above.
+FILL_BELOW = 0.25
+
+
 def with_candidates(tracks: pd.DataFrame, out_dir: Path,
-                    union: bool = False) -> pd.DataFrame:
+                    union: bool = False, fill: bool = False) -> pd.DataFrame:
     """The tracks with the fine-tuned detector's ball rows, if cached.
 
     By default they replace the COCO ball rows. With `union` both are kept
@@ -82,6 +87,16 @@ def with_candidates(tracks: pd.DataFrame, out_dir: Path,
         return tracks
     balls = pd.read_parquet(cache)
     keep = [c for c in tracks.columns if c in balls.columns]
+    if fill:
+        # Taken as equals, COCO's confident look-alikes pulled the path off
+        # the ball: on stoke_7001 through its labelled shots it sat on the
+        # clicked ball 29 times with the fine-tuned candidates alone and 0
+        # times with both. So COCO only fills frames the fine-tuned
+        # detector leaves empty.
+        sure = set(balls.frame[balls.confidence >= FILL_BELOW].astype(int))
+        coco = tracks[(tracks.cls == "ball") & ~tracks.frame.isin(sure)]
+        players = tracks[tracks.cls != "ball"]
+        return pd.concat([players, coco, balls[keep]], ignore_index=True)
     if not union:
         players = tracks[tracks.cls != "ball"]
         return pd.concat([players, balls[keep]], ignore_index=True)
