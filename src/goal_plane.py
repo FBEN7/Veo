@@ -89,7 +89,7 @@ AIM_WINDOW_S = 0.3
 AIM_MIN_SIGHTINGS = 3
 # Ground speed from the sightings placed on the grass: exact for a low shot,
 # an overestimate for a lofted one. A dribble or a short pass is slower.
-AIM_MIN_GROUND_SPEED_MS = 7.0
+AIM_MIN_GROUND_SPEED_MS = 12.0
 # Towards the goal: at least this share of the ground velocity is towards
 # the goal line. A pass across the box is not.
 AIM_TOWARDS_SHARE = 0.6
