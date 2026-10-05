@@ -339,6 +339,11 @@ def main():
                          "before the reproducibility gate shipped")
     ap.add_argument("--frames", type=int, default=None,
                     help="anchor budget; defaults to the shipped value")
+    ap.add_argument("--goal-detectors",
+                    help="directory of train_goal_detector2.py runs: each "
+                         "clip's goal is found by the detector trained "
+                         "without its match (<dir>/without_<match>), in "
+                         "place of --goal-weights")
     ap.add_argument("--goal-weights",
                     help="a trained goal detector. With --corners, events "
                          "are placed from the goal instead of the centre "
@@ -416,6 +421,12 @@ def main():
                                    ball_detector=bool(args.ball_detectors))
     if ball.empty:
         raise SystemExit("no ball track in that output directory")
+    if args.goal_detectors:
+        # Found by a goal detector that never saw this match's labels.
+        held_out = out_dir.name.replace("output_", "").split("_")[0]
+        args.goal_weights = str(Path(args.goal_detectors)
+                                / f"without_{held_out}" / "run" / "weights"
+                                / "best.pt")
     if args.goal_weights and args.corners:
         maps = goal_maps(out_dir, info, ball, args)
         if maps is None:
