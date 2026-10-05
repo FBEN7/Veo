@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | **2 of 10** real (COCO + goal corners), **3 of 10** (fine-tuned ball detector), 5 different between them; 1 false each; goals 0 of 2 | "The goal's corners" |
+| Shots and goals detected | **5 of 10** real shots, 1 false; **goals 2 of 2**, none false (gap-filled ball candidates, goal corners, kick-off confirmation) | "Goals by their kick-off" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1403,6 +1403,46 @@ from the clicks) and reading_0737's at 65.3 s; the fine-tuned detector
 finds reading_0737 at 20.5 s, reading_1155 at 19.9 s and reading_2519 at
 19.6 s. Five different labelled shots are found between them, none by
 both: each detector sees the ball on moments the other misses.
+
+### Goals by their kick-off, both ball detectors, and close-range strikes
+
+Three changes, each measured on the six windows with every shot found
+compared with the clicks:
+
+- **A goal confirmed by its kick-off alone.** Neither labelled goal is ever
+  seen in the net. A kick-off from the centre spot after a shot or
+  attempt, within 150 s and before any other shot, now makes it a goal
+  whatever its brief flight was read as.
+- **Both ball detectors.** Taken as equals, COCO's confident look-alikes
+  pulled the path off the ball (on every click outside replays: 179 on
+  the ball, against 209 for the fine-tuned detector alone). Filling only
+  the frames the fine-tuned detector leaves empty puts it on the ball
+  218 times, with the fewest frames unplaced (`--ball-fill`).
+- **A strike 0.5 m out, not 3.** stoke_1302's labelled shot at 38 s was
+  struck from the byline 1.4-2.5 m out and was never considered.
+
+| | real shots (of 10) | false | goals (of 2) | out of play |
+|---|---|---|---|---|
+| fine-tuned + goal corners (before) | 3 | 1 | 0 | 2 of 4, 4 false |
+| **gap-filled + corners + kick-off + 0.5 m** | **5** | 1 | **2**, none false | 3 of 4, 3 false |
+
+Found: reading_0737 20.5 s (off target), reading_1155 19.9 s (goal,
+kick-off), reading_2519 19.6 s and 21.8 s (goal, kick-off), stoke_1302
+39.2 s (from the byline), stoke_7001 19.3 s (blocked); each within 0-12
+px of the clicks bar single frames. The false one is stoke_7001 48.2 s;
+stoke_4207 64.4 s is matched by the scorer but is the long ball before the
+labelled shot and is not counted.
+
+Still missed, each traced: stoke_1302 20 s (skied out of the top of the
+picture within half a second; its crossing reads 13 m wide), stoke_4207
+66 s (struck 3.8 m out; every flight fit breaks), and three shots blocked
+in a crowded box -- stoke_4207 20 s, stoke_7001 21 s, reading_0737 65 s --
+whose 3D flights take the wrong side of the depth ambiguity and whose
+brief runs are refused by the aimed-attempt rule, most often on ground
+pace (8-10 m/s at the strike frames against 12). Two fixes were measured
+and reverted: the pace fitted with a free start (lost two shots and a
+goal, added a false one) and a 7 m/s floor (no shot gained, a false one
+added).
 
 ### The camera between grid frames: interpolated, not frozen
 
