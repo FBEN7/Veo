@@ -353,6 +353,9 @@ def main():
     ap.add_argument("--labels", required=True,
                     help="goal_labels.json from the first round")
     ap.add_argument("--out", default="goal_corner_labeller.html")
+    ap.add_argument("--key", default="goal-corners-v1",
+                    help="browser storage key; a new round needs its own, or "
+                         "frames clicked in an earlier round show as done")
     args = ap.parse_args()
 
     rows = json.loads(Path(args.labels).read_text())["frames"]
@@ -395,7 +398,9 @@ def main():
         print(f"  frame sizes present: "
               f"{', '.join(f'{w}x{h}' for w, h in sorted(sizes))} "
               f"-- carried per frame, not page-wide")
-    page = PAGE.replace("__DATA__", json.dumps(frames))
+    assert PAGE.count('"goal-corners-v1"') == 1
+    page = (PAGE.replace('"goal-corners-v1"', json.dumps(args.key))
+                .replace("__DATA__", json.dumps(frames)))
     target = Path(args.out)
     target.write_text(page, encoding="utf-8")
     size = target.stat().st_size / 1e6
