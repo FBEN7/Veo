@@ -105,6 +105,8 @@ AIM_MAX_PATH_PX = 6.0
 AIM_MAX_GROUND_SPEED_MS = 60.0
 # Placed sightings stay on the pitch, give or take placement error.
 AIM_PITCH_MARGIN_M = 2.0
+# Why the last call to `aimed_attempt` refused, for the strike trace.
+AIM_REFUSAL = None
 
 # What happens after an on-target crossing decides whether it was a goal.
 # Within this long the ball is either seen in the net -- behind the line and
@@ -224,16 +226,20 @@ def find_shots(ball, placer, fps: float, trace: list | None = None):
                               float(later.px), float(later.py)))
         start = np.array([y0 - LEFT_POST_Y, BALL_RADIUS_M, x0])
         crossing = read_crossing(start, t0, after, fps)
-        if trace is not None:
-            trace.append(_trace_strike(start, t0, f0, after, crossing))
         outcome = None
         if crossing is not None:
             X, Y, when, frame, speed, how, used = crossing
             outcome = classify(X, Y)
             if not MIN_SPEED_MS <= speed <= MAX_SPEED_MS:
                 outcome = None
+        aim = None
         if outcome is None:
             aim = aimed_attempt(start, t0, after)
+        if trace is not None:
+            trace.append(_trace_strike(start, t0, f0, after, crossing))
+            trace[-1]["aim"] = (None if outcome is not None
+                                else AIM_REFUSAL or "attempt")
+        if outcome is None:
             if aim is None:
                 continue
             speed, when, used = aim
@@ -332,6 +338,7 @@ def _trace_strike(start, t0, f0, after, crossing):
                          round(float(start[0] + LEFT_POST_Y), 1)],
             "sightings_after": [s[1] for s in after],
             "fits": fits[:6],
+            "aim": (AIM_REFUSAL if crossing is None else None),
             "crossing": None if crossing is None else
             [round(float(v), 2) for v in crossing[:5]]}
 
@@ -339,21 +346,26 @@ def _trace_strike(start, t0, f0, after, crossing):
 def aimed_attempt(start, t0: float, after):
     """A brief strike towards the goal mouth: (ground speed, time, frames).
 
-    See `AIM_WINDOW_S`. None when the sightings do not show one.
+    See `AIM_WINDOW_S`. None when the sightings do not show one; the reason
+    is left in `AIM_REFUSAL` for the trace.
     """
+    global AIM_REFUSAL
     from .ball_height import ray
     from .goal_pose import ground_point
 
     if abs(start[0] + LEFT_POST_Y - PITCH_WIDTH_M / 2.0) > AIM_MAX_OFF_CENTRE_M:
+        AIM_REFUSAL = "wider than the penalty area"
         return None
     seen = [s for s in after if s[0] - t0 <= AIM_WINDOW_S]
     if len(seen) < AIM_MIN_SIGHTINGS:
+        AIM_REFUSAL = "too few sightings"
         return None
     normals, ground = [], []
     for when, frame, pose, u, v in seen:
         eye, d = ray(pose, u, v)
         n = np.cross(d, start - eye)
         if np.linalg.norm(n) < 1e-9:
+            AIM_REFUSAL = "degenerate plane"
             return None
         n = n / np.linalg.norm(n)
         if normals and float(np.dot(n, normals[0][0])) < 0:
@@ -363,6 +375,7 @@ def aimed_attempt(start, t0: float, after):
         if g is not None:
             ground.append((when - t0, g[0] - start[0], g[1] - start[2]))
     if len(ground) < AIM_MIN_SIGHTINGS:
+        AIM_REFUSAL = "too few placed sightings"
         return None
     # One ball on one path: a straight line at a steady pace in the picture,
     # for the longest run from the strike that stays one -- a blocked shot
@@ -373,10 +386,12 @@ def aimed_attempt(start, t0: float, after):
             break
         keep = n
     if keep < AIM_MIN_SIGHTINGS:
+        AIM_REFUSAL = "not one straight path"
         return None
     seen = seen[:keep]
     ground = [g for g in ground if g[0] <= seen[-1][0] - t0 + 1e-9]
     if len(ground) < AIM_MIN_SIGHTINGS:
+        AIM_REFUSAL = "too few placed on the straight run"
         return None
     # On the pitch, not the hoardings or the stand.
     for _, across, out in ground:
@@ -384,14 +399,17 @@ def aimed_attempt(start, t0: float, after):
         if not (-LEFT_POST_Y - AIM_PITCH_MARGIN_M <= x
                 <= PITCH_WIDTH_M - LEFT_POST_Y + AIM_PITCH_MARGIN_M
                 and out + start[2] >= -AIM_PITCH_MARGIN_M):
+            AIM_REFUSAL = "placed off the pitch"
             return None
     t = np.array([g[0] for g in ground])
     vel = np.array([np.sum(t * np.array([g[i] for g in ground]))
                     / np.sum(t * t) for i in (1, 2)])
     speed = float(np.hypot(*vel))
     if not AIM_MIN_GROUND_SPEED_MS <= speed <= AIM_MAX_GROUND_SPEED_MS:
+        AIM_REFUSAL = "ground speed out of range"
         return None
     if -vel[1] < AIM_TOWARDS_SHARE * speed:
+        AIM_REFUSAL = "not towards the goal"
         return None
     # The plane through the camera holding every straight flight from the
     # strike through the sightings, and where it meets the goal plane Z = 0.
@@ -402,7 +420,9 @@ def aimed_attempt(start, t0: float, after):
                for y in (MIN_HEIGHT_M, GOAL_HEIGHT_M + OVER_M)]
     sides = [np.sign(n[0] * x + n[1] * y - c) for x, y in corners]
     if all(side > 0 for side in sides) or all(side < 0 for side in sides):
+        AIM_REFUSAL = "plane misses the goal mouth"
         return None
+    AIM_REFUSAL = None
     when = t0 + float(start[2]) / max(-vel[1], 1e-6)
     return speed, when, [s[1] for s in seen]
 
