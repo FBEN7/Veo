@@ -30,7 +30,7 @@ of the latest measurement:
 | Ball placed on the pitch | 8-45% of frames by clip | "What it changes" |
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
-| Shots and goals detected | **1 of 10** real (COCO) and **3 of 10** with the fine-tuned ball detector, 1 false each; goals 0 of 2 | "Attempts seen only briefly" |
+| Shots and goals detected | **2 of 10** real (COCO + goal corners), **3 of 10** (fine-tuned ball detector), 5 different between them; 1 false each; goals 0 of 2 | "The goal's corners" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1361,6 +1361,48 @@ do not list, possibly the ball carried to the corner arc. The fine-tuned
 detector needs corner flags among its negatives, and outs near the far
 touchline need the ball's height, before it can replace the COCO
 candidates.
+
+### The goal's corners, where the box detector gives no pose
+
+A second goal round labelled 162 frames of the six clips: 92 goals, each
+with its four corners clicked, and 70 without. Retrained with them and
+tested on the match it never saw, the box detector found the other
+ground's goals but drew that ground's box shape over them -- the box runs
+from the top of the left post to the base of the right post, a thin strip
+from Reading's side-on camera and a tall box at Stoke -- and overlapped
+the labels by about 27%: 18 of 102 Stoke goals, 2 of 78 Reading, at IoU
+0.5. A goal in perspective is a slanted quadrilateral; the box is the
+wrong thing to learn.
+
+`train_goal_keypoints.py` learns the four corners instead (yolov8n-pose).
+Across grounds it is still weak -- 34 of 54 Reading goals at 10.7 px, 7 of
+62 Stoke goals -- with one ground to learn from. But a Veo camera is fixed
+at one ground, and on clips neither model saw at grounds both had seen:
+
+| | box detector, at its 0.15 | corner model |
+|---|---|---|
+| stoke_1302, stoke_7001, reading_1155 (50 goals) | 40 found | **48** found |
+| the other three clips (60 goals) | -- | **50** found |
+| corner error (box's two corners, px) | 3.6 | 6.5 |
+
+So the box pose is kept where it exists, and where it does not the pose
+is solved from the corners (`goal_placer.build(keypoints=...)`; `pose_at`
+now takes three corners for a goal cut off by the picture's edge). On
+stoke_7001 the corners give 23 poses the box detector could not, poses
+rise from 79 to 106 grid frames, and every frame through its two labelled
+shots now has one. Six windows, each found shot checked against the
+clicks:
+
+| ball candidates | real shots | false | goals | out of play |
+|---|---|---|---|---|
+| COCO + corners | 2 of 10 | 1 | 0 of 2 | 2 of 4, 0 false |
+| fine-tuned + corners | 3 of 10 | 1 | 0 of 2 | 2 of 4, 4 false |
+
+COCO with the corners finds stoke_7001's blocked shot at 19.3 s (1-4 px
+from the clicks) and reading_0737's at 65.3 s; the fine-tuned detector
+finds reading_0737 at 20.5 s, reading_1155 at 19.9 s and reading_2519 at
+19.6 s. Five different labelled shots are found between them, none by
+both: each detector sees the ball on moments the other misses.
 
 ### The camera between grid frames: interpolated, not frozen
 
