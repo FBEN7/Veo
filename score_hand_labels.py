@@ -362,6 +362,9 @@ def main():
                          "clip's goal is found by the detector trained "
                          "without its match (<dir>/without_<match>), in "
                          "place of --goal-weights")
+    ap.add_argument("--ball-union", action="store_true",
+                    help="with --ball-detectors, keep the COCO ball "
+                         "candidates as well and let the ball path choose")
     ap.add_argument("--goal-keypoints",
                     help="directory of train_goal_keypoints.py runs: where "
                          "the box detector gives no pose, the goal's corners "
@@ -439,8 +442,10 @@ def main():
         weights = (Path(args.ball_detectors) / f"without_{held_out}" / "run"
                    / "weights" / "best.pt")
         run_clip(out_dir, info, weights)
-    ball = detect_shots.ball_track(out_dir,
-                                   ball_detector=bool(args.ball_detectors))
+    ball = detect_shots.ball_track(
+        out_dir, ball_detector=("union" if args.ball_detectors
+                                and args.ball_union
+                                else bool(args.ball_detectors)))
     if ball.empty:
         raise SystemExit("no ball track in that output directory")
     if args.goal_detectors:

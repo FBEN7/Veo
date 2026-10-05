@@ -195,7 +195,7 @@ ANCHOR_FRAMES = 240
 
 
 def ball_track(out_dir: Path, fps: float | None = None,
-               ball_detector: bool = False) -> pd.DataFrame:
+               ball_detector: bool | str = False) -> pd.DataFrame:
     """The ball's path through a clip, chosen as a trajectory.
 
     This used to take the most confident detection on each frame,
@@ -211,7 +211,8 @@ def ball_track(out_dir: Path, fps: float | None = None,
         # where a run has cached them (`src/ball_detector.py`).
         from src.ball_detector import with_candidates
 
-        tracks = with_candidates(tracks, out_dir)
+        tracks = with_candidates(tracks, out_dir,
+                                 union=ball_detector == "union")
     info_path = out_dir / "clip.json"
     info = json.loads(info_path.read_text()) if info_path.exists() else None
     if info is not None and Path(info.get("path", "")).exists():

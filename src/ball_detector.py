@@ -61,12 +61,38 @@ def run_clip(out_dir: Path, info: dict, weights: Path, conf: float = CONF,
     return cache
 
 
-def with_candidates(tracks: pd.DataFrame, out_dir: Path) -> pd.DataFrame:
-    """The tracks with the fine-tuned detector's ball rows, if cached."""
+# In `union`, a fine-tuned candidate this close to a COCO one on the same
+# frame is the same object and is not added twice.
+SAME_PX = 6.0
+
+
+def with_candidates(tracks: pd.DataFrame, out_dir: Path,
+                    union: bool = False) -> pd.DataFrame:
+    """The tracks with the fine-tuned detector's ball rows, if cached.
+
+    By default they replace the COCO ball rows. With `union` both are kept
+    and the ball path chooses among them: measured on six windows, each
+    detector found labelled shots the other missed -- five between them,
+    none by both.
+    """
+    import numpy as np
+
     cache = Path(out_dir) / CANDIDATES_FILE
     if not cache.exists():
         return tracks
     balls = pd.read_parquet(cache)
-    players = tracks[tracks.cls != "ball"]
     keep = [c for c in tracks.columns if c in balls.columns]
-    return pd.concat([players, balls[keep]], ignore_index=True)
+    if not union:
+        players = tracks[tracks.cls != "ball"]
+        return pd.concat([players, balls[keep]], ignore_index=True)
+    coco = tracks[tracks.cls == "ball"]
+    near = {f: g[["px", "py"]].to_numpy() for f, g in coco.groupby("frame")}
+    new = []
+    for row in balls.itertuples(index=False):
+        have = near.get(row.frame)
+        if have is not None and len(have) and np.min(np.hypot(
+                have[:, 0] - row.px, have[:, 1] - row.py)) < SAME_PX:
+            continue
+        new.append(row)
+    extra = pd.DataFrame(new, columns=balls.columns)
+    return pd.concat([tracks, extra[keep]], ignore_index=True)

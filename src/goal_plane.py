@@ -126,6 +126,15 @@ NET_DEPTH_M = 3.0
 # Twenty seconds is short of any real restart.
 RESTART_S = 20.0
 
+# A goal is also confirmed by what follows it, without the ball being seen
+# in the net: play restarted from the centre spot after a shot or attempt
+# that could have gone in, before any other shot. Measured on the labelled
+# windows, neither goal is ever seen in the net -- reading_1155's ball sits
+# low in the corner for under a second behind the keeper -- while both are
+# found as attempts. Within this long: the celebration, the replays and the
+# walk back take about a minute on these broadcasts.
+KICKOFF_WITHIN_S = 150.0
+
 # The kick-off that follows a goal: the ball still on the centre spot. Within
 # this radius of the spot, allowing for midfield placement error, and still
 # -- moving less than `KICKOFF_DRIFT_M` -- for at least `KICKOFF_STILL_S`
@@ -278,6 +287,21 @@ def find_shots(ball, placer, fps: float, trace: list | None = None):
                 shot["goal_check"] = "unconfirmed"
                 restart_after = shot["crossing_s"] + RESTART_S
                 pending = shot
+        else:
+            # The ball was not seen in the net. A kick-off before the next
+            # shot says it went in all the same -- whatever its brief flight
+            # was read as: four sightings in 0.16 s can read a goal as wide,
+            # and a shot that did go wide is restarted with a goal kick.
+            kickoff = kickoff_after(shot["crossing_s"], grass)
+            later = [s["time_s"] for s in merged
+                     if s["time_s"] > shot["time_s"] + MERGE_S]
+            if (kickoff is not None
+                    and kickoff - shot["crossing_s"] <= KICKOFF_WITHIN_S
+                    and not any(t < kickoff for t in later)):
+                shot["outcome"] = "goal"
+                shot["goal_check"] = "kick-off (not seen in the net)"
+                shot["kickoff_s"] = kickoff
+                restart_after = kickoff
         out.append(shot)
     if pending is not None:
         pending["goal_check"] = (
@@ -685,6 +709,7 @@ def selftest(verbose: bool = True) -> bool:
     struck = flight((5.0, 1.0, 0.0), range(10, 14))
     rebound = [(k, (4.0 - 0.1 * (k - 14), 0.5, 14.0 + 0.4 * (k - 14)))
                for k in range(14, 26)]
+    rolling_, struck_, rebound_ = rolling, struck, rebound
     # And two that must not count: a hard pass across the box, and one back
     # out towards midfield, each seen for the same few frames.
     across = [(k, (3.0 + 0.9 * (k - 9), 0.11, 18.0 - 0.1 * (k - 9)))
@@ -733,6 +758,28 @@ def selftest(verbose: bool = True) -> bool:
     spot = [(k, (3.66, 0.11, 52.5)) for k in range(1000, 1040)]
     another = ([(k, (3.0, 0.11, 18.0)) for k in range(700, 710)]
                + flight((6.8, 2.2, 0.0), (722, 725), strike=709, arrive=725))
+    # Goals never seen in the net, as on both labelled ones: a brief attempt
+    # or an on-target crossing, then a kick-off -- or another shot first,
+    # or a wide one, neither of which is a goal.
+    attempt = rolling_ + struck_ + rebound_
+    # Ball through the centre circle without stopping: not a kick-off.
+    passing = [(k, (3.66 + 0.4 * (k - 1000), 0.11, 52.5))
+               for k in range(1000, 1040)]
+    for name, points, want, noise in (
+            ("attempt, then a kick-off", attempt + spot,
+             ("goal", "kick-off (not seen in the net)"), 1.0),
+            ("attempt, another shot, kick-off",
+             attempt + another + spot, ("attempt", None), 0.0),
+            ("attempt, ball through centre", attempt + passing,
+             ("attempt", None), 1.0)):
+        got = find_shots(track(points, noise), Placer(), 25.0)
+        said = (got[0]["outcome"], got[0].get("goal_check")) if got else None
+        good = said == want
+        ok &= good
+        if verbose:
+            print(f"  {name:>28s}  {said[0] if said else 'no shot'}"
+                  f"{' (' + said[1] + ')' if said and said[1] else ''}   "
+                  f"{'ok' if good else 'WRONG'}")
     for name, points, want in (
             ("goal, then a kick-off", goal + spot, ("goal", "kick-off")),
             ("goal, then another shot first", goal + another,
