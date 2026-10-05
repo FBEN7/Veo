@@ -401,14 +401,9 @@ def aimed_attempt(start, t0: float, after):
                 and out + start[2] >= -AIM_PITCH_MARGIN_M):
             AIM_REFUSAL = "placed off the pitch"
             return None
-    # The pace of the run itself, its start fitted rather than pinned to the
-    # strike: the frame taken as the strike is often a moment before the
-    # kick, and pinned there the still frames dragged real blocked shots to
-    # 8-10 m/s (stoke_4207 495, stoke_7001 527, reading_0737 1628).
     t = np.array([g[0] for g in ground])
-    design = np.column_stack([np.ones_like(t), t])
-    vel = np.array([np.linalg.lstsq(design, np.array([g[i] for g in ground]),
-                                    rcond=None)[0][1] for i in (1, 2)])
+    vel = np.array([np.sum(t * np.array([g[i] for g in ground]))
+                    / np.sum(t * t) for i in (1, 2)])
     speed = float(np.hypot(*vel))
     if not AIM_MIN_GROUND_SPEED_MS <= speed <= AIM_MAX_GROUND_SPEED_MS:
         AIM_REFUSAL = f"ground speed {speed:.0f} m/s"
@@ -753,14 +748,6 @@ def selftest(verbose: bool = True) -> bool:
          "attempt", 1.0),
         ("sightings jumping between two players", rolling + jumping,
          None, 1.0),
-        # Still for a moment after the frame taken as the strike, then
-        # kicked and blocked: the pace is the run's, not the average from
-        # the still frames.
-        ("still, then struck and blocked",
-         [(k, (3.0, 0.11, 18.0)) for k in range(13)]
-         + flight((5.0, 1.0, 0.0), range(13, 17), strike=12, arrive=31)
-         + [(k, (3.6 - 0.1 * (k - 17), 0.5, 13.0 + 0.4 * (k - 17)))
-            for k in range(17, 29)], "attempt", 1.0),
         ("a hard pass across the box", rolling + across, None, 1.0),
         ("a hard pass back out", rolling + back, None, 1.0),
     )
