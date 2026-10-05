@@ -26,9 +26,11 @@ is marked invisible so it is not learned. Frames with a goal but no
 corners are left out: they cannot be a positive without corners, and must
 not be a negative.
 
-## Tested by match
+## Tested by match, and by clip
 
-Stoke v Huddersfield and Reading v Fulham are each held out whole. On the
+Stoke v Huddersfield and Reading v Fulham are each held out whole, or
+(`--fold clips`) the three clips the current box detector was trained
+without, which is the fair comparison for a camera fixed at one ground. On the
 held-out match's corner-labelled frames: how often the goal is found, and
 how far, in pixels at 1280 x 720, the corners land from the clicks. The
 current box detector is scored on the two corners its box stands for --
@@ -197,8 +199,11 @@ def main():
                     help="goal_labels.json from make_goal_labeller2.py")
     ap.add_argument("--corners", required=True,
                     help="goal_corners.json of the second corner round")
-    ap.add_argument("--fold", choices=["stoke", "reading", "all"],
-                    default="all")
+    ap.add_argument("--fold", choices=["stoke", "reading", "all", "clips"],
+                    default="all",
+                    help="a match held out whole, both, or 'clips': the "
+                         "three clips the current box detector was trained "
+                         "without (same grounds, unseen moments)")
     ap.add_argument("--epochs", type=int, default=80)
     ap.add_argument("--baseline", help="the current box detector")
     args = ap.parse_args()
@@ -209,10 +214,20 @@ def main():
     print(f"  {len(rows)} frames: {sum(1 for r in rows if r['corners'])} "
           f"goals with corners, {sum(1 for r in rows if not r['corners'])} "
           f"without a goal", flush=True)
+    from train_goal_detector import VAL_CLIPS
+
     for held_out in (["stoke", "reading"] if args.fold == "all"
                      else [args.fold]):
-        train = [r for r in rows if MATCH[r["clip"]] != held_out]
-        test = [r for r in rows if MATCH[r["clip"]] == held_out]
+        if held_out == "clips":
+            # A Veo camera is fixed at one ground, so what matters is a
+            # detector that has seen the ground but not the moment. The
+            # current box detector held these three clips out of training,
+            # which makes this comparison a fair one.
+            unseen = lambda r: r["clip"] in VAL_CLIPS
+        else:
+            unseen = lambda r, m=held_out: MATCH[r["clip"]] == m
+        train = [r for r in rows if not unseen(r)]
+        test = [r for r in rows if unseen(r)]
         root = CACHE_DIR / "goal_keypoints" / f"without_{held_out}"
         data = root / "data"
         if data.exists():
