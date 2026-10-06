@@ -325,21 +325,16 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
     under a non-commercial agreement and cannot live in this repository, so
     the caller supplies them.
     """
-    import cv2
-
     wanted = sorted({int(f) - int(f) % grid for f in frames_wanted})
     if not wanted:
         return GoalPlacer({}, grid)
 
     from .goal_pose import pose_at
 
-    cap = cv2.VideoCapture(video_path)
+    from .video_frames import frames as read_frames
+
     poses, tried, detected, from_corners = {}, 0, 0, 0
-    for index in wanted:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, index)
-        ok, frame = cap.read()
-        if not ok:
-            continue
+    for index, frame in read_frames(video_path, wanted):
         tried += 1
         pose = None
         result = detector.predict(frame, conf=conf, verbose=False)[0]
@@ -366,7 +361,6 @@ def build(video_path: str, frames_wanted, camera_position, focal_seed: float,
         if pose is None:
             continue
         poses[index] = pose
-    cap.release()
 
     poses = smooth(poses, grid)
 

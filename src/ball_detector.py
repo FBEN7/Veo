@@ -26,22 +26,21 @@ def run_clip(out_dir: Path, info: dict, weights: Path, conf: float = CONF,
              overwrite: bool = False, verbose: bool = True) -> Path:
     """Detect the ball on every frame of a clip; returns the cache path."""
     import cv2
-    from ultralytics import YOLO
 
     out_dir = Path(out_dir)
     cache = out_dir / CANDIDATES_FILE
     if cache.exists() and not overwrite:
         return cache
-    model = YOLO(str(weights))
-    cap = cv2.VideoCapture(info["path"])
     width, fps = int(info["width"]), float(info["fps"])
+    model, imgsz = _model(Path(weights), width, int(info["height"]))
+    cap = cv2.VideoCapture(info["path"])
     rows, index = [], -1
     while True:
         ok, frame = cap.read()
         if not ok:
             break
         index += 1
-        result = model(frame, verbose=False, conf=conf, imgsz=width)[0]
+        result = model(frame, verbose=False, conf=conf, imgsz=imgsz)[0]
         for (x0, y0, x1, y1), score in zip(result.boxes.xyxy.cpu().numpy(),
                                            result.boxes.conf.cpu().numpy()):
             rows.append({"frame": index, "time_s": index / fps,
@@ -59,6 +58,28 @@ def run_clip(out_dir: Path, info: dict, weights: Path, conf: float = CONF,
         print(f"  [ball detector] {len(rows)} candidates on {index + 1} "
               f"frames from {Path(weights).parent.parent.name}")
     return cache
+
+
+def _model(weights: Path, width: int, height: int):
+    """The detector and the input size to run it at.
+
+    An OpenVINO export beside the weights (`yolo export format=openvino
+    imgsz=736,1280`) runs 1.9 times faster on CPU and, measured on 60
+    frames, returns the same boxes and confidences to the last digit. It is
+    exported for one input shape, so it is used only for footage of that
+    shape; anything else runs the PyTorch weights at the footage's width.
+    """
+    from ultralytics import YOLO
+
+    shape = (-(-height // 32) * 32, width)
+    export = weights.parent / f"{weights.stem}_openvino_model"
+    meta = export / "metadata.yaml"
+    if meta.exists():
+        import yaml
+
+        if tuple(yaml.safe_load(meta.read_text()).get("imgsz", ())) == shape:
+            return YOLO(str(export), task="detect"), shape
+    return YOLO(str(weights)), width
 
 
 # In `union`, a fine-tuned candidate this close to a COCO one on the same

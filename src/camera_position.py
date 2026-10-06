@@ -248,15 +248,10 @@ def scan_circles(video_path: str, frames, find_circle, halfway_line,
     frames where a circle was found. `find_circle` and `halfway_line` are
     passed in for the same reason as in `goal_placer.build_midfield`.
     """
-    import cv2
+    from .video_frames import frames as read_frames
 
-    cap = cv2.VideoCapture(video_path)
     out = {}
-    for index in frames:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, int(index))
-        ok, frame = cap.read()
-        if not ok:
-            continue
+    for index, frame in read_frames(video_path, frames):
         circle = find_circle(frame, np.random.default_rng(int(index)))
         if circle is None:
             continue
@@ -267,7 +262,6 @@ def scan_circles(video_path: str, frames, find_circle, halfway_line,
         half = halfway_line(circle["segments"], (ex, ey))
         out[int(index)] = (arc, None if half is None else np.array(
             [[half[0], half[1]], [half[2], half[3]]], dtype=float))
-    cap.release()
     return out
 
 

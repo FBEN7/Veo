@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import cv2
 import numpy as np
+from scipy.spatial import cKDTree
 
 from . import pitch_model as pm
 from .goal_pose import GOAL_WIDTH_M
@@ -48,6 +49,9 @@ CENTRE = np.array([GOAL_WIDTH_M / 2.0, 0.0, pm.PITCH_LENGTH_M / 2.0])
 # How heavily a halfway-line endpoint counts against an arc pixel: two
 # endpoints against a few hundred arc pixels would otherwise be ignored.
 HALFWAY_WEIGHT = 5.0
+# Segments of the projected circle scored per arc pixel: those starting at
+# its nearest samples (`_scorer`).
+NEAR_SEGMENTS = 4
 
 # What a broadcast lens can be at 1280 wide, about 90 degrees across at the
 # short end and 6 at the long. Also what stops the fit collapsing: the first
@@ -109,11 +113,20 @@ def _scorer(arc_px, halfway_px, cx, cy):
             arc = np.full(len(arc_px), far)
         else:
             a, ab = uv[keep], uv[nxt][keep] - uv[keep]
-            ap = arc_px[:, None, :] - a[None, :, :]
-            along = np.clip((ap * ab[None]).sum(-1)
-                            / np.maximum((ab ** 2).sum(-1), 1e-12)[None],
+            # Only the segments starting at the few samples nearest each
+            # arc pixel can hold its nearest point on the curve: samples
+            # are about a pixel apart. Scoring all 720 segments for every
+            # pixel made each call 8 ms, and the camera search makes
+            # thousands of them.
+            k = min(NEAR_SEGMENTS, len(a))
+            _, idx = cKDTree(a).query(arc_px, k=k)
+            idx = idx.reshape(len(arc_px), k)
+            sa, sab = a[idx], ab[idx]
+            ap = arc_px[:, None, :] - sa
+            along = np.clip((ap * sab).sum(-1)
+                            / np.maximum((sab ** 2).sum(-1), 1e-12),
                             0.0, 1.0)
-            nearest = a[None] + along[..., None] * ab[None]
+            nearest = sa + along[..., None] * sab
             arc = np.sqrt(((arc_px[:, None, :] - nearest) ** 2)
                           .sum(-1)).min(axis=1)
         out = [arc]
