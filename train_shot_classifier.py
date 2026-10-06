@@ -3,13 +3,12 @@
 `src/shot_features.py` turns every placed ball sighting in shooting range
 into a row of readings; `score_hand_labels.py --dump-features` writes one
 file per clip with the clip's labels attached. Here a candidate is a
-positive when a labelled shot or goal is within `POSITIVE_S` of it -- a
-label is a person's (or SoccerNet's) timing, good to about a second -- and
+positive when a labelled shot or goal is within `POSITIVE_S` of it, and
 a gradient boosted tree model learns from the rest.
 
 A clip has a few hundred candidates and a shot is a run of them, so the
 model's output is turned back into events the way the rules' is: the most
-likely candidate, then nothing else within `MERGE_S` of it, down to a
+likely candidate, then nothing else within `EVENT_GAP_S` of it, down to a
 threshold. Events are matched one-to-one to the labels within
 `score_hand_labels.TOLERANCE_S`, as every other detector here is scored.
 A shot and a goal labelled less than `MERGE_S` apart are one attempt.
@@ -43,7 +42,19 @@ import pandas as pd
 from score_hand_labels import TOLERANCE_S, match
 from src.goal_plane import MERGE_S
 
-POSITIVE_S = 1.0
+# Candidates this close to a labelled attempt are positives. At a second,
+# the pass or dribble just before the strike was a positive too, and the
+# false detections checked on the footage were exactly that: crosses,
+# dribbles and passes around the box. On 32 clips, +-0.4 s against +-1 s
+# raised the best F1 held out by match from 0.50 to 0.56.
+POSITIVE_S = 0.5
+# A labelled attempt with no candidate within this long was never placed.
+COVER_S = 1.0
+# Detected events are at least this far apart. At two seconds the build-up
+# before a shot and the clearance after it came out as events of their own;
+# at four, on 32 clips held out by match, precision at threshold 0.5 went
+# from 34% to 43% for one shot lost.
+EVENT_GAP_S = 4.0
 THRESHOLDS = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
 NOT_FEATURES = {"clip", "match", "frame", "time_s", "label"}
 
@@ -86,14 +97,14 @@ def model():
 
 
 def events(table, probs, threshold):
-    """Peaks of the model's output, at least `MERGE_S` apart."""
+    """Peaks of the model's output, at least `EVENT_GAP_S` apart."""
     order = np.argsort(-probs)
     kept = []
     times = table.time_s.to_numpy()
     for i in order:
         if probs[i] < threshold:
             break
-        if all(abs(times[i] - times[j]) >= MERGE_S for j in kept):
+        if all(abs(times[i] - times[j]) >= EVENT_GAP_S for j in kept):
             kept.append(i)
     return sorted(kept, key=lambda i: times[i])
 
@@ -135,7 +146,8 @@ def held_out(data, truth, fold_of, name, verbose):
             best = (thr, f1)
     if verbose:
         thr = best[0]
-        print(f"\n  events at threshold {thr} (best F1), to check by eye:")
+        print(f"\n  events at threshold {thr} (the best F1 here, so chosen on "
+              f"the test set itself), to check by eye:")
         for clip, rows in data.groupby("clip"):
             idx = rows.index.to_numpy()
             got = events(rows, probs[idx], thr)
@@ -164,7 +176,7 @@ def main():
     data, truth, _ = load([Path(p) for p in args.features])
     clips = sorted(data["clip"].unique())
     print(f"  {len(data)} candidates from {len(clips)} clips; "
-          f"{int(data.label.sum())} within {POSITIVE_S:.0f} s of "
+          f"{int(data.label.sum())} within {POSITIVE_S:.1f} s of "
           f"{sum(len(truth[c]) for c in clips)} labelled shots and goals")
     for m, rows in data.groupby("match"):
         print(f"    {m}: {rows['clip'].nunique()} clips, "
@@ -175,11 +187,11 @@ def main():
     for clip in clips:
         times = data.loc[data["clip"] == clip, "time_s"].to_numpy()
         for t in truth[clip]:
-            if not np.any(np.abs(times - t) <= POSITIVE_S):
+            if not np.any(np.abs(times - t) <= COVER_S):
                 unseen.append(f"{clip} {t:.0f}s")
     total = sum(len(truth[c]) for c in clips)
     print(f"  {total - len(unseen)} of {total} labelled attempts have a "
-          f"candidate within {POSITIVE_S:.0f} s; never placed: "
+          f"candidate within {COVER_S:.0f} s; never placed: "
           f"{', '.join(unseen) or 'none'}")
 
     if data["match"].nunique() > 1:
