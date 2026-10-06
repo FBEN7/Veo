@@ -232,3 +232,24 @@ pass receivers are the weak points now.
 The goalkeeper marked in stoke_7001 -- who received one pass and played
 the next -- is called a player with certainty by the role classifier;
 team assignment had put him in "other".
+
+### Receivers and balls won
+
+What went wrong on round 1 (used to tune; round 2 kept for testing): a
+failed pass had no receiver though the person clicked the opponent who
+got it; a player the team assignment could not place was taken as a
+team-mate; a ball brushing a player in flight ended the pass there; and
+recoveries were dropped by the 4-frame hold. The receiver of a failed
+pass is now the opponent who got it, and a recovery needs only the touch
+(1 frame); treating unplaced players as opponents, and a 4-frame hold for
+a reception, both measured worse on round 1 and are not used.
+
+| | round 1 (tuned on): before -> after | round 2 (test): before -> after |
+|---|---|---|
+| right receiver | 8 of 12 -> 9 of 12 | **6 of 13 -> 8 of 13** |
+| balls won found / detected | 2 / 7 -> 3 / 8 | 0 / 8 -> 1 / 11 |
+| passes found / detected | 16 / 20, unchanged | 16 / 24, unchanged |
+
+Receivers improve on the test. Balls won are within noise on 3 labelled;
+over both rounds 4 of 9 are found with 19 detected, against 2 of 9 with
+15 -- still the weakest action.

@@ -80,7 +80,15 @@ MIN_PASS_TRAVEL = 1.0
 TACKLE_HOLD = 8
 # A ball won after it travelled counts when the winner keeps it this many
 # frames: an opponent the ball merely brushes has not won it.
-RECOVERY_HOLD = 4
+# 1: on round 1 of the stretch labels, holding 4 frames lost a real
+# recovery (balls won found 3 -> 2 of 6) for one false one removed.
+RECOVERY_HOLD = 1
+# A player the team assignment could not place counts as a team-mate of
+# the passer (True) or not (False).
+UNSURE_IS_TEAMMATE = True
+# The receiver keeps the ball this many frames for a reception: a ball
+# rushing past a player mid-flight is not received by them.
+MIN_RECEIVE_FRAMES = 2
 # A carry moves the player at least this many body heights in the
 # camera-compensated picture -- the pitch positions understate movement
 # (most clicked carries moved 0.3-2 m by them), the picture does not.
@@ -159,6 +167,16 @@ def actions(poss: list[dict], fps: float, where, name,
     how far it travelled."""
     out = []
     poss = [p for p in poss if p["frames"] >= MIN_TOUCH_FRAMES]
+    # A brush in flight: a short possession by someone else between two
+    # touches is the ball passing them, not a reception.
+    if MIN_RECEIVE_FRAMES > MIN_TOUCH_FRAMES:
+        kept = []
+        for i, p in enumerate(poss):
+            inner = 0 < i < len(poss) - 1
+            if inner and p["frames"] < MIN_RECEIVE_FRAMES:
+                continue
+            kept.append(p)
+        poss = kept
     merged = []
     for p in poss:
         if (merged and merged[-1]["who"] == p["who"]
@@ -194,8 +212,9 @@ def actions(poss: list[dict], fps: float, where, name,
             continue
         start, end = where(p["track_id"], p["last"]), where(q["track_id"],
                                                              q["first"])
-        same_team = (p["team"] == q["team"] or p["team"] in UNSURE
-                     or q["team"] in UNSURE)
+        same_team = (p["team"] == q["team"]
+                     or (UNSURE_IS_TEAMMATE and (p["team"] in UNSURE
+                                                 or q["team"] in UNSURE)))
         travel = None
         if ball_at is not None:
             a0, a1 = ball_at(p["last"]), ball_at(q["first"])
@@ -217,8 +236,10 @@ def actions(poss: list[dict], fps: float, where, name,
                               *(end or (None, None)), *(end or (None, None)),
                               "success", fps))
         else:
+            # The receiver of a failed pass is the opponent who got it,
+            # as the person labelling clicked it.
             out.append(Action("pass", p["last"], q["first"], p["team"],
-                              name(p["track_id"]), None,
+                              name(p["track_id"]), name(q["track_id"]),
                               *(start or (None, None)), *(end or (None, None)),
                               "fail", fps))
             if q["frames"] < RECOVERY_HOLD:
