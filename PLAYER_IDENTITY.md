@@ -101,3 +101,38 @@ the limit -- timing, events that did not happen, and the ball track.
 `src/event_schema.py` sets the format events should come out in (SPADL,
 with start and end frames and both players), which is also the format a
 next labelling round should use.
+
+## Events from touches
+
+`src/touch_events.py` rebuilds events on contact instead of "nearest
+player over time". A player has the ball from a touch (the ball within 0.6
+body heights of their feet) and keeps it while it stays within 0.9 and
+nobody else touches it; a possession must last 2 frames. Actions follow
+from consecutive possessions, in the SPADL format: a pass from the
+release to a team-mate's reception (the ball travelling at least a body
+height), a failed pass and a recovery when an opponent receives it, a
+tackle when an opponent takes it at close quarters and keeps it 4 frames,
+a carry when a player keeps it 0.6 s and moves a metre.
+`detect_touch_events.py` writes them as a table.
+
+Against the 139 clicks (the settings were chosen on them, so this is
+optimistic):
+
+| | found | right player | rejected moments still detected |
+|---|---|---|---|
+| passes (30 real) | 19 | 14 | 5 of 16 |
+| carries (17 real) | 9 | 7 | 5 of 29 |
+| recoveries (7 real) | 4 | 3 | 6 of 27 |
+
+The old detector made all 72 of the rejected events; the new one makes 16
+of them. Its rates are plausible -- 18 passes, 7 carries, 5 recoveries a
+minute, no pass counted twice -- except tackles, 5-7 a minute, which are
+likely duels and are not measured (one tackle was clicked, and it did not
+happen). On "right player" the comparison is not fair either way: the
+clicks sampled the old detector's events, so it "found" all of them and
+credited the right player on 27 of 54; the new one has to find them first
+(32 of 54) and credits the right one on 24.
+
+A fair measure needs actions labelled independently of any detector:
+every action in a stretch of play, with start and end frames and both
+players, in the format of `src/event_schema.py`.
