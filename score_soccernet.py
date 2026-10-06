@@ -286,6 +286,9 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
 
     filtered = ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=True)
     scale = pixel_scale.estimate_px_per_m(filtered)
+    # Where each detection is in the picture, kept through camera
+    # compensation, which rewrites px/py: player identity crops the frames.
+    filtered = filtered.assign(px_raw=filtered.px, py_raw=filtered.py)
 
     # Camera motion: a pan is otherwise indistinguishable from every player
     # sprinting sideways, and carry detection asks whether a player and the
@@ -335,6 +338,7 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
         capped, scale, fps=profile.fps, verbose=True)
     merged = track_reid.merge_fragments(
         selected, scale, fps=profile.fps, verbose=True)
+    merged.to_parquet(out_dir / "tracks_merged.parquet")
 
     # A scale taken from player height is the scale for motion across the
     # view, not into it, so it overstates pixels per metre and every distance
