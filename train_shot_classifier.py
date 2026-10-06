@@ -12,6 +12,7 @@ model's output is turned back into events the way the rules' is: the most
 likely candidate, then nothing else within `MERGE_S` of it, down to a
 threshold. Events are matched one-to-one to the labels within
 `score_hand_labels.TOLERANCE_S`, as every other detector here is scored.
+A shot and a goal labelled less than `MERGE_S` apart are one attempt.
 
 Tested two ways, each against footage the model never trained on:
 
@@ -28,7 +29,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
+
+# A few thousand rows fit in seconds on one thread. With the feature dumps
+# running beside it, the trees' default of every core spun for twelve
+# minutes without finishing.
+os.environ.setdefault("OMP_NUM_THREADS", "1")
 
 import numpy as np
 import pandas as pd
@@ -47,10 +54,16 @@ def load(paths):
         table = pd.read_parquet(p)
         if table.empty:
             continue
-        clip = str(table.clip.iloc[0])
+        clip = str(table["clip"].iloc[0])
         events = json.loads(table.attrs.get("truth", "[]"))
-        truth[clip] = [e["time_s"] for e in events
-                       if e["event_type"] in ("shot", "goal")]
+        # SoccerNet labels a goal twice, the shot and then the goal a second
+        # later: one attempt, which one detection should answer.
+        attempts = []
+        for t in sorted(e["time_s"] for e in events
+                        if e["event_type"] in ("shot", "goal")):
+            if not attempts or t - attempts[-1] >= MERGE_S:
+                attempts.append(t)
+        truth[clip] = attempts
         duration[clip] = float(table.attrs.get("duration_s", 0.0))
         t = table.time_s.to_numpy()
         table["label"] = [int(any(abs(x - y) <= POSITIVE_S
@@ -94,8 +107,11 @@ def held_out(data, truth, fold_of, name, verbose):
         train = data[~test]
         if train.label.sum() == 0:
             continue
-        m = model().fit(train[cols], train.label)
-        probs[test] = m.predict_proba(data[test][cols])[:, 1]
+        # A reading never taken in the training clips -- no kick-off in any
+        # of them -- cannot be learned, and the trees refuse an empty column.
+        use = [c for c in cols if train[c].notna().any()]
+        m = model().fit(train[use], train.label)
+        probs[test] = m.predict_proba(data[test][use])[:, 1]
     print(f"\n  {name}")
     print(f"  {'threshold':>9s} {'labelled':>9s} {'found':>6s} "
           f"{'matched':>8s} {'recall':>7s} {'precision':>10s}")
@@ -146,19 +162,19 @@ def main():
     args = ap.parse_args()
 
     data, truth, _ = load([Path(p) for p in args.features])
-    clips = sorted(data.clip.unique())
+    clips = sorted(data["clip"].unique())
     print(f"  {len(data)} candidates from {len(clips)} clips; "
           f"{int(data.label.sum())} within {POSITIVE_S:.0f} s of "
           f"{sum(len(truth[c]) for c in clips)} labelled shots and goals")
     for m, rows in data.groupby("match"):
-        print(f"    {m}: {rows.clip.nunique()} clips, "
-              f"{sum(len(truth[c]) for c in rows.clip.unique())} labelled")
+        print(f"    {m}: {rows['clip'].nunique()} clips, "
+              f"{sum(len(truth[c]) for c in rows['clip'].unique())} labelled")
 
-    if data.match.nunique() > 1:
-        held_out(data, truth, data.match.tolist(),
+    if data["match"].nunique() > 1:
+        held_out(data, truth, data["match"].tolist(),
                  "held out by match (trained on the other ground)",
                  not args.quiet)
-    held_out(data, truth, data.clip.tolist(),
+    held_out(data, truth, data["clip"].tolist(),
              "held out by clip (trained on every other clip)",
              not args.quiet)
 
