@@ -314,3 +314,10 @@ no two different numbers in different clips were given one name; no
 number was typed in two clips, so the links themselves cannot be checked
 there, and three clicks on #9 in one clip still carry three names.
 Event credit is unchanged.
+
+To check the links on our own footage, `make_number_labeller.py` builds a
+page of six frames per clip (players largest, no replays) where a person
+clicks each player they can name and gives the team and shirt number;
+`score_player_names.py` then counts, within a clip and across a match,
+same-number pairs joined and different-number pairs kept apart, and how
+often the team is right.
