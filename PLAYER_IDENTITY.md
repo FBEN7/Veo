@@ -209,3 +209,26 @@ stretches, so it is off. The gap is the footage -- lower resolution and
 these kits -- and closing it needs referee examples from it. It would
 not have fixed the two false tackles near the referee either: the track
 credited there is a player (see above).
+
+### A second round of stretches
+
+Six more 10-second stretches, not overlapping the first (`make_action_labeller.py
+--exclude ... --key action-label-v2`), labelled the same way, with a key
+for the goalkeeper: 32 actions (23 passes, 3 carries, 3 balls won, a
+shot). No setting was chosen on them, so they are a clean test.
+
+| passes | round 2: old -> new | both rounds (44 passes): old -> new |
+|---|---|---|
+| found | 26% -> **70%** | 30% -> **73%** |
+| detections real | 35% -> **67%** | 38% -> **73%** |
+| right passer | 2 of 6 -> **12 of 16** | 8 of 13 -> **26 of 32** |
+| right receiver | 1 of 5 -> **6 of 13** | 3 of 10 -> **14 of 25** |
+| end of the pass, median | 20 -> 4 frames | 20 -> 4 frames |
+
+Over both rounds, carries: 6 of 8 found, 16 detected; balls won: 2 of 9
+found, 15 detected; the one shot is not in this detector. Balls won and
+pass receivers are the weak points now.
+
+The goalkeeper marked in stoke_7001 -- who received one pass and played
+the next -- is called a player with certainty by the role classifier;
+team assignment had put him in "other".
