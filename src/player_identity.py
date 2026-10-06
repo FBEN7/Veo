@@ -197,10 +197,22 @@ def _clash(a, b) -> bool:
     return len(np.intersect1d(a, b, assume_unique=True)) > MAX_SHARED_FRAMES
 
 
-def identities(tracks: dict, look_threshold: float | None = None) -> list:
-    """Tracks joined into people by number and team, never two at once;
-    then, with `look_threshold`, by appearance (`join_by_look`)."""
+def identities(tracks: dict, look_threshold: float | None = None,
+               use_numbers: bool = False) -> list:
+    """Tracks joined into people -- by number and team with `use_numbers`,
+    never two at once -- then, with `look_threshold`, by appearance
+    (`join_by_look`).
+
+    Numbers are off by default: on a SoccerNet game-state clip with the
+    ground truth's own tight boxes, the reader named none of the 9 people
+    whose number is legible there right (2 wrong, 7 unread), though it
+    reads 90% of the jersey set's held-out tracklets. A wrong number joins
+    two people, so it is not trusted to join until it is measured to.
+    """
     out = []
+    for t in tracks.values():
+        if not use_numbers:
+            t.number, t.share = None, 0.0
     numbered = sorted((t for t in tracks.values() if t.number is not None),
                       key=lambda t: -t.share)
     for track in numbered:
@@ -227,7 +239,8 @@ def identities(tracks: dict, look_threshold: float | None = None) -> list:
         logp = np.concatenate([t.logp for t in ident.tracks])
         number, share, used = jr.vote(vis, logp) if len(vis) else (None, 0, 0)
         ident.crops = used
-        if number is not None and share >= MIN_SHARE and used >= MIN_CROPS:
+        if (use_numbers and number is not None and share >= MIN_SHARE
+                and used >= MIN_CROPS):
             ident.number, ident.share = number, share
         else:
             ident.number, ident.share = None, share
@@ -244,3 +257,92 @@ def label(ident) -> str:
     if ident.number is not None:
         return f"{ident.team} #{ident.number}"
     return f"{ident.team} player {ident.key}"
+
+
+# --- Joining by a learned pair score -------------------------------------
+#
+# Appearance alone cannot decide: on a game-state clip, the same person's
+# tracks are 0.71-0.98 alike and different team-mates 0.68 at the median,
+# 0.91 at the 90th percentile. What else separates them is where and when
+# the tracks are: a person who leaves the picture comes back near where
+# they left, soon. `pair_features` puts both in one row per pair of tracks
+# and `train_identity_pairs.py` learns from game-state clips which rows are
+# one person.
+
+PAIR_FEATURES = ("look", "shared", "gap_s", "jump", "size_ratio", "short")
+
+
+def geometry(merged: pd.DataFrame) -> dict:
+    """track id -> (first frame, last frame, start xy, end xy, height), in
+    the camera-compensated picture coordinates the re-joining uses."""
+    out = {}
+    players = merged[merged.cls == "player"]
+    for tid, rows in players.groupby("track_id"):
+        rows = rows.sort_values("frame")
+        h = float(rows.crop_h.median())
+        out[int(tid)] = (int(rows.frame.iloc[0]), int(rows.frame.iloc[-1]),
+                         rows[["px", "py"]].iloc[0].to_numpy(float),
+                         rows[["px", "py"]].iloc[-1].to_numpy(float), h)
+    return out
+
+
+def pair_features(a: Track, b: Track, geo: dict, fps: float) -> dict:
+    ga, gb = geo[a.track_id], geo[b.track_id]
+    first, second = (ga, gb) if ga[0] <= gb[0] else (gb, ga)
+    shared = len(np.intersect1d(a.frames, b.frames, assume_unique=True))
+    gap = (second[0] - first[1]) / fps
+    h = (first[4] + second[4]) / 2.0
+    jump = float(np.linalg.norm(second[2] - first[3])) / max(h, 1.0)
+    look = (float(a.look @ b.look) if a.look is not None
+            and b.look is not None else np.nan)
+    return {"look": look, "shared": float(shared), "gap_s": float(gap),
+            "jump": jump, "size_ratio": float(max(ga[4], gb[4])
+                                              / max(min(ga[4], gb[4]), 1.0)),
+            "short": float(min(len(a.frames), len(b.frames)))}
+
+
+def join_by_pairs(tracks: dict, geo: dict, fps: float, model,
+                  threshold: float = 0.5,
+                  max_shared: int = 25) -> list:
+    """Average-link clustering of a team's tracks on the pair model's
+    probability, merging while the best pair of clusters averages at least
+    `threshold` and no two of their tracks share more than `max_shared`
+    frames."""
+    out = []
+    by_team = {}
+    for t in tracks.values():
+        by_team.setdefault(t.team, []).append(t)
+    for team, members in by_team.items():
+        n = len(members)
+        prob = np.zeros((n, n))
+        clash = np.zeros((n, n), dtype=bool)
+        rows, idx = [], []
+        for i in range(n):
+            for j in range(i + 1, n):
+                f = pair_features(members[i], members[j], geo, fps)
+                clash[i, j] = clash[j, i] = f["shared"] > max_shared
+                rows.append([f[k] for k in PAIR_FEATURES])
+                idx.append((i, j))
+        if rows:
+            p = model.predict_proba(np.array(rows))[:, 1]
+            for (i, j), v in zip(idx, p):
+                prob[i, j] = prob[j, i] = v
+        clusters = [[i] for i in range(n)]
+        while True:
+            best, pair = threshold, None
+            for x in range(len(clusters)):
+                for y in range(x + 1, len(clusters)):
+                    A, B = clusters[x], clusters[y]
+                    if clash[np.ix_(A, B)].any():
+                        continue
+                    score = prob[np.ix_(A, B)].mean()
+                    if score > best:
+                        best, pair = score, (x, y)
+            if pair is None:
+                break
+            x, y = pair
+            clusters[x] += clusters[y]
+            clusters.pop(y)
+        for c in clusters:
+            out.append(Identity(len(out), team, [members[i] for i in c]))
+    return out
