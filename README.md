@@ -115,6 +115,8 @@ commence par un résumé de l'état actuel.
 | Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
 | Tirs et buts détectés (6 clips) | règles : **5 tirs sur 10**, 1 fausse alerte ; **buts 2 sur 2**, aucun faux (confirmés par l'engagement) | `EVENT_ACCURACY.md` |
 | Tirs, 36 clips sur deux stades | règles : 24 sur 44, précision 53 % ; **classifieur appris + verdict des règles : 28 sur 44, précision 72 %**, testé sur le stade qu'il n'a jamais vu (`--shot-model`) | `EVENT_ACCURACY.md` |
+| Joueur crédité d'un événement | 22 sur 66 événements réels cliqués ; les passes sont datées 0,4 s après la touche | `PLAYER_IDENTITY.md` |
+| Identités de joueurs (sans numéro) | IDF1 0,617 → 0,645 sur 10 clips SoccerNet ; numéros de maillot illisibles à cette résolution | `PLAYER_IDENTITY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
 | Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |

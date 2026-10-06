@@ -13,6 +13,7 @@ are the history that got it there.
 | `EVENT_ACCURACY.md` | every event and geometry measurement; opens with a current-state summary |
 | `DETECTION_ACCURACY.md` | player and ball detection against human-labelled images |
 | `TEAM_ASSIGNMENT.md` | team assignment, and why an earlier figure measured something else |
+| `PLAYER_IDENTITY.md` | who did each event: shirt numbers, anonymous identities, measured against clicks and SoccerNet game-state clips |
 | `VEO_FOOTAGE.md` | the 640x360 web clip, which is not a Veo camera, and what can be checked without labels |
 | `SPEC_rapport_pdf.md` | the specification for the PDF report (French) |
 | `DASHBOARD_SETUP.md` | running the dashboard |
