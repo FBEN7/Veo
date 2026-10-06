@@ -63,3 +63,6 @@ ball_labeller2.html
 goal_labeller2.html
 ball_labels.json
 goal_corner_labeller2.html
+
+# Pipeline runs on SoccerNet game-state clips (derived data, never committed)
+output_gsr_*/
