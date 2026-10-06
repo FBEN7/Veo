@@ -31,7 +31,7 @@ of the latest measurement:
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
 | Shots and goals detected | **5 of 10** real shots, 1 false; **goals 2 of 2**, none false (gap-filled ball candidates, goal corners, kick-off confirmation) | "Goals by their kick-off" |
-| Shots, 36 windows on two grounds | rules 24 of 44 at 56% precision; **learned classifier with the rules' verdict 30 of 44 at 77%**, tested on the ground it never saw | "A learned shot classifier" |
+| Shots, 36 windows on two grounds | rules 24 of 44 at 53% precision; **learned classifier with the rules' verdict 28 of 44 at 72%**, tested on the ground it never saw; wired into `score_hand_labels.py --shot-model` | "A learned shot classifier" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1530,6 +1530,35 @@ match's located windows, a store that grows as windows are processed, so
 six windows came out differently on a second run (two fell back to a
 camera 11 m up). The comparison above is on one run, rules and model
 alike; the store should be frozen before the model is trained for use.
+
+**Frozen, and wired in.** `--freeze-camera-store` now reads the store
+without adding to it, and a borrowed height landing 5-15 m off the halfway
+line is used, marked loose, instead of falling back to the corners' own
+position (beyond 15 m it is still refused: stoke_7842). The 14 windows that
+borrow were re-run on the frozen store (22 located windows): 13 take
+20.1 m at Reading or 19.6 m at Stoke, 8 of them loose. The reproducible
+figures, threshold fixed at 0.5:
+
+| | found (of 44) | detections | precision |
+|---|---|---|---|
+| hand-set rules | 24 | 45 | 53% |
+| classifier alone, by match | 26 | 52 | 50% |
+| **classifier with the rules' verdict, by match** | **28** | 39 | **72%** |
+| classifier with the rules' verdict, by clip | 31 | 45 | 69% |
+
+On the 30 windows new to the rules: rules 18 of 35 at 49%, combined model
+by match 24 of 35 at 71%. One more attempt is now never placed --
+reading_0221 20 s, one of the loose cameras -- so 42 of 44 are reachable.
+
+`score_hand_labels.py --shot-model .cache/shot_classifier` now reports
+the classifier's shots: one model per ground, each trained without it
+(`train_shot_classifier.py --with-rules --save-held-out`), so a clip is
+always scored by a model that never saw its match. Where the rules found
+the same shot their reading is kept (outcome, crossing, goal check), and
+every goal they confirmed by its kick-off is kept. First runs:
+reading_8634 both labelled shots found and nothing false (the rules alone
+reported four); stoke_7001 the shot at 19.3 s and nothing false (the
+rules' false 48.2 s is gone).
 
 ### The camera between grid frames: interpolated, not frozen
 

@@ -114,7 +114,7 @@ commence par un résumé de l'état actuel.
 | Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
 | Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
 | Tirs et buts détectés (6 clips) | règles : **5 tirs sur 10**, 1 fausse alerte ; **buts 2 sur 2**, aucun faux (confirmés par l'engagement) | `EVENT_ACCURACY.md` |
-| Tirs, 36 clips sur deux stades | règles : 24 sur 44, précision 56 % ; **classifieur appris + verdict des règles : 30 sur 44, précision 77 %**, testé sur le stade qu'il n'a jamais vu | `EVENT_ACCURACY.md` |
+| Tirs, 36 clips sur deux stades | règles : 24 sur 44, précision 53 % ; **classifieur appris + verdict des règles : 28 sur 44, précision 72 %**, testé sur le stade qu'il n'a jamais vu (`--shot-model`) | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
 | Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |
@@ -146,9 +146,9 @@ Elles trouvent 5 tirs sur 10 et les 2 buts sur les six premiers clips, mais
 24 sur 44 sur 36 clips. Un classifieur appris (`src/shot_features.py`,
 `train_shot_classifier.py`) garde les mesures qu'elles seuillent -- vitesse,
 direction, trajectoire, croisement de la ligne, joueurs autour -- et
-apprend où couper ; avec le verdict des règles en entrée, il trouve 30
+apprend où couper ; avec le verdict des règles en entrée, il trouve 28
 tirs sur 44 avec 39 détections, entraîné sur un stade et testé sur
-l'autre. Les fausses alertes restantes, vérifiées sur les images, sont
+l'autre. `score_hand_labels.py --shot-model` l'utilise. Les fausses alertes restantes, vérifiées sur les images, sont
 surtout des centres, des passes et des mêlées dans la surface. Un tir dont
 la cage n'est jamais à l'image ne peut pas être trouvé : rien n'y est
 placé.
