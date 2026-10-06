@@ -156,3 +156,24 @@ a median 4 frames of the click against 18. Carries and balls won are
 still over-produced -- 12 carries and 11 tackles or recoveries detected
 for 5 and 6 labelled -- most likely possessions held at a player's feet
 without moving, and duels read as tackles.
+
+### Fewer carries and balls won: a modest trade
+
+Tuned on the first round of clicks only, keeping the stretch labels as a
+held-out test: a carry now moves the player at least a body height in the
+camera-compensated picture; a tackle needs the winner to keep the ball 8
+frames, a recovery 4. On the clicks: false carries 5 -> 3 of 29 rejected
+moments, tackles 5.7 -> 2.9 a minute, with one real carry lost.
+
+On the held-out stretches, once:
+
+| | labelled | before: found / detected | after: found / detected |
+|---|---|---|---|
+| carries | 5 | 4 / 12 | 3 / 8 |
+| balls won | 6 | 3 / 11 | 2 / 7 |
+| passes | 21 | 16 / 20 | 16 / 20 |
+
+A third fewer false carries and balls won, one real one of each lost, so
+precision barely moves (carries 33% -> 38%, balls won 27% -> 29%). With
+5 and 6 labelled these are within noise. What the remaining false ones
+are needs looking at on the footage before another rule is added.

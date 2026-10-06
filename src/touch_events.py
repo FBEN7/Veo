@@ -63,7 +63,18 @@ MIN_TOUCH_FRAMES = 2
 # reception for a pass -- else it is two players at the same ball.
 MIN_PASS_TRAVEL = 1.0
 # The winner of a duel keeps the ball this many frames.
-TACKLE_HOLD = 4
+# Tuned on the first round of clicks: at 4 frames, 5.7 tackles a minute
+# came out, most of them duels; at 8, 2.9, with no real recovery lost.
+TACKLE_HOLD = 8
+# A ball won after it travelled counts when the winner keeps it this many
+# frames: an opponent the ball merely brushes has not won it.
+RECOVERY_HOLD = 4
+# A carry moves the player at least this many body heights in the
+# camera-compensated picture -- the pitch positions understate movement
+# (most clicked carries moved 0.3-2 m by them), the picture does not.
+# One body height: on the first round of clicks, false carries 5 -> 3 of
+# 29 rejected moments, 9 -> 7 of 17 real ones found, 6.9 -> 4.6 a minute.
+CARRY_MIN_BODY = 1.0
 UNSURE = {"other", "unknown", None}
 
 
@@ -129,7 +140,7 @@ def _merge_returns(poss: list[dict], fps: float) -> list[dict]:
 
 
 def actions(poss: list[dict], fps: float, where, name,
-            ball_at=None) -> list[Action]:
+            ball_at=None, body_at=None) -> list[Action]:
     """SPADL actions from consecutive possessions. `where(track, frame)`
     gives pitch metres or None; `name(track)` the player's label;
     `ball_at(frame)` the ball in the picture with the player's height, for
@@ -150,7 +161,15 @@ def actions(poss: list[dict], fps: float, where, name,
         a, b = where(p["track_id"], p["first"]), where(p["track_id"], p["last"])
         moved = (np.hypot(b[0] - a[0], b[1] - a[1])
                  if a is not None and b is not None else 0.0)
-        if span >= CARRY_MIN_S and moved >= CARRY_MIN_M:
+        moved_body = None
+        if body_at is not None:
+            u, v = body_at(p["track_id"], p["first"]), body_at(p["track_id"],
+                                                               p["last"])
+            if u is not None and v is not None:
+                moved_body = (np.hypot(v[0] - u[0], v[1] - u[1])
+                              / max((u[2] + v[2]) / 2, 1.0))
+        if (span >= CARRY_MIN_S and moved >= CARRY_MIN_M
+                and (moved_body is None or moved_body >= CARRY_MIN_BODY)):
             out.append(Action("carry", p["first"], p["last"], p["team"],
                               name(p["track_id"]), None,
                               *(a or (None, None)), *(b or (None, None)),
@@ -190,6 +209,8 @@ def actions(poss: list[dict], fps: float, where, name,
                               name(p["track_id"]), None,
                               *(start or (None, None)), *(end or (None, None)),
                               "fail", fps))
+            if q["frames"] < RECOVERY_HOLD:
+                continue                   # brushed, not won
             out.append(Action("recovery", q["first"], q["first"], q["team"],
                               name(q["track_id"]), None,
                               *(end or (None, None)), *(end or (None, None)),
@@ -233,5 +254,11 @@ def for_clip(out_dir: Path) -> list[Action]:
     bxy = {int(r.frame): (float(r.px), float(r.py)) for r in ball.itertuples()}
     ball_at = lambda f: ((*bxy[f], float(size.get(f, 80.0)))
                          if f in bxy else None)
+    body = {(int(r.track_id), int(r.frame)): (float(r.px_comp), float(r.py_comp),
+                                               float(r.crop_h))
+            for r in players.assign(px_comp=merged.loc[players.index, "px"],
+                                    py_comp=merged.loc[players.index, "py"])
+            .itertuples()}
+    body_at = lambda tid, f: body.get((int(tid), int(f)))
     poss = _merge_returns(possessions(held, person), fps)
-    return actions(poss, fps, where, name, ball_at)
+    return actions(poss, fps, where, name, ball_at, body_at)
