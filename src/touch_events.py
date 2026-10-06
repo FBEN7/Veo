@@ -51,6 +51,7 @@ from .event_schema import Action
 # one. The referee needs fixing in team assignment.
 EXCLUDE_OTHER = False
 CLOSE_UP = 0.0
+EXCLUDE_REFEREES = True
 CONTACT = 0.6            # ball within this many body heights of the feet
 CONTROL = 0.9            # ... and kept by its player while within this
 HOLD_GAP = 3             # frames a possession survives unseen
@@ -237,6 +238,13 @@ def for_clip(out_dir: Path) -> list[Action]:
     players["px"] = players.get("px_raw", players.px)
     players["py"] = players.get("py_raw", players.py)
     ball = detect_shots.ball_track(out_dir, ball_detector="fill")
+    roles_file = out_dir / "roles.json"
+    if EXCLUDE_REFEREES and roles_file.exists():
+        # Referees never play the ball (`classify_roles.py`).
+        roles = json.loads(roles_file.read_text())
+        referees = {int(t) for t, r in roles.items()
+                    if r["role"] == "referee"}
+        players = players[~players.track_id.isin(referees)]
     if EXCLUDE_OTHER:
         # Referees, and people the team assignment would not place: on the
         # first round of clicks two of five false "tackles" went to the
