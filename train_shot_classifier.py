@@ -41,6 +41,7 @@ import pandas as pd
 
 from score_hand_labels import TOLERANCE_S, match
 from src.goal_plane import MERGE_S
+from src.shot_classifier import events as shot_events, rule_inputs
 
 # Candidates this close to a labelled attempt are positives. At a second,
 # the pass or dribble just before the strike was a positive too, and the
@@ -50,11 +51,10 @@ from src.goal_plane import MERGE_S
 POSITIVE_S = 0.5
 # A labelled attempt with no candidate within this long was never placed.
 COVER_S = 1.0
-# Detected events are at least this far apart. At two seconds the build-up
-# before a shot and the clearance after it came out as events of their own;
-# at four, on 32 clips held out by match, precision at threshold 0.5 went
-# from 34% to 43% for one shot lost.
-EVENT_GAP_S = 4.0
+# Detected events are at least `EVENT_GAP_S` apart (src/shot_classifier.py).
+# At two seconds the build-up before a shot and the clearance after it came
+# out as events of their own; at four, on 32 clips held out by match,
+# precision at threshold 0.5 went from 34% to 43% for one shot lost.
 THRESHOLDS = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
 NOT_FEATURES = {"clip", "match", "frame", "time_s", "label"}
 
@@ -67,8 +67,6 @@ RULES = {}
 # new to the rules as well as to the model.
 TUNED_ON = {"stoke_1302", "stoke_4207", "stoke_7001", "reading_0737",
             "reading_1155", "reading_2519"}
-RULE_KIND = {"attempt": 1.0, "off target": 2.0, "on target": 3.0,
-             "goal": 4.0}
 
 
 def load(paths):
@@ -102,19 +100,11 @@ def add_rule_inputs(data):
     """The rules' verdict as inputs: how far, in seconds, the candidate is
     from the nearest shot the rules found (NaN if they found none in the
     clip), and what they called that shot if it is within `MERGE_S`."""
-    dt, kind = [], []
-    for clip, t in zip(data["clip"], data["time_s"]):
-        shots = RULES.get(clip, [])
-        if not shots:
-            dt.append(np.nan)
-            kind.append(0.0)
-            continue
-        when, outcome = min(shots, key=lambda s: abs(t - s[0]))
-        dt.append(float(t - when))
-        kind.append(RULE_KIND.get(outcome, 0.0)
-                    if abs(t - when) <= MERGE_S else 0.0)
-    data["rule_dt"] = dt
-    data["rule_kind"] = kind
+    data["rule_dt"], data["rule_kind"] = np.nan, 0.0
+    for clip, rows in data.groupby("clip"):
+        dt, kind = rule_inputs(rows.time_s.tolist(), RULES.get(clip, []))
+        data.loc[rows.index, "rule_dt"] = dt
+        data.loc[rows.index, "rule_kind"] = kind
     return data
 
 
@@ -147,15 +137,7 @@ def model():
 
 def events(table, probs, threshold):
     """Peaks of the model's output, at least `EVENT_GAP_S` apart."""
-    order = np.argsort(-probs)
-    kept = []
-    times = table.time_s.to_numpy()
-    for i in order:
-        if probs[i] < threshold:
-            break
-        if all(abs(times[i] - times[j]) >= EVENT_GAP_S for j in kept):
-            kept.append(i)
-    return sorted(kept, key=lambda i: times[i])
+    return shot_events(table.time_s.to_numpy(), probs, threshold)
 
 
 def held_out(data, truth, fold_of, name, verbose):
@@ -219,6 +201,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("features", nargs="+")
     ap.add_argument("--save", help="fit on everything and save the model")
+    ap.add_argument("--save-held-out",
+                    help="a directory: save one model per ground, each "
+                         "trained without it (without_<ground>.joblib)")
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--with-rules", action="store_true",
                     help="give the model the hand-set rules' verdict as an "
@@ -283,6 +268,24 @@ def main():
             line.append(f"{thr}: {matched}/{labelled} found, {found} "
                         f"detections ({matched / max(found, 1):.0%})")
         print(f"    {name:8s} " + " | ".join(line))
+
+    if args.save_held_out:
+        # One model per ground, each trained without it, as the ball and
+        # goal detectors are: `score_hand_labels.py --shot-model <dir>`
+        # picks the one that never saw the clip's match.
+        import joblib
+
+        out = Path(args.save_held_out)
+        out.mkdir(parents=True, exist_ok=True)
+        ground = data["clip"].str.split("_").str[0]
+        for key in sorted(ground.unique()):
+            train = data[ground != key]
+            use = [c for c in features(data) if train[c].notna().any()]
+            m = model().fit(train[use], train.label)
+            joblib.dump({"model": m, "features": use},
+                        out / f"without_{key}.joblib")
+            print(f"  saved {out / f'without_{key}.joblib'} "
+                  f"({len(train)} candidates)")
 
     if args.save:
         import joblib

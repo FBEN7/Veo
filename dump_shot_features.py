@@ -113,6 +113,9 @@ def main():
     ap.add_argument("--goal-conf", type=float)
     ap.add_argument("--ball-detectors", required=True)
     ap.add_argument("--camera-store")
+    ap.add_argument("--freeze-camera-store", action="store_true",
+                    help="never add to the camera store (see "
+                         "score_hand_labels.py)")
     ap.add_argument("--midfield", action="store_true")
     args = ap.parse_args()
     args.old_camera = False

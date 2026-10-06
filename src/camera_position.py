@@ -208,6 +208,12 @@ def locate(circles, ray, start, focal_seed: float, cx: float, cy: float,
 # sit 0.2-0.3 m from it; a borrowed height from the wrong gantry, or a
 # corner line from a different camera, lands tens of metres off.
 MAX_BORROW_OFF_HALFWAY_M = 5.0
+# Beyond that, and up to this, the borrowed height is still used, marked as
+# loose: the alternative, the corners' own position, sat 8-15 m below every
+# located camera, and the two clips that landed 5.3 and 6.0 m off (stoke_7335,
+# stoke_9143) fell back to cameras 11 m up. A wrong gantry is tens of metres
+# off and is still refused.
+MAX_BORROW_LOOSE_M = 15.0
 
 
 def borrow_height(ray, heights):
@@ -233,10 +239,11 @@ def borrow_height(ray, heights):
     point = origin + (height - origin[1]) / direction[1] * direction
     off = float(abs(point[2] - CENTRE[2]))
     report["off_halfway_m"] = off
-    if off > MAX_BORROW_OFF_HALFWAY_M:
+    if off > MAX_BORROW_LOOSE_M:
         report["refused"] = (f"lands {off:.1f} m from the halfway line, "
-                             f"{MAX_BORROW_OFF_HALFWAY_M:.0f} m allowed")
+                             f"{MAX_BORROW_LOOSE_M:.0f} m allowed")
         return None, report
+    report["loose"] = off > MAX_BORROW_OFF_HALFWAY_M
     return point, report
 
 

@@ -270,7 +270,9 @@ def goal_maps(out_dir, info, ball, args):
                           f"{why['refused']}")
                 else:
                     print(f"  [camera] circle refused ({report.get('refused')})"
-                          f"; placed at {why['height_m']:.1f} m, the height "
+                          + ("; LOOSE, past the halfway check"
+                             if why.get("loose") else "")
+                          + f"; placed at {why['height_m']:.1f} m, the height "
                           f"of {why['from']} located clips of this match: "
                           f"({borrowed[0]:.1f}, {borrowed[1]:.1f}, "
                           f"{borrowed[2]:.1f}), {why['off_halfway_m']:.1f} m "
@@ -288,7 +290,8 @@ def goal_maps(out_dir, info, ball, args):
                 seed = float(np.median([p.focal_px
                                         for p in located.values()]))
         else:
-            if store and match:
+            if store and match and not getattr(args, "freeze_camera_store",
+                                                  False):
                 known = (json.loads(Path(store).read_text())
                          if Path(store).exists() else {})
                 known[clip] = {"camera": [round(float(v), 2) for v in found],
@@ -382,6 +385,15 @@ def main():
                     help="directory of train_ball_detector.py runs: each clip "
                          "is searched for the ball by the detector trained "
                          "without its match (<dir>/without_<match>)")
+    ap.add_argument("--shot-model",
+                    help="a model from train_shot_classifier.py "
+                         "--with-rules --save, or a --save-held-out "
+                         "directory (the model without the clip's ground "
+                         "is used): shots come from it, with the rules' "
+                         "reading kept where both found one")
+    ap.add_argument("--shot-threshold", type=float, default=None,
+                    help="the classifier's cut-off (default "
+                         "src/shot_classifier.THRESHOLD)")
     ap.add_argument("--dump-features",
                     help="write the readings around every candidate strike "
                          "(src/shot_features.py), with the labels, to this "
@@ -400,6 +412,10 @@ def main():
                     help="hold the camera where the goal corners alone put "
                          "it, instead of locating it with the centre circle "
                          "(for comparison)")
+    ap.add_argument("--freeze-camera-store", action="store_true",
+                    help="read the camera store but never add to it, so a "
+                         "clip's borrowed height does not depend on which "
+                         "clips were processed before it")
     ap.add_argument("--camera-store",
                     help="JSON shared across runs: each located camera is "
                          "recorded with its match, and a clip the centre "
@@ -414,6 +430,10 @@ def main():
                          "clip's camera position once so every frame's pose "
                          "can come from a detected box")
     args = ap.parse_args()
+    if args.shot_model and args.shot_threshold is None:
+        from src.shot_classifier import THRESHOLD
+
+        args.shot_threshold = THRESHOLD
 
     path = Path(args.labels)
     if not path.exists():
@@ -487,12 +507,37 @@ def main():
         shots = goal_plane.find_shots(ball, maps, info["fps"], trace=trace)
         if trace is not None:
             Path(args.shot_trace).write_text(json.dumps(trace, indent=1))
-        if args.dump_features:
+        table = None
+        if args.dump_features or args.shot_model:
             from src.shot_features import candidates
 
             tracks = pd.read_parquet(out_dir / "tracks.parquet")
             table = candidates(ball, maps, info["fps"],
                                players=tracks[tracks.cls == "player"])
+        if args.shot_model:
+            # The learned classifier, with the rules' verdict as an input;
+            # where both found a shot the rules' reading of it is kept.
+            import joblib
+
+            from src import shot_classifier
+
+            model_path = Path(args.shot_model)
+            if model_path.is_dir():
+                # The model trained without this clip's ground.
+                model_path = model_path / (
+                    f"without_{out_dir.name.replace('output_', '').split('_')[0]}"
+                    ".joblib")
+            found = shot_classifier.predict(
+                joblib.load(model_path), table,
+                [(s["time_s"], s["outcome"]) for s in shots],
+                threshold=args.shot_threshold)
+            rules = shots
+            shots = shot_classifier.with_rules(found, rules)
+            print(f"  [shots] classifier: {len(found)} above "
+                  f"{args.shot_threshold}; the rules alone found "
+                  f"{len(rules)}; reported {len(shots)}")
+        if args.dump_features:
+            table = table.copy()
             table.insert(0, "clip", out_dir.name.replace("output_", ""))
             table["match"] = match_name(path) or ""
             table.attrs["truth"] = json.dumps(
