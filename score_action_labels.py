@@ -15,7 +15,7 @@ be measured on the same footing:
 
 Tackles and recoveries are one kind here -- a ball won either way.
 
-    python score_action_labels.py action_labels.json
+    python score_action_labels.py action_labels.json [action-label-v2.json]
 """
 
 from __future__ import annotations
@@ -56,9 +56,11 @@ def names(merged, info, ident, click):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("labels")
+    ap.add_argument("labels", nargs="+",
+                    help="one or more label files (rounds are combined)")
     args = ap.parse_args()
-    blob = json.loads(Path(args.labels).read_text())
+    blob = {"clips": [c for f in args.labels
+                      for c in json.loads(Path(f).read_text())["clips"]]}
     detectors = {"touch-based (new)": {}, "nearest player (old)": {}}
     totals = {d: defaultdict(lambda: defaultdict(list)) for d in detectors}
     for c in blob["clips"]:

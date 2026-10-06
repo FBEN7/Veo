@@ -198,9 +198,11 @@ it finds 20 of 20 referees and calls no outfield player a referee (5 of 11
 goalkeepers are called referees); through our own tracks, 95% of referee
 detections are called referee and 0.7% of players' detections.
 
-On the six 720p broadcast windows it does not transfer: of the 66 clicked
-outfield players it calls 2 referees and 23 goalkeepers, and on the
-Reading windows about 45% of player detections "goalkeeper". Keeping
+On the six 720p broadcast windows it does not transfer: of the 66
+clicked players it calls 2 referees and 23 goalkeepers -- some of the
+clicks are goalkeepers' passes, so not all 23 are wrong, but there are
+only two keepers a match -- and on the Reading windows about 45% of
+player detections "goalkeeper". Keeping
 "referees" off the ball (`touch_events.EXCLUDE_REFEREES`) removed one false
 recovery on the clicks and lost 2 real passes there and 1 on the held-out
 stretches, so it is off. The gap is the footage -- lower resolution and

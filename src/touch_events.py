@@ -53,7 +53,8 @@ CLOSE_UP = 0.0
 # matches it never saw, but on these 720p windows it calls 2 of 66 clicked
 # outfield players referees (and 23 goalkeepers), and keeping "referees"
 # off the ball lost 2 real passes on the clicks and 1 on the held-out
-# stretches for one false recovery removed.
+# stretches for one false recovery removed. (Some clicked players are
+# goalkeepers, so not all of the 23 are wrong.)
 EXCLUDE_REFEREES = False
 CONTACT = 0.6            # ball within this many body heights of the feet
 CONTROL = 0.9            # ... and kept by its player while within this

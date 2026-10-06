@@ -39,8 +39,9 @@ WIDTH = 896
 QUALITY = 50
 
 
-def stretch(out_dir: Path, fps: float):
-    """First and last frame of the best-tracked live stretch."""
+def stretch(out_dir: Path, fps: float, taken=()):
+    """First and last frame of the best-tracked live stretch, not
+    overlapping the (first, last) ranges in `taken`."""
     import detect_shots
 
     ball = detect_shots.ball_track(out_dir, ball_detector="fill")
@@ -50,15 +51,17 @@ def stretch(out_dir: Path, fps: float):
     if len(seen) <= n:
         return 0, len(seen) - 1
     counts = np.convolve(seen, np.ones(n), mode="valid")
+    for first, last in taken:
+        counts[max(first - n + 1, 0):last + 1] = -1
     start = int(np.argmax(counts))
     return start, start + n - 1
 
 
-def frames(out_dir: Path):
+def frames(out_dir: Path, taken=()):
     from src.video_frames import frames as read_frames
 
     info = json.loads((out_dir / "clip.json").read_text())
-    first, last = stretch(out_dir, float(info["fps"]))
+    first, last = stretch(out_dir, float(info["fps"]), taken)
     out = []
     for index, image in read_frames(info["path"], range(first, last + 1, STEP)):
         h, w = image.shape[:2]
@@ -133,6 +136,7 @@ PAGE = """<!DOCTYPE html>
    <tr><td>click</td><td>the player who does it (feet); for a pass, at its end, the receiver</td></tr>
    <tr><td><kbd>Enter</kbd></td><td>end the action on this frame</td></tr>
    <tr><td><kbd>F</kbd></td><td>mark it failed (pass not received by a team-mate, shot off target...)</td></tr>
+   <tr><td><kbd>K</kbd></td><td>the player who did it is the goalkeeper</td></tr>
    <tr><td><kbd>Esc</kbd></td><td>cancel the action being made</td></tr>
   </table>
   <p>A pass starts on the frame the ball leaves the foot and ends on the
@@ -145,7 +149,7 @@ PAGE = """<!DOCTYPE html>
 </div>
 <script>
 const CLIPS = __DATA__;
-const KEY = "action-label-v1";
+const KEY = "__KEY__";
 const NAMES = {p:"pass", c:"carry", s:"shot", t:"tackle", r:"recovery",
                x:"clearance", g:"goal"};
 const ONE_FRAME = new Set(["tackle","recovery","goal"]);
@@ -189,6 +193,7 @@ function status(){
     "receiver" + (draft.to ? " (done)" : "") + ", then <kbd>Enter</kbd>.";
   else s += "Step to where it ends and press <kbd>Enter</kbd>.";
   if (draft.result === "fail") s += " Marked <b>failed</b>.";
+  if (draft.keeper) s += " By the <b>goalkeeper</b>.";
   $("status").innerHTML = s;
 }
 function list(){
@@ -196,7 +201,8 @@ function list(){
   acts().slice().sort((a,b) => a.start - b.start).forEach(a => {
     const d = document.createElement("div"); d.className = "act";
     d.innerHTML = "<span>" + a.type + " " + a.start + "&rarr;" + a.end +
-      (a.result === "fail" ? " (failed)" : "") + "</span><span class='x'>delete</span>";
+      (a.result === "fail" ? " (failed)" : "") + (a.keeper ? " (keeper)" : "") +
+      "</span><span class='x'>delete</span>";
     d.onclick = e => {
       if (e.target.className === "x"){ acts().splice(acts().indexOf(a),1);
         store(); show(); return; }
@@ -225,7 +231,7 @@ function finish(){
   if (end < draft.start) return;
   acts().push({type: draft.type, start: draft.start, end: end,
                from: draft.from, to: draft.to || null,
-               result: draft.result || "success"});
+               result: draft.result || "success", keeper: !!draft.keeper});
   draft = null; store(); show();
 }
 document.addEventListener("keydown", e => {
@@ -235,6 +241,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft"){ e.preventDefault(); go(e.shiftKey ? -5 : -1); return; }
   if (e.key === "Enter"){ finish(); return; }
   if (e.key === "Escape"){ draft = null; show(); return; }
+  if (k === "k" && draft){ draft.keeper = !draft.keeper; status(); return; }
   if (k === "f" && draft){ draft.result = draft.result === "fail" ? "success" : "fail"; status(); return; }
   if (NAMES[k]){ draft = {type: NAMES[k], start: clip().frames[at].f}; show(); }
 });
@@ -245,7 +252,7 @@ $("save").onclick = () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)],
                                         {type: "application/json"}));
-  a.download = "action_labels.json"; a.click();
+  a.download = KEY + ".json"; a.click();
 };
 show();
 </script></body></html>
@@ -255,11 +262,21 @@ show();
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="action_labeller.html")
+    ap.add_argument("--exclude", nargs="*", default=[],
+                    help="label files from earlier rounds: their stretches "
+                         "are not shown again")
+    ap.add_argument("--key", default="action-label-v1",
+                    help="where the page keeps its work in the browser; a "
+                         "new round needs a new key")
     args = ap.parse_args()
-    data = [frames(Path(f"output_{c}")) for c in CLIPS
+    taken = {}
+    for f in args.exclude:
+        for c in json.loads(Path(f).read_text())["clips"]:
+            taken.setdefault(c["clip"], []).append((c["first"], c["last"]))
+    data = [frames(Path(f"output_{c}"), taken.get(c, ())) for c in CLIPS
             if (Path(f"output_{c}") / "clip.json").exists()]
-    html = PAGE.replace("__DATA__", json.dumps(data)).replace(
-        "__STEP__", str(STEP))
+    html = (PAGE.replace("__DATA__", json.dumps(data))
+            .replace("__STEP__", str(STEP)).replace("__KEY__", args.key))
     Path(args.out).write_text(html)
     for d in data:
         print(f"  {d['clip']}: frames {d['frames'][0]['f']}-"
