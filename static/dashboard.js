@@ -318,7 +318,7 @@ createApp({
         },
         async saveClubName() {
             const previousName = this.clubName;
-            await this.writeClubhouse('/api/clubhouse/club', { club_name: this.clubNameDraft }, 'PUT', 'Club name updated.');
+            await this.writeClubhouse('/api/clubhouse/club', { club_name: this.clubNameDraft }, 'PUT', 'Club name updated.', true);
             if (this.clubName === this.clubNameDraft.trim() && previousName !== this.clubName) {
                 if (!this.resultDraft.reported_by || this.resultDraft.reported_by === previousName) this.resultDraft.reported_by = this.clubName;
             }
@@ -345,8 +345,8 @@ createApp({
             if (!this.clubhouseMessage.startsWith('Result saved')) return;
             this.resultDraft = { match_date: '', home_team: '', away_team: '', home_score: '', away_score: '', venue: '', reported_by: this.clubName };
         },
-        async writeClubhouse(url, payload, method, successMessage) {
-            if (!this.clubhouseKeyVerified) {
+        async writeClubhouse(url, payload, method, successMessage, allowWithoutKey = false) {
+            if (!this.clubhouseKeyVerified && !(allowWithoutKey && !this.clubhouse.uploads_enabled)) {
                 this.clubhouseMessage = 'Verify the shared clubhouse key in Club setup first.';
                 return;
             }

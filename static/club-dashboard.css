@@ -1206,3 +1206,13 @@ body, .reference-mode { background: var(--paper); color: var(--ink); }
     .result-row strong { grid-row: 2; grid-column: 2; }
     .result-row span:last-of-type { grid-row: 2; grid-column: 3; }
 }
+
+.sidebar .nav-link:hover { background: #edf5fa; color: #174d78; }
+.sidebar .nav-link:hover svg { color: #286b9f; }
+.sidebar .main-nav > .nav-link:not(.active):hover,
+.sidebar .main-nav > .nav-link:not(.active):focus-visible { background: #edf5fa !important; color: #174d78 !important; }
+.sidebar .main-nav > .nav-link:not(.active):hover svg,
+.sidebar .main-nav > .nav-link:not(.active):focus-visible svg { color: #286b9f !important; }
+.sidebar .nav-link.active:hover { background: #dcebf5; color: #174d78; }
+.sidebar .nav-link.active:hover svg { color: #286b9f; }
+.demo-league-notice { border-left-color: #a97832; background: #fbf3e4; color: #75531f; }

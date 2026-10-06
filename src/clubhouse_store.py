@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Iterator
+
+from src.demo_season import FIXTURES as DEMO_FIXTURES
 
 
 _SCHEMA = """
@@ -66,6 +68,61 @@ def init_clubhouse_store(database_path: str | Path) -> None:
         connection.execute(
             "INSERT OR IGNORE INTO club_settings (setting_key, setting_value) VALUES ('club_name', 'Riverside Athletic')"
         )
+        seeded = connection.execute(
+            "SELECT setting_value FROM club_settings WHERE setting_key='demo_league_seeded'"
+        ).fetchone()
+        result_count = connection.execute("SELECT COUNT(*) FROM league_results").fetchone()[0]
+        if not seeded and result_count == 0:
+            club_setting = connection.execute(
+                "SELECT setting_value FROM club_settings WHERE setting_key='club_name'"
+            ).fetchone()
+            club_name = club_setting["setting_value"]
+            opponents = list(dict.fromkeys(fixture["opponent"] for fixture in DEMO_FIXTURES))
+            rotation: list[str | None] = [*opponents, None]
+            round_opponent_results: list[tuple[str, str, int, int, str]] = []
+            for round_index in range(9):
+                match_date = (
+                    DEMO_FIXTURES[round_index]["date"]
+                    if round_index < len(DEMO_FIXTURES)
+                    else (date.fromisoformat(DEMO_FIXTURES[-1]["date"]) + timedelta(days=7)).isoformat()
+                )
+                for pair_index in range(4):
+                    home = rotation[pair_index]
+                    away = rotation[-(pair_index + 1)]
+                    if home is None or away is None:
+                        continue
+                    home_score = (round_index * 3 + pair_index * 2 + 1) % 4
+                    away_score = (round_index + pair_index * 2) % 3
+                    round_opponent_results.append((home, away, home_score, away_score, match_date))
+
+                rotation = [rotation[0], rotation[-1], *rotation[1:-1]]
+
+            for fixture in DEMO_FIXTURES:
+                connection.execute(
+                    """INSERT OR IGNORE INTO league_results
+                       (match_date, home_team, away_team, home_score, away_score,
+                        venue, reported_by, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        fixture["date"], club_name, fixture["opponent"],
+                        fixture["score"][0], fixture["score"][1], "Demo ground",
+                        "Demo data", datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+            for home, away, home_score, away_score, match_date in round_opponent_results:
+                connection.execute(
+                    """INSERT OR IGNORE INTO league_results
+                       (match_date, home_team, away_team, home_score, away_score,
+                        venue, reported_by, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        match_date, home, away, home_score, away_score, "Demo ground",
+                        "Demo data", datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+            connection.execute(
+                "INSERT INTO club_settings (setting_key, setting_value) VALUES ('demo_league_seeded', 'yes')"
+            )
 
 
 def get_clubhouse_data(database_path: str | Path) -> dict:
@@ -135,6 +192,7 @@ def get_clubhouse_data(database_path: str | Path) -> dict:
         "fixtures": [dict(fixture) for fixture in fixtures],
         "results": [dict(result) for result in results],
         "table": table,
+        "demo_data": settings.get("demo_league_seeded") == "yes",
     }
 
 
@@ -180,6 +238,14 @@ def add_fixture(database_path: str | Path, fixture: dict[str, str]) -> int:
 def save_league_result(database_path: str | Path, result: dict[str, str | int]) -> None:
     init_clubhouse_store(database_path)
     with _connection(database_path) as connection:
+        demo_seeded = connection.execute(
+            "SELECT setting_value FROM club_settings WHERE setting_key='demo_league_seeded'"
+        ).fetchone()
+        if demo_seeded and demo_seeded["setting_value"] == "yes" and result["reported_by"] != "Demo data":
+            connection.execute("DELETE FROM league_results WHERE reported_by='Demo data'")
+            connection.execute(
+                "UPDATE club_settings SET setting_value='replaced' WHERE setting_key='demo_league_seeded'"
+            )
         connection.execute(
             """INSERT INTO league_results
                (match_date, home_team, away_team, home_score, away_score, venue, reported_by, updated_at)

@@ -116,7 +116,7 @@ def get_clubhouse():
 @app.route('/api/clubhouse/verify', methods=['POST'])
 def verify_clubhouse_key():
     if not app.config.get('CLUBHOUSE_ADMIN_KEY', ''):
-        return jsonify({'error': 'Set CLUBHOUSE_ADMIN_KEY on the server to enable club edits and result uploads'}), 503
+        return jsonify({'error': 'Set CLUBHOUSE_ADMIN_KEY on the server to enable protected fixture and result entry'}), 503
     if not _clubhouse_write_allowed():
         return jsonify({'error': 'That clubhouse key is not valid'}), 403
     return jsonify({'verified': True})
@@ -124,7 +124,7 @@ def verify_clubhouse_key():
 
 @app.route('/api/clubhouse/club', methods=['PUT'])
 def update_club_name():
-    if not _clubhouse_write_allowed():
+    if app.config.get('CLUBHOUSE_ADMIN_KEY', '') and not _clubhouse_write_allowed():
         return jsonify({'error': 'Clubhouse write key is missing or invalid'}), 403
     payload = request.get_json(silent=True)
     club_name = str(payload.get('club_name', '')).strip() if isinstance(payload, dict) else ''
