@@ -26,7 +26,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
+from src.track_split import player_tracks
 
 from score_player_labels import clicked_track
 from src.event_schema import from_pipeline
@@ -68,7 +68,7 @@ def main():
         out = Path(f"output_{clip}")
         info = json.loads((out / "clip.json").read_text())
         fps = float(info["fps"])
-        merged = pd.read_parquet(out / "tracks_merged.parquet")
+        merged = player_tracks(out)
         idf = out / "identities.json"
         ident = ({int(k): v["identity"] for k, v in
                   json.loads(idf.read_text())["tracks"].items()}

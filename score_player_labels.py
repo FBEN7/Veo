@@ -27,7 +27,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
+from src.track_split import player_tracks
 
 # A click this far from a player's feet, as a share of the player's height,
 # still picks that player.
@@ -87,7 +87,7 @@ def main():
         if clip not in cache:
             info = json.loads((out_dir / "clip.json").read_text())
             cache[clip] = (info,
-                           pd.read_parquet(out_dir / "tracks_merged.parquet"),
+                           player_tracks(out_dir),
                            json.loads((out_dir / "events.json").read_text()),
                            json.loads((out_dir / "identities.json").read_text())
                            if (out_dir / "identities.json").exists() else None)

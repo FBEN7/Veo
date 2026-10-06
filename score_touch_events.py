@@ -25,7 +25,7 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
-import pandas as pd
+from src.track_split import player_tracks
 
 from score_player_labels import clicked_track
 from src.touch_events import for_clip
@@ -47,7 +47,7 @@ def main():
         out = Path(f"output_{c}")
         acts[c] = for_clip(out)
         info[c] = json.loads((out / "clip.json").read_text())
-        merged[c] = pd.read_parquet(out / "tracks_merged.parquet")
+        merged[c] = player_tracks(out)
         blob = out / "identities.json"
         ident[c] = ({int(k): v["identity"] for k, v in
                      json.loads(blob.read_text())["tracks"].items()}

@@ -42,11 +42,32 @@ def read_tracks(out_dir: Path, model, embedder=None) -> dict:
 
 def identify(out_dir: Path, model, embedder=None,
              look_threshold: float | None = None,
-             use_numbers: bool = False) -> dict:
+             use_numbers: bool = False, split: bool = False) -> dict:
     import copy
 
-    tracks = copy.deepcopy(read_tracks(out_dir, model, embedder))
-    idents = pid.identities(tracks, look_threshold, use_numbers)
+    if split:
+        # Cut tracks where they jump to another person, then rejoin the
+        # pieces by look (src/track_split.py).
+        from src import track_split as ts
+
+        info = json.loads((out_dir / "clip.json").read_text())
+        merged = pd.read_parquet(out_dir / "tracks_merged.parquet")
+        cache = out_dir / "split_looks.pkl"
+        if cache.exists():
+            sampled = pickle.loads(cache.read_bytes())
+        else:
+            sampled = ts.looks(info["path"], merged, embedder)
+            cache.write_bytes(pickle.dumps(sampled))
+        df, look = ts.split(merged, sampled)
+        df.to_parquet(out_dir / "tracks_split.parquet")
+        tracks = pid.tracks_of(df, min_rows=1)
+        for tid, t in tracks.items():
+            t.look = look.get(tid)
+        idents = pid.identities(tracks, ts.JOIN if look_threshold is None
+                                else look_threshold)
+    else:
+        tracks = copy.deepcopy(read_tracks(out_dir, model, embedder))
+        idents = pid.identities(tracks, look_threshold, use_numbers)
     blob = {"tracks": {str(t.track_id): {
                 "identity": ident.key, "team": ident.team,
                 "number": ident.number, "share": round(ident.share, 3),
@@ -72,6 +93,10 @@ def main():
     ap.add_argument("--numbers", action="store_true",
                     help="join tracks by read shirt numbers too (off: not "
                          "yet measured to be right on broadcast footage)")
+    ap.add_argument("--split", action="store_true",
+                    help="cut tracks where they jump to another person, "
+                         "then rejoin by look (needs --reid); writes "
+                         "tracks_split.parquet")
     args = ap.parse_args()
     import torch
 
@@ -88,7 +113,7 @@ def main():
     for out_dir in map(Path, args.out_dirs):
         t0 = time.time()
         blob = identify(out_dir, model, embedder, args.look_threshold,
-                        args.numbers)
+                        args.numbers, args.split)
         idents = blob["identities"]
         named = [i for i in idents if i["number"] is not None]
         tracks_named = sum(len(i["tracks"]) for i in named)

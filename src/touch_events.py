@@ -258,8 +258,13 @@ def for_clip(out_dir: Path) -> list[Action]:
     out_dir = Path(out_dir)
     info = json.loads((out_dir / "clip.json").read_text())
     fps = float(info["fps"])
-    merged = pd.read_parquet(out_dir / "tracks_merged.parquet")
+    from .track_split import player_tracks
+
+    merged = player_tracks(out_dir)
     players = merged[merged.cls == "player"].copy()
+    orig = ({(int(r.track_id), int(r.frame)): int(r.orig_track_id)
+             for r in players.itertuples()}
+            if "orig_track_id" in players else {})
     players["px"] = players.get("px_raw", players.px)
     players["py"] = players.get("py_raw", players.py)
     ball = detect_shots.ball_track(out_dir, ball_detector="fill")
@@ -299,7 +304,8 @@ def for_clip(out_dir: Path) -> list[Action]:
         m = m[m.cls == "player"]
         pos = {(int(r.track_id), int(r.frame)): (float(r.x), float(r.y))
                for r in m.itertuples()}
-    where = lambda tid, f: pos.get((int(tid), int(f)))
+    where = lambda tid, f: pos.get((orig.get((int(tid), int(f)), int(tid)),
+                                    int(f)))
 
     size = players.groupby("frame").crop_h.median()
     bxy = {int(r.frame): (float(r.px), float(r.py)) for r in ball.itertuples()}

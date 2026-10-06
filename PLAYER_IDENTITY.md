@@ -253,3 +253,29 @@ a reception, both measured worse on round 1 and are not used.
 Receivers improve on the test. Balls won are within noise on 3 labelled;
 over both rounds 4 of 9 are found with 19 detected, against 2 of 9 with
 15 -- still the weakest action.
+
+## Tracks that jump between players, cut and rejoined
+
+The tracker's tracks are 87% pure: when players cross, a track carries on
+with the wrong one, and no joining afterwards undoes it.
+`src/track_split.py` samples the appearance embedding every 5 frames along
+each track and cuts where the look of the 3 samples before a point and the
+3 after are less than 0.4 alike; the pieces are then rejoined by look at
+0.7 (`identify_players.py --split`, which writes `tracks_split.parquet`;
+the event detector and the scorers use it where it exists).
+
+Chosen on five game-state clips (`tune_track_split.py`), on the other five:
+
+| | identities (21-23 people) | purity | IDF1 |
+|---|---|---|---|
+| tracks as they are | 44.6 | 0.889 | 0.638 |
+| joined by look (before) | 40.2 | 0.878 | 0.656 |
+| **cut, then joined** | **36.2** | 0.863 | **0.683** |
+
+On the six labelled broadcast windows the 112-190 pieces become 33-54
+identities for about 25 people (58-81 before). The credit for each event
+does not change -- an event goes to the track at the ball on that frame,
+which splitting does not move -- and the three pairs of clicks with the
+same typed number are still two identities each; what improves is one
+person keeping one name across the clip, which is what per-player
+statistics add up.
