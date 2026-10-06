@@ -169,6 +169,18 @@ def main():
     for m, rows in data.groupby("match"):
         print(f"    {m}: {rows['clip'].nunique()} clips, "
               f"{sum(len(truth[c]) for c in rows['clip'].unique())} labelled")
+    # A labelled attempt with no candidate near it was never placed -- no
+    # goal in frame, so no camera pose -- and no classifier can find it.
+    unseen = []
+    for clip in clips:
+        times = data.loc[data["clip"] == clip, "time_s"].to_numpy()
+        for t in truth[clip]:
+            if not np.any(np.abs(times - t) <= POSITIVE_S):
+                unseen.append(f"{clip} {t:.0f}s")
+    total = sum(len(truth[c]) for c in clips)
+    print(f"  {total - len(unseen)} of {total} labelled attempts have a "
+          f"candidate within {POSITIVE_S:.0f} s; never placed: "
+          f"{', '.join(unseen) or 'none'}")
 
     if data["match"].nunique() > 1:
         held_out(data, truth, data["match"].tolist(),
