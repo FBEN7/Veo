@@ -99,7 +99,14 @@ def read(model, crops, batch: int = 64):
     return np.concatenate(vis), np.concatenate(logp)
 
 
-def vote(visible, logp, min_visible: float = 0.5):
+# Tuned on 142 held-out tracklets of the jersey set: a crop counts when the
+# reader is this sure a number is visible. With src/player_identity.py's
+# 60% share and 5 crops, 82 of 101 numbered tracklets read right, 4 wrong;
+# 27 of 41 that show no number are left unread.
+MIN_VISIBLE = 0.95
+
+
+def vote(visible, logp, min_visible: float = MIN_VISIBLE):
     """A player's number from all their crops: (number, share, crops used).
 
     Each crop judged to show a number casts its number distribution,

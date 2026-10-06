@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import pickle
 import time
 from pathlib import Path
 
@@ -22,12 +23,29 @@ from src import jersey_reader as jr
 from src import player_identity as pid
 
 
-def identify(out_dir: Path, model) -> dict:
+def read_tracks(out_dir: Path, model, embedder=None) -> dict:
+    """Each track's number votes and look, cached beside the tracks so the
+    joining can be re-run without reading the video again."""
+    cache = out_dir / "identity_tracks.pkl"
+    if cache.exists():
+        tracks = pickle.loads(cache.read_bytes())
+        if embedder is None or all(t.look is not None or not len(t.visible)
+                                   for t in tracks.values()):
+            return tracks
     info = json.loads((out_dir / "clip.json").read_text())
     merged = pd.read_parquet(out_dir / "tracks_merged.parquet")
     tracks = pid.tracks_of(merged)
-    pid.read_numbers(info["path"], merged, tracks, model)
-    idents = pid.identities(tracks)
+    pid.read_numbers(info["path"], merged, tracks, model, embedder=embedder)
+    cache.write_bytes(pickle.dumps(tracks))
+    return tracks
+
+
+def identify(out_dir: Path, model, embedder=None,
+             look_threshold: float | None = None) -> dict:
+    import copy
+
+    tracks = copy.deepcopy(read_tracks(out_dir, model, embedder))
+    idents = pid.identities(tracks, look_threshold)
     blob = {"tracks": {str(t.track_id): {
                 "identity": ident.key, "team": ident.team,
                 "number": ident.number, "share": round(ident.share, 3),
@@ -46,15 +64,26 @@ def main():
     ap.add_argument("out_dirs", nargs="+")
     ap.add_argument("--reader", required=True,
                     help="weights from train_jersey_reader.py")
+    ap.add_argument("--reid", help="weights from train_player_reid.py: join "
+                                   "tracks by appearance too")
+    ap.add_argument("--look-threshold", type=float, default=None,
+                    help="cosine similarity to join two identities by look")
     args = ap.parse_args()
     import torch
 
     model = jr.build()
     model.load_state_dict(torch.load(args.reader))
     model.eval()
+    embedder = None
+    if args.reid:
+        from train_player_reid import build
+
+        embedder = build()
+        embedder.load_state_dict(torch.load(args.reid))
+        embedder.eval()
     for out_dir in map(Path, args.out_dirs):
         t0 = time.time()
-        blob = identify(out_dir, model)
+        blob = identify(out_dir, model, embedder, args.look_threshold)
         idents = blob["identities"]
         named = [i for i in idents if i["number"] is not None]
         tracks_named = sum(len(i["tracks"]) for i in named)

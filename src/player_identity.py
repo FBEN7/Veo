@@ -15,8 +15,11 @@ of all its tracks' crops together, so a track never read clearly inherits
 the number of the identity it joined, and a number misread on one track is
 outvoted by the rest.
 
-What this cannot do yet: join a track with no number read to anyone. Those
-stay their own anonymous identity, with the team they were given.
+Tracks with no number read are joined by appearance (`join_by_look`): an
+embedding trained so that team-mates in the same kit come out apart
+(`train_player_reid.py`), averaged over a track's crops. Identities of the
+same team merge most-similar first, never two on screen together and
+never two with different numbers, down to a similarity threshold.
 """
 
 from __future__ import annotations
@@ -35,7 +38,7 @@ MIN_HEIGHT_PX = 40.0
 # A track's number counts as read when this share of its vote agrees and at
 # least this many crops showed a number.
 MIN_SHARE = 0.6
-MIN_CROPS = 2
+MIN_CROPS = 5
 # Tracks sharing more frames than this are two people.
 MAX_SHARED_FRAMES = 2
 # The player's box from the foot point: width as a share of height.
@@ -51,6 +54,7 @@ class Track:
     logp: np.ndarray = field(default_factory=lambda: np.zeros((0, 100)))
     number: int | None = None
     share: float = 0.0
+    look: np.ndarray | None = None
 
 
 @dataclass
@@ -93,9 +97,11 @@ def crop(frame, px, py, h):
 
 
 def read_numbers(video_path: str, merged: pd.DataFrame, tracks: dict,
-                 model, per_track: int = CROPS_PER_TRACK) -> None:
+                 model, per_track: int = CROPS_PER_TRACK,
+                 embedder=None) -> None:
     """Read each track's number from crops spread over its frames, in one
-    pass through the video. Fills `visible`, `logp`, `number`, `share`."""
+    pass through the video. Fills `visible`, `logp`, `number`, `share`,
+    and with `embedder` the track's mean appearance `look`."""
     from .video_frames import frames as read_frames
 
     players = merged[(merged.cls == "player")
@@ -122,20 +128,78 @@ def read_numbers(video_path: str, merged: pd.DataFrame, tracks: dict,
                 owners.append(tid)
     visible, logp = jr.read(model, crops)
     owners = np.array(owners)
+    looks = embed(embedder, crops) if embedder is not None else None
     for tid, track in tracks.items():
         mine = owners == tid
         track.visible, track.logp = visible[mine], logp[mine]
+        if looks is not None and mine.any():
+            v = looks[mine].mean(axis=0)
+            track.look = v / max(np.linalg.norm(v), 1e-9)
         number, share, used = jr.vote(track.visible, track.logp)
         if number is not None and share >= MIN_SHARE and used >= MIN_CROPS:
             track.number, track.share = number, share
+
+
+def embed(model, crops, batch: int = 64):
+    """Unit appearance vectors for crops (train_player_reid.build)."""
+    import torch
+
+    from train_player_reid import to_tensor
+
+    model.eval()
+    out = []
+    with torch.no_grad():
+        for i in range(0, len(crops), batch):
+            out.append(model(to_tensor(crops[i:i + batch])).numpy())
+    return np.concatenate(out) if out else np.zeros((0, 128))
+
+
+def _look(ident):
+    vs = [t.look * len(t.frames) for t in ident.tracks if t.look is not None]
+    if not vs:
+        return None
+    v = np.sum(vs, axis=0)
+    return v / max(np.linalg.norm(v), 1e-9)
+
+
+def join_by_look(idents, threshold: float):
+    """Merge identities of one team, most similar appearance first, never
+    two on screen together or with different numbers, while the cosine
+    similarity of their mean looks is at least `threshold`."""
+    idents = list(idents)
+    while True:
+        best, pair = threshold, None
+        looks = [_look(i) for i in idents]
+        frames = [i.frames for i in idents]
+        for a in range(len(idents)):
+            if looks[a] is None:
+                continue
+            for b in range(a + 1, len(idents)):
+                A, B = idents[a], idents[b]
+                if (looks[b] is None or A.team != B.team
+                        or (A.number is not None and B.number is not None
+                            and A.number != B.number)):
+                    continue
+                sim = float(looks[a] @ looks[b])
+                if sim > best and not _clash(frames[a], frames[b]):
+                    best, pair = sim, (a, b)
+        if pair is None:
+            return idents
+        a, b = pair
+        keep, gone = idents[a], idents[b]
+        keep.tracks += gone.tracks
+        if keep.number is None:
+            keep.number, keep.share = gone.number, gone.share
+        idents.pop(b)
 
 
 def _clash(a, b) -> bool:
     return len(np.intersect1d(a, b, assume_unique=True)) > MAX_SHARED_FRAMES
 
 
-def identities(tracks: dict) -> list:
-    """Tracks joined into people by number and team, never two at once."""
+def identities(tracks: dict, look_threshold: float | None = None) -> list:
+    """Tracks joined into people by number and team, never two at once;
+    then, with `look_threshold`, by appearance (`join_by_look`)."""
     out = []
     numbered = sorted((t for t in tracks.values() if t.number is not None),
                       key=lambda t: -t.share)
@@ -153,6 +217,10 @@ def identities(tracks: dict) -> list:
     for track in tracks.values():
         if track.number is None:
             out.append(Identity(len(out), track.team, [track]))
+    if look_threshold is not None:
+        out = join_by_look(out, look_threshold)
+        for k, ident in enumerate(out):
+            ident.key = k
     # Each identity's number: the vote of all its tracks' crops together.
     for ident in out:
         vis = np.concatenate([t.visible for t in ident.tracks])
