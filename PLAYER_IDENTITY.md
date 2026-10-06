@@ -136,3 +136,23 @@ credited the right player on 27 of 54; the new one has to find them first
 A fair measure needs actions labelled independently of any detector:
 every action in a stretch of play, with start and end frames and both
 players, in the format of `src/event_schema.py`.
+
+### Measured on every action in six stretches of play
+
+`make_action_labeller.py` asked for every action in six 10-second
+stretches of live play, chosen by ball coverage rather than by any
+detector: 32 actions (21 passes, 5 carries, 6 balls won). Neither
+detector's settings were chosen on these labels. `score_action_labels.py`,
+matching one to one within 0.4 s:
+
+| | labelled | old: found / detected / right player | new: found / detected / right player |
+|---|---|---|---|
+| passes | 21 | 7 / 17 / 6 (receiver 2 of 5) | **16 / 20 / 14 (receiver 8 of 12)** |
+| carries | 5 | 3 / 23 / 2 | 4 / 12 / 3 |
+| balls won | 6 | 0 / 3 / 0 | 3 / 11 / 1 |
+
+Passes: recall 33% -> 76%, precision 41% -> 80%, the end of a pass within
+a median 4 frames of the click against 18. Carries and balls won are
+still over-produced -- 12 carries and 11 tackles or recoveries detected
+for 5 and 6 labelled -- most likely possessions held at a player's feet
+without moving, and duels read as tackles.
