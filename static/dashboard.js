@@ -27,6 +27,14 @@ createApp({
             assistantBusy: false,
             assistantMessages: [],
             mobileNavOpen: false,
+            clubhouse: { club_name: 'Riverside Athletic', fixtures: [], results: [], table: [], uploads_enabled: false },
+            clubhouseKey: sessionStorage.getItem('clubhouse-write-key') || '',
+            clubhouseKeyVerified: false,
+            clubNameDraft: '',
+            fixtureDraft: { match_date: '', kickoff: '', opponent: '', venue: '', home: true },
+            resultDraft: { match_date: '', home_team: '', away_team: '', home_score: '', away_score: '', venue: '', reported_by: '' },
+            clubhouseBusy: false,
+            clubhouseMessage: '',
             dataSource: localStorage.getItem('dashboard-data-source') || 'demo',
             rosterEditorOpen: false,
             rosterSaving: false,
@@ -245,8 +253,17 @@ createApp({
         displayName() {
             return this.accountName || (this.role === 'player' ? 'Player account' : 'Club staff');
         },
+        clubName() {
+            return this.clubhouse.club_name || 'Riverside Athletic';
+        },
+        clubInitials() {
+            return this.clubName.split(/\s+/).filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase()).join('') || 'FC';
+        },
+        standings() {
+            return this.clubhouse.table || [];
+        },
         pageTitle() {
-            return ({ overview: 'Season overview', matches: 'Match centre', squad: 'Squad performance', report: 'Match report' })[this.page] || 'Season overview';
+            return ({ overview: 'Season overview', matches: 'Match centre', squad: 'Squad performance', report: 'Match report', fixtures: 'Fixtures', league: 'League table', club: 'Club setup' })[this.page] || 'Season overview';
         },
     },
     methods: {
@@ -260,9 +277,16 @@ createApp({
             this.loading = true;
             this.loadError = '';
             try {
-                const season = await this.requestJson(`/api/season?source=${this.dataSource}`);
+                const [season, clubhouse] = await Promise.all([
+                    this.requestJson(`/api/season?source=${this.dataSource}`),
+                    this.requestJson('/api/clubhouse'),
+                ]);
                 const matches = season.matches;
                 if (!Array.isArray(matches) || !season.reports) throw new Error('Could not load the sample season');
+                this.clubhouse = clubhouse;
+                this.clubNameDraft = clubhouse.club_name;
+                this.resultDraft.reported_by ||= clubhouse.club_name;
+                if (!clubhouse.uploads_enabled) this.clubhouseKeyVerified = false;
                 this.matches = matches;
                 this.reports = season.reports;
                 this.isDemo = Boolean(season.demo);
@@ -276,6 +300,77 @@ createApp({
             } finally {
                 this.loading = false;
             }
+        },
+        async verifyClubhouseKey() {
+            this.clubhouseMessage = '';
+            try {
+                await this.requestJson('/api/clubhouse/verify', {
+                    method: 'POST',
+                    headers: { 'X-Clubhouse-Key': this.clubhouseKey },
+                });
+                this.clubhouseKeyVerified = true;
+                sessionStorage.setItem('clubhouse-write-key', this.clubhouseKey);
+                this.clubhouseMessage = 'Key verified. Club edits and result entry are enabled for this browser session.';
+            } catch (error) {
+                this.clubhouseKeyVerified = false;
+                this.clubhouseMessage = error.message;
+            }
+        },
+        async saveClubName() {
+            const previousName = this.clubName;
+            await this.writeClubhouse('/api/clubhouse/club', { club_name: this.clubNameDraft }, 'PUT', 'Club name updated.');
+            if (this.clubName === this.clubNameDraft.trim() && previousName !== this.clubName) {
+                if (!this.resultDraft.reported_by || this.resultDraft.reported_by === previousName) this.resultDraft.reported_by = this.clubName;
+            }
+        },
+        async createFixture() {
+            const opponent = this.fixtureDraft.opponent.trim();
+            const club = this.clubName;
+            await this.writeClubhouse('/api/clubhouse/fixtures', {
+                match_date: this.fixtureDraft.match_date,
+                kickoff: this.fixtureDraft.kickoff,
+                home_team: this.fixtureDraft.home ? club : opponent,
+                away_team: this.fixtureDraft.home ? opponent : club,
+                venue: this.fixtureDraft.venue.trim(),
+            }, 'POST', 'Fixture added to the schedule.');
+            if (!this.clubhouseMessage.startsWith('Fixture added')) return;
+            this.fixtureDraft = { match_date: '', kickoff: '', opponent: '', venue: '', home: true };
+        },
+        async submitLeagueResult() {
+            await this.writeClubhouse('/api/clubhouse/results', {
+                ...this.resultDraft,
+                reported_by: this.resultDraft.reported_by.trim(),
+                venue: this.resultDraft.venue.trim(),
+            }, 'POST', 'Result saved and the league table recalculated.');
+            if (!this.clubhouseMessage.startsWith('Result saved')) return;
+            this.resultDraft = { match_date: '', home_team: '', away_team: '', home_score: '', away_score: '', venue: '', reported_by: this.clubName };
+        },
+        async writeClubhouse(url, payload, method, successMessage) {
+            if (!this.clubhouseKeyVerified) {
+                this.clubhouseMessage = 'Verify the shared clubhouse key in Club setup first.';
+                return;
+            }
+            this.clubhouseBusy = true;
+            this.clubhouseMessage = '';
+            try {
+                await this.requestJson(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json', 'X-Clubhouse-Key': this.clubhouseKey },
+                    body: JSON.stringify(payload),
+                });
+                await this.loadClubhouse();
+                this.clubhouseMessage = successMessage;
+            } catch (error) {
+                this.clubhouseMessage = error.message;
+                if (/key/i.test(error.message)) this.clubhouseKeyVerified = false;
+            } finally {
+                this.clubhouseBusy = false;
+            }
+        },
+        async loadClubhouse() {
+            this.clubhouse = await this.requestJson('/api/clubhouse');
+            this.clubNameDraft = this.clubhouse.club_name;
+            this.resultDraft.reported_by ||= this.clubhouse.club_name;
         },
         async switchDataSource(source) {
             if (this.dataSource === source) return;
@@ -374,6 +469,11 @@ createApp({
             if (!value) return 'Date pending';
             const date = new Date(`${value}T00:00:00`);
             return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-GB', options);
+        },
+        todayDate() {
+            const today = new Date();
+            today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+            return today.toISOString().slice(0, 10);
         },
         formatNumber(value, digits = 0) {
             const number = Number(value);
@@ -476,6 +576,7 @@ createApp({
     },
     mounted() {
         this.assistantMessages = [{ role: 'assistant', text: this.assistantGreeting() }];
+        if (this.clubhouseKey) this.verifyClubhouseKey();
         this.loadWorkspace();
     },
 }).mount('#app');

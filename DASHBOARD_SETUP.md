@@ -101,6 +101,19 @@ Dashboard starts at: **http://localhost:5000**
 - Share with coaching staff
 - Print for tactical discussion
 
+## Clubhouse Setup
+
+The clubhouse includes an editable club name, future fixtures with venue and kick-off, a league table, and weekly score entry. The league table is calculated from results entered by participating teams; it is not connected to an external competition provider.
+
+To enable protected edits and score submissions, configure these environment variables on the server:
+
+- `CLUBHOUSE_ADMIN_KEY`: a long random secret shared only with authorised club staff.
+- `CLUBHOUSE_DB_PATH`: persistent database path. On Render, attach a persistent disk mounted at `/var/data` and set this to `/var/data/clubhouse.db`.
+
+For Render, set `CLUBHOUSE_ADMIN_KEY` under **Environment** and mount the persistent disk before relying on saved fixtures, club identity, or results. Without a persistent disk, the database is on ephemeral storage and can be lost when the service is replaced. Each authorised browser session enters the shared key once under **Club setup**; the key is held in session storage, not in the app database.
+
+Teams can add their upcoming fixtures from **Fixtures** and submit final scores from **League table**. Results are upserted by date and home/away team, so a correction updates the existing score instead of adding duplicate points.
+
 ## Installation Troubleshooting
 
 ### Port 5000 Already in Use

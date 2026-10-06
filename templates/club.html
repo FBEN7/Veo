@@ -26,6 +26,7 @@
         <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
         <symbol id="icon-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/></symbol>
         <symbol id="icon-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+        <symbol id="icon-table" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 10h18M9 5v14m6-14v14"/></symbol>
         <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9a7 7 0 0 1 11.7-2L20 12M4 12l2.8 5a7 7 0 0 0 11.7-2"/></symbol>
     </svg>
 
@@ -33,8 +34,8 @@
         <div v-if="mobileNavOpen" class="mobile-scrim" @click="mobileNavOpen = false"></div>
         <aside class="sidebar" :class="{ 'nav-open': mobileNavOpen }">
             <a class="brand" href="#overview" @click.prevent="changePage('overview')">
-                <span class="brand-mark"><span>R</span><i></i></span>
-                <span class="brand-wordmark"><strong>RIVERSIDE</strong><small>ATHLETIC CLUB</small></span>
+                <span class="brand-mark"><span>{{ clubInitials.charAt(0) }}</span><i></i></span>
+                <span class="brand-wordmark"><strong>{{ clubName }}</strong><small>CLUBHOUSE</small></span>
             </a>
 
             <div class="sidebar-label">CLUBHOUSE</div>
@@ -47,6 +48,15 @@
                 </button>
                 <button class="nav-link" :class="{ active: page === 'squad' }" @click="changePage('squad')">
                     <svg><use href="#icon-squad"/></svg><span>Squad</span>
+                </button>
+                <button class="nav-link" :class="{ active: page === 'fixtures' }" @click="changePage('fixtures')">
+                    <svg><use href="#icon-calendar"/></svg><span>Fixtures</span>
+                </button>
+                <button class="nav-link" :class="{ active: page === 'league' }" @click="changePage('league')">
+                    <svg><use href="#icon-table"/></svg><span>League table</span>
+                </button>
+                <button class="nav-link" :class="{ active: page === 'club' }" @click="changePage('club')">
+                    <svg><use href="#icon-user"/></svg><span>Club setup</span>
                 </button>
             </nav>
 
@@ -74,7 +84,7 @@
                     <button class="icon-button mobile-menu" :aria-label="mobileNavOpen ? 'Close navigation' : 'Open navigation'" :aria-expanded="mobileNavOpen" @click="mobileNavOpen = !mobileNavOpen">
                         <span class="menu-lines"></span>
                     </button>
-                    <div class="breadcrumbs"><span>RIVERSIDE ATHLETIC</span><b>/</b><strong>{{ pageTitle }}</strong></div>
+                    <div class="breadcrumbs"><span>{{ clubName.toUpperCase() }}</span><b>/</b><strong>{{ pageTitle }}</strong></div>
                 </div>
                 <div class="topbar-actions">
                     <span class="season-chip"><span></span> {{ season }} SEASON</span>
@@ -95,9 +105,13 @@
 
                     <template v-if="page === 'overview'">
                         <section class="team-dashboard" aria-label="Current season team overview">
-                            <div class="team-dashboard-top"><div><span class="team-eyebrow"><i></i> RIVERSIDE ATHLETIC <b>/</b> FIRST TEAM</span><h1>Season command centre<span>.</span></h1><p>Everything your staff needs to understand the team at a glance.</p></div><div class="team-dashboard-actions"><div class="data-source-switch" role="group" aria-label="Choose dashboard data"><button :class="{ active: dataSource === 'demo' }" @click="switchDataSource('demo')">Demo season</button><button :class="{ active: dataSource === 'real' }" @click="switchDataSource('real')">Imported reports</button></div><button class="team-period">{{ season }} <span>⌄</span></button></div></div>
+                            <div class="team-dashboard-top"><div><span class="team-eyebrow"><i></i> {{ clubName.toUpperCase() }} <b>/</b> FIRST TEAM</span><h1>Season command centre<span>.</span></h1><p>Everything your staff needs to understand the team at a glance.</p></div><div class="team-dashboard-actions"><div class="data-source-switch" role="group" aria-label="Choose dashboard data"><button :class="{ active: dataSource === 'demo' }" @click="switchDataSource('demo')">Demo season</button><button :class="{ active: dataSource === 'real' }" @click="switchDataSource('real')">Imported reports</button></div><button class="team-period">{{ season }} <span>⌄</span></button></div></div>
                             <section class="team-hero-grid"><article class="team-identity-card"><img src="https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=1100&q=85" alt="Football team on the pitch"><div class="team-identity-overlay"></div><div class="team-identity-copy"><span class="team-card-kicker">CLUB PERFORMANCE HUB</span><h2>The first team,<br>in full.</h2><p>{{ seasonTotals.games }} reports connected · {{ seasonTotals.players }} players tracked</p><button @click="changePage('matches')">Open match centre <svg><use href="#icon-arrow"/></svg></button></div><div class="team-badge">RA</div></article><article class="season-record-card"><div class="team-card-heading"><div><span>SEASON RECORD</span><h2>Form that tells a story</h2></div><span class="record-period">{{ season }}</span></div><div class="record-score"><strong>{{ wins }}</strong><i>W</i><strong>{{ draws }}</strong><i>D</i><strong>{{ losses }}</strong><i>L</i></div><div class="record-bar"><i v-for="(match, index) in seasonResults" :key="`${match.id}-${index}`" :class="`record-${match.result?.outcome?.toLowerCase() || 'unknown'}`"></i></div><div class="record-foot"><span>{{ winRate === null ? '--' : `${winRate}%` }} win rate</span><span>{{ seasonTotals.goals }} goals scored</span></div></article></section>
                             <section class="team-kpi-grid"><article><span>GOALS FOR</span><strong>{{ formatNumber(seasonTotals.goals) }}</strong><small>{{ seasonTotals.games ? formatNumber(seasonTotals.goals / seasonTotals.games, 1) : '--' }} per game</small></article><article><span>POSSESSION</span><strong>{{ seasonTotals.averagePossession === null ? '--' : `${formatNumber(seasonTotals.averagePossession, 1)}%` }}</strong><small>season average</small></article><article><span>PASSES</span><strong>{{ formatNumber(seasonTotals.passes) }}</strong><small>{{ seasonTotals.passCompletion === null ? '--' : `${formatNumber(seasonTotals.passCompletion, 1)}%` }} completed</small></article><article><span>TEAM DISTANCE</span><strong>{{ formatNumber(seasonTotals.distance, 1) }}<em>km</em></strong><small>tracked movement</small></article></section>
+                            <section class="overview-league-grid">
+                                <article class="team-panel overview-fixtures-panel"><div class="team-panel-heading"><div><span>NEXT ON THE CALENDAR</span><h2>Upcoming fixtures</h2></div><button class="panel-link" @click="changePage('fixtures')">All fixtures <svg><use href="#icon-arrow"/></svg></button></div><div v-if="clubhouse.fixtures.length" class="overview-fixture-list"><div v-for="fixture in clubhouse.fixtures.slice(0, 3)" :key="fixture.id" class="overview-fixture"><time>{{ formatDate(fixture.match_date, { day: 'numeric', month: 'short' }) }}</time><span>{{ fixture.home_team }} <b>vs</b> {{ fixture.away_team }}</span><small>{{ fixture.venue }}</small></div></div><div v-else class="overview-empty">No future games scheduled yet.</div></article>
+                                <article class="team-panel overview-standings-panel"><div class="team-panel-heading"><div><span>LEAGUE POSITION</span><h2>Current table</h2></div><button class="panel-link" @click="changePage('league')">Full table <svg><use href="#icon-arrow"/></svg></button></div><div v-if="standings.some((team) => team.played)" class="overview-table-list"><div v-for="team in standings.slice(0, 4)" :key="team.team" class="overview-table-row" :class="{ 'league-own-team': team.team === clubName }"><b>{{ team.position }}</b><strong>{{ team.team }}</strong><span>{{ team.played }} P</span><b>{{ team.points }} pts</b></div></div><div v-else class="overview-empty">Standings appear after the first result is submitted.</div></article>
+                            </section>
                             <section class="team-chart-grid"><article class="team-panel team-trend-panel"><div class="team-panel-heading"><div><span>ATTACK & DEFENCE</span><h2>Goals across the season</h2></div><div class="chart-legend"><i></i> FOR <i></i> AGAINST</div></div><div class="goal-trend-chart"><div class="goal-grid-lines"><i></i><i></i><i></i><i></i></div><div v-for="match in teamTrend" :key="match.id" class="goal-trend-column" :title="match.label"><div class="goal-trend-bars"><i class="for" :style="{ height: `${Math.max(8, Math.min(100, (match.goals + 1) * 25))}%` }"></i><i class="against" :style="{ height: `${Math.max(8, Math.min(100, (match.conceded + 1) * 25))}%` }"></i></div><b :class="`trend-result-${match.outcome.toLowerCase()}`">{{ match.outcome }}</b><small>M{{ match.index }}</small></div></div></article><article class="team-panel possession-panel"><div class="team-panel-heading"><div><span>CONTROL OF THE GAME</span><h2>Possession trend</h2></div><strong>{{ seasonTotals.averagePossession === null ? '--' : `${formatNumber(seasonTotals.averagePossession, 1)}%` }}</strong></div><svg class="possession-chart" viewBox="0 0 420 150" preserveAspectRatio="none"><path class="chart-grid" d="M0 25h420M0 75h420M0 125h420"/><path class="possession-area" d="M0 100 C42 84 68 95 105 68 S162 81 195 59 S244 43 280 66 S330 39 365 49 S394 30 420 39 L420 150 L0 150Z"/><path class="possession-line" d="M0 100 C42 84 68 95 105 68 S162 81 195 59 S244 43 280 66 S330 39 365 49 S394 30 420 39"/></svg><div class="chart-axis"><span>Match 1</span><span>Match {{ seasonTotals.games }}</span></div></article></section>
                             <section class="team-lower-grid"><article class="team-panel leaders-panel"><div class="team-panel-heading"><div><span>THE DIFFERENCE MAKERS</span><h2>Squad leaders</h2></div><button class="panel-link" @click="changePage('squad')">View squad <svg><use href="#icon-arrow"/></svg></button></div><div class="leader-row"><span class="leader-avatar">{{ seasonLeaders.distance?.jersey_number || '—' }}</span><div><small>MOST DISTANCE</small><strong>{{ seasonLeaders.distance?.name || 'No player data' }}</strong></div><b>{{ seasonLeaders.distance ? `${formatNumber(Number(seasonLeaders.distance.distance_m) / 1000, 1)} km` : '--' }}</b></div><div class="leader-row"><span class="leader-avatar coral">{{ seasonLeaders.goals?.jersey_number || '—' }}</span><div><small>TOP SCORER</small><strong>{{ seasonLeaders.goals?.name || 'No player data' }}</strong></div><b>{{ seasonLeaders.goals ? `${formatNumber(seasonLeaders.goals.goals)} goals` : '--' }}</b></div><div class="leader-row"><span class="leader-avatar blue">{{ seasonLeaders.passes?.jersey_number || '—' }}</span><div><small>MOST PASSES</small><strong>{{ seasonLeaders.passes?.name || 'No player data' }}</strong></div><b>{{ seasonLeaders.passes ? formatNumber(seasonLeaders.passes.passes_completed) : '--' }}</b></div></article><article class="team-panel match-photo-panel"><img src="https://images.unsplash.com/photo-1553778263-73a83bab9b0c?auto=format&fit=crop&w=900&q=85" alt="Football match in progress"><div><span>THE NEXT LEVEL</span><h2>Read every match<br>with context.</h2><button @click="changePage('matches')">Browse reports <svg><use href="#icon-arrow"/></svg></button></div></article></section>
                             <section class="squad-gallery-section"><div class="team-panel-heading"><div><span>THE FIRST TEAM</span><h2>Meet the squad</h2></div><button class="panel-link" @click="changePage('squad')">Full squad <svg><use href="#icon-arrow"/></svg></button></div><div class="squad-gallery"><button v-for="player in squad.slice(0, 9)" :key="player.track_id" class="squad-gallery-card" @click="selectedPlayerId = player.track_id; changePage('squad')"><span class="squad-gallery-photo"><img v-if="player.photo_url" :src="player.photo_url" :alt="player.name"><b v-else>{{ player.jersey_number }}</b></span><span class="squad-gallery-number">#{{ player.jersey_number }}</span><strong>{{ player.name }}</strong><small>{{ player.position }}</small></button></div></section>
@@ -172,6 +186,83 @@
                         <section v-if="seasonResults.length" class="content-section form-section">
                             <div class="section-heading"><div><span class="section-kicker">MOMENTUM</span><h2>Recent form</h2></div><span class="form-caption">LAST {{ Math.min(seasonResults.length, 5) }} RESULTS</span></div>
                             <div class="form-track"><div v-for="(outcome, index) in recentForm" :key="`${index}-${outcome}`" class="form-item"><span class="form-dot" :class="`result-${outcome.toLowerCase()}`">{{ outcome }}</span><small>{{ formatDate(sortedMatches[index]?.date, { day: 'numeric', month: 'short' }) }}</small></div></div>
+                        </section>
+                    </template>
+
+                    <template v-else-if="page === 'fixtures'">
+                        <section class="page-heading compact-heading">
+                            <div><div class="eyebrow"><span></span> NEXT UP</div><h1>Fixtures<span class="heading-period">.</span></h1><p class="heading-subtitle">Dates, kick-off times and venues for the games ahead.</p></div>
+                            <span class="match-total"><strong>{{ clubhouse.fixtures.length }}</strong> SCHEDULED</span>
+                        </section>
+                        <p v-if="clubhouseMessage" class="workspace-message" role="status">{{ clubhouseMessage }}</p>
+                        <div class="management-layout">
+                            <section class="content-section fixture-list-panel">
+                                <div class="section-heading"><div><span class="section-kicker">{{ clubName.toUpperCase() }}</span><h2>Upcoming games</h2></div></div>
+                                <div v-if="clubhouse.fixtures.length" class="fixture-list">
+                                    <article v-for="fixture in clubhouse.fixtures" :key="fixture.id" class="fixture-row">
+                                        <time class="fixture-date"><strong>{{ formatDate(fixture.match_date, { day: '2-digit' }) }}</strong><span>{{ formatDate(fixture.match_date, { month: 'short', year: 'numeric' }).toUpperCase() }}</span></time>
+                                        <div class="fixture-details"><span>{{ fixture.kickoff || 'TIME TBC' }} · {{ fixture.venue }}</span><strong>{{ fixture.home_team }}</strong><small>vs</small><strong>{{ fixture.away_team }}</strong></div>
+                                    </article>
+                                </div>
+                                <div v-else class="empty-state compact-empty"><strong>No future games scheduled</strong><p>Add the next fixture with its date and ground.</p></div>
+                            </section>
+                            <form class="content-section entry-form" @submit.prevent="createFixture">
+                                <div class="section-heading"><div><span class="section-kicker">FIXTURE DESK</span><h2>Add a game</h2></div></div>
+                                <label class="form-label" for="fixture-date">MATCH DATE</label><input id="fixture-date" v-model="fixtureDraft.match_date" class="modal-input" type="date" :min="todayDate()" required>
+                                <label class="form-label" for="fixture-time">KICK-OFF</label><input id="fixture-time" v-model="fixtureDraft.kickoff" class="modal-input" type="time">
+                                <label class="form-label" for="fixture-opponent">OPPONENT</label><input id="fixture-opponent" v-model="fixtureDraft.opponent" class="modal-input" placeholder="Opponent club" maxlength="80" required>
+                                <label class="form-label" for="fixture-venue">GROUND / VENUE</label><input id="fixture-venue" v-model="fixtureDraft.venue" class="modal-input" placeholder="Stadium or sports ground" maxlength="120" required>
+                                <label class="form-label" for="fixture-home">{{ clubName.toUpperCase() }} PLAYS</label><select id="fixture-home" v-model="fixtureDraft.home" class="modal-input"><option :value="true">At home</option><option :value="false">Away</option></select>
+                                <button class="modal-submit" type="submit" :disabled="clubhouseBusy || !clubhouseKeyVerified">{{ clubhouseBusy ? 'Saving fixture...' : 'Add fixture' }} <svg><use href="#icon-arrow"/></svg></button>
+                            </form>
+                        </div>
+                    </template>
+
+                    <template v-else-if="page === 'league'">
+                        <section class="page-heading compact-heading">
+                            <div><div class="eyebrow"><span></span> LIVE FROM REPORTED SCORES</div><h1>League table<span class="heading-period">.</span></h1><p class="heading-subtitle">Standings update automatically as weekend results are entered.</p></div>
+                            <span class="match-total"><strong>{{ clubhouse.results.length }}</strong> RESULTS</span>
+                        </section>
+                        <p v-if="clubhouseMessage" class="workspace-message" role="status">{{ clubhouseMessage }}</p>
+                        <section class="content-section league-table-panel">
+                            <div class="section-heading"><div><span class="section-kicker">CURRENT STANDINGS</span><h2>Competition table</h2></div><span class="form-caption">3 PTS WIN · 1 PT DRAW</span></div>
+                            <div class="table-scroll league-table-scroll"><table class="league-table"><thead><tr><th>POS</th><th>TEAM</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>PTS</th></tr></thead><tbody>
+                                <tr v-for="team in standings" :key="team.team" :class="{ 'league-own-team': team.team === clubName }"><td>{{ team.position }}</td><td><strong>{{ team.team }}</strong></td><td>{{ team.played }}</td><td>{{ team.won }}</td><td>{{ team.drawn }}</td><td>{{ team.lost }}</td><td>{{ team.goals_for }}</td><td>{{ team.goals_against }}</td><td>{{ team.goal_difference > 0 ? `+${team.goal_difference}` : team.goal_difference }}</td><td><strong>{{ team.points }}</strong></td></tr>
+                            </tbody></table></div>
+                            <div v-if="!standings.some((team) => team.played)" class="empty-state compact-empty"><strong>The table starts with the first result</strong><p>Enter scores from this weekend to build the live standings.</p></div>
+                        </section>
+                        <div class="management-layout league-management-layout">
+                            <form class="content-section entry-form" @submit.prevent="submitLeagueResult">
+                                <div class="section-heading"><div><span class="section-kicker">WEEKEND REPORT</span><h2>Submit a result</h2></div></div>
+                                <label class="form-label" for="result-date">MATCH DATE</label><input id="result-date" v-model="resultDraft.match_date" class="modal-input" type="date" :max="todayDate()" required>
+                                <datalist id="known-league-teams"><option v-for="team in standings" :key="team.team" :value="team.team"></option></datalist>
+                                <label class="form-label" for="result-home">HOME TEAM</label><input id="result-home" v-model="resultDraft.home_team" class="modal-input" list="known-league-teams" maxlength="80" required>
+                                <label class="form-label" for="result-away">AWAY TEAM</label><input id="result-away" v-model="resultDraft.away_team" class="modal-input" list="known-league-teams" maxlength="80" required>
+                                <div class="score-inputs"><label><span class="form-label">HOME SCORE</span><input v-model="resultDraft.home_score" class="modal-input" type="number" min="0" max="50" inputmode="numeric" required></label><span class="score-separator">–</span><label><span class="form-label">AWAY SCORE</span><input v-model="resultDraft.away_score" class="modal-input" type="number" min="0" max="50" inputmode="numeric" required></label></div>
+                                <label class="form-label" for="result-venue">VENUE</label><input id="result-venue" v-model="resultDraft.venue" class="modal-input" placeholder="Optional">
+                                <label class="form-label" for="result-reporter">SUBMITTED BY</label><input id="result-reporter" v-model="resultDraft.reported_by" class="modal-input" maxlength="80" required>
+                                <button class="modal-submit" type="submit" :disabled="clubhouseBusy || !clubhouseKeyVerified">{{ clubhouseBusy ? 'Saving result...' : 'Save result & update table' }} <svg><use href="#icon-arrow"/></svg></button>
+                            </form>
+                            <section class="content-section recent-results-panel">
+                                <div class="section-heading"><div><span class="section-kicker">LATEST SCORES</span><h2>Reported results</h2></div></div>
+                                <div v-if="clubhouse.results.length" class="result-list"><article v-for="result in clubhouse.results.slice(0, 12)" :key="result.id" class="result-row"><time>{{ formatDate(result.match_date, { day: 'numeric', month: 'short' }) }}</time><span>{{ result.home_team }}</span><strong>{{ result.home_score }} – {{ result.away_score }}</strong><span>{{ result.away_team }}</span><small>Reported by {{ result.reported_by }}</small></article></div>
+                                <div v-else class="empty-state compact-empty"><strong>No scores reported yet</strong><p>Results submitted by participating clubs will appear here.</p></div>
+                            </section>
+                        </div>
+                    </template>
+
+                    <template v-else-if="page === 'club'">
+                        <section class="page-heading compact-heading"><div><div class="eyebrow"><span></span> CLUB IDENTITY & ACCESS</div><h1>Club setup<span class="heading-period">.</span></h1><p class="heading-subtitle">Keep the clubhouse identity and league entry access up to date.</p></div></section>
+                        <p v-if="clubhouseMessage" class="workspace-message" role="status">{{ clubhouseMessage }}</p>
+                        <section class="content-section club-settings-panel">
+                            <div class="section-heading"><div><span class="section-kicker">YOUR TEAM</span><h2>Club identity</h2></div></div>
+                            <form class="settings-form" @submit.prevent="saveClubName"><label class="form-label" for="club-name">CLUB NAME</label><input id="club-name" v-model="clubNameDraft" class="modal-input" maxlength="80" required><button class="modal-submit" type="submit" :disabled="clubhouseBusy || !clubhouseKeyVerified">{{ clubhouseBusy ? 'Saving...' : 'Save club name' }} <svg><use href="#icon-arrow"/></svg></button></form>
+                        </section>
+                        <section class="content-section key-settings-panel">
+                            <div class="section-heading"><div><span class="section-kicker">SHARED LEAGUE ACCESS</span><h2>Result-entry key</h2></div><span class="key-state" :class="{ verified: clubhouseKeyVerified }">{{ clubhouseKeyVerified ? 'VERIFIED' : clubhouse.uploads_enabled ? 'NOT VERIFIED' : 'NOT CONFIGURED' }}</span></div>
+                            <p class="settings-copy">The league organiser sets <code>CLUBHOUSE_ADMIN_KEY</code> in the server environment. Share that private key with participating teams; it authorises club edits, fixture updates and weekly score submissions.</p>
+                            <form class="settings-form key-form" @submit.prevent="verifyClubhouseKey"><label class="form-label" for="clubhouse-key">PRIVATE SHARED KEY</label><input id="clubhouse-key" v-model="clubhouseKey" class="modal-input" type="password" autocomplete="current-password" placeholder="Enter the organiser-provided key" required><button class="outline-button" type="submit">{{ clubhouseKeyVerified ? 'Verify again' : 'Verify key' }}</button></form>
+                            <p v-if="!clubhouse.uploads_enabled" class="settings-copy settings-warning">Uploads are disabled until the organiser configures <code>CLUBHOUSE_ADMIN_KEY</code> on the server and redeploys.</p>
                         </section>
                     </template>
 
