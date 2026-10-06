@@ -31,6 +31,7 @@ of the latest measurement:
 | Shot distance, angle, xG | all 6 labelled shots, total xG 0.47 | "Where the camera is" |
 | Out of play | precision 2 of 2, recall 2 of 4 | "The continuity check", "The camera between grid frames" |
 | Shots and goals detected | **5 of 10** real shots, 1 false; **goals 2 of 2**, none false (gap-filled ball candidates, goal corners, kick-off confirmation) | "Goals by their kick-off" |
+| Shots, 36 windows on two grounds | rules 24 of 44 at 56% precision; **learned classifier with the rules' verdict 30 of 44 at 77%**, tested on the ground it never saw | "A learned shot classifier" |
 | Ball height | works on simulated 1 s flights; not yet on these | "Ball height" |
 | Ball found by the detector | 63 of 138 hand-clicked balls near events (90 at 1280 px); the classifier ranks it first 63 of 63, unwired | "The ball clicked by hand" |
 
@@ -1443,6 +1444,92 @@ pace (8-10 m/s at the strike frames against 12). Two fixes were measured
 and reverted: the pace fitted with a free start (lost two shots and a
 goal, added a false one) and a 7 m/s floor (no shot gained, a false one
 added).
+
+### A learned shot classifier, on 36 windows and two grounds
+
+Every remaining miss above is a strike some rule refused on one weak
+reading. So the readings are kept and the thresholds learned:
+`src/shot_features.py` turns every placed ball sighting in shooting range
+into a candidate strike with about forty readings -- where it is, how fast
+and which way the ball leaves (on the grass and in the picture), how
+straight, whether a flight fits and where it crosses, whether the plane of
+its path cuts the mouth, how crowded it is, how near the goal the ball
+gets, whether play restarts from the centre -- and
+`train_shot_classifier.py` fits gradient boosted trees against the labels.
+
+**Data.** Thirty more windows were cut around every remaining
+SoccerNet-labelled shot of the two matches (`cut_shot_clips_more.py`,
+footage not in the repository): 36 windows, 44 labelled attempts (a shot
+and a goal labelled a second apart are one attempt), 16 at Stoke and 20
+at Reading. The new windows have no clicked corners: the corner keypoint
+model finds them (`auto_goal_corners.py`), and the camera is located from
+the centre circle or given the height of the match's located clips.
+
+**Faster preparation.** The full pipeline tracked players with yolov8m on
+every frame, at 2.7-4 s a frame -- over an hour a window -- for nothing
+the classifier reads. `dump_shot_features.py` prepares only what it
+needs, about seven minutes a window: players with yolov8n on every third
+frame (37 s), the fine-tuned ball detector from an OpenVINO export (0.22
+s a frame against 0.42, identical boxes on 60 frames), the goal poses
+with frames read forward instead of sought (a seek cost 0.31 s; 72 s of
+the step's 191) and the centre-circle residual scored against nearby
+segments only (0.67 ms a call against 8, identical distances). The goal
+step went from 191 s to 70 s on stoke_0102 with the same camera and the
+same 57 poses.
+
+**Tested** two ways, against footage the model never trained on: trained
+on one ground and tested on the other ("by match"), and each window held
+out in turn ("by clip"). The hand-set rules (`goal_plane.find_shots`, the
+best configuration above) are scored on the same ball tracks and poses.
+43 of the 44 attempts have a candidate within a second; the other,
+stoke_5555 20 s, is in a window where the goal is in frame on 3 of 225
+sampled frames, so nothing there is placed and no detector can find it.
+
+| | found (of 44) | detections | precision |
+|---|---|---|---|
+| hand-set rules | 24 | 43 | 56% |
+| classifier, by match, threshold 0.5 | 24 | 49 | 49% |
+| classifier, by clip, threshold 0.5 | 30 | 62 | 48% |
+| **classifier with the rules' verdict, by match, 0.5** | **30** | 39 | **77%** |
+| classifier with the rules' verdict, by match, 0.3 | 33 | 45 | 73% |
+| classifier with the rules' verdict, by clip, 0.3 | 33 | 55 | 60% |
+| classifier with the rules' verdict, by clip, 0.7 | 28 | 41 | 68% |
+
+On its own the classifier finds more shots than the rules held out by
+clip, at lower precision. Given the rules' verdict as two more inputs --
+how far the candidate is from the nearest shot the rules found, and what
+they called it -- it beats them on both: by match, 30 found against 24
+with 39 detections against 43. The rules were tuned on six of these
+windows, so their verdict carries something of those labels; on the 30
+windows new to the rules as well, the rules find 18 of 35 at 51% and the
+combined model, by match, 25 of 35 at 74% (threshold 0.5).
+
+**Checked on the footage.** Of the false detections looked at frame by
+frame, most are attacking play that is not a strike: crosses and balls
+played in from the wing, passes and dribbles around the box, a
+goalkeeper's kick, scrambles in a crowded six-yard box; a few are the ball
+track sitting on a look-alike by the stand. Of six matched detections on
+new windows, four are visibly a strike at the goal (stoke_7842 19.8 s,
+stoke_9332 19.5 s, reading_8822 20.3 s, reading_4633 84.1 s); two cannot be
+told at this resolution. stoke_4207 64.5 s is matched but is the long ball
+before the labelled shot, as before.
+
+Two settings came from looking at those false detections, measured on 32
+windows: a candidate is a positive within 0.5 s of a label rather than
+1 s (at 1 s the pass or dribble before the strike was a positive too),
+and detected events are at least 4 s apart rather than 2 (the build-up
+and the clearance came out as events of their own; by match at 0.5,
+precision 34% to 43% for one shot lost). With 44 attempts these
+differences are small and partly noise.
+
+**Caveats.** The thresholds in the table are fixed in advance, but the
+two settings above were chosen on these windows. Labels are SoccerNet's,
+whose timing is good to about a second. And one reproducibility fault
+was found: windows whose camera is not located borrow the height of the
+match's located windows, a store that grows as windows are processed, so
+six windows came out differently on a second run (two fell back to a
+camera 11 m up). The comparison above is on one run, rules and model
+alike; the store should be frozen before the model is trained for use.
 
 ### The camera between grid frames: interpolated, not frozen
 

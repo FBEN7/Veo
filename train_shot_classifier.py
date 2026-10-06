@@ -59,8 +59,16 @@ THRESHOLDS = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
 NOT_FEATURES = {"clip", "match", "frame", "time_s", "label"}
 
 
-# What the hand-set rules found per clip, where the dump recorded it.
+# What the hand-set rules found per clip, where the dump recorded it:
+# (time, outcome) per detection.
 RULES = {}
+# The clips the rules were tuned on. On these, the rules' verdict as an
+# input carries what was learned from their labels; the other clips are
+# new to the rules as well as to the model.
+TUNED_ON = {"stoke_1302", "stoke_4207", "stoke_7001", "reading_0737",
+            "reading_1155", "reading_2519"}
+RULE_KIND = {"attempt": 1.0, "off target": 2.0, "on target": 3.0,
+             "goal": 4.0}
 
 
 def load(paths):
@@ -81,13 +89,47 @@ def load(paths):
         truth[clip] = attempts
         duration[clip] = float(table.attrs.get("duration_s", 0.0))
         if "rule_shots" in table.attrs:
-            RULES[clip] = [s["time_s"]
+            RULES[clip] = [(s["time_s"], s["outcome"])
                            for s in json.loads(table.attrs["rule_shots"])]
         t = table.time_s.to_numpy()
         table["label"] = [int(any(abs(x - y) <= POSITIVE_S
                                   for y in truth[clip])) for x in t]
         tables.append(table)
     return pd.concat(tables, ignore_index=True), truth, duration
+
+
+def add_rule_inputs(data):
+    """The rules' verdict as inputs: how far, in seconds, the candidate is
+    from the nearest shot the rules found (NaN if they found none in the
+    clip), and what they called that shot if it is within `MERGE_S`."""
+    dt, kind = [], []
+    for clip, t in zip(data["clip"], data["time_s"]):
+        shots = RULES.get(clip, [])
+        if not shots:
+            dt.append(np.nan)
+            kind.append(0.0)
+            continue
+        when, outcome = min(shots, key=lambda s: abs(t - s[0]))
+        dt.append(float(t - when))
+        kind.append(RULE_KIND.get(outcome, 0.0)
+                    if abs(t - when) <= MERGE_S else 0.0)
+    data["rule_dt"] = dt
+    data["rule_kind"] = kind
+    return data
+
+
+def score(data, probs, truth, thr, clips):
+    """(labelled, found, matched) over `clips` at one threshold."""
+    labelled = found = matched = 0
+    for clip, rows in data.groupby("clip"):
+        if clip not in clips:
+            continue
+        idx = rows.index.to_numpy()
+        t = rows.time_s.to_numpy()[events(rows, probs[idx], thr)].tolist()
+        labelled += len(truth[clip])
+        found += len(t)
+        matched += len(match(t, truth[clip], TOLERANCE_S)[0])
+    return labelled, found, matched
 
 
 def features(table):
@@ -178,6 +220,9 @@ def main():
     ap.add_argument("features", nargs="+")
     ap.add_argument("--save", help="fit on everything and save the model")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--with-rules", action="store_true",
+                    help="give the model the hand-set rules' verdict as an "
+                         "input")
     args = ap.parse_args()
 
     data, truth, _ = load([Path(p) for p in args.features])
@@ -204,21 +249,40 @@ def main():
     if RULES:
         # The rules learn nothing, so every clip is unseen by them.
         have = [c for c in clips if c in RULES]
-        found = sum(len(RULES[c]) for c in have)
-        matched = sum(len(match(RULES[c], truth[c], TOLERANCE_S)[0])
-                      for c in have)
-        labelled = sum(len(truth[c]) for c in have)
-        print(f"  hand-set rules (goal_plane.find_shots) on {len(have)} "
-              f"clips: {matched} of {labelled} found, {found} detections, "
-              f"precision {matched / max(found, 1):.0%}")
+        for group, members in (("all", have),
+                               ("new to the rules", [c for c in have
+                                                     if c not in TUNED_ON])):
+            found = sum(len(RULES[c]) for c in members)
+            matched = sum(len(match([w for w, _ in RULES[c]], truth[c],
+                                    TOLERANCE_S)[0]) for c in members)
+            labelled = sum(len(truth[c]) for c in members)
+            print(f"  hand-set rules (goal_plane.find_shots), {group} "
+                  f"{len(members)} clips: {matched} of {labelled} found, "
+                  f"{found} detections, precision "
+                  f"{matched / max(found, 1):.0%}")
+        if args.with_rules:
+            add_rule_inputs(data)
+            print("  the rules' verdict is an input (rule_dt, rule_kind)")
 
+    runs = []
     if data["match"].nunique() > 1:
-        held_out(data, truth, data["match"].tolist(),
-                 "held out by match (trained on the other ground)",
-                 not args.quiet)
-    held_out(data, truth, data["clip"].tolist(),
-             "held out by clip (trained on every other clip)",
-             not args.quiet)
+        runs.append(("by match", held_out(
+            data, truth, data["match"].tolist(),
+            "held out by match (trained on the other ground)",
+            not args.quiet)))
+    runs.append(("by clip", held_out(
+        data, truth, data["clip"].tolist(),
+        "held out by clip (trained on every other clip)", not args.quiet)))
+
+    new = {c for c in clips if c not in TUNED_ON}
+    print(f"\n  on the {len(new)} clips new to the rules too:")
+    for name, probs in runs:
+        line = []
+        for thr in (0.3, 0.5, 0.7):
+            labelled, found, matched = score(data, probs, truth, thr, new)
+            line.append(f"{thr}: {matched}/{labelled} found, {found} "
+                        f"detections ({matched / max(found, 1):.0%})")
+        print(f"    {name:8s} " + " | ".join(line))
 
     if args.save:
         import joblib

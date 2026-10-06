@@ -113,7 +113,8 @@ commence par un résumé de l'état actuel.
 | Distance, angle et xG des tirs | les 6 tirs annotés, xG total 0,47 | `EVENT_ACCURACY.md` |
 | Détection des cages | 6 sur 6 aux moments de tir | `EVENT_ACCURACY.md` |
 | Ballon sorti | précision **2 sur 2**, rappel 2 sur 4 | `EVENT_ACCURACY.md` |
-| Tirs et buts détectés | **0 sur 10 et 0 sur 2**, aucune fausse alerte : les tirs sont lus sur la trajectoire du ballon frappé ; les 3 tirs et le but annoncés auparavant étaient des sosies (stadiers en gilet jaune derrière le but) | `EVENT_ACCURACY.md` |
+| Tirs et buts détectés (6 clips) | règles : **5 tirs sur 10**, 1 fausse alerte ; **buts 2 sur 2**, aucun faux (confirmés par l'engagement) | `EVENT_ACCURACY.md` |
+| Tirs, 36 clips sur deux stades | règles : 24 sur 44, précision 56 % ; **classifieur appris + verdict des règles : 30 sur 44, précision 77 %**, testé sur le stade qu'il n'a jamais vu | `EVENT_ACCURACY.md` |
 | Équipes (maillots) | 0,99 | `TEAM_ASSIGNMENT.md` |
 | Équipes (écarter les non-joueurs) | 0,80 | `TEAM_ASSIGNMENT.md` |
 | Possession (part) | erreur 0,06 | `EVENT_ACCURACY.md` |
@@ -138,15 +139,19 @@ pas :
 
 ### Ce qui ne marche pas encore
 
-**Les tirs.** 3 tirs sur 10 et le but de reading_1155 sont trouvés, sans
-fausse alerte. Un but est un tir cadré suivi du ballon vu dans les filets ;
-après un but, rien ne compte comme tir pendant 20 s, le temps de
-l'engagement. Le détecteur précédent n'en trouvait aucun : il plaçait le
-ballon au sol, et 5 des 12 moments annotés avaient le ballon en l'air. Le
-nouveau (`src/goal_plane.py`) lit le tir là où il franchit la ligne de but,
-dans le plan vertical du cadre, ce qui donne aussi sa hauteur : le but de
-reading_1155 entre à 2,1 m, en lucarne. Sur les 7 manqués, 4 n'ont presque
-aucune position du ballon autour du tir.
+**Les tirs.** Les règles écrites à la main (`src/goal_plane.py`) lisent le
+tir là où il franchit la ligne de but, ou, pour un tir vu brièvement, sa
+direction vers le cadre ; un but est confirmé par l'engagement qui suit.
+Elles trouvent 5 tirs sur 10 et les 2 buts sur les six premiers clips, mais
+24 sur 44 sur 36 clips. Un classifieur appris (`src/shot_features.py`,
+`train_shot_classifier.py`) garde les mesures qu'elles seuillent -- vitesse,
+direction, trajectoire, croisement de la ligne, joueurs autour -- et
+apprend où couper ; avec le verdict des règles en entrée, il trouve 30
+tirs sur 44 avec 39 détections, entraîné sur un stade et testé sur
+l'autre. Les fausses alertes restantes, vérifiées sur les images, sont
+surtout des centres, des passes et des mêlées dans la surface. Un tir dont
+la cage n'est jamais à l'image ne peut pas être trouvé : rien n'y est
+placé.
 
 **Le ballon en l'air.** Placer le ballon suppose qu'il est au sol ; en l'air,
 il est projeté bien trop loin. C'est la limite qui revient : elle a coûté un
@@ -170,6 +175,16 @@ python make_corner_labeller.py --labels goal_labels.json
 python score_hand_labels.py labels.txt --out output_clip \
     --goal-weights best.pt --corners goal_corners.json \
     --midfield --camera-store cameras.json
+
+# Classifieur de tirs : les mesures autour de chaque frappe possible
+# (environ 7 minutes par clip), puis entraînement et test
+python dump_shot_features.py labels.txt --out output_clip \
+    --video clip.mp4 --features feat/clip.parquet \
+    --corners corners_auto.json --auto-corners <modèle des coins> \
+    --goal-weights best.pt --goal-keypoints .cache/goal_keypoints \
+    --ball-detectors .cache/ball_detector --camera-store cameras.json \
+    --midfield
+python train_shot_classifier.py feat/*.parquet --with-rules
 ```
 
 Les poids du détecteur de cages, les annotations et les vidéos viennent de
