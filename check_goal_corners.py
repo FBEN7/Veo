@@ -199,7 +199,8 @@ def poses_for_clip(rows, plane, verbose: bool = False):
 
     out = {}
     for row, f_rect in zip(usable, rect):
-        pose = solve(pixels(row), plane.focal_px if plane else f_rect, cx, cy)
+        pose = solve(pixels(row), plane.focal_px if plane else (f_rect or seed),
+                     cx, cy)
         if pose is None and f_rect:
             pose = solve(pixels(row), f_rect, cx, cy)
         if pose is not None:

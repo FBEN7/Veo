@@ -58,7 +58,7 @@ def clip_rows(out_dir: Path, model, verbose: bool = True):
     clip = out_dir.name.replace("output_", "")
     found = []
     for frame in np.linspace(0, total - 1, TRIED).astype(int):
-        if in_replay(int(frame), spans):
+        if in_replay([int(frame)], spans)[0]:
             continue
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(frame))
         ok, image = cap.read()
@@ -93,6 +93,27 @@ def clip_rows(out_dir: Path, model, verbose: bool = True):
             for frame, norm, _ in kept]
 
 
+def add_clip(out_dir: Path, weights: Path, path: Path, model=None):
+    """Find a clip's corners and add them to the corner file at `path`,
+    unless it has some already."""
+    blob = (json.loads(path.read_text()) if path.exists() else
+            {"order": "left base, left top, right top, right base",
+             "frames": []})
+    clip = out_dir.name.replace("output_", "")
+    if any(r["clip"] == clip for r in blob["frames"]):
+        return
+    if model is None:
+        from ultralytics import YOLO
+
+        model = YOLO(str(weights))
+    rows = clip_rows(out_dir, model)
+    if rows:
+        info = json.loads((out_dir / "clip.json").read_text())
+        blob["width"], blob["height"] = info["width"], info["height"]
+    blob["frames"] += rows
+    path.write_text(json.dumps(blob, indent=1))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dirs", nargs="+")
@@ -103,21 +124,8 @@ def main():
     from ultralytics import YOLO
 
     model = YOLO(args.weights)
-    path = Path(args.out)
-    blob = (json.loads(path.read_text()) if path.exists() else
-            {"order": "left base, left top, right top, right base",
-             "frames": []})
-    done = {r["clip"] for r in blob["frames"]}
     for out_dir in map(Path, args.out_dirs):
-        clip = out_dir.name.replace("output_", "")
-        if clip in done:
-            continue
-        rows = clip_rows(out_dir, model)
-        if rows:
-            info = json.loads((out_dir / "clip.json").read_text())
-            blob["width"], blob["height"] = info["width"], info["height"]
-        blob["frames"] += rows
-        path.write_text(json.dumps(blob, indent=1))
+        add_clip(out_dir, Path(args.weights), Path(args.out), model)
 
 
 if __name__ == "__main__":
