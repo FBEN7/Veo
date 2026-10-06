@@ -232,6 +232,24 @@ def build_real_season():
             (match_id,),
         ).fetchall()
         player_rows = [dict(player) for player in players]
+        event_rows = conn.execute(
+            """SELECT event_type, timestamp_s, team, player_track_id,
+                      location_x, location_y, end_location_x, end_location_y,
+                      outcome, attributes
+               FROM events WHERE match_id=? ORDER BY timestamp_s""",
+            (match_id,),
+        ).fetchall()
+        report_events = []
+        for event in event_rows:
+            row = dict(event)
+            try:
+                attributes = json.loads(row.pop('attributes') or '{}')
+            except (TypeError, json.JSONDecodeError):
+                attributes = {}
+            if isinstance(attributes, dict):
+                row.update(attributes)
+            report_events.append(row)
+
         for player in player_rows:
             player['jersey_number'] = player['jersey_number'] if player['jersey_number'] is not None else player['track_id']
             player['name'] = player['name'] or f"Player {player['track_id']}"
@@ -241,18 +259,36 @@ def build_real_season():
             player['passes_attempted'] = player['passes_attempted'] if player['passes_attempted'] is not None else player['n_passes']
             player['n_shots'] = player['advanced_shots'] if player['advanced_shots'] is not None else player['n_shots']
             player['goals'] = player['advanced_goals'] if player['advanced_goals'] is not None else player['n_goals']
-            player['xg'] = None
+            player_xg = [
+                float(event['xg'])
+                for event in report_events
+                if event.get('event_type') == 'shot'
+                and event.get('player_track_id') == player['track_id']
+                and isinstance(event.get('xg'), (int, float))
+            ]
+            player['xg'] = round(sum(player_xg), 2) if player_xg else None
             player['assists'] = None
             player['carries'] = None
             player['carry_distance_m'] = None
         team_rows = [dict(team) for team in teams]
         for team in team_rows:
             team_players = [player for player in player_rows if player['team'] == team['team']]
+            team_events = [event for event in report_events if event.get('team') == team['team']]
             attempted = sum(player['passes_attempted'] or 0 for player in team_players)
             completed = sum(player['passes_completed'] or 0 for player in team_players)
             team['pass_completion_rate'] = completed / attempted if attempted else None
             team['tackles'] = sum(player['tackles'] or 0 for player in team_players)
-            team['xg'] = None
+            shot_xg = [
+                float(event['xg']) for event in team_events
+                if event.get('event_type') == 'shot'
+                and isinstance(event.get('xg'), (int, float))
+            ]
+            team['xg'] = round(sum(shot_xg), 2) if shot_xg else None
+            team['shots_on_target'] = sum(
+                event.get('event_type') == 'shot'
+                and event.get('outcome') in {'goal', 'on_target', 'saved'}
+                for event in team_events
+            )
             team['assists'] = None
         goals = conn.execute(
             """SELECT timestamp_s, team, player_track_id
@@ -269,6 +305,9 @@ def build_real_season():
             'players': player_rows,
             'goals': [dict(goal) for goal in goals],
             'events': {row['event_type']: row['count'] for row in event_counts},
+            'event_rows': report_events,
+            'tracked_event_types': sorted({row.get('event_type') for row in report_events if row.get('event_type')}),
+            'event_capabilities': ['shot', 'goal', 'pass', 'tackle', 'interception', 'recovery', 'out_of_play'],
             'data_notice': 'Stats are based on the metrics available in this analysis.',
         }
     conn.close()

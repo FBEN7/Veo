@@ -215,6 +215,94 @@ def build_demo_season() -> dict:
             running_score[event["team"]] += 1
             event["score_at_goal"] = f"{running_score[CLUB]}–{running_score[opponent]}"
 
+        event_rows = []
+        for team_name, team_players, team_xg in (
+            (CLUB, players, club_xg),
+            (opponent, [], away_stats["xg"]),
+        ):
+            if team_name == CLUB:
+                for player in team_players:
+                    shot_count = int(player["n_shots"] or 0)
+                    player_goals = int(player["goals"] or 0)
+                    for shot_index in range(shot_count):
+                        shot_rng = random.Random(5900 + index * 101 + player["track_id"] * 7 + shot_index)
+                        x = round(65 + shot_rng.random() * 38, 1)
+                        y = round(7 + shot_rng.random() * 54, 1)
+                        xg_value = round(float(player["xg"] or 0) / max(1, shot_count), 3)
+                        event_rows.append({
+                            "event_type": "shot",
+                            "timestamp_s": shot_rng.randint(90, 5300),
+                            "team": team_name,
+                            "player_track_id": player["track_id"],
+                            "location_x": x,
+                            "location_y": y,
+                            "end_location_x": 105.0,
+                            "end_location_y": 34.0,
+                            "outcome": "goal" if shot_index < player_goals else "on_target" if shot_rng.random() < 0.38 else "off_target",
+                            "xg": xg_value,
+                        })
+                    tackle_count = int(player["tackles"] or 0)
+                    for tackle_index in range(tackle_count):
+                        tackle_rng = random.Random(7100 + index * 89 + player["track_id"] * 5 + tackle_index)
+                        event_rows.append({
+                            "event_type": "tackle",
+                            "timestamp_s": tackle_rng.randint(90, 5300),
+                            "team": team_name,
+                            "player_track_id": player["track_id"],
+                            "location_x": round(tackle_rng.random() * 105, 1),
+                            "location_y": round(tackle_rng.random() * 68, 1),
+                            "outcome": "won",
+                        })
+            else:
+                for shot_index in range(int(away_stats["n_shots"])):
+                    shot_rng = random.Random(8100 + index * 71 + shot_index)
+                    event_rows.append({
+                        "event_type": "shot",
+                        "timestamp_s": shot_rng.randint(90, 5300),
+                        "team": team_name,
+                        "player_track_id": None,
+                        "location_x": round(5 + shot_rng.random() * 38, 1),
+                        "location_y": round(7 + shot_rng.random() * 54, 1),
+                        "end_location_x": 0.0,
+                        "end_location_y": 34.0,
+                        "outcome": "goal" if shot_index < goals_against else "on_target" if shot_rng.random() < 0.36 else "off_target",
+                        "xg": round(float(team_xg) / max(1, int(away_stats["n_shots"])), 3),
+                    })
+                for tackle_index in range(int(away_stats["tackles"])):
+                    tackle_rng = random.Random(9200 + index * 67 + tackle_index)
+                    event_rows.append({
+                        "event_type": "tackle",
+                        "timestamp_s": tackle_rng.randint(90, 5300),
+                        "team": team_name,
+                        "player_track_id": None,
+                        "location_x": round(tackle_rng.random() * 105, 1),
+                        "location_y": round(tackle_rng.random() * 68, 1),
+                        "outcome": "won",
+                    })
+            for extra_type, count in (
+                ("throw_in", 9 + index % 6),
+                ("offside", index % 4),
+            ):
+                for event_index in range(count):
+                    extra_rng = random.Random(10300 + index * 113 + len(team_name) * 3 + event_index)
+                    event_rows.append({
+                        "event_type": extra_type,
+                        "timestamp_s": extra_rng.randint(90, 5300),
+                        "team": team_name,
+                        "player_track_id": None,
+                        "location_x": round(extra_rng.random() * 105, 1),
+                        "location_y": round(extra_rng.random() * 68, 1),
+                        "outcome": "awarded",
+                    })
+        event_rows.sort(key=lambda event: event["timestamp_s"])
+        for team_stats in (club_stats, away_stats):
+            team_stats["shots_on_target"] = sum(
+                row["team"] == team_stats["team"]
+                and row["event_type"] == "shot"
+                and row["outcome"] in {"goal", "on_target", "saved"}
+                for row in event_rows
+            )
+
         events = {
             "goal": goals_for + goals_against,
             "shot": club_stats["n_shots"] + away_stats["n_shots"],
@@ -239,6 +327,12 @@ def build_demo_season() -> dict:
             "events": events,
             "players": players,
             "goals": goal_events,
+            "event_rows": event_rows,
+            "event_capabilities": ["shot", "goal", "pass", "tackle", "interception", "throw_in", "offside"],
+            "event_counts": {
+                event_type: sum(row["event_type"] == event_type for row in event_rows)
+                for event_type in ("shot", "tackle", "throw_in", "offside")
+            },
             "scoreline": {"for": goals_for, "against": goals_against},
             "demo": True,
         }

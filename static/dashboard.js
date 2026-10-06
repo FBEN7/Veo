@@ -6,6 +6,8 @@ createApp({
             matches: [],
             reports: {},
             selectedMatchId: null,
+            reportMapPlayerId: '',
+            selectedShot: null,
             page: 'overview',
             loading: true,
             loadError: '',
@@ -72,6 +74,95 @@ createApp({
             return (this.currentReport?.goals || [])
                 .filter((goal) => this.normalizeTeam(goal.team) === this.normalizeTeam(this.clubTeam))
                 .sort((a, b) => Number(a.timestamp_s) - Number(b.timestamp_s));
+        },
+        reportEvents() {
+            return this.currentReport?.event_rows || [];
+        },
+        reportShots() {
+            return this.reportEvents.filter((event) => event.event_type === 'shot' && this.hasPitchLocation(event));
+        },
+        selectedShotDetails() {
+            if (!this.selectedShot) return null;
+            const shot = this.selectedShot;
+            const player = (this.currentReport?.players || []).find((item) => String(item.track_id) === String(shot.player_track_id));
+            return {
+                player: player?.name || (shot.player_track_id == null ? 'Player not identified' : `Player ${shot.player_track_id}`),
+                team: this.normalizeTeam(shot.team) === this.normalizeTeam(this.clubTeam) ? this.clubName : (shot.team || 'Opponent'),
+                minute: Math.floor((Number(shot.timestamp_s) || 0) / 60),
+                outcome: shot.outcome || 'Outcome unavailable',
+                xg: Number.isFinite(Number(shot.xg)) ? Number(shot.xg) : null,
+            };
+        },
+        reportMapPlayers() {
+            const ids = new Set(this.reportEvents
+                .filter((event) => event.player_track_id !== null && event.player_track_id !== undefined && this.hasPitchLocation(event))
+                .map((event) => String(event.player_track_id)));
+            return (this.currentReport?.players || []).filter((player) => ids.has(String(player.track_id)));
+        },
+        reportMapEvents() {
+            const selectedId = String(this.reportMapPlayerId || this.reportMapPlayers[0]?.track_id || '');
+            if (!selectedId) return [];
+            return this.reportEvents.filter((event) =>
+                String(event.player_track_id) === selectedId
+                && this.hasPitchLocation(event)
+                && ['shot', 'tackle', 'pass', 'interception', 'recovery', 'carry'].includes(event.event_type)
+            );
+        },
+        reportComparisons() {
+            const teams = this.currentReport?.team_stats || [];
+            if (teams.length < 2) return [];
+            const metrics = [
+                { key: 'possession_pct', label: 'Possession', suffix: '%', percent: true, digits: 1 },
+                { key: 'n_shots', label: 'Shots', suffix: '', digits: 0 },
+                { key: 'shots_on_target', label: 'On target', suffix: '', digits: 0 },
+                { key: 'n_passes', label: 'Passes completed', suffix: '', digits: 0 },
+                { key: 'tackles', label: 'Tackles', suffix: '', digits: 0, eventType: 'tackle' },
+                { key: 'interceptions', label: 'Interceptions', suffix: '', digits: 0, eventType: 'interception' },
+                { key: 'throw_in', label: 'Throw-ins', suffix: '', digits: 0, eventType: 'throw_in' },
+                { key: 'offside', label: 'Offsides', suffix: '', digits: 0, eventType: 'offside' },
+                { key: 'total_distance_km', label: 'Distance', suffix: ' km', digits: 1 },
+                { key: 'xg', label: 'Expected goals', suffix: ' xG', digits: 2 },
+            ];
+            return metrics.map((metric) => {
+                const values = teams.map((team) => {
+                    const raw = metric.eventType
+                        ? (this.eventCoverage(metric.eventType) === 'unavailable' ? null : this.teamEventCount(team.team, metric.eventType))
+                        : team[metric.key];
+                    const value = raw === null || raw === undefined || raw === '' ? null : Number(raw);
+                    return { team, value: Number.isFinite(value) ? (metric.percent ? this.percentValue(value) : value) : null };
+                });
+                const max = Math.max(1, ...values.map((item) => item.value ?? 0));
+                return {
+                    ...metric,
+                    values: values.map((item) => ({
+                        team: item.team,
+                        name: this.normalizeTeam(item.team.team) === this.normalizeTeam(this.clubTeam) ? this.clubName : item.team.team,
+                        value: item.value,
+                        display: item.value === null ? 'Not available' : `${this.formatNumber(item.value, metric.digits)}${metric.suffix}`,
+                        width: item.value === null ? 0 : Math.max(4, item.value / max * 100),
+                    })),
+                };
+            });
+        },
+        reportFlowBins() {
+            const bins = Array.from({ length: 9 }, (_, index) => ({
+                start: index * 10,
+                end: (index + 1) * 10,
+                home: 0,
+                away: 0,
+            }));
+            this.reportEvents.filter((event) => ['shot', 'goal', 'tackle'].includes(event.event_type)).forEach((event) => {
+                const minute = Math.max(0, Number(event.timestamp_s) || 0) / 60;
+                const bin = bins[Math.min(8, Math.floor(minute / 10))];
+                if (this.normalizeTeam(event.team) === this.normalizeTeam(this.clubTeam)) bin.home += 1;
+                else bin.away += 1;
+            });
+            const peak = Math.max(1, ...bins.map((bin) => Math.max(bin.home, bin.away)));
+            return bins.map((bin) => ({
+                ...bin,
+                homeHeight: bin.home ? Math.max(4, bin.home / peak * 100) : 0,
+                awayHeight: bin.away ? Math.max(4, bin.away / peak * 100) : 0,
+            }));
         },
         matchRows() {
             return this.matches.map((match) => {
@@ -413,6 +504,11 @@ createApp({
         openMatch(match) {
             if (!match) return;
             this.selectedMatchId = match.id;
+            this.selectedShot = null;
+            const firstLocatedPlayer = (match.report?.event_rows || []).find((event) =>
+                event.player_track_id !== null && event.player_track_id !== undefined && this.hasPitchLocation(event)
+            );
+            this.reportMapPlayerId = firstLocatedPlayer ? String(firstLocatedPlayer.player_track_id) : '';
             this.page = 'report';
             this.mobileNavOpen = false;
         },
@@ -481,7 +577,9 @@ createApp({
         },
         metricFor(report, key) {
             const row = this.clubTeamStats(report);
-            const value = Number(row?.[key]);
+            const rawValue = row?.[key];
+            if (rawValue === null || rawValue === undefined || rawValue === '') return null;
+            const value = Number(rawValue);
             return Number.isFinite(value) ? value : null;
         },
         percentValue(value) {
@@ -513,65 +611,193 @@ createApp({
             this.assistantQuestion = '';
             this.assistantBusy = true;
             await this.$nextTick();
-            const answer = this.answerQuestion(text);
+            const answer = await this.answerQuestion(text);
             this.assistantMessages.push({ role: 'assistant', text: answer });
             this.assistantBusy = false;
         },
         answerQuestion(question) {
-            const text = question.toLowerCase();
+            const normalize = (value) => String(value || '').toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const text = normalize(question);
+            const requestedMatch = this.sortedMatches.find((match) => {
+                const label = normalize(match.label);
+                if (!label) return false;
+                if (text.includes(label)) return true;
+                const opponent = match.report?.team_stats?.find((team) => normalize(team.team) !== normalize(this.clubTeam))?.team;
+                const opponentName = normalize(opponent);
+                if (opponentName && text.includes(opponentName)) return true;
+                const opponentWords = opponentName?.split(/[^a-z0-9]+/).filter((word) => word.length > 3) || [];
+                if (opponentWords.some((word) => text.includes(word))) return true;
+                const identifyingWords = label.split(/[^a-z0-9]+/).filter((word) => word.length > 3);
+                return identifyingWords.length > 0 && identifyingWords.filter((word) => text.includes(word)).length >= Math.min(2, identifyingWords.length);
+            });
+            const requestedPlayer = this.squad.find((player) => {
+                const name = normalize(player.name);
+                return name.length > 2 && text.includes(name);
+            });
+            const teamNames = [...new Set(this.seasonResults.flatMap((match) => match.report?.team_stats?.map((team) => team.team) || []))];
+            const requestedTeam = teamNames.find((team) => {
+                const name = normalize(team);
+                if (!name || name === normalize(this.clubTeam)) return false;
+                if (text.includes(name)) return true;
+                const words = name.split(/[^a-z0-9]+/).filter((word) => word.length > 3);
+                return words.length > 0 && words.every((word) => text.includes(word));
+            });
+            if (/best player|highest rated|top rated/.test(text)) {
+                const ratedPlayers = this.squad
+                    .map((player) => ({ player, rating: Number(player.rating) }))
+                    .filter((item) => Number.isFinite(item.rating))
+                    .sort((a, b) => b.rating - a.rating)
+                    .slice(0, 3);
+                if (ratedPlayers.length) {
+                    return `Highest-rated players in the loaded reports: ${ratedPlayers.map((item) => `${item.player.name} (${this.formatNumber(item.rating, 1)})`).join(', ')}.`;
+                }
+                return 'Player ratings are not available in the loaded reports.';
+            }
+            const scopes = requestedMatch
+                ? [{ label: requestedMatch.label, report: requestedMatch.report, result: requestedMatch.result }]
+                : this.seasonResults.map((match) => ({ label: match.label, report: match.report, result: match.result }));
+            const metrics = [
+                { key: 'goals', label: 'goals', aliases: ['goals', 'goal', 'scored'], getter: (player, team) => player?.goals ?? player?.n_goals ?? team?.n_goals },
+                { key: 'assists', label: 'assists', aliases: ['assists', 'assist'], getter: (player, team) => player?.assists ?? team?.assists },
+                { key: 'xg', label: 'expected goals (xG)', aliases: ['expected goals', 'expected goal', 'xg'], getter: (player, team) => player?.xg ?? team?.xg },
+                { key: 'shots_on_target', label: 'shots on target', aliases: ['shots on target', 'on target'], getter: (player, team) => player?.shots_on_target ?? team?.shots_on_target },
+                { key: 'shots', label: 'shots', aliases: ['shots', 'shot', 'shooting'], getter: (player, team) => player?.n_shots ?? team?.n_shots },
+                { key: 'passes', label: 'completed passes', aliases: ['completed passes', 'passes', 'pass'], getter: (player, team) => player?.passes_completed ?? player?.n_passes ?? team?.passes_completed ?? team?.n_passes },
+                { key: 'pass_accuracy', label: 'pass completion', aliases: ['pass completion', 'pass accuracy', 'completion'], getter: (player, team) => {
+                    const rate = player?.pass_completion_rate ?? team?.pass_completion_rate;
+                    return rate == null ? null : Number(rate) * 100;
+                } },
+                { key: 'tackles', label: 'tackles', aliases: ['tackles', 'tackle'], getter: (player, team) => player?.tackles ?? team?.tackles },
+                { key: 'interceptions', label: 'interceptions', aliases: ['interceptions', 'interception'], eventType: 'interception', getter: (player, team) => player?.interceptions ?? team?.interceptions },
+                { key: 'distance', label: 'distance covered', aliases: ['distance', 'running', 'ran', 'kilometres', 'kilometers'], getter: (player, team) => player ? Number(player.distance_m) / 1000 : team?.total_distance_km },
+                { key: 'speed', label: 'top speed', aliases: ['top speed', 'fastest', 'speed'], getter: (player) => player?.top_speed_kmh },
+                { key: 'rating', label: 'rating', aliases: ['rating', 'rated'], getter: (player) => player?.rating },
+                { key: 'possession', label: 'possession', aliases: ['possession', 'ball control'], getter: (player, team) => this.percentValue(player?.possession_pct ?? team?.possession_pct) },
+                { key: 'sprints', label: 'sprints', aliases: ['sprints', 'sprint'], getter: (player) => player?.n_sprints },
+                { key: 'carries', label: 'carries', aliases: ['carries', 'carry', 'dribbles', 'dribble'], getter: (player) => player?.carries },
+                { key: 'throw_ins', label: 'throw-ins', aliases: ['throw-ins', 'throw ins', 'throwin', 'throwins'], eventType: 'throw_in' },
+                { key: 'offsides', label: 'offsides', aliases: ['offsides', 'offside'], eventType: 'offside' },
+            ];
+            const requestedMetrics = metrics.filter((metric) => metric.aliases.some((alias) => text.includes(alias)));
+            const facts = [];
+            for (const metric of requestedMetrics) {
+                const rows = [];
+                let unavailable = false;
+                for (const scope of scopes) {
+                    const report = scope.report;
+                    if (!report) continue;
+                    const player = requestedPlayer
+                        ? (report.players || []).find((item) => String(item.track_id) === String(requestedPlayer.track_id))
+                        : null;
+                    if (requestedPlayer && !player) continue;
+                    const team = requestedTeam
+                        ? report.team_stats?.find((item) => normalize(item.team) === normalize(requestedTeam))
+                        : this.clubTeamStats(report);
+                    if (metric.eventType) {
+                        if (!report.demo && !(report.event_capabilities || []).includes(metric.eventType)) {
+                            unavailable = true;
+                            continue;
+                        }
+                        const count = (report.event_rows || []).filter((event) =>
+                            (metric.eventType === 'interception'
+                                ? event.event_type === 'interception' || event.outcome === 'intercepted'
+                                : event.event_type === metric.eventType)
+                            && this.normalizeTeam(event.team) === this.normalizeTeam(requestedTeam || this.clubTeam)
+                            && (!player || String(event.player_track_id) === String(player.track_id))
+                        ).length;
+                        rows.push({ label: scope.label, value: count });
+                        continue;
+                    }
+                    const rawValue = metric.getter(player, team);
+                    const value = rawValue === null || rawValue === undefined || rawValue === '' ? null : Number(rawValue);
+                    if (Number.isFinite(value)) rows.push({ label: scope.label, value });
+                }
+                if (!rows.length) {
+                    const subject = requestedPlayer ? `${requestedPlayer.name}: ` : '';
+                    facts.push(unavailable
+                        ? `${subject}${metric.label} are not tracked in the loaded real reports.`
+                        : requestedPlayer
+                            ? `${subject}there is no ${metric.label} data in these reports.`
+                            : `${metric.label} data is not available in the loaded reports.`);
+                    continue;
+                }
+                const total = rows.reduce((sum, row) => sum + row.value, 0);
+                const average = total / rows.length;
+                const digits = ['xg', 'distance', 'speed', 'rating', 'possession', 'pass_accuracy'].includes(metric.key) ? 1 : 0;
+                const unit = metric.key === 'distance' ? ' km' : metric.key === 'speed' ? ' km/h' : ['possession', 'pass_accuracy'].includes(metric.key) ? '%' : '';
+                const averageAsked = /average|avg|per match|per game|usually|typically/.test(text);
+                const subject = requestedPlayer?.name || requestedTeam || this.clubName;
+                const scopeText = requestedMatch ? `in ${requestedMatch.label}` : `across ${rows.length} report${rows.length === 1 ? '' : 's'}`;
+                facts.push(`${subject}: ${metric.label} ${scopeText}: ${this.formatNumber(averageAsked ? average : total, digits)}${unit}${averageAsked ? ' on average' : requestedMatch ? '' : ' total'}.`);
+            }
+            if (/who|which player|top|most|least|best|highest|lowest|leader/.test(text)) {
+                const rankMetric = metrics.find((metric) => metric.aliases.some((alias) => text.includes(alias)))
+                    || (text.includes('best') || text.includes('leader') ? metrics.find((metric) => metric.key === 'rating') : null);
+                if (rankMetric) {
+                    const ranking = this.squad.map((player) => {
+                        const raw = rankMetric.getter(player, null);
+                        const value = raw === null || raw === undefined || raw === '' ? NaN : Number(raw);
+                        return { player, value };
+                    }).filter((item) => Number.isFinite(item.value));
+                    if (ranking.length) {
+                        ranking.sort((a, b) => b.value - a.value);
+                        const leaders = ranking.slice(0, 3).map((item) => `${item.player.name} (${this.formatNumber(item.value, ['xg', 'distance', 'speed', 'rating'].includes(rankMetric.key) ? 1 : 0)})`);
+                        return `Top ${rankMetric.label} in the loaded squad reports: ${leaders.join(', ')}. This is calculated from ${this.isDemo ? 'sample' : 'available'} match data.`;
+                    }
+                }
+            }
+            if (facts.length) return facts.join(' ');
+
+            if (requestedMatch) {
+                const result = requestedMatch.result;
+                const team = this.clubTeamStats(requestedMatch.report);
+                const opponent = requestedMatch.report?.team_stats?.find((row) => this.normalizeTeam(row.team) !== this.normalizeTeam(this.clubTeam));
+                if (!result || !team) return `I found ${requestedMatch.label}, but its report does not contain enough team data to answer in detail.`;
+                return `${requestedMatch.label}: ${result.for}–${result.against} (${this.formatOutcome(result.outcome)}). ${this.formatNumber(this.percentValue(team.possession_pct), 1)}% possession, ${this.formatNumber(team.n_shots)} shots, ${team.xg == null ? 'xG unavailable' : `${this.formatNumber(team.xg, 2)} xG`}, and ${this.formatNumber(team.n_passes)} completed passes. ${opponent ? `${opponent.team} had ${this.formatNumber(opponent.n_shots)} shots.` : ''}`;
+            }
+            if (requestedTeam) {
+                return `I found ${requestedTeam} in the loaded league reports. Ask about a recorded metric, score or match to see its values.`;
+            }
+            if (requestedPlayer) {
+                const appearances = scopes.filter((scope) => (scope.report?.players || []).some((item) => String(item.track_id) === String(requestedPlayer.track_id)));
+                if (!appearances.length) return `${requestedPlayer.name} is in the squad list, but has no player rows in the loaded match reports.`;
+                return `${requestedPlayer.name} (${requestedPlayer.position || 'player'}) appears in ${appearances.length} loaded report${appearances.length === 1 ? '' : 's'}. You can ask about any recorded stat, match or event for this player.`;
+            }
+
             const knownResults = this.seasonResults.filter((match) => match.result);
-            if (/down|behind|comeback|trailing/.test(text)) {
-                const comebackWins = knownResults.filter((match) => {
-                    const goals = match.report.goals || [];
-                    if (!goals.length) return false;
-                    let ourScore = 0;
-                    let theirScore = 0;
-                    let trailed = false;
-                    goals.slice().sort((a, b) => Number(a.timestamp_s) - Number(b.timestamp_s)).forEach((goal) => {
-                        if (this.normalizeTeam(goal.team) === this.normalizeTeam(this.clubTeam)) ourScore += 1;
-                        else theirScore += 1;
-                        if (theirScore > ourScore) trailed = true;
-                    });
-                    return trailed && match.result.outcome === 'W';
-                });
-                const winsWithTimeline = knownResults.filter((match) => match.result.outcome === 'W' && match.report.goals?.length);
-                if (!winsWithTimeline.length) return 'I cannot verify comebacks from the imported reports yet. This requires goal events with timestamps and team attribution.';
-                return `${comebackWins.length} of ${winsWithTimeline.length} wins (${Math.round(comebackWins.length / winsWithTimeline.length * 100)}%) came after the team had been behind. I used timestamped goal events; wins without a complete event timeline are excluded.`;
-            }
-            if (/distance|ran|running|run|result|correlat|related/.test(text)) {
-                const pairs = knownResults.map((match) => {
-                    const distance = this.metricFor(match.report, 'total_distance_km');
-                    if (distance === null) return null;
-                    const points = match.result.outcome === 'W' ? 3 : match.result.outcome === 'D' ? 1 : 0;
-                    return { distance, points };
-                }).filter(Boolean);
-                if (pairs.length < 3) return `There are ${pairs.length} scored matches with distance data. I need at least 3 to estimate whether distance and results move together; more matches will make the comparison more useful.`;
-                const xMean = pairs.reduce((sum, item) => sum + item.distance, 0) / pairs.length;
-                const yMean = pairs.reduce((sum, item) => sum + item.points, 0) / pairs.length;
-                const numerator = pairs.reduce((sum, item) => sum + (item.distance - xMean) * (item.points - yMean), 0);
-                const xVariance = pairs.reduce((sum, item) => sum + (item.distance - xMean) ** 2, 0);
-                const yVariance = pairs.reduce((sum, item) => sum + (item.points - yMean) ** 2, 0);
-                if (!xVariance || !yVariance) return `Distance and points are available for ${pairs.length} matches, but there is not enough variation to calculate a correlation.`;
-                const correlation = numerator / Math.sqrt(xVariance * yVariance);
-                const direction = Math.abs(correlation) < 0.2 ? 'little linear relationship' : correlation > 0 ? 'a positive relationship' : 'a negative relationship';
-                return `Across ${pairs.length} matches, distance covered and league points show ${direction} (Pearson r = ${correlation.toFixed(2)}). This is a small-sample association, not evidence that running more causes a result.`;
-            }
-            if (/win|record|season|result|form/.test(text)) {
-                const known = this.wins + this.draws + this.losses;
-                return known ? `The current record is ${this.wins} wins, ${this.draws} draws and ${this.losses} losses from ${known} matches with recorded team scores (${this.winRate}% wins).` : 'I do not have enough recorded team scores to summarize results yet. Add match reports with team goals to build the season record.';
-            }
-            if (/goal|scor|attack/.test(text)) return `The team has ${this.seasonTotals.goals} recorded goals across ${this.seasonTotals.games} match reports. Ask about a specific match to see its event timeline and player contributions.`;
-            if (/pass|possession/.test(text)) {
-                const possession = this.seasonTotals.averagePossession;
-                return `The team has ${this.seasonTotals.passes.toLocaleString('en-GB')} recorded passes${possession === null ? '' : ` and averaged ${possession.toFixed(1)}% possession per report`} this season.`;
-            }
-            return 'I can answer questions about results, comebacks, distance covered, goals, passes and possession using the imported match reports. Try one of the suggested questions below.';
+            const matchingMatches = this.sortedMatches.filter((match) => {
+                const searchable = normalize(`${match.label} ${match.date}`);
+                const tokens = text.split(/[^a-z0-9]+/).filter((token) => token.length > 3);
+                return tokens.some((token) => searchable.includes(token));
+            }).slice(0, 3);
+            const summary = knownResults.length
+                ? `${this.clubName}: ${this.wins} wins, ${this.draws} draws and ${this.losses} losses from ${knownResults.length} scored matches, with ${this.seasonTotals.goals} goals and ${this.seasonTotals.passes} completed passes.`
+                : `${this.matches.length} match reports are loaded, but reliable scores are not available for a season record.`;
+            if (matchingMatches.length) return `${summary} The closest report matches are: ${matchingMatches.map((match) => `${match.label}${match.result ? ` (${match.result.for}–${match.result.against})` : ''}`).join('; ')}.`;
+            return `${summary} I searched the loaded match and squad data for “${question}” but could not find a reliable fact for that exact question. I can answer open-ended questions about the club, players, opponents, reports and recorded match events; for unrecorded events or general football knowledge I will say when the data is missing.`;
         },
         assistantGreeting() {
-            return 'I can help you read the season. Ask about results, player output, distance or possession.';
+            return 'Ask me anything about the loaded matches, players, opponents, events or team statistics. I will use the available reports and flag missing data.';
         },
         formatOutcome(outcome) {
             return ({ W: 'Win', D: 'Draw', L: 'Loss' })[outcome] || 'Report ready';
+        },
+        hasPitchLocation(event) {
+            const x = Number(event?.location_x);
+            const y = Number(event?.location_y);
+            return Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 105 && y >= 0 && y <= 68;
+        },
+        teamEventCount(team, eventType) {
+            return this.reportEvents.filter((event) =>
+                this.normalizeTeam(event.team) === this.normalizeTeam(team)
+                && (eventType === 'interception'
+                    ? event.event_type === 'interception' || event.outcome === 'intercepted'
+                    : event.event_type === eventType)
+            ).length;
+        },
+        eventCoverage(eventType) {
+            if (this.currentReport?.demo) return 'sample';
+            return (this.currentReport?.event_capabilities || []).includes(eventType) ? 'tracked' : 'unavailable';
         },
     },
     mounted() {
