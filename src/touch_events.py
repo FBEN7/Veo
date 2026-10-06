@@ -288,14 +288,11 @@ def for_clip(out_dir: Path) -> list[Action]:
         ball = ball[~ball.frame.isin(close)]
     held = holders(ball[["frame", "px", "py"]], players)
 
-    ident = {}
-    blob = out_dir / "identities.json"
-    if blob.exists():
-        ident = {int(k): v["identity"]
-                 for k, v in json.loads(blob.read_text())["tracks"].items()}
-    person = lambda tid: ident.get(int(tid), f"t{tid}")
-    name = lambda tid: (f"player {ident[int(tid)]}" if int(tid) in ident
-                        else f"track {tid}")
+    from .match_identity import names_of
+
+    named = names_of(out_dir)
+    person = lambda tid: named.get(int(tid), f"t{tid}")
+    name = lambda tid: named.get(int(tid), f"track {tid}")
 
     metric_path = out_dir / "tracks_metric.parquet"
     pos = {}

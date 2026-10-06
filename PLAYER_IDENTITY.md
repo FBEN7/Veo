@@ -279,3 +279,38 @@ which splitting does not move -- and the three pairs of clicks with the
 same typed number are still two identities each; what improves is one
 person keeping one name across the clip, which is what per-player
 statistics add up.
+
+## One name across the match
+
+`src/match_identity.py` links each clip's identities across all the clips
+of a match by look alone -- clips are minutes apart, so nothing else
+connects them. Teams are formed from the looks across the whole match
+(two clusters), unplaced identities included; within each team,
+average-link clustering at 0.8, never joining two identities of one clip
+that are on screen together. `match_players.py` writes
+`match_identities.json`; the event detector and the scorers then name
+players match-wide.
+
+Scored on ten game-state clips of one game, where a person is followed
+across clips by side and shirt number (people with no legible number are
+left out), over pairs of identities from different clips:
+
+| | five clips (used to choose) | five other clips |
+|---|---|---|
+| each clip's team labels lined up | 75% right, 48% found | 56% right, 17% found |
+| unplaced identities to the nearest team | 75% / 48% | 63% / 24% |
+| **teams from the looks across the match** | 69% / 44% | **69% / 34%** |
+
+The first row is best on the clips it was chosen on and falls apart on
+the others: half the true pairs had been put in different teams, 20
+identities in "other" alone. Teams from the looks hold up, and are used.
+What it gives is partial: about 7 in 10 links right, and a third to a
+half of a person's identities linked.
+
+On the labelled windows, 141 identities become 83 players for Stoke v
+Huddersfield and 123 become 67 for Reading v Fulham, for about 28 people
+each -- each person still in about three pieces. Of the typed numbers,
+no two different numbers in different clips were given one name; no
+number was typed in two clips, so the links themselves cannot be checked
+there, and three clicks on #9 in one clip still carry three names.
+Event credit is unchanged.

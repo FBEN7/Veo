@@ -28,6 +28,7 @@ from pathlib import Path
 from src.track_split import player_tracks
 
 from score_player_labels import clicked_track
+from src.match_identity import names_of
 from src.touch_events import for_clip
 
 BEFORE_S, AFTER_S = 1.0, 0.5
@@ -48,10 +49,7 @@ def main():
         acts[c] = for_clip(out)
         info[c] = json.loads((out / "clip.json").read_text())
         merged[c] = player_tracks(out)
-        blob = out / "identities.json"
-        ident[c] = ({int(k): v["identity"] for k, v in
-                     json.loads(blob.read_text())["tracks"].items()}
-                    if blob.exists() else {})
+        ident[c] = names_of(out)
 
     stats = defaultdict(Counter)
     for it in items:
@@ -86,7 +84,7 @@ def main():
         stats[kind]["found"] += 1
         want = {f"track {truth}"}
         if truth is not None and int(truth) in ident[c]:
-            want.add(f"player {ident[c][int(truth)]}")
+            want.add(ident[c][int(truth)])
         if any(a.player_from in want for a in cand):
             stats[kind]["right player"] += 1
 

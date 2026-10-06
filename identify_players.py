@@ -40,6 +40,19 @@ def read_tracks(out_dir: Path, model, embedder=None) -> dict:
     return tracks
 
 
+def _look(ident):
+    """An identity's mean look, frame-weighted, as a list (or None): what
+    joins it to identities of other clips (match_identity.py)."""
+    import numpy as np
+
+    vs = [t.look * len(t.frames) for t in ident.tracks if t.look is not None]
+    if not vs:
+        return None
+    v = np.sum(vs, axis=0)
+    v = v / max(float(np.linalg.norm(v)), 1e-9)
+    return [round(float(x), 5) for x in v]
+
+
 def identify(out_dir: Path, model, embedder=None,
              look_threshold: float | None = None,
              use_numbers: bool = False, split: bool = False) -> dict:
@@ -75,6 +88,7 @@ def identify(out_dir: Path, model, embedder=None,
                 for ident in idents for t in ident.tracks},
             "identities": [{"key": i.key, "team": i.team, "number": i.number,
                             "share": round(i.share, 3), "crops": i.crops,
+                            "look": _look(i),
                             "tracks": [t.track_id for t in i.tracks],
                             "frames": int(len(i.frames))} for i in idents]}
     (out_dir / "identities.json").write_text(json.dumps(blob, indent=1))

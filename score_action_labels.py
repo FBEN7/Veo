@@ -30,6 +30,7 @@ from src.track_split import player_tracks
 
 from score_player_labels import clicked_track
 from src.event_schema import from_pipeline
+from src.match_identity import names_of
 from src.touch_events import for_clip
 
 TOL_S = 0.4
@@ -50,7 +51,7 @@ def names(merged, info, ident, click):
         return set()
     out = {f"track {tid}"}
     if int(tid) in ident:
-        out.add(f"player {ident[int(tid)]}")
+        out.add(ident[int(tid)])
     return out
 
 
@@ -69,10 +70,7 @@ def main():
         info = json.loads((out / "clip.json").read_text())
         fps = float(info["fps"])
         merged = player_tracks(out)
-        idf = out / "identities.json"
-        ident = ({int(k): v["identity"] for k, v in
-                  json.loads(idf.read_text())["tracks"].items()}
-                 if idf.exists() else {})
+        ident = names_of(out)
         found = {
             "touch-based (new)": for_clip(out),
             "nearest player (old)": [
