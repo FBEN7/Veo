@@ -43,17 +43,17 @@ def load(out_dir: Path, gsr: Path):
 
 def pairs(tracks, geo, fps, main):
     rows, ys = [], []
-    by_team = {}
-    for t in tracks.values():
-        if t.track_id in main.index:
-            by_team.setdefault(t.team, []).append(t)
-    for members in by_team.values():
-        for i in range(len(members)):
-            for j in range(i + 1, len(members)):
-                f = pid.pair_features(members[i], members[j], geo, fps)
-                rows.append([f[k] for k in pid.PAIR_FEATURES])
-                ys.append(int(main[members[i].track_id]
-                              == main[members[j].track_id]))
+    known = [t for t in tracks.values() if t.track_id in main.index]
+    for i in range(len(known)):
+        for j in range(i + 1, len(known)):
+            a, b = known[i], known[j]
+            # The pairs join_by_pairs weighs: same team, or either unsure.
+            if a.team != b.team and not ({a.team, b.team}
+                                         & pid.UNSURE_TEAMS):
+                continue
+            f = pid.pair_features(a, b, geo, fps)
+            rows.append([f[k] for k in pid.PAIR_FEATURES])
+            ys.append(int(main[a.track_id] == main[b.track_id]))
     return rows, ys
 
 

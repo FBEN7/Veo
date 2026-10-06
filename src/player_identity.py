@@ -270,6 +270,7 @@ def label(ident) -> str:
 # one person.
 
 PAIR_FEATURES = ("look", "shared", "gap_s", "jump", "size_ratio", "short")
+UNSURE_TEAMS = {"other", "unknown", "None"}
 
 
 def geometry(merged: pd.DataFrame) -> dict:
@@ -310,9 +311,19 @@ def join_by_pairs(tracks: dict, geo: dict, fps: float, model,
     frames."""
     out = []
     by_team = {}
+    # A track the team assignment was unsure of ("other") may join either
+    # team: on game-state clips 9 same-person pairs were kept apart only by
+    # that label. It is clustered with each team's tracks, and kept by the
+    # first cluster that takes it.
+    unsure = [t for t in tracks.values() if t.team in UNSURE_TEAMS]
     for t in tracks.values():
-        by_team.setdefault(t.team, []).append(t)
+        if t.team not in UNSURE_TEAMS:
+            by_team.setdefault(t.team, []).append(t)
+    if not by_team:
+        by_team["unknown"] = []
+    taken = set()
     for team, members in by_team.items():
+        members = members + [t for t in unsure if t.track_id not in taken]
         n = len(members)
         prob = np.zeros((n, n))
         clash = np.zeros((n, n), dtype=bool)
@@ -344,5 +355,13 @@ def join_by_pairs(tracks: dict, geo: dict, fps: float, model,
             clusters[x] += clusters[y]
             clusters.pop(y)
         for c in clusters:
-            out.append(Identity(len(out), team, [members[i] for i in c]))
+            group = [members[i] for i in c]
+            sure = [t for t in group if t.team not in UNSURE_TEAMS]
+            if not sure and team != "unknown" and len(by_team) > 1:
+                continue          # left for a later team's clustering
+            taken.update(t.track_id for t in group)
+            out.append(Identity(len(out), team, group))
+    for t in unsure:
+        if t.track_id not in taken:
+            out.append(Identity(len(out), t.team, [t]))
     return out
