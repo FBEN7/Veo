@@ -59,6 +59,10 @@ THRESHOLDS = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
 NOT_FEATURES = {"clip", "match", "frame", "time_s", "label"}
 
 
+# What the hand-set rules found per clip, where the dump recorded it.
+RULES = {}
+
+
 def load(paths):
     tables, truth, duration = [], {}, {}
     for p in paths:
@@ -76,6 +80,9 @@ def load(paths):
                 attempts.append(t)
         truth[clip] = attempts
         duration[clip] = float(table.attrs.get("duration_s", 0.0))
+        if "rule_shots" in table.attrs:
+            RULES[clip] = [s["time_s"]
+                           for s in json.loads(table.attrs["rule_shots"])]
         t = table.time_s.to_numpy()
         table["label"] = [int(any(abs(x - y) <= POSITIVE_S
                                   for y in truth[clip])) for x in t]
@@ -193,6 +200,17 @@ def main():
     print(f"  {total - len(unseen)} of {total} labelled attempts have a "
           f"candidate within {COVER_S:.0f} s; never placed: "
           f"{', '.join(unseen) or 'none'}")
+
+    if RULES:
+        # The rules learn nothing, so every clip is unseen by them.
+        have = [c for c in clips if c in RULES]
+        found = sum(len(RULES[c]) for c in have)
+        matched = sum(len(match(RULES[c], truth[c], TOLERANCE_S)[0])
+                      for c in have)
+        labelled = sum(len(truth[c]) for c in have)
+        print(f"  hand-set rules (goal_plane.find_shots) on {len(have)} "
+              f"clips: {matched} of {labelled} found, {found} detections, "
+              f"precision {matched / max(found, 1):.0%}")
 
     if data["match"].nunique() > 1:
         held_out(data, truth, data["match"].tolist(),

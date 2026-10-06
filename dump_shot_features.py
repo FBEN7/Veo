@@ -151,6 +151,13 @@ def main():
         [{"time_s": e["time_s"], "event_type": e["event_type"]}
          for e in truth])
     table.attrs["duration_s"] = float(ball.time_s.max())
+    # What the hand-set rules find on the same ball and poses, so the
+    # classifier is compared with them clip for clip.
+    from src import goal_plane
+
+    rules = goal_plane.find_shots(ball, maps, info["fps"])
+    table.attrs["rule_shots"] = json.dumps(
+        [{"time_s": s["time_s"], "outcome": s["outcome"]} for s in rules])
     Path(args.features).parent.mkdir(parents=True, exist_ok=True)
     table.to_parquet(args.features)
     print(f"  [features] {len(table)} candidates in {time.time() - t:.0f} s; "
