@@ -29,9 +29,9 @@
         <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9a7 7 0 0 1 11.7-2L20 12M4 12l2.8 5a7 7 0 0 0 11.7-2"/></symbol>
     </svg>
 
-    <div id="app" class="app-shell" :class="{ 'nav-open': mobileNavOpen, 'reference-mode': page === 'overview' }">
+    <div id="app" class="app-shell" :class="{ 'reference-mode': page === 'overview' }">
         <div v-if="mobileNavOpen" class="mobile-scrim" @click="mobileNavOpen = false"></div>
-        <aside class="sidebar">
+        <aside class="sidebar" :class="{ 'nav-open': mobileNavOpen }">
             <a class="brand" href="#overview" @click.prevent="changePage('overview')">
                 <span class="brand-mark"><span>R</span><i></i></span>
                 <span class="brand-wordmark"><strong>RIVERSIDE</strong><small>ATHLETIC CLUB</small></span>
@@ -71,7 +71,7 @@
         <div class="main-shell">
             <header class="topbar">
                 <div class="topbar-left">
-                    <button class="icon-button mobile-menu" aria-label="Open navigation" @click="mobileNavOpen = !mobileNavOpen">
+                    <button class="icon-button mobile-menu" :aria-label="mobileNavOpen ? 'Close navigation' : 'Open navigation'" :aria-expanded="mobileNavOpen" @click="mobileNavOpen = !mobileNavOpen">
                         <span class="menu-lines"></span>
                     </button>
                     <div class="breadcrumbs"><span>RIVERSIDE ATHLETIC</span><b>/</b><strong>{{ pageTitle }}</strong></div>
