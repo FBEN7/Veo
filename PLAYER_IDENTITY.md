@@ -186,3 +186,22 @@ one has the tracked ball up by the hoardings. Excluding unplaced people
 skipping close-up frames removed one false recovery and one real one;
 both are left off. The referee is a team-assignment fault and is fixed
 there or not at all.
+
+### Referees: recognised on SoccerNet, not yet on these windows
+
+`train_role_classifier.py` learns player / goalkeeper / referee from the
+crop on the 15 game-state training clips (balanced classes). On the ten
+validation clips -- matches it never saw -- with the ground truth's boxes
+it finds 20 of 20 referees and calls no outfield player a referee (5 of 11
+goalkeepers are called referees); through our own tracks, 95% of referee
+detections are called referee and 0.7% of players' detections.
+
+On the six 720p broadcast windows it does not transfer: of the 66 clicked
+outfield players it calls 2 referees and 23 goalkeepers, and on the
+Reading windows about 45% of player detections "goalkeeper". Keeping
+"referees" off the ball (`touch_events.EXCLUDE_REFEREES`) removed one false
+recovery on the clicks and lost 2 real passes there and 1 on the held-out
+stretches, so it is off. The gap is the footage -- lower resolution and
+these kits -- and closing it needs referee examples from it: a few clicks
+of "this is the referee" per window would be enough to check and to adapt
+on.
