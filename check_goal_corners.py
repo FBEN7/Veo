@@ -61,7 +61,9 @@ def load(path: Path):
     for row in blob["frames"]:
         if not row.get("corners"):
             continue
-        out_dir = DIRS.get(row["clip"])
+        # Corners found by the keypoint model on clips outside the labelled
+        # six carry their own output directory (`auto_goal_corners.py`).
+        out_dir = DIRS.get(row["clip"]) or row.get("out_dir")
         if not out_dir or not (Path(out_dir) / "clip.json").exists():
             continue
         info = json.loads((Path(out_dir) / "clip.json").read_text())

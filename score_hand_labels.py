@@ -382,6 +382,10 @@ def main():
                     help="directory of train_ball_detector.py runs: each clip "
                          "is searched for the ball by the detector trained "
                          "without its match (<dir>/without_<match>)")
+    ap.add_argument("--dump-features",
+                    help="write the readings around every candidate strike "
+                         "(src/shot_features.py), with the labels, to this "
+                         "parquet file for train_shot_classifier.py")
     ap.add_argument("--shot-trace",
                     help="write every strike the goal-plane reader "
                          "considered, and what its flight fits made of it, "
@@ -483,6 +487,21 @@ def main():
         shots = goal_plane.find_shots(ball, maps, info["fps"], trace=trace)
         if trace is not None:
             Path(args.shot_trace).write_text(json.dumps(trace, indent=1))
+        if args.dump_features:
+            from src.shot_features import candidates
+
+            tracks = pd.read_parquet(out_dir / "tracks.parquet")
+            table = candidates(ball, maps, info["fps"],
+                               players=tracks[tracks.cls == "player"])
+            table.insert(0, "clip", out_dir.name.replace("output_", ""))
+            table["match"] = match_name(path) or ""
+            table.attrs["truth"] = json.dumps(
+                [{"time_s": e["time_s"], "event_type": e["event_type"]}
+                 for e in truth])
+            table.attrs["duration_s"] = float(ball.time_s.max())
+            table.to_parquet(args.dump_features)
+            print(f"  [features] {len(table)} candidate strikes written to "
+                  f"{args.dump_features}")
     shots = detect_shots.score(detect_shots.attribute(shots, out_dir, ball))
     stoppages, _ = ball_events.find_ball_events(ball, maps, info["fps"])
     outs = [e for e in stoppages if e["event_type"] == "out_of_play"]

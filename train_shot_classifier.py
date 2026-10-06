@@ -1,0 +1,174 @@
+"""Learn which candidate strikes are shots, and test it on footage it never saw.
+
+`src/shot_features.py` turns every placed ball sighting in shooting range
+into a row of readings; `score_hand_labels.py --dump-features` writes one
+file per clip with the clip's labels attached. Here a candidate is a
+positive when a labelled shot or goal is within `POSITIVE_S` of it -- a
+label is a person's (or SoccerNet's) timing, good to about a second -- and
+a gradient boosted tree model learns from the rest.
+
+A clip has a few hundred candidates and a shot is a run of them, so the
+model's output is turned back into events the way the rules' is: the most
+likely candidate, then nothing else within `MERGE_S` of it, down to a
+threshold. Events are matched one-to-one to the labels within
+`score_hand_labels.TOLERANCE_S`, as every other detector here is scored.
+
+Tested two ways, each against footage the model never trained on:
+
+  * by match -- trained on Stoke v Huddersfield, tested on Reading v
+    Fulham, and back: a new ground and a new camera;
+  * by clip -- every clip held out in turn, trained on all the others:
+    the same grounds, unseen moments, which is how a Veo camera fixed at
+    one ground would be used.
+
+    python train_shot_classifier.py feat/*.parquet [--save model.joblib]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from score_hand_labels import TOLERANCE_S, match
+from src.goal_plane import MERGE_S
+
+POSITIVE_S = 1.0
+THRESHOLDS = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+NOT_FEATURES = {"clip", "match", "frame", "time_s", "label"}
+
+
+def load(paths):
+    tables, truth, duration = [], {}, {}
+    for p in paths:
+        table = pd.read_parquet(p)
+        if table.empty:
+            continue
+        clip = str(table.clip.iloc[0])
+        events = json.loads(table.attrs.get("truth", "[]"))
+        truth[clip] = [e["time_s"] for e in events
+                       if e["event_type"] in ("shot", "goal")]
+        duration[clip] = float(table.attrs.get("duration_s", 0.0))
+        t = table.time_s.to_numpy()
+        table["label"] = [int(any(abs(x - y) <= POSITIVE_S
+                                  for y in truth[clip])) for x in t]
+        tables.append(table)
+    return pd.concat(tables, ignore_index=True), truth, duration
+
+
+def features(table):
+    return [c for c in table.columns if c not in NOT_FEATURES]
+
+
+def model():
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    return HistGradientBoostingClassifier(
+        max_iter=300, learning_rate=0.05, max_leaf_nodes=15,
+        min_samples_leaf=20, l2_regularization=1.0,
+        class_weight="balanced", random_state=0)
+
+
+def events(table, probs, threshold):
+    """Peaks of the model's output, at least `MERGE_S` apart."""
+    order = np.argsort(-probs)
+    kept = []
+    times = table.time_s.to_numpy()
+    for i in order:
+        if probs[i] < threshold:
+            break
+        if all(abs(times[i] - times[j]) >= MERGE_S for j in kept):
+            kept.append(i)
+    return sorted(kept, key=lambda i: times[i])
+
+
+def held_out(data, truth, fold_of, name, verbose):
+    """Fit without each fold, predict it; events per clip at each threshold."""
+    cols = features(data)
+    probs = np.full(len(data), np.nan)
+    for fold in sorted(set(fold_of)):
+        test = np.array([f == fold for f in fold_of])
+        train = data[~test]
+        if train.label.sum() == 0:
+            continue
+        m = model().fit(train[cols], train.label)
+        probs[test] = m.predict_proba(data[test][cols])[:, 1]
+    print(f"\n  {name}")
+    print(f"  {'threshold':>9s} {'labelled':>9s} {'found':>6s} "
+          f"{'matched':>8s} {'recall':>7s} {'precision':>10s}")
+    best = None
+    for thr in THRESHOLDS:
+        labelled = found = matched = 0
+        for clip, rows in data.groupby("clip"):
+            idx = rows.index.to_numpy()
+            got = events(rows, probs[idx], thr)
+            t = rows.time_s.to_numpy()[got].tolist()
+            pairs, _, _ = match(t, truth[clip], TOLERANCE_S)
+            labelled += len(truth[clip])
+            found += len(t)
+            matched += len(pairs)
+        recall = matched / max(labelled, 1)
+        precision = matched / max(found, 1)
+        print(f"  {thr:9.1f} {labelled:9d} {found:6d} {matched:8d} "
+              f"{recall:7.0%} {precision:10.0%}")
+        f1 = 2 * matched / max(labelled + found, 1)
+        if best is None or f1 > best[1]:
+            best = (thr, f1)
+    if verbose:
+        thr = best[0]
+        print(f"\n  events at threshold {thr} (best F1), to check by eye:")
+        for clip, rows in data.groupby("clip"):
+            idx = rows.index.to_numpy()
+            got = events(rows, probs[idx], thr)
+            t = rows.time_s.to_numpy()[got].tolist()
+            pairs, used, used_truth = match(t, truth[clip], TOLERANCE_S)
+            marks = []
+            for k, i in enumerate(got):
+                r = rows.iloc[i]
+                marks.append(f"{r.time_s:.1f}s p={probs[idx][i]:.2f} "
+                             f"frame {int(r.frame)}"
+                             + ("" if k in used else " FALSE"))
+            missed = [f"{x:.1f}s" for j, x in enumerate(truth[clip])
+                      if j not in used_truth]
+            print(f"    {clip}: " + ("; ".join(marks) or "nothing")
+                  + (f"  | missed {', '.join(missed)}" if missed else ""))
+    return probs
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("features", nargs="+")
+    ap.add_argument("--save", help="fit on everything and save the model")
+    ap.add_argument("--quiet", action="store_true")
+    args = ap.parse_args()
+
+    data, truth, _ = load([Path(p) for p in args.features])
+    clips = sorted(data.clip.unique())
+    print(f"  {len(data)} candidates from {len(clips)} clips; "
+          f"{int(data.label.sum())} within {POSITIVE_S:.0f} s of "
+          f"{sum(len(truth[c]) for c in clips)} labelled shots and goals")
+    for m, rows in data.groupby("match"):
+        print(f"    {m}: {rows.clip.nunique()} clips, "
+              f"{sum(len(truth[c]) for c in rows.clip.unique())} labelled")
+
+    if data.match.nunique() > 1:
+        held_out(data, truth, data.match.tolist(),
+                 "held out by match (trained on the other ground)",
+                 not args.quiet)
+    held_out(data, truth, data.clip.tolist(),
+             "held out by clip (trained on every other clip)",
+             not args.quiet)
+
+    if args.save:
+        import joblib
+
+        m = model().fit(data[features(data)], data.label)
+        joblib.dump({"model": m, "features": features(data)}, args.save)
+        print(f"\n  saved to {args.save}")
+
+
+if __name__ == "__main__":
+    main()
