@@ -179,13 +179,15 @@ precision barely moves (carries 33% -> 38%, balls won 27% -> 29%). With
 are needs looking at on the footage before another rule is added.
 
 What the remaining false balls won are, looked at on the footage (from
-the first round of clicks, to keep the stretches held out): two went to
-the referee standing by the ball, one is on a cut to a close-up camera,
-one has the tracked ball up by the hoardings. Excluding unplaced people
-("other") did not help -- the referee had been put on a team -- and
-skipping close-up frames removed one false recovery and one real one;
-both are left off. The referee is a team-assignment fault and is fixed
-there or not at all.
+the first round of clicks, to keep the stretches held out): one is on a
+cut to a close-up camera, one has the tracked ball up by the hoardings,
+and two are next to the referee. Those two were first read as the
+referee winning the ball; checked afterwards, the track credited at both
+is an outfield player of one team (the role classifier gives it 100% and
+90% player) and the referee stands about a body height away, so they are
+contested balls near the referee, not the referee holding it. Excluding
+unplaced people ("other") and skipping close-up frames were both measured
+and left off.
 
 ### Referees: recognised on SoccerNet, not yet on these windows
 
@@ -202,6 +204,6 @@ Reading windows about 45% of player detections "goalkeeper". Keeping
 "referees" off the ball (`touch_events.EXCLUDE_REFEREES`) removed one false
 recovery on the clicks and lost 2 real passes there and 1 on the held-out
 stretches, so it is off. The gap is the footage -- lower resolution and
-these kits -- and closing it needs referee examples from it: a few clicks
-of "this is the referee" per window would be enough to check and to adapt
-on.
+these kits -- and closing it needs referee examples from it. It would
+not have fixed the two false tackles near the referee either: the track
+credited there is a player (see above).

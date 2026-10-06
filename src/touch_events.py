@@ -44,11 +44,9 @@ import pandas as pd
 
 from .event_schema import Action
 
-# Both off, measured: on the first round of clicks, two of five remaining
-# false "tackles" went to the referee, but he had been put on a team, not
-# "other", so excluding "other" changes nothing; skipping close-up frames
-# (players 1.8x their usual size) removed one false recovery and one real
-# one. The referee needs fixing in team assignment.
+# Both off, measured on the first round of clicks: excluding "other"
+# changes nothing, and skipping close-up frames (players 1.8x their usual
+# size) removed one false recovery and one real one.
 EXCLUDE_OTHER = False
 CLOSE_UP = 0.0
 # Off, measured: the role classifier finds 20 of 20 referees in game-state
@@ -251,9 +249,7 @@ def for_clip(out_dir: Path) -> list[Action]:
                     if r["role"] == "referee"}
         players = players[~players.track_id.isin(referees)]
     if EXCLUDE_OTHER:
-        # Referees, and people the team assignment would not place: on the
-        # first round of clicks two of five false "tackles" went to the
-        # referee standing by the ball.
+        # Referees, and people the team assignment would not place.
         players = players[~players.team.isin(UNSURE)]
     if CLOSE_UP > 0:
         # A cut to a close-up camera: players several times their usual
