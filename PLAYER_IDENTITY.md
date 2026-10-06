@@ -177,3 +177,12 @@ A third fewer false carries and balls won, one real one of each lost, so
 precision barely moves (carries 33% -> 38%, balls won 27% -> 29%). With
 5 and 6 labelled these are within noise. What the remaining false ones
 are needs looking at on the footage before another rule is added.
+
+What the remaining false balls won are, looked at on the footage (from
+the first round of clicks, to keep the stretches held out): two went to
+the referee standing by the ball, one is on a cut to a close-up camera,
+one has the tracked ball up by the hoardings. Excluding unplaced people
+("other") did not help -- the referee had been put on a team -- and
+skipping close-up frames removed one false recovery and one real one;
+both are left off. The referee is a team-assignment fault and is fixed
+there or not at all.

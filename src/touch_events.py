@@ -44,6 +44,13 @@ import pandas as pd
 
 from .event_schema import Action
 
+# Both off, measured: on the first round of clicks, two of five remaining
+# false "tackles" went to the referee, but he had been put on a team, not
+# "other", so excluding "other" changes nothing; skipping close-up frames
+# (players 1.8x their usual size) removed one false recovery and one real
+# one. The referee needs fixing in team assignment.
+EXCLUDE_OTHER = False
+CLOSE_UP = 0.0
 CONTACT = 0.6            # ball within this many body heights of the feet
 CONTROL = 0.9            # ... and kept by its player while within this
 HOLD_GAP = 3             # frames a possession survives unseen
@@ -230,6 +237,19 @@ def for_clip(out_dir: Path) -> list[Action]:
     players["px"] = players.get("px_raw", players.px)
     players["py"] = players.get("py_raw", players.py)
     ball = detect_shots.ball_track(out_dir, ball_detector="fill")
+    if EXCLUDE_OTHER:
+        # Referees, and people the team assignment would not place: on the
+        # first round of clicks two of five false "tackles" went to the
+        # referee standing by the ball.
+        players = players[~players.team.isin(UNSURE)]
+    if CLOSE_UP > 0:
+        # A cut to a close-up camera: players several times their usual
+        # size. Nothing on those frames is the play as the main camera
+        # follows it.
+        size = players.groupby("frame").crop_h.median()
+        close = set(size.index[size > CLOSE_UP * size.median()])
+        players = players[~players.frame.isin(close)]
+        ball = ball[~ball.frame.isin(close)]
     held = holders(ball[["frame", "px", "py"]], players)
 
     ident = {}
