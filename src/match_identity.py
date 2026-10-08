@@ -41,6 +41,7 @@ OTHER_TO_TEAM = 0.5
 # used to choose and 56% / 17% on the other five; teams by look, 69% / 44%
 # and 69% / 34%. Chosen for holding up on clips it was not chosen on.
 TEAMS_BY_LOOK = True
+TEAM_RESTARTS = 20
 THRESHOLD = 0.8
 TEAMS = ("team_A", "team_B")
 
@@ -90,21 +91,39 @@ def align_teams(rows) -> dict:
     return out
 
 
-def _two_teams(rows, iters: int = 20) -> dict:
+def _two_teams(rows, iters: int = 20, restarts: int = TEAM_RESTARTS) -> dict:
     """Split identities into two teams by look, over every clip at once:
-    2-means on the unit looks, seeded with the two least alike."""
+    frame-weighted 2-means on the unit looks, started `restarts` times
+    from an identity seen on at least `MIN_FRAMES` frames and the one least
+    like it, keeping the tightest split.
+
+    Seeded once with the two least alike of all identities, as first
+    written, the seeds at Stoke v Huddersfield were two 11- and 13-frame
+    identities nobody had placed, and the split was those few against
+    everyone: 27 of 47 players a person named were on the right side;
+    with restarts, 39 (Reading v Fulham: 50 of 55 either way)."""
     looks = np.stack([r["look"] for r in rows])
     w = np.array([r["frames"] for r in rows], dtype=float)
-    sim = looks @ looks.T
-    a, b = np.unravel_index(np.argmin(sim), sim.shape)
-    c = np.stack([looks[a], looks[b]])
-    for _ in range(iters):
+    long_ = np.where(w >= MIN_FRAMES)[0]
+    if not len(long_):
+        long_ = np.arange(len(rows))
+    rng = np.random.default_rng(0)
+    best = None
+    for k in range(restarts):
+        a = long_[np.argmax(w[long_])] if k == 0 else long_[rng.integers(len(long_))]
+        b = long_[np.argmin(looks[long_] @ looks[a])]
+        c = np.stack([looks[a], looks[b]])
+        for _ in range(iters):
+            lab = np.argmax(looks @ c.T, axis=1)
+            for j in range(2):
+                if (lab == j).any():
+                    v = (looks[lab == j] * w[lab == j, None]).sum(axis=0)
+                    c[j] = v / max(np.linalg.norm(v), 1e-9)
         lab = np.argmax(looks @ c.T, axis=1)
-        for k in range(2):
-            if (lab == k).any():
-                v = (looks[lab == k] * w[lab == k, None]).sum(axis=0)
-                c[k] = v / max(np.linalg.norm(v), 1e-9)
-    return {id(r): TEAMS[int(lab[i])] for i, r in enumerate(rows)}
+        fit = float((w * (looks @ c.T).max(axis=1)).sum())
+        if best is None or fit > best[0]:
+            best = (fit, lab)
+    return {id(r): TEAMS[int(best[1][i])] for i, r in enumerate(rows)}
 
 
 def link(rows, threshold: float = THRESHOLD,

@@ -2,11 +2,11 @@
 
 Each click is resolved to the track whose feet it is nearest
 (`at_feet`); its team and typed number say who the player is. Over
-pairs of named clicks on one team:
+pairs of named clicks in one match:
 
-- **within a clip**: same number -> the two tracks should be one identity
-  (else the person was split); different numbers -> two identities (else
-  two people were merged);
+- **within a clip**: same team and number -> the two tracks should be one
+  identity (else the person was split); a different team or number -> two
+  identities (else two people were merged);
 - **across clips of a match**: the same, for the match-wide names
   (`match_identity.names_of`);
 - **teams**: within a clip, the share of named players whose track's team
@@ -86,8 +86,8 @@ def pairs(clicks, same_clip: bool, key: str):
     joined = split = apart = merged = 0
     named = [c for c in clicks if c["number"]]
     for a, b in itertools.combinations(named, 2):
-        if a["team"] != b["team"] or a["clip"].split("_")[0] != b["clip"].split("_")[0]:
-            continue
+        if a["clip"].split("_")[0] != b["clip"].split("_")[0]:
+            continue    # another match
         if (a["clip"] == b["clip"]) != same_clip:
             continue
         if a["clip"] == b["clip"] and a["track"] == b["track"]:
@@ -95,7 +95,7 @@ def pairs(clicks, same_clip: bool, key: str):
         if a["clip"] == b["clip"] and a["frame"] == b["frame"]:
             continue    # two on one frame are kept apart by construction
         one = a[key] is not None and a[key] == b[key]
-        if a["number"] == b["number"]:
+        if (a["team"], a["number"]) == (b["team"], b["number"]):
             joined += one
             split += not one
         else:
@@ -134,7 +134,8 @@ def main():
                                   ("across clips, match-wide names", False, "name")):
         j, s, a, m = pairs(clicks, same_clip, key)
         print(f"  {label}: same player {j}/{j + s} joined; "
-              f"different players {a}/{a + m} kept apart")
+              f"different players {a}/{a + m} kept apart; of the links, "
+              f"{j}/{j + m} right")
 
 
 if __name__ == "__main__":

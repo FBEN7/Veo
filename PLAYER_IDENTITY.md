@@ -324,5 +324,51 @@ version showed still frames chosen by the pipeline and could not be used:
 main-camera frames showed no legible number. `score_player_names.py`
 then counts, within a clip and across a match, same-number pairs joined
 and different-number pairs kept apart, and how often the team is right.
-A first look already shows close-up tracks often left without a team
-(382 of 1015 detections taller than 180 px in one clip are "other").
+### What the names showed
+
+103 players named across the six clips (one click on no detection), each
+at a moment their number was legible: players a median 84 px tall,
+mostly on the main camera, not only close-ups. The browser's frame
+numbers match the pipeline's (clicks land nearest the feet with no
+offset). Over pairs of named players, a pair being one player when team
+and number agree:
+
+| | right | |
+|---|---|---|
+| team assignment | 82 of 102 | 12 wrong team, 8 unplaced |
+| within a clip, different players kept apart | 759 of 769 | 10 identities hold two named players, 3 of them across teams |
+| across clips, same player given one name | 18 of 75 (24%) | |
+| across clips, links that are right | 18 of 46 (39%) | game-state clips: 69% |
+
+Two causes, from `match_identity`'s own inputs:
+
+- **teams by look split the wrong way for Stoke v Huddersfield**: 45 of
+  the 47 named players fell in one of the two look clusters, so the
+  teams were not kept apart at all; for Reading v Fulham the split was
+  right for 50 of 55. The 2-means had been seeded with the two least
+  alike identities, at Stoke two unplaced 11- and 13-frame ones, and
+  split those few from everyone. Restarted 20 times from identities seen
+  on 50 frames or more, keeping the tightest split, it puts 39 of the 47
+  on the right side (Reading unchanged; game-state clips 68% / 44% and
+  68% / 33%, as before). The links did not change: 25 of the 28 wrong
+  ones are between teammates;
+- **appearance hardly tells teammates apart here**: same-player pairs
+  across clips are a median 0.93 alike, different teammates 0.85-0.87;
+  at 0.9, 49 of 75 same-player pairs pass and so do 332 of 797
+  different-player pairs.
+
+The within-clip merges are look-joins of separate tracks (and one track
+that passes from Stoke's #4 to #26).
+
+### The shirt-number reader, checked on this footage
+
+On crops of the named players within 10 frames of the click -- where a
+person read the number -- the reader trained on the jersey set read 0 of
+47 at Stoke (38 wrong, 9 unread), and 1 of 102 on the exact frames,
+answering 29 for most. It still reads 36 of 42 held-out tracklets of the
+jersey set. Those held-out tracklets come from the same games as its
+training ones, and every crop of a tracklet carries the tracklet's
+number, including the crops where the player faces the camera: the
+reader could, and evidently did, learn players' looks rather than
+digits. The figures reported above for it (82 of 101) measured that, not
+reading.
