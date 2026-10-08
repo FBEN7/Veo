@@ -15,7 +15,7 @@ are the history that got it there.
 | `TEAM_ASSIGNMENT.md` | team assignment, and why an earlier figure measured something else |
 | `PLAYER_IDENTITY.md` | who did each event: shirt numbers, anonymous identities, measured against clicks and SoccerNet game-state clips |
 | `VEO_FOOTAGE.md` | the 640x360 follow-cam clip (most likely a re-shared Veo export) and what can be checked without labels |
-| `SOCCERTRACK_V2.md` | fixed whole-pitch panoramic footage with ground truth: what it holds and how windows are fetched |
+| `SOCCERTRACK_V2.md` | fixed whole-pitch panoramic footage with ground truth: what it holds, how windows are fetched, and the pipeline measured on it |
 | `SPEC_rapport_pdf.md` | the specification for the PDF report (French) |
 | `DASHBOARD_SETUP.md` | running the dashboard |
 
