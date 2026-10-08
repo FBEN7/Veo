@@ -44,6 +44,7 @@ from src.paths import CACHE_DIR
 CROPS_PER_TRACKLET = 12          # sampled per tracklet per epoch
 VOTE_CROPS = 60                  # crops per tracklet when evaluating
 MIL_CROPS = 8                    # crops per tracklet per training step
+VISIBLE_BARS = (0.3, 0.5, 0.7, 0.9)  # tried on --dev
 
 
 def tracklets(root: Path):
@@ -228,24 +229,30 @@ def main():
               f"{time.time() - t0:.0f} s", flush=True)
         model.eval()
         if dev is not None:
-            # Chosen on reads right less reads wrong: a wrong number joins
-            # two players.
-            right, wrong, _ = evaluate(model, dev, "chosen on")
-            score = right - wrong
+            # Chosen on reads right less reads wrong (a wrong number joins
+            # two players), with how sure a crop must be that a number
+            # shows: trained this way a tracklet needs only one sure crop,
+            # and the bar set for the first reader may suit it badly.
+            score = None
+            for mv in VISIBLE_BARS:
+                right, wrong, _ = evaluate(model, dev, f"chosen on, bar {mv}", mv)
+                if score is None or right - wrong > score:
+                    score, bar = right - wrong, mv
         elif epoch % 3 == 2 or epoch == args.epochs - 1:
             right, wrong, _ = evaluate(model, val, "held out")
-            score = right - wrong
+            score, bar = right - wrong, jr.MIN_VISIBLE
         else:
             continue
         if best is None or score > best:
-            best = score
+            best, best_bar = score, bar
             torch.save(model.state_dict(), args.out)
-            print(f"  saved {args.out}", flush=True)
+            print(f"  saved {args.out} (bar {bar})", flush=True)
     model.load_state_dict(torch.load(args.out))
     model.eval()
-    evaluate(model, val, "held out (same games as training)")
+    evaluate(model, val, "held out (same games as training)", best_bar)
     for path in args.test:
-        evaluate(model, tracklets(Path(path)), f"test {path}")
+        evaluate(model, tracklets(Path(path)), f"test {path}, bar {best_bar}",
+                 best_bar)
 
 
 if __name__ == "__main__":
