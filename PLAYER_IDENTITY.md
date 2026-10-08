@@ -316,8 +316,13 @@ there, and three clicks on #9 in one clip still carry three names.
 Event credit is unchanged.
 
 To check the links on our own footage, `make_number_labeller.py` builds a
-page of six frames per clip (players largest, no replays) where a person
-clicks each player they can name and gives the team and shirt number;
-`score_player_names.py` then counts, within a clip and across a match,
-same-number pairs joined and different-number pairs kept apart, and how
-often the team is right.
+page that plays the clips (the person opens their own copies; nothing is
+embedded) and lets a person pause wherever a shirt number is legible --
+close-ups, mostly, since on the main camera players are 60-150 px tall at
+720p -- click the player's feet and give the team and number. A first
+version showed still frames chosen by the pipeline and could not be used:
+main-camera frames showed no legible number. `score_player_names.py`
+then counts, within a clip and across a match, same-number pairs joined
+and different-number pairs kept apart, and how often the team is right.
+A first look already shows close-up tracks often left without a team
+(382 of 1015 detections taller than 180 px in one clip are "other").

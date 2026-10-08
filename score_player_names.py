@@ -1,7 +1,7 @@
 """Score player identities against the names from `make_number_labeller.py`.
 
-Each click is resolved to the track it lands on (`score_player_labels.
-clicked_track`); its team and typed number say who the player is. Over
+Each click is resolved to the track whose feet it is nearest
+(`at_feet`); its team and typed number say who the player is. Over
 pairs of named clicks on one team:
 
 - **within a clip**: same number -> the two tracks should be one identity
@@ -25,9 +25,27 @@ import json
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from score_player_labels import clicked_track
+import numpy as np
+
 from src.match_identity import names_of
 from src.track_split import player_tracks
+
+# A click this far from a player's feet, as a share of their height, picks them.
+FEET_REACH = 0.3
+
+
+def at_feet(tracks, frame, x, y, width, height):
+    """The player whose feet are nearest the click, within `FEET_REACH` of
+    their height. The page asks for the feet; `clicked_track` measures
+    from the middle of the body with a wide reach, which in close-ups,
+    with players 400-500 px tall, gave a click on one player's feet to
+    the player beside them."""
+    p = tracks[(tracks.cls == "player") & (tracks.frame == frame)]
+    if p.empty:
+        return None
+    d = np.hypot(p.px_raw - x * width, p.py_raw - y * height) / p.crop_h
+    best = d.idxmin()
+    return int(p.track_id[best]) if d[best] <= FEET_REACH else None
 
 
 def resolve(items):
@@ -43,8 +61,15 @@ def resolve(items):
             cache[clip] = (info, player_tracks(d), ident, names_of(d))
         info, tracks, ident, names = cache[clip]
         for p in item["players"]:
-            t = clicked_track(tracks, int(item["frame"]), p["x"], p["y"],
-                              info["width"], info["height"])
+            # The page reads the frame from the browser's player, which may
+            # be one off the pipeline's count; the neighbours are tried next.
+            f0 = int(item["frame"])
+            t = None
+            for f in (f0, f0 - 1, f0 + 1):
+                t = at_feet(tracks, f, p["x"], p["y"],
+                            info["width"], info["height"])
+                if t is not None:
+                    break
             if t is None:
                 missed += 1
                 continue
@@ -65,8 +90,10 @@ def pairs(clicks, same_clip: bool, key: str):
             continue
         if (a["clip"] == b["clip"]) != same_clip:
             continue
-        if a["frame"] == b["frame"] and a["clip"] == b["clip"]:
-            continue    # two people on one frame say nothing new
+        if a["clip"] == b["clip"] and a["track"] == b["track"]:
+            continue    # one track is one identity by construction
+        if a["clip"] == b["clip"] and a["frame"] == b["frame"]:
+            continue    # two on one frame are kept apart by construction
         one = a[key] is not None and a[key] == b[key]
         if a["number"] == b["number"]:
             joined += one
