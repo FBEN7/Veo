@@ -80,7 +80,9 @@ def match_feet(det: pd.DataFrame, gt: pd.DataFrame,
         a = np.c_[(d.x0 + d.x1) / 2, d.y1]
         b = np.c_[(g.x0 + g.x1) / 2, g.y1]
         dist = np.linalg.norm(a[:, None] - b[None], axis=2)
-        r, c = linear_sum_assignment(dist)
+        # Pairs beyond the limit cost more than any set of pairs within it,
+        # so the assignment maximises matches first, then closeness.
+        r, c = linear_sum_assignment(np.where(dist <= limit, dist, 1e6))
         for i, j in zip(r, c):
             if dist[i, j] <= limit:
                 out.loc[d.index[i]] = g.person.iloc[j]
