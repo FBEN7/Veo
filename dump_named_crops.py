@@ -4,8 +4,9 @@ For each click from `make_number_labeller.py` (resolved to a track by
 `score_player_names.resolve`), the clicked track's crops within
 `WINDOW` frames of the click -- where the person could read the number --
 are written in the SoccerNet jersey set's layout (`images/<key>/*.jpg`
-and `<name>_gt.json`), one set per match, so the reader can be chosen and
-tested on this footage with `train_jersey_reader.py --dev / --test`.
+and `<name>_gt.json`), one set per clip (`jersey_named_<clip>`), so the
+reader can be trained, chosen and tested on this footage with
+`train_jersey_reader.py --add / --dev / --test`, whole matches apart.
 Derived from the footage: kept in `.cache`, never committed.
 
     python dump_named_crops.py player_names.json
@@ -41,8 +42,7 @@ def main():
         if c["number"] and c["number"].isdigit():
             by_clip[c["clip"]].append(c)
     for clip, cs in by_clip.items():
-        match = clip.split("_")[0]
-        root = Path(args.out) / f"jersey_named_{match}"
+        root = Path(args.out) / f"jersey_named_{clip}"
         d = Path(f"output_{clip}")
         info = json.loads((d / "clip.json").read_text())
         t = player_tracks(d)
@@ -50,7 +50,7 @@ def main():
         wanted = defaultdict(list)
         for c in cs:
             key = f"{clip}_{c['frame']}_{c['track']}"
-            gt[match][key] = int(c["number"])
+            gt[clip][key] = int(c["number"])
             rows = t[(t.track_id == c["track"])
                      & ((t.frame - c["frame"]).abs() <= WINDOW)]
             for r in rows.itertuples():
@@ -62,9 +62,9 @@ def main():
                     out = root / "images" / key
                     out.mkdir(parents=True, exist_ok=True)
                     cv2.imwrite(str(out / f"{f:05d}.jpg"), c)
-    for match, labels in gt.items():
-        root = Path(args.out) / f"jersey_named_{match}"
-        (root / f"{match}_gt.json").write_text(json.dumps(labels, indent=1))
+    for clip, labels in gt.items():
+        root = Path(args.out) / f"jersey_named_{clip}"
+        (root / f"{clip}_gt.json").write_text(json.dumps(labels, indent=1))
         print(f"  {root}: {len(labels)} named players")
 
 

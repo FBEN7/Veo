@@ -45,6 +45,7 @@ CROPS_PER_TRACKLET = 12          # sampled per tracklet per epoch
 VOTE_CROPS = 60                  # crops per tracklet when evaluating
 MIL_CROPS = 8                    # crops per tracklet per training step
 VISIBLE_BARS = (0.3, 0.5, 0.7, 0.9)  # tried on --dev
+ADD_REPEAT = 10
 
 
 def tracklets(root: Path):
@@ -148,9 +149,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
     ap.add_argument("--test", nargs="*", default=[],
-                    help="sets reported once, with the chosen weights")
-    ap.add_argument("--dev", help="a set from other footage the weights "
-                    "are chosen on (`dump_named_crops.py`)")
+                    help="sets reported once, together, with the chosen "
+                    "weights")
+    ap.add_argument("--dev", nargs="*", default=[],
+                    help="sets from other footage the weights are chosen "
+                    "on (`dump_named_crops.py`)")
+    ap.add_argument("--add", nargs="*", default=[],
+                    help="sets from other footage to train on as well, "
+                    "each tracklet `--add-repeat` times an epoch")
+    ap.add_argument("--add-repeat", type=int, default=ADD_REPEAT)
+    ap.add_argument("--init", help="weights to start from")
     ap.add_argument("--plain", action="store_true",
                     help="per-crop labels and no colour scrambling, as "
                     "first trained")
@@ -166,11 +174,16 @@ def main():
     random.Random(0).shuffle(items)
     n_val = int(len(items) * args.val_share)
     val, train = items[:n_val], items[n_val:]
-    dev = tracklets(Path(args.dev)) if args.dev else None
-    print(f"  {len(train)} training tracklets, {len(val)} held out"
+    dev = [t for d in args.dev for t in tracklets(Path(d))] or None
+    added = [t for d in args.add for t in tracklets(Path(d))]
+    train = train + added * args.add_repeat
+    print(f"  {len(train)} training tracklets ({len(added)} from other "
+          f"footage, x{args.add_repeat}), {len(val)} held out"
           + (f", {len(dev)} to choose on" if dev else ""), flush=True)
 
     model = jr.build()
+    if args.init:
+        model.load_state_dict(torch.load(args.init))
     opt = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, args.epochs)
     bce = torch.nn.BCEWithLogitsLoss()
@@ -250,8 +263,9 @@ def main():
     model.load_state_dict(torch.load(args.out))
     model.eval()
     evaluate(model, val, "held out (same games as training)", best_bar)
-    for path in args.test:
-        evaluate(model, tracklets(Path(path)), f"test {path}, bar {best_bar}",
+    if args.test:
+        test = [t for d in args.test for t in tracklets(Path(d))]
+        evaluate(model, test, f"test ({len(args.test)} sets), bar {best_bar}",
                  best_bar)
 
 
