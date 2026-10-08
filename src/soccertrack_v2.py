@@ -32,14 +32,22 @@ what is read here:
   origin at the centre spot; `bbox_image` is a dict in true pixels (the
   declared image size, 3840 x 1504, is wrong for the 4096-wide matches);
 - BAS events are under `actions` (or `annotations`), labels in capitals.
-  From release v1.2 each carries `frame`, its video and GSR frame, and
-  `position` is milliseconds from the half video's first frame; earlier
+  From release v1.2 each carries `frame`, its video and GSR frame
+  (1-based, like the GSR image ids), and `position` is milliseconds from
+  the half video's first decoded frame; earlier
   releases had `position` from the start of the *match*, so a second-half
   event is placed by subtracting 45 minutes (`_event_frame`).
 
 The direction of the pitch `y` axis is stated both ways (the dataset's
 README: towards the touchline nearer the camera; the format doc: towards
-the far one); `y_towards_camera` settles it from the data.
+the far one); `y_towards_camera` settles it from the data: on M2 the
+README is right (y and the box bottom correlate at 0.93).
+
+Measured on the real files (v1.2): frames are 4096 x 1080 on M2 (the
+`images` sizes are right); the GSR holds only players and goalkeepers (no
+referees, no ball); every image box is 42-43 px tall and 17-81 px wide,
+wider than the players (~18 px), and sits within ~10 px (median) of the
+detected feet with no time offset; BAS `frame` is 1-based.
 
     python -m src.soccertrack_v2          # self-check on synthetic files
 """
@@ -317,10 +325,13 @@ def gsr_table(match: str, half: int, refresh: bool = False) -> pd.DataFrame:
 
 
 def y_towards_camera(gsr: pd.DataFrame) -> bool:
-    """Whether pitch y grows towards the camera: players nearer a camera
-    look taller, so their box height rises with y if it does."""
-    p = gsr[(gsr.role == "player") & gsr.bh.notna() & gsr.y.notna()]
-    return bool(np.corrcoef(p.y.astype(float), p.bh.astype(float))[0, 1] > 0)
+    """Whether pitch y grows towards the camera: the camera looks down on
+    the pitch, so feet nearer it are lower in the picture, and the box
+    bottom (by + bh) rises with y if it does. (Box height would say the same
+    in principle, but the released boxes are all 42-43 px tall.)"""
+    p = gsr[(gsr.role == "player") & gsr.by.notna() & gsr.y.notna()]
+    foot = p.by.astype(float) + p.bh.astype(float)
+    return bool(np.corrcoef(p.y.astype(float), foot)[0, 1] > 0)
 
 
 def _half(half: int) -> str:
@@ -330,10 +341,11 @@ def _half(half: int) -> str:
 # ---- BAS ----------------------------------------------------------------------
 
 def _event_frame(a: dict, half: int) -> int:
-    """The half-video frame of an event: its `frame` (release v1.2 on), else
-    from `position`, which before v1.2 counted from the start of the match."""
+    """The 0-indexed half-video frame of an event: its `frame` (release v1.2
+    on, 1-based), else from `position`, which before v1.2 counted from the
+    start of the match."""
     if a.get("frame") is not None:
-        return int(a["frame"])
+        return int(a["frame"]) - 1
     ms = int(a["position"])
     if half == 2 and ms >= HALF_MS:
         ms -= HALF_MS
@@ -493,7 +505,7 @@ def _check():
     assert (df.bw.iloc[1], df.bh.iloc[1]) == (60, 140)
     assert y_towards_camera(pd.DataFrame(
         {"role": ["player"] * 3, "y": [-30.0, 0.0, 30.0],
-         "bh": [40.0, 80.0, 160.0]}))
+         "by": [150.0, 400.0, 700.0], "bh": [43.0, 43.0, 43.0]}))
     # The key named inside an earlier value, and nested arrays, are not
     # taken for the array itself.
     tricky = json.dumps({"info": {"note": "annotations", "x": [1, 2]},
@@ -509,7 +521,7 @@ def _check():
          "label": "HIGH PASS", "team": "right"},
         {"gameTime": "90:01", "position": "5401000", "label": "SHOT"}]}
     ev = parse_events(v12)
-    assert list(ev.frame) == [50, 100] and list(ev.kind) == ["pass", "pass"]
+    assert list(ev.frame) == [49, 99] and list(ev.kind) == ["pass", "pass"]
     assert ev.player_id.iloc[0] == "170959" and pd.isna(ev.player_id.iloc[1])
     v11 = {"annotations": [
         {"gameTime": "2 - 00:04", "position": str(HALF_MS + 4000),

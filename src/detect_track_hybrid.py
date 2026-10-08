@@ -376,7 +376,8 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 rows.append(dict(frame=frame_idx, time_s=frame_idx / fps,
                                  track_id=int(tid), cls="player",
                                  px=px, py=py,
-                                 crop_h=h_px, detection_method="yolo"))
+                                 crop_h=h_px, crop_w=float(x2 - x1),
+                                 detection_method="yolo"))
 
             # Ball detection (method-dependent)
             if ball_detection_method == "hsv":

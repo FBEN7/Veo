@@ -207,7 +207,9 @@ def check_cache_provenance(out_dir: Path, clip_info: dict) -> None:
 
 
 def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
-                 team_override: dict[int, str] | None = None):
+                 team_override: dict[int, str] | None = None,
+                 fixed_camera: bool = False, model_name: str = "yolov8m.pt",
+                 stride: int = 1):
     """Detect, track and emit events for the clip, caching each stage.
 
     ``return_tracks`` also hands back the metric tracks the events were
@@ -247,7 +249,13 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
         print(f"cached profile:\n{profile.summary()}")
     else:
         print("deriving parameters from the clip...")
-        profile = auto_tune.profile_video(clip)
+        if fixed_camera:
+            native = -(-clip_info["width"] // 32) * 32
+            profile = auto_tune.profile_video(
+                clip, model_name, n_samples=12, imgsz_options=(native,),
+                static=True)
+        else:
+            profile = auto_tune.profile_video(clip)
         profile.save(profile_path)
 
     raw = out_dir / "tracks.parquet"
@@ -256,7 +264,7 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     else:
         print("detecting...")
         tracks = run_detection(
-            clip, stride=1, model_name="yolov8m.pt",
+            clip, stride=stride, model_name=model_name,
             conf_player=profile.conf_player, conf_ball=profile.conf_ball,
             out_path=str(raw), max_seconds=0, imgsz=profile.imgsz,
             ball_detection_method="yolo")

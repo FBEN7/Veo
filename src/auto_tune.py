@@ -305,8 +305,13 @@ def _measure_camera_motion(video: str, frames: list[int]) -> float:
 
 
 def profile_video(video: str, model_name: str = "yolov8m.pt",
-                  n_samples: int = 30, verbose: bool = True) -> VideoProfile:
-    """Derive detection parameters by probing the video."""
+                  n_samples: int = 30, verbose: bool = True,
+                  imgsz_options: tuple[int, ...] = IMGSZ_OPTIONS,
+                  static: bool = False) -> VideoProfile:
+    """Derive detection parameters by probing the video.
+
+    `imgsz_options` are the input sizes tried; `static` declares a fixed
+    camera, whose motion is then not measured nor compensated."""
     cap = cv2.VideoCapture(video)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -328,7 +333,7 @@ def profile_video(video: str, model_name: str = "yolov8m.pt",
     # Input size first: it changes what is detectable at all, so the
     # confidence thresholds must be chosen at the size actually used.
     per_imgsz = {}
-    for imgsz in IMGSZ_OPTIONS:
+    for imgsz in imgsz_options:
         p_conf, b_conf, heights = _probe_detections(video, model, frames, imgsz)
         rate = _ball_rate(b_conf, 0.10)
         per_imgsz[imgsz] = (p_conf, b_conf, heights, rate)
@@ -337,9 +342,9 @@ def profile_video(video: str, model_name: str = "yolov8m.pt",
 
     best_rate = max(v[3] for v in per_imgsz.values())
     imgsz = next(
-        (s for s in IMGSZ_OPTIONS
+        (s for s in imgsz_options
          if per_imgsz[s][3] >= IMGSZ_ACCEPT_FRACTION * best_rate),
-        IMGSZ_OPTIONS[-1],
+        imgsz_options[-1],
     )
     player_conf, ball_conf, heights, _ = per_imgsz[imgsz]
 
@@ -360,7 +365,7 @@ def profile_video(video: str, model_name: str = "yolov8m.pt",
     px_per_m = player_height_px / PLAYER_HEIGHT_M
     ball_size_px = px_per_m * 0.22
 
-    motion = _measure_camera_motion(video, frames)
+    motion = 0.0 if static else _measure_camera_motion(video, frames)
     compensate = motion >= CAMERA_MOTION_THRESHOLD_PX
 
     if players_per_frame < 12:
