@@ -41,6 +41,10 @@ OTHER_TO_TEAM = 0.5
 # used to choose and 56% / 17% on the other five; teams by look, 69% / 44%
 # and 69% / 34%. Chosen for holding up on clips it was not chosen on.
 TEAMS_BY_LOOK = True
+# Shirt numbers read by `read_numbers_parseq.py` (`numbers.json`), where
+# present: identities of a team with the same number are one player, two
+# with different numbers are two.
+USE_NUMBERS = True
 TEAM_RESTARTS = 20
 THRESHOLD = 0.8
 TEAMS = ("team_A", "team_B")
@@ -53,6 +57,8 @@ def load(out_dirs) -> list[dict]:
         from .track_split import player_tracks
 
         blob = json.loads((d / "identities.json").read_text())
+        nf = d / "numbers.json"
+        numbers = json.loads(nf.read_text()) if nf.exists() else {}
         tracks = player_tracks(d)
         tracks = tracks[tracks.cls == "player"]
         seen = {int(t): set(g.frame.astype(int))
@@ -61,8 +67,11 @@ def load(out_dirs) -> list[dict]:
             if i.get("look") is None:
                 continue
             on = set().union(*(seen.get(int(t), set()) for t in i["tracks"]))
+            num = numbers.get(str(i["key"]), {}) if USE_NUMBERS else {}
             rows.append({"clip": d.name, "key": i["key"], "team": i["team"],
                          "frames": i["frames"], "on": on,
+                         "number": num.get("number"),
+                         "share": num.get("share", 0.0),
                          "look": np.array(i["look"], dtype=float)})
     return rows
 
@@ -154,8 +163,9 @@ def link(rows, threshold: float = THRESHOLD,
             group[id(r)] = t if sims[t] >= OTHER_TO_TEAM else "other"
     out, next_id = {}, 0
     for team in TEAMS + ("other",):
-        members = [r for r in rows if r["frames"] >= min_frames
-                   and group[id(r)] == team]
+        members = [r for r in rows if group[id(r)] == team
+                   and (r["frames"] >= min_frames
+                        or r.get("number") is not None)]
         n = len(members)
         if n:
             looks = np.stack([m["look"] for m in members])
@@ -167,7 +177,8 @@ def link(rows, threshold: float = THRESHOLD,
                         and len(members[a]["on"] & members[b]["on"])
                         > MAX_SHARED_FRAMES):
                     clash[a, b] = clash[b, a] = True
-        clusters = [[i] for i in range(n)]
+        clusters = _by_number(members, clash)
+        num = [_number(members, c) for c in clusters]
         while True:
             if per_team is not None and team in TEAMS:
                 # Stop at a team's number of players instead of a likeness.
@@ -180,6 +191,9 @@ def link(rows, threshold: float = THRESHOLD,
                 for y in range(x + 1, len(clusters)):
                     if clash[np.ix_(clusters[x], clusters[y])].any():
                         continue
+                    if (num[x] is not None and num[y] is not None
+                            and num[x] != num[y]):
+                        continue    # two numbers read: two players
                     s = sim[np.ix_(clusters[x], clusters[y])].mean()
                     if s > best:
                         best, pair = s, (x, y)
@@ -188,6 +202,8 @@ def link(rows, threshold: float = THRESHOLD,
             x, y = pair
             clusters[x] += clusters[y]
             clusters.pop(y)
+            num[x] = num[x] if num[x] is not None else num[y]
+            num.pop(y)
         for c in clusters:
             for i in c:
                 out[(members[i]["clip"], members[i]["key"])] = next_id
@@ -197,6 +213,30 @@ def link(rows, threshold: float = THRESHOLD,
             out[(r["clip"], r["key"])] = next_id
             next_id += 1
     return out
+
+
+def _number(members, cluster):
+    nums = {members[i].get("number") for i in cluster} - {None}
+    return nums.pop() if len(nums) == 1 else None
+
+
+def _by_number(members, clash):
+    """Starting clusters: identities with the same read number together,
+    surest read first, never two on screen at once (then one number is
+    wrong, and the less sure stays alone); the rest one each."""
+    clusters, by_num = [], {}
+    order = sorted(range(len(members)),
+                   key=lambda i: -(members[i].get("share") or 0.0))
+    for i in order:
+        n = members[i].get("number")
+        home = by_num.get(n) if n is not None else None
+        if home is not None and not clash[np.ix_(clusters[home], [i])].any():
+            clusters[home].append(i)
+            continue
+        if n is not None and home is None:
+            by_num[n] = len(clusters)
+        clusters.append([i])
+    return clusters
 
 
 def write(out_dirs) -> dict:
