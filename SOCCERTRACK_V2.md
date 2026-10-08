@@ -27,8 +27,14 @@ ground truth already says who everyone is and who did what.
 ## Access
 
 The dataset is gated: log in to Hugging Face, accept its terms on the
-dataset page (approved automatically), create a read token and set it as
-`HF_TOKEN` in the environment.
+dataset page, create a read token and set it as `HF_TOKEN` (or
+`HF_SECRET`) in the environment; where an outbound proxy adds the token
+itself, no variable is needed (`token()` checks `whoami`).
+
+Status (2026-10-08): the token authenticates (whoami: FBEN7) and the file
+list is readable, but every gated file answers 403 "you are not in the
+authorized list" -- the account has not been granted access to the
+dataset yet. Nothing below has been run on the real files.
 
 ## Reading it
 

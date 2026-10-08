@@ -37,7 +37,7 @@ def sizes():
     import requests
 
     s = requests.Session()
-    s.headers["Authorization"] = f"Bearer {st.token()}"
+    s.headers.update(st.auth_headers())
     for match, (label, split) in st.MATCHES.items():
         out = []
         for half in (1, 2):

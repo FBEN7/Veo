@@ -8,8 +8,8 @@ pitch position, shirt number, persistent id, role and side ("GSR"), and
 pseudonymised (numbers and integer ids, no names). Scott et al.,
 arXiv 2508.01802; https://huggingface.co/datasets/atomscott/soccertrack-v2.
 
-The dataset is gated: a Hugging Face token (`HF_TOKEN`) of an account that
-accepted its terms is needed. Nothing is downloaded whole -- a half's GSR
+The dataset is gated: a Hugging Face token (`HF_TOKEN` or `HF_SECRET`, or
+a proxy that adds it) of an account that accepted its terms is needed. Nothing is downloaded whole -- a half's GSR
 file is ~2.7 GB of JSON and its video a 45-minute 4K panorama, against a
 few GB of disk here -- so:
 
@@ -89,14 +89,27 @@ def cache_dir() -> Path:
 
 # ---- Access -------------------------------------------------------------------
 
-def token() -> str:
-    t = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
-    if not t:
-        raise RuntimeError(
-            "SoccerTrack v2 is gated: set HF_TOKEN to a read token of a "
-            "Hugging Face account that accepted the dataset's terms at "
-            f"https://huggingface.co/datasets/{REPO}")
-    return t
+def token() -> str | None:
+    """The Hugging Face token from the environment (HF_TOKEN, HF_SECRET or
+    HUGGING_FACE_HUB_TOKEN), or None when an outbound proxy authenticates
+    requests to huggingface.co itself (checked with `whoami`)."""
+    for k in ("HF_TOKEN", "HF_SECRET", "HUGGING_FACE_HUB_TOKEN"):
+        if os.environ.get(k):
+            return os.environ[k]
+    import requests
+
+    r = requests.get("https://huggingface.co/api/whoami-v2", timeout=30)
+    if r.ok:
+        return None
+    raise RuntimeError(
+        "SoccerTrack v2 is gated: set HF_TOKEN to a read token of a "
+        "Hugging Face account that accepted the dataset's terms at "
+        f"https://huggingface.co/datasets/{REPO}")
+
+
+def auth_headers() -> dict:
+    t = token()
+    return {"Authorization": f"Bearer {t}"} if t else {}
 
 
 def url(path: str, revision: str = REVISION) -> str:
@@ -107,7 +120,7 @@ def _session():
     import requests
 
     s = requests.Session()
-    s.headers["Authorization"] = f"Bearer {token()}"
+    s.headers.update(auth_headers())
     return s
 
 
