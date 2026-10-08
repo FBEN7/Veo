@@ -39,6 +39,8 @@ MIN_HEIGHT_PX = 40.0
 # least this many crops showed a number.
 MIN_SHARE = 0.6
 MIN_CROPS = 5
+# PARSeq reads at its confidence bar are rarer and surer: two suffice.
+PARSEQ_MIN_CROPS = 2
 # Tracks sharing more frames than this are two people.
 MAX_SHARED_FRAMES = 2
 # The player's box from the foot point: width as a share of height.
@@ -55,6 +57,9 @@ class Track:
     number: int | None = None
     share: float = 0.0
     look: np.ndarray | None = None
+    # PARSeq's reads of the track's crops (`read_numbers_parseq.py`):
+    # (digits, confidences); voted instead of `visible` / `logp` when set.
+    reads: tuple | None = None
 
 
 @dataclass
@@ -94,6 +99,23 @@ def crop(frame, px, py, h):
     if x1 - x0 < 4 or y1 - y0 < 8:
         return None
     return frame[y0:y1, x0:x1]
+
+
+def parseq_numbers(tracks: dict, reads: dict, min_share: float = MIN_SHARE,
+                   min_crops: int = PARSEQ_MIN_CROPS) -> None:
+    """Each track's number from PARSeq's reads of it (`track_numbers.json`):
+    sets `reads`, and `number` / `share` where `min_share` of at least
+    `min_crops` confident reads agree."""
+    from . import parseq_reader as pr
+
+    for tid, track in tracks.items():
+        r = reads.get(str(tid))
+        if not r:
+            continue
+        track.reads = (r["labels"], np.array(r["confs"]))
+        number, share, used = pr.vote(*track.reads)
+        if number is not None and share >= min_share and used >= min_crops:
+            track.number, track.share = number, share
 
 
 def read_numbers(video_path: str, merged: pd.DataFrame, tracks: dict,
@@ -235,12 +257,23 @@ def identities(tracks: dict, look_threshold: float | None = None,
             ident.key = k
     # Each identity's number: the vote of all its tracks' crops together.
     for ident in out:
-        vis = np.concatenate([t.visible for t in ident.tracks])
-        logp = np.concatenate([t.logp for t in ident.tracks])
-        number, share, used = jr.vote(vis, logp) if len(vis) else (None, 0, 0)
+        if any(t.reads is not None for t in ident.tracks):
+            from . import parseq_reader as pr
+
+            labels = [g for t in ident.tracks if t.reads for g in t.reads[0]]
+            confs = np.array([c for t in ident.tracks if t.reads
+                              for c in t.reads[1]])
+            number, share, used = pr.vote(labels, confs)
+            need = PARSEQ_MIN_CROPS
+        else:
+            vis = np.concatenate([t.visible for t in ident.tracks])
+            logp = np.concatenate([t.logp for t in ident.tracks])
+            number, share, used = (jr.vote(vis, logp) if len(vis)
+                                   else (None, 0, 0))
+            need = MIN_CROPS
         ident.crops = used
         if (use_numbers and number is not None and share >= MIN_SHARE
-                and used >= MIN_CROPS):
+                and used >= need):
             ident.number, ident.share = number, share
         else:
             ident.number, ident.share = None, share

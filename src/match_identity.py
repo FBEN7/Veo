@@ -41,9 +41,10 @@ OTHER_TO_TEAM = 0.5
 # used to choose and 56% / 17% on the other five; teams by look, 69% / 44%
 # and 69% / 34%. Chosen for holding up on clips it was not chosen on.
 TEAMS_BY_LOOK = True
-# Shirt numbers read by `read_numbers_parseq.py` (`numbers.json`), where
-# present: identities of a team with the same number are one player, two
-# with different numbers are two.
+# Identities' shirt numbers (`identities.json`, read by
+# `read_numbers_parseq.py` and voted by `identify_players.py
+# --track-numbers`), where read: identities of a team with the same number
+# are one player, two with different numbers are two.
 USE_NUMBERS = True
 TEAM_RESTARTS = 20
 THRESHOLD = 0.8
@@ -57,8 +58,6 @@ def load(out_dirs) -> list[dict]:
         from .track_split import player_tracks
 
         blob = json.loads((d / "identities.json").read_text())
-        nf = d / "numbers.json"
-        numbers = json.loads(nf.read_text()) if nf.exists() else {}
         tracks = player_tracks(d)
         tracks = tracks[tracks.cls == "player"]
         seen = {int(t): set(g.frame.astype(int))
@@ -67,11 +66,10 @@ def load(out_dirs) -> list[dict]:
             if i.get("look") is None:
                 continue
             on = set().union(*(seen.get(int(t), set()) for t in i["tracks"]))
-            num = numbers.get(str(i["key"]), {}) if USE_NUMBERS else {}
             rows.append({"clip": d.name, "key": i["key"], "team": i["team"],
                          "frames": i["frames"], "on": on,
-                         "number": num.get("number"),
-                         "share": num.get("share", 0.0),
+                         "number": i.get("number") if USE_NUMBERS else None,
+                         "share": i.get("share", 0.0),
                          "look": np.array(i["look"], dtype=float)})
     return rows
 

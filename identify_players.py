@@ -55,7 +55,8 @@ def _look(ident):
 
 def identify(out_dir: Path, model, embedder=None,
              look_threshold: float | None = None,
-             use_numbers: bool = False, split: bool = False) -> dict:
+             use_numbers: bool = False, split: bool = False,
+             track_numbers: bool = False) -> dict:
     import copy
 
     if split:
@@ -76,8 +77,14 @@ def identify(out_dir: Path, model, embedder=None,
         tracks = pid.tracks_of(df, min_rows=1)
         for tid, t in tracks.items():
             t.look = look.get(tid)
+        if track_numbers:
+            # PARSeq's reads (read_numbers_parseq.py): tracks join by
+            # number and team, and two numbers never join by look.
+            pid.parseq_numbers(tracks, json.loads(
+                (out_dir / "track_numbers.json").read_text()))
         idents = pid.identities(tracks, ts.JOIN if look_threshold is None
-                                else look_threshold)
+                                else look_threshold,
+                                use_numbers=track_numbers)
     else:
         tracks = copy.deepcopy(read_tracks(out_dir, model, embedder))
         idents = pid.identities(tracks, look_threshold, use_numbers)
@@ -98,8 +105,9 @@ def identify(out_dir: Path, model, embedder=None,
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dirs", nargs="+")
-    ap.add_argument("--reader", required=True,
-                    help="weights from train_jersey_reader.py")
+    ap.add_argument("--reader",
+                    help="weights from train_jersey_reader.py (not needed "
+                         "with --split)")
     ap.add_argument("--reid", help="weights from train_player_reid.py: join "
                                    "tracks by appearance too")
     ap.add_argument("--look-threshold", type=float, default=None,
@@ -107,6 +115,10 @@ def main():
     ap.add_argument("--numbers", action="store_true",
                     help="join tracks by read shirt numbers too (off: not "
                          "yet measured to be right on broadcast footage)")
+    ap.add_argument("--track-numbers", action="store_true",
+                    help="with --split: numbers from track_numbers.json "
+                         "(read_numbers_parseq.py) join tracks, and keep "
+                         "two numbers apart")
     ap.add_argument("--split", action="store_true",
                     help="cut tracks where they jump to another person, "
                          "then rejoin by look (needs --reid); writes "
@@ -114,9 +126,11 @@ def main():
     args = ap.parse_args()
     import torch
 
-    model = jr.build()
-    model.load_state_dict(torch.load(args.reader))
-    model.eval()
+    model = None
+    if args.reader:
+        model = jr.build()
+        model.load_state_dict(torch.load(args.reader))
+        model.eval()
     embedder = None
     if args.reid:
         from train_player_reid import build
@@ -127,7 +141,7 @@ def main():
     for out_dir in map(Path, args.out_dirs):
         t0 = time.time()
         blob = identify(out_dir, model, embedder, args.look_threshold,
-                        args.numbers, args.split)
+                        args.numbers, args.split, args.track_numbers)
         idents = blob["identities"]
         named = [i for i in idents if i["number"] is not None]
         tracks_named = sum(len(i["tracks"]) for i in named)
