@@ -41,6 +41,9 @@ MIN_SHARE = 0.6
 MIN_CROPS = 5
 # PARSeq reads at its confidence bar are rarer and surer: two suffice.
 PARSEQ_MIN_CROPS = 2
+# Never join by look two identities whose tracks were read (even once,
+# confidently) as numbers they do not share.
+KEEP_READS_APART = False
 # Tracks sharing more frames than this are two people.
 MAX_SHARED_FRAMES = 2
 # The player's box from the foot point: width as a share of height.
@@ -60,6 +63,9 @@ class Track:
     # PARSeq's reads of the track's crops (`read_numbers_parseq.py`):
     # (digits, confidences); voted instead of `visible` / `logp` when set.
     reads: tuple | None = None
+    # The number those reads vote for even from a single confident read --
+    # too weak to join on, used only to keep apart (`KEEP_READS_APART`).
+    read: int | None = None
 
 
 @dataclass
@@ -114,6 +120,8 @@ def parseq_numbers(tracks: dict, reads: dict, min_share: float = MIN_SHARE,
             continue
         track.reads = (r["labels"], np.array(r["confs"]))
         number, share, used = pr.vote(*track.reads)
+        if number is not None and share >= min_share:
+            track.read = number
         if number is not None and share >= min_share and used >= min_crops:
             track.number, track.share = number, share
 
@@ -202,6 +210,10 @@ def join_by_look(idents, threshold: float):
                         or (A.number is not None and B.number is not None
                             and A.number != B.number)):
                     continue
+                if KEEP_READS_APART:
+                    ra, rb = _reads(A), _reads(B)
+                    if ra and rb and not ra & rb:
+                        continue
                 sim = float(looks[a] @ looks[b])
                 if sim > best and not _clash(frames[a], frames[b]):
                     best, pair = sim, (a, b)
@@ -213,6 +225,10 @@ def join_by_look(idents, threshold: float):
         if keep.number is None:
             keep.number, keep.share = gone.number, gone.share
         idents.pop(b)
+
+
+def _reads(ident) -> set:
+    return {t.read for t in ident.tracks if t.read is not None}
 
 
 def _clash(a, b) -> bool:
