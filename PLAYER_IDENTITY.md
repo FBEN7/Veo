@@ -372,3 +372,53 @@ number, including the crops where the player faces the camera: the
 reader could, and evidently did, learn players' looks rather than
 digits. The figures reported above for it (82 of 101) measured that, not
 reading.
+
+Retrained so a tracklet's number need show in only some crops, with
+colours scrambled (`train_jersey_reader.py`), it read at most 1 of the 47
+after three epochs. With one match's named players added to its training
+and tested on the other match, 4 of 55 at Reading (20 wrong); stopped
+there.
+
+### PARSeq
+
+`src/parseq_reader.py` reads the number as text with PARSeq, a scene-text
+recogniser, on the upper torso (box height 10-50%, stretched to its 32 x
+128 input; padding the crop to that shape instead read fewer), decoding
+digits only and voting each player's crops at confidence 0.9.
+`train_parseq_reader.py` fine-tunes it on the 2,079 jersey-set crops the
+untrained model already reads right (the set's labels are per tracklet)
+and on one match's named players within 3 frames of the click; weights
+and bar are chosen on a clip of that match, the untrained model counting
+as epoch 0, and tested once on the other match. Per named player, crops
+within 10 frames of the click:
+
+| | Reading (55) | Stoke (47) |
+|---|---|---|
+| ResNet reader, jersey set only | -- | 0 right, 38 wrong |
+| ResNet reader, + the other match | 4 right, 20 wrong | -- |
+| PARSeq, untrained | 21 right, 14 wrong | 6 right, 9 wrong |
+| **PARSeq, fine-tuned on the other match** | **31 right, 8 wrong** | **14 right, 6 wrong** |
+
+### Numbers in the identities
+
+`read_numbers_parseq.py` reads 30 crops over each track's life with the
+reader fine-tuned on the *other* match; `identify_players.py --split
+--track-numbers` gives a track a number when 2 or more confident reads
+agree (60%), joins tracks of a team with the same number, and votes each
+identity's number over its tracks; `match_identity` then joins identities
+with the same number and never two with different ones. Chosen on Stoke:
+
+| Stoke | wrong joins within a clip | same player linked across clips | links right |
+|---|---|---|---|
+| numbers off | 4 | 5 of 32 | 5 of 13 |
+| numbers on | 5 | 3 of 32 | 3 of 13 |
+| numbers on, differently read kept apart | 4 | 1 of 32 | 1 of 13 |
+
+Numbers stay off (on Reading they had helped a little: 14 of 28 links
+right against 13 of 33). Over a whole track the reader sees the striped
+Stoke shirts from the front, and reads them as 1: 51 Stoke tracks were
+given #1, which only goalkeepers wear; the named players' own tracks read
+6 right, 15 wrong. Near the click it had read well because the number
+showed there. It was fine-tuned on crops with a number only, so it never
+learnt that a shirt may show none; the jersey set's ~400 tracklets with
+no legible number are the negatives to teach that.
