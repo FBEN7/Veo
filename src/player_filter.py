@@ -88,3 +88,19 @@ def filter_players(tracks: pd.DataFrame, per_team: int = PLAYERS_PER_TEAM,
     out = pd.concat([players, others])
     sort_cols = [c for c in ("frame", "track_id") if c in out.columns]
     return out.sort_values(sort_cols).reset_index(drop=True)
+
+
+def inside_pitch(tracks: pd.DataFrame, outline, margin_px: float = 0.0
+                 ) -> pd.DataFrame:
+    """Drop player rows whose feet (px, py) lie more than `margin_px`
+    outside the pitch outline (pixels, a fixed view); other rows are kept."""
+    import cv2
+
+    poly = np.asarray(outline, dtype=np.float32).reshape(-1, 1, 2)
+    is_player = (tracks.cls == "player").to_numpy()
+    keep = np.ones(len(tracks), dtype=bool)
+    for i in np.flatnonzero(is_player):
+        d = cv2.pointPolygonTest(poly, (float(tracks.px.iat[i]),
+                                        float(tracks.py.iat[i])), True)
+        keep[i] = d >= -margin_px
+    return tracks[keep]

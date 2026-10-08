@@ -209,7 +209,8 @@ def check_cache_provenance(out_dir: Path, clip_info: dict) -> None:
 def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
                  team_override: dict[int, str] | None = None,
                  fixed_camera: bool = False, model_name: str = "yolov8m.pt",
-                 stride: int = 1):
+                 stride: int = 1, pitch: list | None = None,
+                 pitch_margin_px: float = 0.0):
     """Detect, track and emit events for the clip, caching each stage.
 
     ``return_tracks`` also hands back the metric tracks the events were
@@ -269,6 +270,23 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
             out_path=str(raw), max_seconds=0, imgsz=profile.imgsz,
             ball_detection_method="yolo")
         tracks.to_parquet(raw)
+
+    if pitch is not None:
+        setting = {"pitch": pitch, "margin_px": pitch_margin_px}
+        saved = out_dir / "pitch.json"
+        later = [p.name for p in (out_dir / "tracks_teams.parquet",
+                                  out_dir / "tracks_grass.parquet")
+                 if p.exists()]
+        if later and (not saved.exists()
+                      or json.loads(saved.read_text()) != setting):
+            raise SystemExit(
+                f"{out_dir} holds {', '.join(later)} built with another "
+                "pitch outline or none; delete them to rebuild.")
+        saved.write_text(json.dumps(setting))
+        before = int((tracks.cls == "player").sum())
+        tracks = player_filter.inside_pitch(tracks, pitch, pitch_margin_px)
+        print(f"  [pitch] {before} -> {int((tracks.cls == 'player').sum())} "
+              f"player rows inside the outline (+{pitch_margin_px:.0f} px)")
 
     teamed = out_dir / "tracks_teams.parquet"
     if teamed.exists():

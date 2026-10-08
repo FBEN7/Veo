@@ -324,6 +324,44 @@ def gsr_table(match: str, half: int, refresh: bool = False) -> pd.DataFrame:
     return df
 
 
+SIDE_LINES = ("Side line top", "Side line right", "Side line bottom",
+              "Side line left")
+
+
+def outline_of(lines: dict, width: int, height: int) -> list[list[float]]:
+    """The pitch outline in pixels from a GSR pitch record's `lines`
+    (points normalised by the image size): the four side lines chained end
+    to end, each turned round where needed."""
+    segs = [[(p["x"] * width, p["y"] * height) for p in lines[k]
+             if isinstance(p, dict)] for k in SIDE_LINES]
+    out = list(segs[0])
+    rest = segs[1:]
+    while rest:
+        end = np.array(out[-1])
+        k = min(range(len(rest)), key=lambda i: min(
+            np.hypot(*(end - rest[i][0])), np.hypot(*(end - rest[i][-1]))))
+        seg = rest.pop(k)
+        if np.hypot(*(end - seg[-1])) < np.hypot(*(end - seg[0])):
+            seg = seg[::-1]
+        out += seg[1:]
+    return [[round(x, 1), round(y, 1)] for x, y in out]
+
+
+def pitch_outline(match: str, half: int, width: int,
+                  height: int) -> list[list[float]]:
+    """The pitch outline of a half's fixed view, from the first GSR pitch
+    record with all four side lines (read from the start of the file; the
+    camera does not move)."""
+    for rec in iter_array(open_stream(f"gsr/{match}/{match}_{_half(half)}.json"),
+                          "annotations"):
+        lines = rec.get("lines") or {}
+        if rec.get("supercategory") == "pitch" and all(
+                sum(isinstance(p, dict) for p in lines.get(k, [])) >= 2
+                for k in SIDE_LINES):
+            return outline_of(lines, width, height)
+    raise ValueError(f"no pitch record with side lines in {match} {half}")
+
+
 def y_towards_camera(gsr: pd.DataFrame) -> bool:
     """Whether pitch y grows towards the camera: the camera looks down on
     the pitch, so feet nearer it are lower in the picture, and the box
@@ -537,6 +575,23 @@ def _check():
     # Actors take their shirt and place from the GSR record of that frame.
     acted = with_actors(pd.DataFrame({"frame": [0], "player_id": ["170959"]}), df)
     assert acted.jersey.iloc[0] == 12 and acted.x.iloc[0] == -23.1
+    # The outline chains the side lines whichever way each was drawn.
+    pt = lambda x, y: {"x": x, "y": y}
+    box = outline_of({"Side line top": [pt(0.1, 0.1), pt(0.9, 0.1)],
+                      "Side line right": [pt(0.9, 0.9), pt(0.9, 0.1)],
+                      "Side line bottom": [pt(0.1, 0.9), pt(0.9, 0.9)],
+                      "Side line left": [pt(0.1, 0.9), pt(0.1, 0.1)]},
+                     100, 10)
+    assert box == [[10, 1], [90, 1], [90, 9], [10, 9], [10, 1]], box
+    # Player feet outside the outline by more than the margin are dropped,
+    # balls kept.
+    from .player_filter import inside_pitch
+
+    rows = pd.DataFrame({"cls": ["player", "player", "ball", "player"],
+                         "px": [50.0, 150.0, 150.0, 105.0],
+                         "py": [5.0, 5.0, 5.0, 5.0]})
+    kept = inside_pitch(rows, [[0, 0], [100, 0], [100, 10], [0, 10]], 10)
+    assert list(kept.index) == [0, 2, 3], kept
     # Range reads: across block edges, after seeks, through a small cache.
     blob = bytes(range(256)) * 41
     calls = []
@@ -555,7 +610,8 @@ def _check():
     assert f.read() == blob
     assert all(b - a < 100 for a, b in calls)
     print("  soccertrack_v2: GSR streamed and flattened, BAS frames for both "
-          "releases, actors joined, range reads exact")
+          "releases, actors joined, pitch outline chained and applied, "
+          "range reads exact")
 
 
 class _Chunks:

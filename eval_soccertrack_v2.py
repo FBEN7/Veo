@@ -13,6 +13,12 @@ reported, both one-to-one per frame:
 - **feet**: the detection's bottom centre within `FOOT_PX` of the box's
   (one player-box height), which is what the boxes can support.
 
+With `--pitch-margin`, the window's pitch outline (from the release's
+pitch lines, stored by `fetch_soccertrack_v2.py`) is given to the
+pipeline, which drops player detections more than that many pixels outside
+it before teams are assigned; the tracker's fragments are scored after the
+same cut.
+
 For each: detection recall and precision (a referee detected counts
 against precision: the truth has none), then identities scored as in
 `eval_identity_gsr.py` (people split, purity, IDF1) for the tracker's
@@ -21,7 +27,8 @@ its identities; and the team of each matched detection against the
 person's side (our two team labels mapped to the sides one-to-one).
 
     python eval_soccertrack_v2.py data/soccertrack_v2/st2_117093_1st_f015000.mp4 \\
-        --out output_st2_117093_1st_f015000 --run --model yolov8n.pt
+        --out output_st2_117093_1st_f015000 --run --model yolov8s.pt \
+        --stride 2 --pitch-margin 50
 """
 
 from __future__ import annotations
@@ -35,6 +42,7 @@ import pandas as pd
 from scipy.optimize import linear_sum_assignment
 
 from eval_identity_gsr import BOX_WIDTH, match as match_iou, scores
+from src.player_filter import inside_pitch
 
 FOOT_PX = 43.0
 
@@ -104,7 +112,11 @@ def score_dir(out_dir: Path, gt: pd.DataFrame, stride: int) -> dict:
     for how, matcher in (("iou0.5", match_iou), ("feet", match_feet)):
         rep = {}
         for name, file, ident_file in stages:
-            det = boxes(pd.read_parquet(out_dir / file))
+            tracks = pd.read_parquet(out_dir / file)
+            if name == "fragments" and (out_dir / "pitch.json").exists():
+                cut = json.loads((out_dir / "pitch.json").read_text())
+                tracks = inside_pitch(tracks, cut["pitch"], cut["margin_px"])
+            det = boxes(tracks)
             det = det[det.frame % stride == 0]
             person = matcher(det, gt)
             ident = det.track_id
@@ -133,14 +145,21 @@ def main():
                     help="run the pipeline first (fixed-camera mode)")
     ap.add_argument("--model", default="yolov8m.pt")
     ap.add_argument("--stride", type=int, default=1)
+    ap.add_argument("--pitch-margin", type=float, default=None,
+                    help="drop players this many px outside the pitch "
+                         "outline (none: no outline)")
     args = ap.parse_args()
     clip, out_dir = Path(args.clip), Path(args.out)
     if args.run:
         from score_soccernet import run_pipeline
 
+        pitch = None
+        if args.pitch_margin is not None:
+            pitch = json.loads(clip.with_suffix(".json").read_text())["pitch"]
         try:
             run_pipeline(str(clip), out_dir, fixed_camera=True,
-                         model_name=args.model, stride=args.stride)
+                         model_name=args.model, stride=args.stride,
+                         pitch=pitch, pitch_margin_px=args.pitch_margin or 0.0)
         except Exception as e:      # tracks are written before events
             print(f"pipeline stopped after tracking: {type(e).__name__}: {e}")
     gt = truth(clip.with_name(clip.stem + "_gt.parquet"))

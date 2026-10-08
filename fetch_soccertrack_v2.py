@@ -10,7 +10,8 @@ For a match, a half and a window, writes to `<data>/soccertrack_v2/`:
 - `<name>_events.csv`: the ball actions in the window -- frame, label, kind
   (this project's type), side, player_id, the actor's jersey and pitch
   position;
-- `<name>.json`: where the window comes from.
+- `<name>.json`: where the window comes from, and the pitch outline in
+  pixels (`pitch`, from the release's pitch lines: the view is fixed).
 
 The half's GSR is streamed once (~2.7 GB, a few minutes) and kept as
 parquet in the cache; the video is read by range requests, only the
@@ -75,6 +76,8 @@ def fetch(match: str, half: int, start_min: float, minutes: float,
     ev = st.with_actors(ev, gsr)
     ev["frame"] -= start
     ev.to_csv(root / f"{name}_events.csv", index=False)
+    info["pitch"] = st.pitch_outline(match, half, info["width"],
+                                     info["height"])
     info.update(name=name, dataset=f"SoccerTrack v2 {st.REVISION}",
                 licence="CC BY 4.0", paper_label=st.MATCHES[match][0],
                 split=st.MATCHES[match][1], gt=f"{name}_gt.parquet",
@@ -95,11 +98,20 @@ def main():
                     help="minutes into the half")
     ap.add_argument("--minutes", type=float, default=3.0)
     ap.add_argument("--out", default=str(DATA_DIR / "soccertrack_v2"))
+    ap.add_argument("--pitch", help="add the pitch outline to an already "
+                                    "cut window's .json")
     ap.add_argument("--list", action="store_true",
                     help="print each match's file sizes and stop")
     args = ap.parse_args()
     if args.list:
         sizes()
+        return
+    if args.pitch:
+        path = Path(args.pitch)
+        info = json.loads(path.read_text())
+        info["pitch"] = st.pitch_outline(info["match"], info["half"],
+                                         info["width"], info["height"])
+        path.write_text(json.dumps(info, indent=1))
         return
     if not args.match:
         ap.error("--match is needed (or --list)")
