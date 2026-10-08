@@ -1,13 +1,17 @@
-# The pipeline on the 640x360 clip
+# The pipeline on the 640x360 follow-cam clip
 
-> **Corrected.** This page was written as "the pipeline on Veo footage", and
-> described the clip as "a Veo camera at 640x360". That is wrong, and the
-> error ran through the whole repository. The clip is a match **downloaded
-> from the web** -- an auto-follow crop with a scoreboard burnt into the
-> corner, panning to keep the ball centred. There is no Veo camera behind
-> it and no Veo panorama to go back to. The file names and the `output_veo`
-> directory keep the old name so that earlier results stay findable; the
-> footage is what this paragraph says it is.
+> **Source not verified.** This page was first written as "the pipeline on
+> Veo footage", then corrected to say the clip was "downloaded from the web"
+> with "no Veo camera behind it". Neither is established by the file. What
+> it shows: a 640x360 auto-follow view that pans to keep the ball centred,
+> with no cuts or replays and a scoreboard and a translucent watermark
+> burnt in -- what a Veo **follow-cam** export looks like once re-shared at
+> a lower resolution (Veo's own downloads are 1080p or more). The person
+> who supplied it believes it was filmed with a Veo camera. Veo also keeps a
+> fixed **panorama** of the whole pitch, which its support pages say cannot
+> be downloaded; that is a different view from this one. The file names and
+> the `output_veo` directory keep their names so earlier results stay
+> findable.
 >
 > It matters because a following camera has a blind spot a fixed one does
 > not: when the ball leaves the pitch the camera has not caught up, so

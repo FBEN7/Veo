@@ -89,6 +89,11 @@ CONTROLS = [
      [sys.executable, "-m", "src.goal_plane"],
      "a shot into the top corner and one wide found where they cross the "
      "line, a ball rolled to the keeper and one at rest not"),
+    ("SoccerTrack v2 reading",
+     [sys.executable, "-m", "src.soccertrack_v2"],
+     "the dataset's game-state file streamed in small pieces and flattened, "
+     "event frames for both releases' timing, and remote range reads "
+     "exact across block edges"),
     ("ball height from its flight",
      [sys.executable, "-m", "src.ball_height"],
      "a cross and a long ball recognised as in the air and a pass as on "
