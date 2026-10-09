@@ -277,19 +277,99 @@ team on M10 and more than one in five on M2, where the merge warning still fires
 (a "team" with a median of 12 on at once: about 30% of one team's rows
 join the other kit).
 
+## Re-identification from the ground-truth ids
+
+`identify_players.py --split --reid W` cuts tracks where the look changes
+and joins pieces by look (`track_split`, `player_identity`). Its embedding
+had been trained on broadcast and its weights were not here, so the plan
+was to train one on SoccerTrack v2 itself, whose persistent ids give
+labelled people for free.
+
+**The data, and a leak that had to be closed.** `build_reid_crops.py`
+cuts each person's crops as the pipeline cuts them (our detections,
+matched to a ground-truth person by the feet; a label only when the match
+is within min(43 px, 0.6 x height) and no one else is within twice that:
+29-56% of matches kept). The dataset's `player_id` is the same person in
+every match, and the same squads recur: M4 shares 10 people with M3, M1 7
+with M2, M8 5 with M10. So everyone seen in the first halves of M2, M3 or
+M10 (67 people) is dropped from training altogether, and the loader
+asserts it. What is left: 60 distinct people from five training matches
+(M1, M4, M5, M6, M8; both halves of three of them, pooled per match by
+`player_id`), about 3,000 crops, 25-85 px tall. M3 is held out for the
+thresholds, M2 and M10 for the report.
+
+**Training did not work.** The broadcast recipe (batch-hard triplet,
+0.3 hinge) collapsed: after 3,000 steps the median cosine between crops
+of *different* people was 0.95 (0.62 untrained), the loss sat at the
+margin, and joining no longer depended on its threshold. Picking a fix on
+M3 would have used M3 twice, so recipes were compared on an internal
+validation match instead (M5, its people also kept out of training), for
+1,000 steps each:
+
+| recipe | M5 mAP among team-mates | median cosine, different people |
+|---|---|---|
+| untrained (ImageNet body, seed-0 head) | 0.183 | 0.64 |
+| batch-hard, 0.3 hinge, lr 3e-4 | 0.183 | 1.00 (collapsed) |
+| batch-hard, soft margin, lr 1e-4 | 0.185 | 0.97 |
+| batch-all, soft margin, lr 3e-4 | 0.165 | 0.84 |
+| batch-all, soft margin, lr 1e-4 | 0.167 | 0.82 |
+
+Nothing trained on these 46-60 people beats the untrained features on an
+unseen match: the recipes that do not collapse are worse. So the
+embedding used is the untrained one (`train_player_reid.py
+--save-untrained`, reproducible). Crop-level, rank-1 among same-side
+outfield team-mates (about ten candidates, so chance is ~0.1), with
+near-in-time copies left out:
+
+| window | untrained | untrained body, 512-d | trained (collapsed) |
+|---|---|---|---|
+| M3 (thresholds) | 0.29 | 0.35 | 0.39 |
+| M10 (report) | 0.27 | 0.29 | 0.34 |
+| M2 (report) | 0.20 | 0.18 | 0.23 |
+
+(The collapsed model ranks crops a little better, but its similarities
+are all near 1, so a threshold cannot separate people with it: end to
+end it is worse, below.)
+
+**End to end.** The cut and join thresholds were chosen on M3 for each
+embedding by a rule fixed in `tune_st2_split.py` (the highest IDF1; within
+0.005, no cut first, then the lowest cut, then the highest join): cut 0.7
+and join 0.85 for the untrained embedding. The real `identify_players`
+path reproduces the tuner's M3 IDF1 (0.521).
+
+| window | identities from | IDF1 | identities (22 real) | people split | purity |
+|---|---|---|---|---|---|
+| M10 (held out) | the tracker (re-joined) | 0.468 | 86 | 16.9 | 0.80 |
+| M10 | **split + join, untrained, 0.7 / 0.85** | **0.524** | 50 | 14.3 | 0.70 |
+| M10 | split + join, untrained, 0.4 / 0.7 (broadcast) | 0.520 | 38 | 14.1 | 0.69 |
+| M10 | split + join, trained (collapsed), 0.9 / 0.97 | 0.511 | 46 | 16.2 | 0.71 |
+| M2 | the tracker (re-joined) | 0.375 | 91 | 14.6 | 0.67 |
+| M2 | **split + join, untrained, 0.7 / 0.85** | **0.408** | 58 | 13.7 | 0.61 |
+| M2 | split + join, untrained, 0.4 / 0.7 (broadcast) | 0.392 | 43 | 12.6 | 0.58 |
+| M2 | split + join, trained (collapsed), 0.9 / 0.97 | 0.391 | 42 | 13.2 | 0.58 |
+
+So `identify_players.py --split` with the untrained embedding raises IDF1
+by 0.03-0.06 on the report windows, but by joining: identities halve
+while purity falls by 0.06-0.10 -- some joins are of two people. The
+people are still spread over about fourteen identities each, and the
+cuts barely fire (on M3, 91 tracks become 118 pieces at 0.7). Re-
+identification by appearance is not what limits identities here; at
+35-70 px tall, with the teams in one kit each, appearance does not tell
+team-mates apart well enough.
+
+    python train_player_reid.py --save-untrained .cache/player_reid_untrained.pt
+    python identify_players.py output_st2_... --split \
+        --reid .cache/player_reid_untrained.pt --cut-threshold 0.7 --look-threshold 0.85
+
 ## Next
 
-1. **Re-identification from the ground truth**: SoccerTrack v2 gives
-   persistent ids on six training matches -- free training pairs for
-   `train_player_reid.py`, on this very kind of footage, so the `--split`
-   identities can be measured here.
-2. **Pitch coordinates**: map the feet through the release's calibration
+1. **Pitch coordinates**: map the feet through the release's calibration
    (`raw/<match>/` homography and distortion maps), or a one-off clicked
    calibration for a Veo panorama, instead of `ground_plane`'s pinhole
    model; then score events against the BAS actions.
-3. A score that tolerates the boxes: the foot distance above, or the
-   pitch positions once (2) exists.
-4. **Teams, what is left**: giving every track its true majority side --
+2. A score that tolerates the boxes: the foot distance above, or the
+   pitch positions once (1) exists.
+3. **Teams, what is left**: giving every track its true majority side --
    the best any per-track rule can do -- reaches team accuracy 0.84 on
    M3, 0.88 on M10 and 0.82 on M2, because tracks switch from one player
    to another (see identities). The frozen rule is at that ceiling on M10
@@ -297,3 +377,11 @@ join the other kit).
    two kits of one hue are still close (the merge warning fires). Better
    teams now need tracks that stay on one player, not a better colour
    rule.
+4. **Identities, what is left**: appearance is weak at these sizes (rank-1
+   among team-mates 0.2-0.35 whatever the embedding), so the next lever is
+   where people are, not what they look like: on a fixed view, pieces of
+   one player follow on in space and time, which `track_reid` and
+   `join_by_look` use only loosely. With pitch coordinates (1), joins can
+   be gated by running speed. A re-ID model would need far more distinct
+   people than the 60 here -- the test matches M7 and M9, or other
+   footage -- or larger crops.

@@ -231,6 +231,10 @@ def main():
     ap.add_argument("--val-crops", nargs="+", help="held-out crop sets")
     ap.add_argument("--exclude", nargs="*", default=[],
                     help="ground-truth tables whose people are not trained on")
+    ap.add_argument("--save-untrained", metavar="PATH",
+                    help="write the untrained embedding (ImageNet ResNet-18 "
+                         "body, seed-0 random head) to PATH and stop: on "
+                         "SoccerTrack v2 nothing trained here beat it")
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--batch-all", action="store_true",
                     help="average the soft-margin loss over every triplet in "
@@ -250,6 +254,10 @@ def main():
     torch.manual_seed(0)
     random.seed(0)
     rng = np.random.default_rng(0)
+    if args.save_untrained:
+        torch.save(build().state_dict(), args.save_untrained)
+        print(f"  saved {args.save_untrained}", flush=True)
+        return
     t0 = time.time()
     if args.crops:
         drop = excluded_ids(args.exclude)
