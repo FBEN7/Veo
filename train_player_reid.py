@@ -18,6 +18,15 @@ against every other person's of the same team -- how often the nearest
 crop is the same person (rank-1), and the mean average precision.
 
     python train_player_reid.py --clips .cache/gsr_train --held-out 3
+
+Fixed panoramas (SoccerTrack v2): `--crops` takes per-window crop sets
+written by `build_reid_crops.py` -- one window is one "clip", its
+ground-truth persons the people -- and `--val-crops` the held-out ones.
+The crops are kept at their own size (25-70 px tall), as the pipeline
+cuts them.
+
+    python train_player_reid.py --crops .cache/soccertrack_v2/reid/train \
+        --val-crops .cache/soccertrack_v2/reid/val --out .cache/player_reid_st2.pt
 """
 
 from __future__ import annotations
@@ -116,6 +125,15 @@ def load_clip(clip_dir: Path, rng):
     return {p: v for p, v in out.items() if len(v[1]) >= K}
 
 
+def load_crops(path: Path) -> dict:
+    """{person: (team, [crops])} from build_reid_crops.py, people with fewer
+    than K crops dropped."""
+    import pickle
+
+    people = pickle.loads(Path(path).read_bytes())
+    return {p: v for p, v in people.items() if len(v[1]) >= K}
+
+
 def evaluate(model, clips, label):
     import torch
 
@@ -152,7 +170,10 @@ def evaluate(model, clips, label):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--clips", required=True)
+    ap.add_argument("--clips", help="SoccerNet game-state clip dirs")
+    ap.add_argument("--crops", help="dir of build_reid_crops.py sets "
+                                    "(fixed panoramas) to train on")
+    ap.add_argument("--val-crops", help="dir of held-out crop sets")
     ap.add_argument("--held-out", type=int, default=3)
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--out", default=str(CACHE_DIR / "player_reid.pt"))
@@ -161,12 +182,17 @@ def main():
 
     torch.manual_seed(0)
     rng = np.random.default_rng(0)
-    dirs = sorted(p for p in Path(args.clips).iterdir() if p.is_dir())
     t0 = time.time()
-    clips = [load_clip(d, rng) for d in dirs]
+    if args.crops:
+        train = [load_crops(p) for p in sorted(Path(args.crops).glob("*.pkl"))]
+        val = [load_crops(p) for p in sorted(Path(args.val_crops).glob("*.pkl"))]
+        clips = train + val
+    else:
+        dirs = sorted(p for p in Path(args.clips).iterdir() if p.is_dir())
+        clips = [load_clip(d, rng) for d in dirs]
+        val, train = clips[:args.held_out], clips[args.held_out:]
     print(f"  {len(clips)} clips, {sum(len(c) for c in clips)} people, "
           f"loaded in {time.time() - t0:.0f} s", flush=True)
-    val, train = clips[:args.held_out], clips[args.held_out:]
     model = build()
     evaluate(model, val, "held out, ImageNet features only")
     opt = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=1e-4)
