@@ -19,14 +19,20 @@ crop is the same person (rank-1), and the mean average precision.
 
     python train_player_reid.py --clips .cache/gsr_train --held-out 3
 
-Fixed panoramas (SoccerTrack v2): `--crops` takes per-window crop sets
-written by `build_reid_crops.py` -- one window is one "clip", its
-ground-truth persons the people -- and `--val-crops` the held-out ones.
-The crops are kept at their own size (25-70 px tall), as the pipeline
-cuts them.
+Fixed panoramas (SoccerTrack v2): `--crops` takes the crop sets written
+by `build_reid_crops.py` for the training windows, pooled per match by
+the dataset's persistent `player_id` (so a player's two halves, at
+different depths, are one person), and `--val-crops` the held-out
+windows. `--exclude` names ground-truth tables whose people must not be
+trained on: the same players appear in several matches, so anyone in a
+tuning or report window is dropped from training altogether, also as a
+negative. Goalkeepers are left out (their kits make them trivial). The
+crops keep their own size (25-70 px tall, as the pipeline cuts them),
+with flips, blur by down-sizing and brightness changes each step; the
+final weights are saved.
 
-    python train_player_reid.py --crops .cache/soccertrack_v2/reid/train \
-        --val-crops .cache/soccertrack_v2/reid/val --out .cache/player_reid_st2.pt
+    python train_player_reid.py --crops W1.pkl W2.pkl ... --val-crops V.pkl \
+        --exclude M2_gt.parquet ... --out .cache/player_reid_st2.pt
 """
 
 from __future__ import annotations
@@ -125,13 +131,59 @@ def load_clip(clip_dir: Path, rng):
     return {p: v for p, v in out.items() if len(v[1]) >= K}
 
 
-def load_crops(path: Path) -> dict:
-    """{person: (team, [crops])} from build_reid_crops.py, people with fewer
-    than K crops dropped."""
+def load_crops(paths, exclude: set = frozenset(), pool: bool = True):
+    """Clips from build_reid_crops.py sets: {person: (team, [crops])} per
+    match when `pool` (a person's windows merged by player_id; team from
+    the first window read, which only evaluation uses), else per window.
+    Goalkeepers, people in `exclude` and people with fewer than K crops
+    are dropped."""
     import pickle
 
-    people = pickle.loads(Path(path).read_bytes())
-    return {p: v for p, v in people.items() if len(v[1]) >= K}
+    clips: dict[str, dict] = {}
+    for path in paths:
+        blob = pickle.loads(Path(path).read_bytes())
+        clip = clips.setdefault(blob["match"] if pool else blob["window"], {})
+        for pid, p in blob["people"].items():
+            if p["role"] != "player" or pid in exclude:
+                continue
+            team, crops = clip.setdefault(pid, (p["side"], []))
+            crops.extend(p["crops"])
+    out = []
+    for name, people in clips.items():
+        people = {p: v for p, v in people.items() if len(v[1]) >= K}
+        print(f"    {name}: {len(people)} people, "
+              f"{sum(len(v[1]) for v in people.values())} crops", flush=True)
+        out.append(people)
+    return out
+
+
+def augment(crop, rng):
+    """A training view of a panorama crop: mirrored half the time, blurred
+    by shrinking to between 25 px and its height and back (so sharpness,
+    which goes with depth, does not tell people apart), brightness
+    +-15%."""
+    if rng.random() < 0.5:
+        crop = crop[:, ::-1]
+    h, w = crop.shape[:2]
+    if h > 25:
+        t = rng.uniform(25, h)
+        small = cv2.resize(crop, (max(int(w * t / h), 4), int(t)),
+                           interpolation=cv2.INTER_AREA)
+        crop = cv2.resize(small, (w, h), interpolation=cv2.INTER_LINEAR)
+    crop = np.clip(crop.astype(np.float32) * rng.uniform(0.85, 1.15), 0, 255)
+    return np.ascontiguousarray(crop.astype(np.uint8))
+
+
+def excluded_ids(tables) -> set:
+    """player_ids of everyone in the given ground-truth tables (window
+    _gt.parquet or a half's GSR table)."""
+    import pandas as pd
+
+    ids = set()
+    for t in tables:
+        g = pd.read_parquet(t, columns=["player_id"])
+        ids |= set(g.player_id.dropna().astype(str))
+    return ids
 
 
 def evaluate(model, clips, label):
@@ -171,9 +223,11 @@ def evaluate(model, clips, label):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--clips", help="SoccerNet game-state clip dirs")
-    ap.add_argument("--crops", help="dir of build_reid_crops.py sets "
-                                    "(fixed panoramas) to train on")
-    ap.add_argument("--val-crops", help="dir of held-out crop sets")
+    ap.add_argument("--crops", nargs="+", help="build_reid_crops.py sets "
+                                               "(fixed panoramas) to train on")
+    ap.add_argument("--val-crops", nargs="+", help="held-out crop sets")
+    ap.add_argument("--exclude", nargs="*", default=[],
+                    help="ground-truth tables whose people are not trained on")
     ap.add_argument("--held-out", type=int, default=3)
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--out", default=str(CACHE_DIR / "player_reid.pt"))
@@ -181,11 +235,21 @@ def main():
     import torch
 
     torch.manual_seed(0)
+    random.seed(0)
     rng = np.random.default_rng(0)
     t0 = time.time()
     if args.crops:
-        train = [load_crops(p) for p in sorted(Path(args.crops).glob("*.pkl"))]
-        val = [load_crops(p) for p in sorted(Path(args.val_crops).glob("*.pkl"))]
+        drop = excluded_ids(args.exclude)
+        print(f"  training on {args.crops}\n  held out {args.val_crops}\n"
+              f"  excluding {len(drop)} people from {args.exclude}",
+              flush=True)
+        train = load_crops(args.crops, drop)
+        val = load_crops(args.val_crops, pool=False)
+        seen = {p for c in train for p in c}
+        assert not seen & drop, "an excluded person is in training"
+        assert not seen & {p for c in val for p in c}, \
+            "a held-out person is in training"
+        print(f"  {len(seen)} distinct people trained on", flush=True)
         clips = train + val
     else:
         dirs = sorted(p for p in Path(args.clips).iterdir() if p.is_dir())
@@ -205,7 +269,7 @@ def main():
         crops, labels = [], []
         for k, person in enumerate(chosen):
             for c in random.sample(people[person][1], K):
-                crops.append(c)
+                crops.append(augment(c, rng) if args.crops else c)
                 labels.append(k)
         e = model(to_tensor(crops))
         lab = torch.tensor(labels)
@@ -223,7 +287,10 @@ def main():
                   f"{time.time() - t0:.0f} s", flush=True)
         if step % 1000 == 0 or step == args.steps:
             score = evaluate(model, val, "held out")
-            if score > best:
+            # Panoramas: the final weights, decided beforehand -- the
+            # held-out window also tunes the thresholds, so it does not
+            # pick the checkpoint too.
+            if args.crops or score > best:
                 best = score
                 torch.save(model.state_dict(), args.out)
                 print(f"  saved {args.out}", flush=True)

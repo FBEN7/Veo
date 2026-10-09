@@ -56,7 +56,8 @@ def _look(ident):
 def identify(out_dir: Path, model, embedder=None,
              look_threshold: float | None = None,
              use_numbers: bool = False, split: bool = False,
-             track_numbers: bool = False) -> dict:
+             track_numbers: bool = False, cut_threshold: float | None = None,
+             looks_key: str = "") -> dict:
     import copy
 
     if split:
@@ -66,13 +67,19 @@ def identify(out_dir: Path, model, embedder=None,
 
         info = json.loads((out_dir / "clip.json").read_text())
         merged = pd.read_parquet(out_dir / "tracks_merged.parquet")
-        cache = out_dir / "split_looks.pkl"
+        # Named by the embedder's weights: looks from another embedder
+        # must not be reused.
+        cache = out_dir / f"split_looks{looks_key}.pkl"
         if cache.exists():
             sampled = pickle.loads(cache.read_bytes())
         else:
             sampled = ts.looks(info["path"], merged, embedder)
             cache.write_bytes(pickle.dumps(sampled))
-        df, look = ts.split(merged, sampled)
+        # A negative cut threshold: no cuts (cosine similarity is never
+        # below -1).
+        cut = ts.THRESHOLD if cut_threshold is None else cut_threshold
+        df, look = ts.split(merged, sampled,
+                            threshold=-2.0 if cut < 0 else cut)
         df.to_parquet(out_dir / "tracks_split.parquet")
         tracks = pid.tracks_of(df, min_rows=1)
         for tid, t in tracks.items():
@@ -111,7 +118,12 @@ def main():
     ap.add_argument("--reid", help="weights from train_player_reid.py: join "
                                    "tracks by appearance too")
     ap.add_argument("--look-threshold", type=float, default=None,
-                    help="cosine similarity to join two identities by look")
+                    help="cosine similarity to join two identities by look "
+                         "(above 1: never join)")
+    ap.add_argument("--cut-threshold", type=float, default=None,
+                    help="with --split: cut a track where the look before "
+                         "and after is less alike than this (negative: never "
+                         "cut; default track_split.THRESHOLD)")
     ap.add_argument("--numbers", action="store_true",
                     help="join tracks by read shirt numbers too (off: not "
                          "yet measured to be right on broadcast footage)")
@@ -131,8 +143,12 @@ def main():
         model = jr.build()
         model.load_state_dict(torch.load(args.reader))
         model.eval()
-    embedder = None
+    embedder, looks_key = None, ""
     if args.reid:
+        import hashlib
+
+        looks_key = "_" + hashlib.sha1(
+            Path(args.reid).read_bytes()).hexdigest()[:8]
         from train_player_reid import build
 
         embedder = build()
@@ -141,7 +157,8 @@ def main():
     for out_dir in map(Path, args.out_dirs):
         t0 = time.time()
         blob = identify(out_dir, model, embedder, args.look_threshold,
-                        args.numbers, args.split, args.track_numbers)
+                        args.numbers, args.split, args.track_numbers,
+                        args.cut_threshold, looks_key)
         idents = blob["identities"]
         named = [i for i in idents if i["number"] is not None]
         tracks_named = sum(len(i["tracks"]) for i in named)

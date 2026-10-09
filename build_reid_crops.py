@@ -6,19 +6,24 @@ The crops are cut the way the pipeline cuts them at inference
 our own detections matched to a ground-truth person by their feet
 (`eval_soccertrack_v2.match_feet`) -- the released boxes are all 42-43 px
 tall and much wider than the players, so they are not used as crops. A
-detection is kept only when no other person's feet are within
-`CROWD_PX` of the matched person's, so two players crossing do not swap
-labels.
+match is kept as a label only when it is close -- within r = min(43 px,
+0.6 x the detection's height) of the person's feet -- and no other
+person's feet are within 2r of the detection's, so a far-side detection
+between two players, or a referee standing in for a missed player, does
+not carry a wrong name.
 
 Detections come from the window's pipeline run (`output_<window>/
 tracks.parquet`) when there is one, else the detector is run on the
 sampled frames only. Every `EVERY`-th frame is used, and up to
 `PER_PERSON` crops per person spread over the window.
 
-Writes `<cache>/soccertrack_v2/reid/<window>.pkl`: {person: (side,
-[crops])}, persons being the window's ground-truth track ids.
+Writes `<out>/<window>.pkl`: {"window", "match", "half", "people":
+{player_id: {"role", "side", "crops", "frame", "h", "dist"}}}, keyed by
+the dataset's persistent `player_id`, which is the same person in every
+match -- so whoever is in a tuning or report window can be kept out of
+training (`train_player_reid.py --exclude`).
 
-    python build_reid_crops.py st2_118576_2nd_f015000 ...
+    python build_reid_crops.py st2_118576_2nd_f015000 ... --out DIR
 """
 
 from __future__ import annotations
@@ -39,7 +44,6 @@ from src.player_identity import crop
 
 EVERY = 10
 PER_PERSON = 30
-CROWD_PX = FOOT_PX
 MIN_H = 16.0
 
 
@@ -51,6 +55,9 @@ def detections(window: str, frames: list[int], model_name: str) -> pd.DataFrame:
         t = pd.read_parquet(run)
         return t[(t.cls == "player") & t.frame.isin(frames)].copy()
     from ultralytics import YOLO
+
+    # As the pipeline detects (score_soccernet.run_pipeline, fixed_camera):
+    # full width, its default player confidence.
 
     model = YOLO(model_name)
     cap = cv2.VideoCapture(str(DATA_DIR / "soccertrack_v2" / f"{window}.mp4"))
@@ -76,24 +83,34 @@ def detections(window: str, frames: list[int], model_name: str) -> pd.DataFrame:
 
 def build(window: str, model_name: str = "yolov8s.pt") -> dict:
     root = DATA_DIR / "soccertrack_v2"
+    raw = pd.read_parquet(root / f"{window}_gt.parquet")
+    who = raw.groupby("track_id").agg(
+        player_id=("player_id", lambda s: s.dropna().mode().iloc[0]
+                   if s.notna().any() else None),
+        role=("role", lambda s: s.mode().iloc[0]),
+        side=("side", lambda s: s.mode().iloc[0]))
     gt = truth(root / f"{window}_gt.parquet")
     frames = sorted(f for f in gt.frame.unique() if f % EVERY == 0)
     gt = gt[gt.frame.isin(frames)]
     det = boxes(detections(window, frames, model_name))
+    before = len(det)
     det["person"] = match_feet(det, gt)
     det = det.dropna(subset=["person"])
-    # Keep a detection only when no other person stands within CROWD_PX of
-    # the person it was matched to.
+    matched = len(det)
+    # A label only when the match is close and no one else is near.
     feet = {f: g for f, g in gt.groupby("frame")}
-    clear = []
+    dist, keep = [], []
     for r in det.itertuples():
         g = feet[r.frame]
-        own = g[g.person == r.person]
-        fx, fy = float((own.x0 + own.x1).iloc[0] / 2), float(own.y1.iloc[0])
-        d = np.hypot((g.x0 + g.x1) / 2 - fx, g.y1 - fy)
-        clear.append(bool((d[g.person != r.person] > CROWD_PX).all()))
-    det = det[np.array(clear, dtype=bool)]
-    side = gt.groupby("person").side.agg(lambda s: s.mode().iloc[0])
+        d = np.hypot((g.x0 + g.x1) / 2 - (r.x0 + r.x1) / 2, g.y1 - r.y1)
+        own = float(d[(g.person == r.person).to_numpy()][0])
+        others = d[(g.person != r.person).to_numpy()]
+        radius = min(FOOT_PX, 0.6 * r.crop_h)
+        dist.append(own)
+        keep.append(own <= radius and bool((others >= 2 * radius).all()))
+    det = det.assign(dist=dist)[np.array(keep, dtype=bool)]
+    print(f"  {window}: {before} detections on {len(frames)} frames, "
+          f"{matched} matched, {len(det)} kept as labels", flush=True)
     wanted: dict[int, list] = {}
     for person, rows in det.groupby("person"):
         rows = rows.sort_values("frame")
@@ -101,36 +118,49 @@ def build(window: str, model_name: str = "yolov8s.pt") -> dict:
                                      min(PER_PERSON, len(rows))).astype(int)]
         for r in pick.itertuples():
             wanted.setdefault(int(r.frame), []).append(
-                (int(person), r.px, r.py, r.crop_h))
-    out = {int(p): (side.get(p), []) for p in det.person.unique()}
+                (int(person), r.px, r.py, r.crop_h, r.dist))
+    out = {int(p): {"crops": [], "frame": [], "h": [], "dist": []}
+           for p in det.person.unique()}
     cap = cv2.VideoCapture(str(root / f"{window}.mp4"))
     idx, last = 0, max(wanted) if wanted else -1
     while idx <= last:
         ok, frame = cap.read()
         if not ok:
             break
-        for person, px, py, h in wanted.get(idx, ()):
+        for person, px, py, h, d in wanted.get(idx, ()):
             c = crop(frame, px, py, h)
             if c is not None:
-                out[person][1].append(c.copy())
+                o = out[person]
+                o["crops"].append(c.copy())
+                o["frame"].append(idx)
+                o["h"].append(float(h))
+                o["dist"].append(float(d))
         idx += 1
     cap.release()
-    return out
+    people = {}
+    for person, o in out.items():
+        w = who.loc[person]
+        key = str(w.player_id) if w.player_id is not None else f"t{person}"
+        people[key] = {"role": w.role, "side": w.side, **o}
+    _, match, half, _ = window.split("_")
+    return {"window": window, "match": match, "half": half, "people": people}
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("windows", nargs="+")
     ap.add_argument("--model", default="yolov8s.pt")
+    ap.add_argument("--out", default=str(Path(CACHE_DIR) / "soccertrack_v2"
+                                         / "reid"))
     args = ap.parse_args()
-    dest = Path(CACHE_DIR) / "soccertrack_v2" / "reid"
+    dest = Path(args.out)
     dest.mkdir(parents=True, exist_ok=True)
     for w in args.windows:
         t0 = time.time()
-        people = build(w, args.model)
-        (dest / f"{w}.pkl").write_bytes(pickle.dumps(people))
-        n = [len(c) for _, c in people.values()]
-        print(f"  {w}: {len(people)} people, {sum(n)} crops "
+        blob = build(w, args.model)
+        (dest / f"{w}.pkl").write_bytes(pickle.dumps(blob))
+        n = [len(p["crops"]) for p in blob["people"].values()]
+        print(f"  {w}: {len(n)} people, {sum(n)} crops "
               f"(min {min(n) if n else 0} per person)  "
               f"[{time.time() - t0:.0f} s]", flush=True)
 
