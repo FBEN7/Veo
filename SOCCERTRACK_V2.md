@@ -364,12 +364,73 @@ team-mates apart well enough.
     python identify_players.py output_st2_... --split \
         --reid .cache/player_reid_untrained.pt --cut-threshold 0.7 --look-threshold 0.85
 
+## Events against the ball actions
+
+The dataset's 21,428 ball actions say what happened and who did it (12
+classes; in these windows three quarters are PASS and DRIVE, 1.4 s apart
+at the median). `score_st2_actions.py` scores the pipeline's events
+against them, per group, matched one to one within 0.5, 1 or 2 s, next to
+the F1 that as many events at random times would get:
+
+    pass   PASS, HIGH PASS, CROSS   <- pass
+    carry  DRIVE                    <- carry
+    won    TACKLE, BLOCK            <- tackle, recovery
+    shot   SHOT, GOAL               <- shot, goal
+    out    OUT                      <- out_of_play
+
+**Pitch coordinates.** Goals, shots and out-of-play need positions on the
+pitch, which the pipeline's pinhole ground plane cannot give for a
+stitched panorama. The release's calibration does
+(`soccertrack_v2.calibration`, `image_to_pitch`: fisheye undistortion,
+then its homography): the ground-truth feet land a median 0.28-0.39 m
+from their pitch positions on ten windows (0.78 m on M10, whose boxes are
+projected). `run_pipeline(..., to_pitch=)` puts the tracks on the pitch
+with it (`eval_soccertrack_v2.py --calibrated`). Two faults showed on
+the way and are fixed for this path only (broadcast unchanged): the
+chosen "ball" was a static object off the pitch in every window -- ball
+candidates outside the pitch outline are now dropped -- and detecting
+every second frame doubled every ball speed (`ball_time_aware`).
+
+**Results** (detections and teams as above; nothing tuned on events):
+
+| windows | group | labels | ours | F1 at 0.5 s | F1 at 1 s | F1 at 2 s |
+|---|---|---|---|---|---|---|
+| tuning (M3, M4, M6, M8) | pass | 89 | 24 | 0.12 | 0.16 | 0.23 |
+| | carry | 71 | 33 | 0.23 | 0.37 | 0.40 |
+| | shot | 3 | 23 | 0 | 0 | 0.08 |
+| | out | 12 | 3 | 0 | 0.13 | 0.13 |
+| report (M2, M10) | pass | 75 | 49 | 0.27 | 0.29 | 0.40 |
+| | carry | 55 | 42 | 0.33 | 0.43 | 0.47 |
+| | shot | 2 | 44 | 0 | 0 | 0 |
+| | out | 9 | 0 | 0 | 0 | 0 |
+
+Chance, per window at 1 s: passes 0.04-0.27, carries 0.09-0.25. Passes
+are at chance on most windows (on M2 and M6 below it); carries are above
+it on M3, M4 and M10 (p <= 0.011), marginally on M2 and M6 (p 0.06-0.07)
+and not on M8 (p 0.48); shots are almost
+all false (44 against 2 on the report windows); balls won and outs are
+not found. Of the matched events, the team is right 25 times in 33 and
+the actor 15 in 30 on the report windows.
+
+**Why: there is almost no ball.** The actor is detected for 86-92% of
+the actions, but the chosen ball is within 3 m of them for 11% (tuning)
+and 22% (report) -- 4% on M3. The detector does not see this ball: on
+M3's 72 action frames, with the release's ball track projected into the
+picture, a detection of the COCO "sports ball" class (yolov8s at full
+width) is within 20 px of it on 8% of them even at confidence 0.02, and
+on none at the pipeline's chosen 0.5. The ball is 5-6 px across here.
+The dataset has no ball boxes to train on (its ball track is interpolated
+between the actions; its curated `mot/` boxes are players only).
+
 ## Next
 
-1. **Pitch coordinates**: map the feet through the release's calibration
-   (`raw/<match>/` homography and distortion maps), or a one-off clicked
-   calibration for a Veo panorama, instead of `ground_plane`'s pinhole
-   model; then score events against the BAS actions.
+1. **A ball detector for the panorama**: everything about events waits
+   on it. No ball boxes are released, so labels must be made: clicked
+   (`make_ball_labeller.py`), or taken weakly from the actions themselves
+   -- at an action's frame the ball is at the actor's feet, whose pitch
+   position the calibration puts in the picture (21,000 such moments, with
+   the ball often hidden at the feet). For a Veo panorama the pitch
+   calibration would be a one-off click; the release's is used here.
 2. A score that tolerates the boxes: the foot distance above, or the
    pitch positions once (1) exists.
 3. **Teams, what is left**: giving every track its true majority side --
