@@ -94,11 +94,11 @@ def grid(out_dir: Path, weights: str) -> pd.DataFrame:
 def choose(table: pd.DataFrame) -> dict:
     best = table.IDF1.max()
     near = table[table.IDF1 >= best - 0.005].copy()
-    near["_cut"] = near.cut.fillna(-1.0)          # no cut first
-    near["_join"] = -near.join.fillna(2.0)        # no join, then highest
+    near["_cut"] = near["cut"].fillna(-1.0)       # no cut first
+    near["_join"] = -near["join"].fillna(2.0)     # no join, then highest
     pick = near.sort_values(["_cut", "_join"]).iloc[0]
-    return {"cut": None if pd.isna(pick.cut) else float(pick.cut),
-            "join": None if pd.isna(pick.join) else float(pick.join),
+    return {"cut": None if pd.isna(pick["cut"]) else float(pick["cut"]),
+            "join": None if pd.isna(pick["join"]) else float(pick["join"]),
             "IDF1": float(pick.IDF1), "best IDF1": float(best)}
 
 

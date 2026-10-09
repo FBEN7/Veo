@@ -102,7 +102,8 @@ def build(window: str, model_name: str = "yolov8s.pt") -> dict:
     dist, keep = [], []
     for r in det.itertuples():
         g = feet[r.frame]
-        d = np.hypot((g.x0 + g.x1) / 2 - (r.x0 + r.x1) / 2, g.y1 - r.y1)
+        d = np.hypot((g.x0 + g.x1) / 2 - (r.x0 + r.x1) / 2,
+                     g.y1 - r.y1).to_numpy()
         own = float(d[(g.person == r.person).to_numpy()][0])
         others = d[(g.person != r.person).to_numpy()]
         radius = min(FOOT_PX, 0.6 * r.crop_h)
