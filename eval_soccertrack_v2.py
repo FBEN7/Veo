@@ -164,6 +164,9 @@ def main():
                     help="run the pipeline first (fixed-camera mode)")
     ap.add_argument("--model", default="yolov8m.pt")
     ap.add_argument("--stride", type=int, default=1)
+    ap.add_argument("--calibrated", action="store_true",
+                    help="put tracks on the pitch with the match's released "
+                         "calibration, and detect events (events.json)")
     ap.add_argument("--pitch-margin", type=float, default=None,
                     help="drop players this many px outside the pitch "
                          "outline (none: no outline)")
@@ -175,10 +178,18 @@ def main():
         pitch = None
         if args.pitch_margin is not None:
             pitch = json.loads(clip.with_suffix(".json").read_text())["pitch"]
+        to_pitch = None
+        if args.calibrated:
+            from src import soccertrack_v2 as st
+
+            cal = st.calibration(
+                json.loads(clip.with_suffix(".json").read_text())["match"])
+            to_pitch = lambda uv: st.image_to_pitch(uv, cal)  # noqa: E731
         try:
             run_pipeline(str(clip), out_dir, fixed_camera=True,
                          model_name=args.model, stride=args.stride,
-                         pitch=pitch, pitch_margin_px=args.pitch_margin or 0.0)
+                         pitch=pitch, pitch_margin_px=args.pitch_margin or 0.0,
+                         to_pitch=to_pitch)
         except Exception as e:      # tracks are written before events
             print(f"pipeline stopped after tracking: {type(e).__name__}: {e}")
     gt = truth(clip.with_name(clip.stem + "_gt.parquet"))

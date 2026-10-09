@@ -212,7 +212,8 @@ def _smooth_series(s: pd.Series, window: int = VEL_SMOOTH_WINDOW) -> pd.Series:
     return rolled
 
 
-def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
+def _ball_kinematics(tracks: pd.DataFrame,
+                     time_aware: bool = False) -> pd.DataFrame:
     """Ball position and speed per frame, from `ball_tracking.kinematics`.
 
     Kept as a name here because the rest of this module reads it, but the
@@ -220,7 +221,7 @@ def _ball_kinematics(tracks: pd.DataFrame) -> pd.DataFrame:
     "is the ball travelling too fast to be held", and two copies of it
     drifted apart.
     """
-    return ball_tracking.kinematics(tracks)
+    return ball_tracking.kinematics(tracks, time_aware=time_aware)
 
 
 def _detect_ball_movement_events(ball: pd.DataFrame,
@@ -732,7 +733,8 @@ def _emit_possession_transition_event(
 # ---------------------------------------------------------------------------
 
 def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
-                  absolute_pitch: bool = True) -> list[dict[str, Any]]:
+                  absolute_pitch: bool = True,
+                  ball_time_aware: bool = False) -> list[dict[str, Any]]:
     """Detect football events from tracking data in metres.
 
     Parameters
@@ -760,6 +762,12 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
         them from real ones. Emitting nothing is a worse product and a
         truthful one.
 
+    ball_time_aware : bool
+        Ball velocities over the time between samples, and the ball filter
+        started at its first position (``ball_tracking.kinematics``). Off by
+        default, as tuned on broadcast run every frame; a fixed-view run
+        detecting every second frame otherwise reads every speed double.
+
     Returns
     -------
     list[dict]
@@ -768,7 +776,7 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
     events: list[dict[str, Any]] = []
 
     # ---- 1. Ball kinematics ------------------------------------------------
-    ball = _ball_kinematics(tracks)
+    ball = _ball_kinematics(tracks, ball_time_aware)
     if ball.empty:
         print("[Events] No ball detections — cannot detect events.")
         return events

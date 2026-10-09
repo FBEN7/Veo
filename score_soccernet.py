@@ -212,7 +212,8 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
                  stride: int = 1, pitch: list | None = None,
                  pitch_margin_px: float = 0.0,
                  team_kit_feature: str | None = None,
-                 team_core_depth: float | None = None):
+                 team_core_depth: float | None = None,
+                 to_pitch=None):
     """Detect, track and emit events for the clip, caching each stage.
 
     ``return_tracks`` also hands back the metric tracks the events were
@@ -248,6 +249,14 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     tracks as a team and was named one. Both default to
     FIXED_VIEW_KIT_FEATURE / FIXED_VIEW_CORE_DEPTH there and to the
     broadcast behaviour elsewhere.
+
+    ``to_pitch`` (pixels -> pitch metres, origin the centre spot) is a
+    calibrated fixed view's camera (`soccertrack_v2.image_to_pitch`): ball
+    candidates outside the pitch outline are dropped -- on SoccerTrack v2
+    the chosen "ball" was otherwise a static object off the pitch in every
+    window -- tracks are put on the pitch (`pixel_scale.to_pitch_metres`),
+    events are detected with absolute positions and ball speeds over the
+    real time between samples, and written to events.json.
     """
     from src.detect_track_hybrid import run as run_detection
     from src.team_assignment_v2 import (assign_teams_v2 as assign_teams,
@@ -407,6 +416,12 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
         print("camera: static, not compensated")
 
     capped = player_filter.filter_players(filtered, verbose=True)
+    if to_pitch is not None and pitch is not None:
+        before = int((capped.cls == "ball").sum())
+        capped = player_filter.inside_pitch(capped, pitch, pitch_margin_px,
+                                            classes=("ball",))
+        print(f"  [pitch] {before} -> {int((capped.cls == 'ball').sum())} "
+              "ball candidates inside the outline")
     selected = ball_selection.select_single_ball(
         capped, scale, fps=profile.fps, verbose=True)
     merged = track_reid.merge_fragments(
@@ -418,15 +433,24 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     # comes out short. The ground plane measures by how much. It does not
     # replace the coordinate system -- see ground_plane.effective_px_per_m for
     # why the geometrically correct map measures worse than this scalar.
-    plane = ground_plane.load_or_build(
-        clip, merged, clip_info["width"], clip_info["height"],
-        out_dir / "ground_plane.json")
-    calibrated = (ground_plane.effective_px_per_m(merged, plane, verbose=True)
-                  if plane is not None else None)
+    if to_pitch is not None:
+        metric = pixel_scale.to_pitch_metres(merged, to_pitch)
+        events = ev_module.detect_events(metric, absolute_pitch=True,
+                                         ball_time_aware=True)
+        (out_dir / "events.json").write_text(json.dumps(
+            events, indent=1, default=lambda v: v.item()
+            if hasattr(v, "item") else str(v)))
+    else:
+        plane = ground_plane.load_or_build(
+            clip, merged, clip_info["width"], clip_info["height"],
+            out_dir / "ground_plane.json")
+        calibrated = (ground_plane.effective_px_per_m(merged, plane,
+                                                      verbose=True)
+                      if plane is not None else None)
 
-    metric, absolute = pixel_scale.prepare_tracks_for_events(
-        merged, None, verbose=True, px_per_m=calibrated)
-    events = ev_module.detect_events(metric, absolute_pitch=absolute)
+        metric, absolute = pixel_scale.prepare_tracks_for_events(
+            merged, None, verbose=True, px_per_m=calibrated)
+        events = ev_module.detect_events(metric, absolute_pitch=absolute)
 
     diag = ball_selection.ball_track_diagnostics(merged, scale, fps=profile.fps)
     print(f"\nball coverage {diag['coverage_pct']:.1f}%, "

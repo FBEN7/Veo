@@ -362,6 +362,47 @@ def pitch_outline(match: str, half: int, width: int,
     raise ValueError(f"no pitch record with side lines in {match} {half}")
 
 
+# ---- Calibration ----------------------------------------------------------------
+
+def calibration(match: str) -> dict:
+    """The release's camera model of a match (`raw/<match>/`): fisheye
+    intrinsics K, D, the undistorted camera Knew, and the inverse of the
+    homography from pitch metres (corner origin, 105 x 68) to undistorted
+    pixels. Kept in the cache; the intrinsics file's pickled rotation and
+    translation are not read."""
+    root = cache_dir() / "calib"
+    root.mkdir(parents=True, exist_ok=True)
+    for name in ("camera_intrinsics.npz", "homography.npy"):
+        path = root / f"{match}_{name}"
+        if not path.exists():
+            path.write_bytes(open_stream(f"raw/{match}/{match}_{name}").read())
+    z = np.load(root / f"{match}_camera_intrinsics.npz", allow_pickle=False)
+    H = np.load(root / f"{match}_homography.npy", allow_pickle=False)
+    return {"K": z["K"], "D": z["D"], "Knew": z["Knew"], "Hinv": np.linalg.inv(H)}
+
+
+def image_to_pitch(uv, cal: dict) -> np.ndarray:
+    """(N, 2) pixels of a match's panorama to (N, 2) pitch metres in the
+    dataset's convention (origin the centre spot, x to the right as seen
+    from the camera, y towards it); NaN at or above the horizon. The
+    points are undistorted with the fisheye model, then mapped through the
+    inverse homography. On M2 the ground-truth boxes' feet land a median
+    0.38 m from their pitch positions (the positions are on a 1.05 x
+    0.68 m grid, worth 0.34 m alone)."""
+    import cv2
+
+    # cv2 misreads strided views without complaint: always a fresh array.
+    uv = np.ascontiguousarray(np.asarray(uv, dtype=np.float64)
+                              .reshape(-1, 1, 2))
+    und = cv2.fisheye.undistortPoints(uv, cal["K"], cal["D"],
+                                      P=cal["Knew"]).reshape(-1, 2)
+    q = np.c_[und, np.ones(len(und))] @ cal["Hinv"].T
+    with np.errstate(divide="ignore", invalid="ignore"):
+        xy = q[:, :2] / q[:, 2:] - (52.5, 34.0)
+    xy[q[:, 2] <= 0] = np.nan
+    return xy
+
+
 def y_towards_camera(gsr: pd.DataFrame) -> bool:
     """Whether pitch y grows towards the camera: the camera looks down on
     the pitch, so feet nearer it are lower in the picture, and the box
@@ -592,6 +633,22 @@ def _check():
                          "py": [5.0, 5.0, 5.0, 5.0]})
     kept = inside_pitch(rows, [[0, 0], [100, 0], [100, 10], [0, 10]], 10)
     assert list(kept.index) == [0, 2, 3], kept
+    # Image to pitch inverts a known camera: pitch points through a
+    # homography and fisheye distortion come back where they started.
+    import cv2
+
+    K = np.array([[1500.0, 0, 2000], [0, 1500, 500], [0, 0, 1]])
+    D = np.array([[-0.06], [0.03], [0.0], [0.0]])
+    Knew = np.array([[500.0, 0, 2000], [0, 500, 500], [0, 0, 1]])
+    H = np.array([[30.0, 4, 300], [0.5, 8, 100], [0.0, 0.003, 1]])
+    pts = np.array([[10.0, 5], [52.5, 34], [100, 60], [80, 20]])
+    und = np.c_[pts, np.ones(4)] @ H.T
+    und = und[:, :2] / und[:, 2:]
+    norm = (und - Knew[:2, 2]) / np.diag(Knew)[:2]
+    img = cv2.fisheye.distortPoints(norm.reshape(-1, 1, 2), K, D).reshape(-1, 2)
+    back = image_to_pitch(img, {"K": K, "D": D, "Knew": Knew,
+                                "Hinv": np.linalg.inv(H)})
+    assert np.allclose(back, pts - (52.5, 34.0), atol=1e-3), back
     # Range reads: across block edges, after seeks, through a small cache.
     blob = bytes(range(256)) * 41
     calls = []
@@ -611,7 +668,7 @@ def _check():
     assert all(b - a < 100 for a, b in calls)
     print("  soccertrack_v2: GSR streamed and flattened, BAS frames for both "
           "releases, actors joined, pitch outline chained and applied, "
-          "range reads exact")
+          "image to pitch through a known camera, range reads exact")
 
 
 class _Chunks:

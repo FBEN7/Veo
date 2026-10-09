@@ -135,6 +135,24 @@ def project_with_homography(tracks: pd.DataFrame, H) -> pd.DataFrame:
     return out
 
 
+def to_pitch_metres(tracks: pd.DataFrame, to_pitch) -> pd.DataFrame:
+    """Tracks on a known pitch, for a calibrated fixed view: each row's
+    picture point -- a player's feet, the bottom of the ball's box -- mapped
+    by `to_pitch` (pixels -> metres, origin the centre spot) and shifted to
+    the event code's frame (origin a corner, 105 x 68), in px/py and x/y.
+    Rows that do not map are dropped: a NaN ball position would poison the
+    ball filter for the rest of the clip."""
+    out = tracks.copy()
+    u = (out.px_raw if "px_raw" in out else out.px).to_numpy(float)
+    v = (out.py_raw if "py_raw" in out else out.py).to_numpy(float)
+    v = np.where(out.cls.to_numpy() == "ball",
+                 v + out.crop_h.fillna(0).to_numpy(float) / 2, v)
+    xy = to_pitch(np.c_[u, v])
+    out["px"] = out["x"] = xy[:, 0] + 52.5
+    out["py"] = out["y"] = xy[:, 1] + 34.0
+    return out[np.isfinite(out.px) & np.isfinite(out.py)].reset_index(drop=True)
+
+
 def prepare_tracks_for_events(tracks: pd.DataFrame, H=None,
                               verbose: bool = True,
                               px_per_m: float | None = None,
