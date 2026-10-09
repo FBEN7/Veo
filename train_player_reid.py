@@ -215,8 +215,11 @@ def evaluate(model, clips, label):
                 hits = np.cumsum(same[order])
                 prec = hits / np.arange(1, len(order) + 1)
                 aps.append(float((prec * same[order]).sum() / same.sum()))
+    # Collapse shows as everyone alike: the median cosine of different
+    # people's crops near 1.
     print(f"  {label}: rank-1 among team-mates {np.mean(r1):.1%}, "
-          f"mAP {np.mean(aps):.1%}", flush=True)
+          f"mAP {np.mean(aps):.1%}, median cosine of different people "
+          f"{np.median(sim[who[:, None] != who[None, :]]):.2f}", flush=True)
     return float(np.mean(aps))
 
 
@@ -228,6 +231,16 @@ def main():
     ap.add_argument("--val-crops", nargs="+", help="held-out crop sets")
     ap.add_argument("--exclude", nargs="*", default=[],
                     help="ground-truth tables whose people are not trained on")
+    ap.add_argument("--lr", type=float, default=3e-4)
+    ap.add_argument("--batch-all", action="store_true",
+                    help="average the soft-margin loss over every triplet in "
+                         "the batch instead of each anchor's hardest pair, "
+                         "which is less prone to collapse")
+    ap.add_argument("--soft-margin", action="store_true",
+                    help="softplus(d+ - d-) instead of the 0.3 hinge: on "
+                         "SoccerTrack v2 crops the hinge collapsed (every "
+                         "crop to nearly one vector, the loss stuck at the "
+                         "margin), as Hermans et al. 2017 report it can")
     ap.add_argument("--held-out", type=int, default=3)
     ap.add_argument("--steps", type=int, default=3000)
     ap.add_argument("--out", default=str(CACHE_DIR / "player_reid.pt"))
@@ -259,7 +272,7 @@ def main():
           f"loaded in {time.time() - t0:.0f} s", flush=True)
     model = build()
     evaluate(model, val, "held out, ImageNet features only")
-    opt = torch.optim.AdamW(model.parameters(), lr=3e-4, weight_decay=1e-4)
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, args.steps)
     best, t0 = -1.0, time.time()
     for step in range(1, args.steps + 1):
@@ -277,7 +290,17 @@ def main():
         same = lab[:, None] == lab[None, :]
         hardest_pos = (d * same).max(1).values
         hardest_neg = (d + same * 10.0).min(1).values
-        loss = torch.relu(hardest_pos - hardest_neg + 0.3).mean()
+        if args.batch_all:
+            # every (anchor, positive, negative) triplet of the batch
+            other = ~same
+            pos = same & ~torch.eye(len(lab), dtype=torch.bool)
+            t = d[:, :, None] - d[:, None, :]          # d(a,p) - d(a,n)
+            valid = pos[:, :, None] & other[:, None, :]
+            loss = torch.nn.functional.softplus(t[valid]).mean()
+        elif args.soft_margin:
+            loss = torch.nn.functional.softplus(hardest_pos - hardest_neg).mean()
+        else:
+            loss = torch.relu(hardest_pos - hardest_neg + 0.3).mean()
         opt.zero_grad()
         loss.backward()
         opt.step()
