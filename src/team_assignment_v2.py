@@ -146,9 +146,13 @@ RESIDUAL_CUT = 2.5
 # A fixed whole-pitch view (run_pipeline(fixed_camera=True) with a pitch
 # outline): the kit feature, and how far inside the outline (in player
 # heights, median over the track) a track must stay to take part in the
-# clustering. Chosen on SoccerTrack v2 training windows; see
-# SOCCERTRACK_V2.md. Broadcast never uses them.
-FIXED_VIEW_KIT_FEATURE = "chroma"
+# clustering. Chosen on four SoccerTrack v2 training windows by rules fixed
+# beforehand (SOCCERTRACK_V2.md): fitting on the pitch core keeps the bench
+# out of the teams however large it is, at a cost of at most 0.025 team
+# recall on any window; "chroma" did not earn its place -- pooled team
+# recall within 0.005 of "hsv4", worse on one window, and on another it
+# merged both teams into one cluster unless the core was used.
+FIXED_VIEW_KIT_FEATURE = "hsv4"
 FIXED_VIEW_CORE_DEPTH = 0.15
 
 
@@ -248,11 +252,12 @@ def kit_vector(feat: np.ndarray, kit_feature: str = "hsv4") -> np.ndarray:
     the colour as a point in the HSV cone, so hue counts only as much as
     the kit is saturated.
 
-    Why "chroma" exists: on a fixed SoccerTrack v2 panorama one kit read
+    Why "chroma" was tried: on a fixed SoccerTrack v2 panorama one kit read
     saturation 0.28 -- a dark, nearly grey shirt whose hue is noise -- and
     under "hsv4" hue takes two of four standardised dimensions, so that
-    team fragmented into "other" on hue alone; two kits of the same hue
-    and different saturation are told apart along the chroma radius.
+    team fragmented into "other" on hue alone. It lifted that window's team
+    recall by 0.05 but not the others' (see FIXED_VIEW_KIT_FEATURE), so it
+    is an option, not a default.
     """
     if kit_feature == "hsv4":
         return feat
