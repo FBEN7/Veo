@@ -387,3 +387,77 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
                       "players on at once: probably both teams in one "
                       "colour cluster")
     return out
+
+
+def _check():
+    """Two kits of one blue hue -- one saturated, one dull whose hue is
+    unreliable -- and a dark bench at the touchline outnumbering each team, as
+    on a SoccerTrack v2 panorama. The fixed-view rule (chroma, fit on the
+    pitch core) must find the two teams and leave the bench out; the
+    default rule is pinned as naming the bench a team here."""
+    rng = np.random.default_rng(0)
+    blue = 225 * np.pi / 180
+
+    def kit(hue, sat, val):
+        return np.array([np.cos(hue), np.sin(hue), sat, val])
+
+    feats, depth, truth = {}, {}, {}
+    t = 0
+    for name, n, make, (d0, d1) in (
+            ("A", 30, lambda: kit(blue + rng.normal(0, 0.1),
+                                  0.95 + rng.normal(0, 0.02),
+                                  0.42 + rng.normal(0, 0.03)), (0.4, 2.5)),
+            # A dull kit: its hue mostly blue, but on a fifth of the tracks
+            # the more saturated half of the torso is arms and reads as skin
+            # (as on SoccerTrack v2 M3: 12 of 62 tracks at hue 10-70 deg).
+            ("B", 30, lambda: kit(blue + rng.normal(0, 0.3)
+                                  if rng.random() > 0.2 else
+                                  rng.uniform(10, 70) * np.pi / 180,
+                                  0.28 + rng.normal(0, 0.05),
+                                  0.36 + rng.normal(0, 0.03)), (0.4, 2.5)),
+            # On the pitch with them: two goalkeepers (orange, yellow) and
+            # a referee in navy, a few tracks each.
+            ("keeper", 3, lambda: kit(30 * np.pi / 180 + rng.normal(0, 0.1),
+                                      0.85, 0.6), (0.2, 1.0)),
+            ("keeper", 3, lambda: kit(60 * np.pi / 180 + rng.normal(0, 0.1),
+                                      0.8, 0.7), (0.2, 1.0)),
+            ("referee", 3, lambda: kit(blue + rng.normal(0, 0.1), 0.9,
+                                       0.12 + rng.normal(0, 0.02)), (0.5, 2.0)),
+            ("bench", 45, lambda: kit(blue + rng.normal(0, 0.1),
+                                      0.95 + rng.normal(0, 0.02),
+                                      0.13 + rng.normal(0, 0.02)), (-0.5, 0.1))):
+        for _ in range(n):
+            feats[t], depth[t], truth[t] = make(), rng.uniform(d0, d1), name
+            t += 1
+
+    def purity(team_map):
+        got = pd.DataFrame({"team": pd.Series(team_map),
+                            "truth": pd.Series(truth)})
+        teams = got[got.team.isin(("team_A", "team_B"))]
+        return teams, pd.crosstab(teams.team, teams.truth)
+
+    core = {k for k, d in depth.items() if d >= FIXED_VIEW_CORE_DEPTH}
+    fixed = cluster_teams(feats, kit_feature=FIXED_VIEW_KIT_FEATURE,
+                          fit_tracks=core, verbose=False)
+    teams, table = purity(fixed)
+    assert not {"bench", "referee"} & set(table.columns), table
+    assert sorted(table.idxmax(axis=1)) == ["A", "B"], table
+    assert table.max(axis=1).sum() / len(teams) >= 0.95, table
+    # Not all named: the residual cut (unchanged) takes the dull kit's
+    # skin-read tracks, its spread being judged against the pooled spread
+    # of both kits; coverage is measured on real windows, not pinned here.
+    assert len(teams) >= 0.8 * 60, table
+    old = cluster_teams(feats, verbose=False)
+    _, table = purity(old)
+    assert "bench" in table.idxmax(axis=1).values, table
+    # Too few tracks in the core: the outline is suspect, all are used.
+    some = cluster_teams(feats, kit_feature="chroma", fit_tracks={0, 1},
+                         verbose=False)
+    assert sum(v != "other" for v in some.values()) > 40
+    print("  team_assignment_v2: two kits of one hue and a bench larger than "
+          "either team -- the fixed-view rule finds both teams, the default "
+          "names the bench a team")
+
+
+if __name__ == "__main__":
+    _check()

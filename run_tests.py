@@ -94,6 +94,11 @@ CONTROLS = [
      "the dataset's game-state file streamed in small pieces and flattened, "
      "event frames for both releases' timing, and remote range reads "
      "exact across block edges"),
+    ("teams on a fixed view",
+     [sys.executable, "-m", "src.team_assignment_v2"],
+     "two kits of one hue, one dull, and a bench at the touchline larger "
+     "than either team: the fixed-view rule finds both teams and leaves "
+     "the bench and referee out, where the default names the bench a team"),
     ("ball height from its flight",
      [sys.executable, "-m", "src.ball_height"],
      "a cross and a long ball recognised as in the air and a pass as on "
