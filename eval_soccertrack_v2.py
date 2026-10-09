@@ -23,8 +23,9 @@ For each: detection recall and precision (a referee detected counts
 against precision: the truth has none), then identities scored as in
 `eval_identity_gsr.py` (people split, purity, IDF1) for the tracker's
 fragments, the re-joined tracks and, where `identify_players.py` has run,
-its identities; and the team of each matched detection against the
-person's side (our two team labels mapped to the sides one-to-one).
+its identities; and the team of each detection matched to an outfield
+player against the person's side (`team_scores`: accuracy, coverage and
+end-to-end recall).
 
     python eval_soccertrack_v2.py data/soccertrack_v2/st2_117093_1st_f015000.mp4 \\
         --out output_st2_117093_1st_f015000 --run --model yolov8s.pt \
@@ -53,7 +54,7 @@ def truth(gt_path: Path) -> pd.DataFrame:
     return pd.DataFrame({
         "frame": g.frame.astype(int), "person": g.track_id.astype(int),
         "x0": g.bx, "y0": g.by, "x1": g.bx + g.bw, "y1": g.by + g.bh,
-        "side": g.side, "jersey": g.jersey})
+        "side": g.side, "jersey": g.jersey, "role": g.role})
 
 
 def boxes(tracks: pd.DataFrame) -> pd.DataFrame:
@@ -89,21 +90,38 @@ def match_feet(det: pd.DataFrame, gt: pd.DataFrame,
     return out
 
 
-def team_accuracy(team: pd.Series, side: pd.Series) -> tuple[float, int]:
-    """Share of matched detections whose team, mapped one-to-one to the
-    sides, is the person's side; and how many had a team at all."""
-    df = pd.DataFrame({"team": team, "side": side}).dropna()
-    df = df[df.team.isin(df.team.value_counts().index[:2])]
-    if df.empty:
-        return float("nan"), 0
-    table = pd.crosstab(df.team, df.side)
+TEAMS = ("team_A", "team_B")
+
+
+def team_scores(team: pd.Series, side: pd.Series, n_outfield: int) -> dict:
+    """Teams of the detections matched to outfield players (goalkeepers'
+    kits differ by design and are left out): `team_A` / `team_B` mapped
+    one-to-one to the sides.
+
+    - accuracy: right side, of those given team_A or team_B;
+    - coverage: given team_A or team_B, of those matched -- a track put in
+      "other" is not wrong but is lost, so accuracy alone can be bought by
+      refusing hard tracks;
+    - recall: outfield ground-truth boxes detected, kept and on the right
+      team -- the end-to-end number."""
+    df = pd.DataFrame({"team": team, "side": side}).dropna(subset=["side"])
+    named = df[df.team.isin(TEAMS)]
+    out = {"team coverage": round(len(named) / max(len(df), 1), 3)}
+    if named.empty:
+        return {**out, "team accuracy": float("nan"), "team recall": 0.0}
+    table = pd.crosstab(named.team, named.side)
     r, c = linear_sum_assignment(-table.to_numpy())
-    return float(table.to_numpy()[r, c].sum() / len(df)), len(df)
+    right = float(table.to_numpy()[r, c].sum())
+    return {**out, "team accuracy": round(right / len(named), 3),
+            "team recall": round(right / max(n_outfield, 1), 3)}
 
 
 def score_dir(out_dir: Path, gt: pd.DataFrame, stride: int) -> dict:
     gt = gt[gt.frame % stride == 0]
     side = gt.groupby("person").side.agg(lambda s: s.mode().iloc[0])
+    outfield = gt.groupby("person").role.agg(
+        lambda s: s.mode().iloc[0]) == "player"
+    outfield_side = side[outfield]
     report = {"gt boxes": len(gt), "gt people": int(gt.person.nunique())}
     stages = [("fragments", "tracks.parquet", None),
               ("re-joined", "tracks_merged.parquet", None)]
@@ -131,9 +149,8 @@ def score_dir(out_dir: Path, gt: pd.DataFrame, stride: int) -> dict:
             s["recall"] = round(float(hit / len(gt)), 3)
             s["precision"] = round(float(hit / max(len(det), 1)), 3)
             if name == "re-joined" and "team" in det:
-                acc, n = team_accuracy(det.team, person.map(side))
-                s["team accuracy"] = round(acc, 3)
-                s["team matched"] = n
+                s.update(team_scores(det.team, person.map(outfield_side),
+                                     int((gt.role == "player").sum())))
             rep[name] = s
         report[how] = rep
     return report

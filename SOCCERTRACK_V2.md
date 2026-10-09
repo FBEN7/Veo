@@ -171,6 +171,13 @@ is understated by up to ~0.1 (not measured separately).
 spread, frame-weighted, 1 is perfect; "teams": share of matched detections
 whose team, mapped one-to-one to the sides, is the person's side.)
 
+The "teams" column above counted goalkeepers and let a third label stand
+in for a team. The scorer now reports, over outfield players only, team
+accuracy (among detections given team_A or team_B), coverage (the share
+given either) and team recall (outfield boxes detected, kept and on the
+right team). With the outline, M2: accuracy 0.51, coverage 0.95, team
+recall 0.27; M3: 0.79, 0.95, 0.69.
+
 What this says:
 
 - **Detection works**: full-width yolov8s finds 94% of the players on both
