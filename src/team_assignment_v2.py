@@ -143,6 +143,15 @@ N_CLUSTERS = 3
 RESIDUAL_CUT = 2.5
 
 
+# A fixed whole-pitch view (run_pipeline(fixed_camera=True) with a pitch
+# outline): the kit feature, and how far inside the outline (in player
+# heights, median over the track) a track must stay to take part in the
+# clustering. Chosen on SoccerTrack v2 training windows; see
+# SOCCERTRACK_V2.md. Broadcast never uses them.
+FIXED_VIEW_KIT_FEATURE = "chroma"
+FIXED_VIEW_CORE_DEPTH = 0.15
+
+
 def _torso_feature(frame: np.ndarray, px: float, py: float, h: float):
     """Kit colour as (cos hue, sin hue, saturation, value), or None.
 
@@ -207,17 +216,11 @@ def _sample_frames(players: pd.DataFrame, per_track: int) -> dict[int, list]:
     return wanted
 
 
-def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
-                    n_clusters: int = N_CLUSTERS,
-                    verbose: bool = True,
-                    residual_cut: float = RESIDUAL_CUT) -> pd.DataFrame:
-    """Cluster tracks into teams by kit colour."""
-    players = tracks[tracks.cls == "player"]
-    if players.empty:
-        out = tracks.copy()
-        out["team"] = None
-        return out
-
+def track_kit_features(video_path: str, players: pd.DataFrame
+                       ) -> dict[int, np.ndarray]:
+    """Each track's kit colour: the median over its sampled frames of
+    `_torso_feature` (cos hue, sin hue, saturation, value). One sequential
+    pass through the video."""
     wanted = _sample_frames(players, SAMPLES_PER_TRACK)
     by_track: dict[int, list] = {}
 
@@ -236,21 +239,62 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
                 by_track.setdefault(tid, []).append(feat)
         idx += 1
     cap.release()
+    return {t: np.median(v, axis=0) for t, v in by_track.items() if v}
 
-    tids = [t for t, v in by_track.items() if v]
+
+def kit_vector(feat: np.ndarray, kit_feature: str = "hsv4") -> np.ndarray:
+    """What is clustered. "hsv4" (the default, broadcast): (cos hue,
+    sin hue, saturation, value). "chroma": (s cos hue, s sin hue, value),
+    the colour as a point in the HSV cone, so hue counts only as much as
+    the kit is saturated.
+
+    Why "chroma" exists: on a fixed SoccerTrack v2 panorama one kit read
+    saturation 0.28 -- a dark, nearly grey shirt whose hue is noise -- and
+    under "hsv4" hue takes two of four standardised dimensions, so that
+    team fragmented into "other" on hue alone; two kits of the same hue
+    and different saturation are told apart along the chroma radius.
+    """
+    if kit_feature == "hsv4":
+        return feat
+    if kit_feature == "chroma":
+        c, s_, sat, val = feat
+        return np.array([sat * c, sat * s_, val])
+    raise ValueError(f"unknown kit_feature {kit_feature!r}")
+
+
+def cluster_teams(feats: dict[int, np.ndarray], n_clusters: int = N_CLUSTERS,
+                  residual_cut: float = RESIDUAL_CUT,
+                  kit_feature: str = "hsv4", fit_tracks=None,
+                  verbose: bool = True) -> dict[int, str]:
+    """Team per track from kit features: k-means, the two largest clusters
+    are the teams, tracks far from both kits are 'other'.
+
+    `fit_tracks` (a fixed view): only these tracks are clustered and can
+    form or join a team; every other track is 'other'. On a SoccerTrack v2
+    panorama the substitutes and staff at the touchline were as many tracks
+    as a team, so "the two largest clusters" named the bench a team; the
+    tracks that stay well inside the pitch cannot include them however many
+    there are. With fewer than 3 x n_clusters such tracks the outline is
+    probably wrong, and all tracks are used, with a warning.
+    """
+    tids = list(feats)
     if len(tids) < n_clusters:
-        out = tracks.copy()
-        out["team"] = None
-        out.loc[out.cls == "ball", "team"] = "ball"
-        return out
+        return {}
+    fit = tids
+    if fit_tracks is not None:
+        fit = [t for t in tids if t in fit_tracks]
+        if len(fit) < 3 * n_clusters:
+            print(f"  [teams] WARNING only {len(fit)} tracks inside the pitch "
+                  "core; clustering all tracks (is the outline right?)")
+            fit = tids
 
-    raw_feats = np.array([np.median(by_track[t], axis=0) for t in tids])
+    raw_feats = np.array([kit_vector(feats[t], kit_feature) for t in fit])
     # Standardised so that hue, saturation and brightness contribute on
     # comparable scales; the distances below are otherwise dominated by
     # whichever happens to have the widest raw range.
     scaler = StandardScaler().fit(raw_feats)
-    feats = scaler.transform(raw_feats)
-    km = KMeans(n_clusters=n_clusters, n_init=10, random_state=0).fit(feats)
+    X = scaler.transform(raw_feats)
+    km = KMeans(n_clusters=n_clusters, n_init=10, random_state=0).fit(X)
     labels = km.labels_
 
     if n_clusters >= 3:
@@ -270,7 +314,7 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
     else:
         mapping = {0: "team_A", 1: "team_B"}
 
-    team_map = {t: mapping[l] for t, l in zip(tids, labels)}
+    team_map = {t: mapping[l] for t, l in zip(fit, labels)}
 
     # Reject by distance to the nearer kit centre. A track inside a team
     # cluster can still be a steward standing where k-means had nowhere
@@ -280,18 +324,51 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
          if mapping[c] != "other"])
     if len(team_centres) == 2:
         dist = np.linalg.norm(
-            feats[:, None, :] - team_centres[None, :, :], axis=2).min(axis=1)
-        inside = np.array([team_map[t] != "other" for t in tids])
+            X[:, None, :] - team_centres[None, :, :], axis=2).min(axis=1)
+        inside = np.array([team_map[t] != "other" for t in fit])
         scale = np.median(dist[inside]) if inside.any() else np.median(dist)
         rejected = 0
         if scale > 1e-9:
-            for t, d in zip(tids, dist / scale):
+            for t, d in zip(fit, dist / scale):
                 if d > residual_cut and team_map[t] != "other":
                     team_map[t] = "other"
                     rejected += 1
         if verbose:
             print(f"  [teams] {rejected} tracks rejected as non-players "
                   f"(> {residual_cut}x the kit spread from either kit)")
+    for t in tids:
+        team_map.setdefault(t, "other")
+    if verbose and len(fit) < len(tids):
+        print(f"  [teams] {len(tids) - len(fit)} tracks outside the pitch "
+              "core put in 'other'")
+    return team_map
+
+
+def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
+                    n_clusters: int = N_CLUSTERS,
+                    verbose: bool = True,
+                    residual_cut: float = RESIDUAL_CUT,
+                    kit_feature: str = "hsv4", fit_tracks=None,
+                    feats: dict | None = None) -> pd.DataFrame:
+    """Cluster tracks into teams by kit colour. `kit_feature` and
+    `fit_tracks` are for a fixed view (`cluster_teams`); `feats`, if
+    given, are the tracks' kit features already read (`track_kit_features`)."""
+    players = tracks[tracks.cls == "player"]
+    if players.empty:
+        out = tracks.copy()
+        out["team"] = None
+        return out
+
+    if feats is None:
+        feats = track_kit_features(video_path, players)
+    tids = list(feats)
+    team_map = cluster_teams(feats, n_clusters, residual_cut, kit_feature,
+                             fit_tracks, verbose)
+    if not team_map:
+        out = tracks.copy()
+        out["team"] = None
+        out.loc[out.cls == "ball", "team"] = "ball"
+        return out
 
     out = tracks.copy()
     out["team"] = out.track_id.map(team_map)
@@ -300,4 +377,13 @@ def assign_teams_v2(video_path: str, tracks: pd.DataFrame,
     if verbose:
         got = out[out.cls == "player"].groupby("team").track_id.nunique()
         print(f"  [teams] {len(tids)} tracks clustered: {dict(got)}")
+        # Both teams in one colour cluster shows as a "team" with more than
+        # eleven players on at once (warning only: nothing is changed).
+        on = out[(out.cls == "player") & out.team.isin(("team_A", "team_B"))]
+        per_frame = on.groupby(["team", "frame"]).track_id.nunique()
+        for team, n in per_frame.groupby(level=0).median().items():
+            if n > 11:
+                print(f"  [teams] WARNING {team} has a median of {n:.0f} "
+                      "players on at once: probably both teams in one "
+                      "colour cluster")
     return out

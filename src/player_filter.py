@@ -104,3 +104,19 @@ def inside_pitch(tracks: pd.DataFrame, outline, margin_px: float = 0.0
                                         float(tracks.py.iat[i])), True)
         keep[i] = d >= -margin_px
     return tracks[keep]
+
+
+def track_depth(tracks: pd.DataFrame, outline) -> pd.Series:
+    """Per player track, how far inside the pitch outline its feet stay:
+    the median signed distance (pixels, negative outside) divided by the
+    track's median box height. Players move about the pitch; substitutes,
+    staff and assistant referees stay at its edge."""
+    import cv2
+
+    poly = np.asarray(outline, dtype=np.float32).reshape(-1, 1, 2)
+    p = tracks[tracks.cls == "player"]
+    depth = np.array([cv2.pointPolygonTest(poly, (float(x), float(y)), True)
+                      for x, y in zip(p.px, p.py)])
+    g = pd.DataFrame({"track_id": p.track_id.to_numpy(), "depth": depth,
+                      "h": p.crop_h.to_numpy()}).groupby("track_id")
+    return g.depth.median() / g.h.median()

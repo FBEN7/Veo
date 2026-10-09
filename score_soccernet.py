@@ -210,7 +210,9 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
                  team_override: dict[int, str] | None = None,
                  fixed_camera: bool = False, model_name: str = "yolov8m.pt",
                  stride: int = 1, pitch: list | None = None,
-                 pitch_margin_px: float = 0.0):
+                 pitch_margin_px: float = 0.0,
+                 team_kit_feature: str | None = None,
+                 team_core_depth: float | None = None):
     """Detect, track and emit events for the clip, caching each stage.
 
     ``return_tracks`` also hands back the metric tracks the events were
@@ -225,9 +227,33 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     teams differently in the first place. Tracks absent from the mapping keep
     no team, which is how an assignment declining to place a track is
     expressed.
+
+    ``fixed_camera`` is for a fixed whole-pitch panorama (SoccerTrack v2,
+    a Veo panorama): players are detected at the frame's own width -- far-
+    side players are ~40 px tall in a 4096-wide frame, too small once the
+    frame is shrunk to 1280 -- and camera motion is neither measured nor
+    compensated. ``model_name`` and ``stride`` (detect every n-th frame)
+    trade accuracy for time; the broadcast defaults are unchanged.
+
+    ``pitch`` is the pitch outline in pixels, for a fixed view where it is
+    known once: player detections whose feet are more than
+    ``pitch_margin_px`` outside it are dropped before teams are assigned
+    (`player_filter.inside_pitch`). Without it the grass mask lets in
+    substitutes and staff on the green run-off.
+
+    With both, teams are clustered on ``team_kit_feature`` from the tracks
+    whose feet stay at least ``team_core_depth`` player heights inside the
+    outline; the others are 'other' (`team_assignment_v2.cluster_teams`).
+    On a SoccerTrack v2 panorama the bench at the touchline was as many
+    tracks as a team and was named one. Both default to
+    FIXED_VIEW_KIT_FEATURE / FIXED_VIEW_CORE_DEPTH there and to the
+    broadcast behaviour elsewhere.
     """
     from src.detect_track_hybrid import run as run_detection
-    from src.team_assignment_v2 import assign_teams_v2 as assign_teams
+    from src.team_assignment_v2 import (assign_teams_v2 as assign_teams,
+                                        track_kit_features,
+                                        FIXED_VIEW_KIT_FEATURE,
+                                        FIXED_VIEW_CORE_DEPTH)
     from src import (auto_tune, pixel_scale, ball_selection, track_reid,
                      ball_pitch_filter, player_filter, camera_motion,
                      ground_plane)
@@ -271,8 +297,15 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
             ball_detection_method="yolo")
         tracks.to_parquet(raw)
 
+    fixed_view = fixed_camera and pitch is not None
+    if team_kit_feature is None:
+        team_kit_feature = FIXED_VIEW_KIT_FEATURE if fixed_view else "hsv4"
+    if team_core_depth is None and fixed_view:
+        team_core_depth = FIXED_VIEW_CORE_DEPTH
     if pitch is not None:
-        setting = {"pitch": pitch, "margin_px": pitch_margin_px}
+        setting = {"pitch": pitch, "margin_px": pitch_margin_px,
+                   "kit_feature": team_kit_feature,
+                   "core_depth": team_core_depth}
         saved = out_dir / "pitch.json"
         later = [p.name for p in (out_dir / "tracks_teams.parquet",
                                   out_dir / "tracks_grass.parquet")
@@ -293,7 +326,21 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
         tracks = pd.read_parquet(teamed)
     else:
         print("assigning teams...")
-        tracks = assign_teams(clip, tracks)
+        if fixed_view:
+            # Kit features and depth per track are kept beside the tracks,
+            # so team rules can be compared without reading the video again.
+            feats = track_kit_features(clip, tracks[tracks.cls == "player"])
+            depth = player_filter.track_depth(tracks, pitch)
+            (out_dir / "team_features.json").write_text(json.dumps({
+                str(t): {"kit": [round(float(x), 5) for x in f],
+                         "depth": round(float(depth.get(t, np.nan)), 4)}
+                for t, f in feats.items()}))
+            core = None if team_core_depth is None else set(
+                depth.index[depth >= team_core_depth])
+            tracks = assign_teams(clip, tracks, kit_feature=team_kit_feature,
+                                  fit_tracks=core, feats=feats)
+        else:
+            tracks = assign_teams(clip, tracks, kit_feature=team_kit_feature)
         tracks.to_parquet(teamed)
 
     grass = out_dir / "tracks_grass.parquet"
