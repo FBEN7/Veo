@@ -182,7 +182,8 @@ What this says:
 
 - **Detection works**: full-width yolov8s finds 94% of the players on both
   matches.
-- **Team assignment fails on M2 (chance) and is weak on M3 (0.77).** On
+- **Team assignment failed on M2 (chance) and was weak on M3 (0.77)**
+  -- fixed for the bench case, see "Teams on a fixed view" below. On
   M2 the two kits have the same hue -- one saturated blue, one white
   (shirt saturation 0.93 against 0.39) -- and the substitutes and staff
   standing at the far touchline, inside the 10 px margin, are as many
@@ -206,20 +207,93 @@ What this says:
 - **Speed**: ~1.2 video frames a second (every second one detected) on 4
   CPU cores; a 45-minute half at this setting would take ~16 hours here.
 
+## Teams on a fixed view
+
+The failure above has a cause particular to a fixed whole-pitch view: the
+bench, the staff and the assistant referees are filmed all match, at the
+pitch's edge, and on M2 they were as many tracks as a team, so "the two
+largest colour clusters are the teams" named them a team. With a pitch
+outline, `run_pipeline(fixed_camera=True, pitch=...)` now fits the kit
+clusters only on tracks whose feet stay at least 0.15 player heights
+inside it (median over the track, `player_filter.track_depth`); every
+other track is "other", however many there are
+(`team_assignment_v2.cluster_teams`, `fit_tracks`). It also warns when a
+"team" has more than eleven players on at once -- both teams in one
+colour cluster. Broadcast is unchanged (identical team column on M3 with
+the default path); the kit features and depth of every track are written
+to `team_features.json` so rules can be compared without the video.
+
+**How it was chosen.** Three independent proposals and a critic were
+weighed first (a design panel); the rules were then fixed before any
+result: the feature by pooled outfield team recall over four tuning
+windows (M3 and new windows from the training matches M4 118576, M6
+118578, M8 128058, two minutes each, first half from minute 20), the
+simplest within 0.005 winning; the core depth D as the largest on
+{0, 0.05, 0.1, 0.15, 0.2, 0.3} within 0.005 of the best; stop if the core
+cost more than 0.03 on any window; and the bench stress test -- every edge
+track copied four times -- must leave the team partition unchanged. M2
+was already diagnosed, so it is reported as that case; M10 (132877, the
+other validation match, minutes 10-13) is the held-out result.
+
+Team recall (outfield boxes detected, kept and on the right team) on the
+tuning windows:
+
+| kit feature, core | M3 | M4 | M6 | M8 | pooled | stress test |
+|---|---|---|---|---|---|---|
+| hsv4, none (before) | 0.685 | 0.769 | 0.745 | 0.585 | 0.695 | fails |
+| **hsv4, D 0.15** | 0.699 | 0.769 | 0.737 | 0.560 | 0.692 | passes |
+| chroma, none | 0.736 | 0.769 | 0.279 | 0.581 | 0.607 | fails |
+| chroma, D 0.15 | 0.726 | 0.769 | 0.731 | 0.541 | 0.696 | passes |
+
+The candidate kit feature, "chroma" (s cos h, s sin h, v: hue counting
+only as much as the kit is saturated), was proposed because M3's dull kit
+fragments on hue noise, and it lifts M3 by 0.05; but on M6 it merges both
+teams into one cluster unless the core is used, it is worse on M8, its
+core costs 0.04 there (over the stop rule), and pooled it is within 0.005
+of the existing feature. It was not adopted (`kit_feature="chroma"`
+remains an option). The core's largest cost is 0.025 (M8: tightening the
+kit clusters lets the unchanged 2.5x residual cut refuse a few more
+players; only 2.7% of M8's outfield rows are in edge tracks).
+
+Report windows, the frozen rule against the one before it (same
+detections; "non-outfield in a team": detections kept in a team that are
+not an outfield player, per frame):
+
+| window | rule | team recall | team accuracy | coverage | non-outfield in a team | detection recall |
+|---|---|---|---|---|---|---|
+| M10 (held out) | before | 0.804 | 0.891 | 0.978 | 1.26 | 0.921 |
+| M10 (held out) | **frozen** | **0.800** | 0.893 | 0.958 | 0.26 | 0.933 |
+| M2 (diagnosed) | before | 0.266 | 0.509 | 0.952 | 6.25 | 0.589 |
+| M2 (diagnosed) | **frozen** | **0.665** | 0.779 | 0.974 | 1.38 | 0.886 |
+
+(Chroma with the core, for the record: M10 0.800, M2 0.462.)
+
+So: the bench can no longer be named a team, which was M2's failure, and
+the people kept in teams who are not players fall four- to five-fold; on
+windows without that failure team recall is unchanged (M10 -0.004, the
+tuning windows -0.003 pooled). It does not make team assignment accurate
+in general: about one matched outfield row in ten is still on the wrong
+team on M10 and more than one in five on M2, where the merge warning still fires
+(a "team" with a median of 12 on at once: about 30% of one team's rows
+join the other kit).
+
 ## Next
 
-1. **Teams on a fixed view**: cluster only tracks that spend time well
-   inside the pitch (the bench stays at its edge), and give the kit
-   feature its saturation and brightness (two kits of one hue are told
-   apart by them here). Choose on M3 and the other training matches,
-   report on M2.
-2. **Re-identification from the ground truth**: SoccerTrack v2 gives
+1. **Re-identification from the ground truth**: SoccerTrack v2 gives
    persistent ids on six training matches -- free training pairs for
    `train_player_reid.py`, on this very kind of footage, so the `--split`
    identities can be measured here.
-3. **Pitch coordinates**: map the feet through the release's calibration
+2. **Pitch coordinates**: map the feet through the release's calibration
    (`raw/<match>/` homography and distortion maps), or a one-off clicked
    calibration for a Veo panorama, instead of `ground_plane`'s pinhole
    model; then score events against the BAS actions.
-4. A score that tolerates the boxes: the foot distance above, or the
-   pitch positions once (3) exists.
+3. A score that tolerates the boxes: the foot distance above, or the
+   pitch positions once (2) exists.
+4. **Teams, what is left**: giving every track its true majority side --
+   the best any per-track rule can do -- reaches team accuracy 0.84 on
+   M3, 0.88 on M10 and 0.82 on M2, because tracks switch from one player
+   to another (see identities). The frozen rule is at that ceiling on M10
+   (0.89; it refuses some impure tracks) and 0.04 below it on M2, where
+   two kits of one hue are still close (the merge warning fires). Better
+   teams now need tracks that stay on one player, not a better colour
+   rule.
