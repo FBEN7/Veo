@@ -295,7 +295,7 @@ with M2, M8 5 with M10. So everyone seen in the first halves of M2, M3 or
 M10 (67 people) is dropped from training altogether, and the loader
 asserts it. What is left: 60 distinct people from five training matches
 (M1, M4, M5, M6, M8; both halves of three of them, pooled per match by
-`player_id`), about 3,000 crops, 25-85 px tall. M3 is held out for the
+`player_id`), about 3,000 crops, mostly 31-95 px tall (median 49). M3 is held out for the
 thresholds, M2 and M10 for the report.
 
 **Training did not work.** The broadcast recipe (batch-hard triplet,
@@ -314,8 +314,11 @@ validation match instead (M5, its people also kept out of training), for
 | batch-all, soft margin, lr 3e-4 | 0.165 | 0.84 |
 | batch-all, soft margin, lr 1e-4 | 0.167 | 0.82 |
 
-Nothing trained on these 46-60 people beats the untrained features on an
-unseen match: the recipes that do not collapse are worse. So the
+On the internal validation match no recipe beats the untrained features
+by more than 0.002 mAP, all lose on rank-1, and the ones that do not
+collapse are worse. The collapsed 60-person model does rank crops better
+on M3, M2 and M10 (below), but its similarities are all near 1, so no
+threshold separates people with it, and end to end it is worse. So the
 embedding used is the untrained one (`train_player_reid.py
 --save-untrained`, reproducible). Crop-level, rank-1 among same-side
 outfield team-mates (about ten candidates, so chance is ~0.1), with
@@ -327,8 +330,8 @@ near-in-time copies left out:
 | M10 (report) | 0.27 | 0.29 | 0.34 |
 | M2 (report) | 0.20 | 0.18 | 0.23 |
 
-(The collapsed model ranks crops a little better, but its similarities
-are all near 1, so a threshold cannot separate people with it: end to
+(The collapsed model ranks crops better -- on M3 mAP 0.29 against 0.19
+-- but with every similarity near 1 a threshold cannot use that: end to
 end it is worse, below.)
 
 **End to end.** The cut and join thresholds were chosen on M3 for each
@@ -354,7 +357,7 @@ while purity falls by 0.06-0.10 -- some joins are of two people. The
 people are still spread over about fourteen identities each, and the
 cuts barely fire (on M3, 91 tracks become 118 pieces at 0.7). Re-
 identification by appearance is not what limits identities here; at
-35-70 px tall, with the teams in one kit each, appearance does not tell
+35-80 px tall, with the teams in one kit each, appearance does not tell
 team-mates apart well enough.
 
     python train_player_reid.py --save-untrained .cache/player_reid_untrained.pt
@@ -378,7 +381,8 @@ team-mates apart well enough.
    teams now need tracks that stay on one player, not a better colour
    rule.
 4. **Identities, what is left**: appearance is weak at these sizes (rank-1
-   among team-mates 0.2-0.35 whatever the embedding), so the next lever is
+   among team-mates 0.18-0.39 whatever the embedding, 0.20-0.29 for the
+   untrained one used), so the next lever is
    where people are, not what they look like: on a fixed view, pieces of
    one player follow on in space and time, which `track_reid` and
    `join_by_look` use only loosely. With pitch coordinates (1), joins can

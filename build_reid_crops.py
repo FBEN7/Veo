@@ -138,11 +138,14 @@ def build(window: str, model_name: str = "yolov8s.pt") -> dict:
                 o["dist"].append(float(d))
         idx += 1
     cap.release()
+    # Without a player_id a person can be neither pooled across windows
+    # nor kept out of training, so they are dropped.
     people = {}
     for person, o in out.items():
         w = who.loc[person]
-        key = str(w.player_id) if w.player_id is not None else f"t{person}"
-        people[key] = {"role": w.role, "side": w.side, **o}
+        if pd.isna(w.player_id):
+            continue
+        people[str(w.player_id)] = {"role": w.role, "side": w.side, **o}
     _, match, half, _ = window.split("_")
     return {"window": window, "match": match, "half": half, "people": people}
 

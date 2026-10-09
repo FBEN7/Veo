@@ -92,6 +92,8 @@ def main():
                     help="the ImageNet ResNet-18 body alone, 512-d")
     ap.add_argument("--crops", nargs="+", required=True)
     args = ap.parse_args()
+    if not args.reid and not args.body:
+        ap.error("give --reid weights, or --body")
     import torch
 
     from train_player_reid import build

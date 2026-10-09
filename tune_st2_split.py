@@ -97,8 +97,14 @@ def choose(table: pd.DataFrame) -> dict:
     near["_cut"] = near["cut"].fillna(-1.0)       # no cut first
     near["_join"] = -near["join"].fillna(2.0)     # no join, then highest
     pick = near.sort_values(["_cut", "_join"]).iloc[0]
-    return {"cut": None if pd.isna(pick["cut"]) else float(pick["cut"]),
-            "join": None if pd.isna(pick["join"]) else float(pick["join"]),
+    cut = None if pd.isna(pick["cut"]) else float(pick["cut"])
+    join = None if pd.isna(pick["join"]) else float(pick["join"])
+    # identify_players reads a missing flag as the broadcast default, not
+    # as "off": no cut is a negative threshold, no join one above 1.
+    return {"cut": cut, "join": join,
+            "identify_players flags": f"--cut-threshold "
+            f"{-1 if cut is None else cut} --look-threshold "
+            f"{2 if join is None else join}",
             "IDF1": float(pick.IDF1), "best IDF1": float(best)}
 
 

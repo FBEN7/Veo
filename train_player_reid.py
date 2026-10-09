@@ -27,7 +27,7 @@ windows. `--exclude` names ground-truth tables whose people must not be
 trained on: the same players appear in several matches, so anyone in a
 tuning or report window is dropped from training altogether, also as a
 negative. Goalkeepers are left out (their kits make them trivial). The
-crops keep their own size (25-70 px tall, as the pipeline cuts them),
+crops keep their own size (mostly 30-95 px tall, as the pipeline cuts them),
 with flips, blur by down-sizing and brightness changes each step; the
 final weights are saved.
 
@@ -192,6 +192,7 @@ def evaluate(model, clips, label):
     model.eval()
     r1 = []
     aps = []
+    apart = []
     with torch.no_grad():
         for people in clips:
             feats, who, team = [], [], []
@@ -203,6 +204,7 @@ def evaluate(model, clips, label):
             f = np.concatenate(feats)
             who, team = np.array(who), np.array(team, dtype=object)
             sim = f @ f.T
+            apart.append(sim[who[:, None] != who[None, :]])
             for i in range(len(f)):
                 mask = (team == team[i]) & (np.arange(len(f)) != i)
                 if not mask.any():
@@ -219,7 +221,8 @@ def evaluate(model, clips, label):
     # people's crops near 1.
     print(f"  {label}: rank-1 among team-mates {np.mean(r1):.1%}, "
           f"mAP {np.mean(aps):.1%}, median cosine of different people "
-          f"{np.median(sim[who[:, None] != who[None, :]]):.2f}", flush=True)
+          f"{np.median(np.concatenate(apart)) if apart else float('nan'):.2f}",
+          flush=True)
     return float(np.mean(aps))
 
 
@@ -228,7 +231,12 @@ def main():
     ap.add_argument("--clips", help="SoccerNet game-state clip dirs")
     ap.add_argument("--crops", nargs="+", help="build_reid_crops.py sets "
                                                "(fixed panoramas) to train on")
-    ap.add_argument("--val-crops", nargs="+", help="held-out crop sets")
+    ap.add_argument("--val-crops", nargs="+", help="held-out crop sets "
+                                                   "(needed with --crops)")
+    ap.add_argument("--disjoint", nargs="*", default=[],
+                    help="crop sets (e.g. the report windows') none of whose "
+                         "people may be trained on: checked, so a forgotten "
+                         "--exclude fails loudly")
     ap.add_argument("--exclude", nargs="*", default=[],
                     help="ground-truth tables whose people are not trained on")
     ap.add_argument("--save-untrained", metavar="PATH",
@@ -260,16 +268,21 @@ def main():
         return
     t0 = time.time()
     if args.crops:
+        if not args.val_crops:
+            ap.error("--crops needs --val-crops")
         drop = excluded_ids(args.exclude)
         print(f"  training on {args.crops}\n  held out {args.val_crops}\n"
               f"  excluding {len(drop)} people from {args.exclude}",
               flush=True)
         train = load_crops(args.crops, drop)
         val = load_crops(args.val_crops, pool=False)
+        import pickle
+
         seen = {p for c in train for p in c}
-        assert not seen & drop, "an excluded person is in training"
-        assert not seen & {p for c in val for p in c}, \
-            "a held-out person is in training"
+        # Everyone in the held-out and --disjoint windows, before any filter.
+        for path in list(args.val_crops) + list(args.disjoint):
+            people = set(pickle.loads(Path(path).read_bytes())["people"])
+            assert not seen & people, f"people of {path} are in training"
         print(f"  {len(seen)} distinct people trained on", flush=True)
         clips = train + val
     else:

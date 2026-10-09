@@ -23,10 +23,12 @@ from src import jersey_reader as jr
 from src import player_identity as pid
 
 
-def read_tracks(out_dir: Path, model, embedder=None) -> dict:
+def read_tracks(out_dir: Path, model, embedder=None,
+                looks_key: str = "") -> dict:
     """Each track's number votes and look, cached beside the tracks so the
-    joining can be re-run without reading the video again."""
-    cache = out_dir / "identity_tracks.pkl"
+    joining can be re-run without reading the video again; named by the
+    embedder's weights, whose looks must not be reused for another."""
+    cache = out_dir / f"identity_tracks{looks_key}.pkl"
     if cache.exists():
         tracks = pickle.loads(cache.read_bytes())
         if embedder is None or all(t.look is not None or not len(t.visible)
@@ -93,7 +95,8 @@ def identify(out_dir: Path, model, embedder=None,
                                 else look_threshold,
                                 use_numbers=track_numbers)
     else:
-        tracks = copy.deepcopy(read_tracks(out_dir, model, embedder))
+        tracks = copy.deepcopy(read_tracks(out_dir, model, embedder,
+                                           looks_key))
         idents = pid.identities(tracks, look_threshold, use_numbers)
     blob = {"tracks": {str(t.track_id): {
                 "identity": ident.key, "team": ident.team,
