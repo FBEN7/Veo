@@ -417,8 +417,11 @@ the actions, but the chosen ball is within 3 m of them for 11% (tuning)
 and 22% (report) -- 4% on M3. The detector does not see this ball: on
 M3's 72 action frames, with the release's ball track projected into the
 picture, a detection of the COCO "sports ball" class (yolov8s at full
-width) is within 20 px of it on 8% of them even at confidence 0.02, and
-on none at the pipeline's chosen 0.5. The ball is 5-6 px across here.
+width) is within 60 px of it (the track is interpolated, and its point
+sits 10-50 px off the ball) on 21% of them at confidence 0.02, and on 4%
+at the pipeline's chosen 0.5. (An earlier count, 8% within 20 px, used a
+radius smaller than the track's own error.) The ball is 5-6 px across
+here.
 The dataset has no ball boxes to train on (its ball track is interpolated
 between the actions; its curated `mot/` boxes are players only).
 

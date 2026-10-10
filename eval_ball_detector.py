@@ -156,6 +156,8 @@ def run_window(window: str, detectors: dict, seed: int = 0) -> dict:
                                        for f in sets["random"]])) for t in TAUS}
         out[name] = {"free-flight hit": round(float(np.mean(hits)), 3) if hits else None,
                      "per pass": hits,
+                     "candidates": {str(f): np.round(v, 3).tolist()
+                                    for f, v in sorted(c.items())},
                      "feet share": round(float(np.mean(feet)), 3) if feet else None,
                      "action hit": round(float(np.mean(act)), 3) if act else None,
                      "candidates per frame": {str(k): round(v, 2)
@@ -211,7 +213,7 @@ def main():
     results = [run_window(w, detectors) for w in args.windows]
     summary = {"windows": [{k: v for k, v in r.items()
                             if not isinstance(v, dict)} | {
-        n: {k: v for k, v in r[n].items() if k != "per pass"}
+        n: {k: v for k, v in r[n].items() if k not in ("per pass", "candidates")}
         for n in detectors} for r in results]}
     if not args.no_coco:
         summary["paired"] = {n: compare(results, n) for n in detectors
