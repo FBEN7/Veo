@@ -14,6 +14,7 @@ Also: how often the top candidate in free flight is within 1 m of a player
 the actor or of the ball track's point (`action hit`), next to the same
 for a random point on the pitch; and candidates per frame above `tau` on
 random frames (`strays`, with `tau` the value giving one a frame).
+`--save` also keeps every frame's candidates, for `ball_tiles.py`.
 
     python eval_ball_detector.py --heatmap .cache/ball_heatmap.3000.pt \\
         --windows st2_118576_2nd_f015000 ... --save scores.json

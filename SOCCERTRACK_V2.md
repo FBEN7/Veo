@@ -423,7 +423,9 @@ at the pipeline's chosen 0.5. (An earlier count, 8% within 20 px, used a
 radius smaller than the track's own error.) The ball is 5-6 px across
 here.
 The dataset has no ball boxes to train on (its ball track is interpolated
-between the actions; its curated `mot/` boxes are players only).
+between the actions; its curated `mot/` boxes are players only). The
+panorama ball detector below puts the ball at the actor for about half
+the actions on the report windows.
 
 ## A ball detector for the panorama
 
@@ -492,7 +494,12 @@ is excluded. 3,000 steps of 16 took 35 minutes on 4 CPUs.
   around random pitch points (decoys) are shuffled and numbered. Each is
   judged "the match ball is in the marked 24 px box" or not (unsure counts
   as not). The key is read only afterwards. The judge is me, by eye.
-  Decoys were judged "ball" 0 times in 88.
+  Over the four checks (410 tiles), decoys were judged "ball" 0 times in
+  88. The judgements are not committed; `ball_tiles.py` redraws the tiles
+  from `eval_ball_detector.py --save`.
+- **The gate's own visual part passed:** of 40 confident top candidates
+  (p >= 0.7) on T, 31 are the match ball. COCO's top candidates are the
+  match ball 21 times in 40, plus 10 a ball resting by a goal.
 - **What the tiles showed:** on one frame per pass in T, the heatmap's top
   candidate is the match ball in play 36 times in 48 and COCO's 28 times.
   Another 11 of COCO's are a ball resting by a goal, one of the heatmap's.
@@ -519,21 +526,49 @@ measures. That is a deviation, and it is reported as one.
 | precision, blind: confident top candidate (p >= 0.7 / any) is the match ball | 32/40 (0.80) | 21/40 (0.53) |
 | frames with such a candidate (random frames) | 0.64-0.80 | 0.50-0.64 |
 
-**Events with the heatmap's candidates** (pass and carry F1 on M2 and M10,
-against COCO's): being measured.
+**Events with the heatmap's candidates.** On M2 and M10, the heatmap's
+candidates (`detect_ball_heatmap.py`, `tau` 0.7, at most 4 a frame, every
+second frame) replace COCO's ball rows. Everything else is the cached run
+that produced the events table above: the COCO run, redone the same way,
+reproduces it exactly.
+
+| M2 + M10, 1 s | COCO's ball | heatmap's ball |
+|---|---|---|
+| ball within 3 m of the actor at the action (M2, M10) | 0.11, 0.37 | 0.52, 0.55 |
+| pass + carry: events, matched (130 labels) | 91, 39 | 282, 91 |
+| **pass + carry F1, pooled** | **0.35** | **0.44** |
+| difference, 95% interval (10 s blocks) | | +0.09 [-0.02, 0.21] |
+| pass F1 / chance (M2; M10) | 0.19 / 0.26; 0.40 / 0.27 | 0.47 / 0.40; 0.42 / 0.32 |
+| carry F1 / chance (M2; M10) | 0.35 / 0.21; 0.51 / 0.25 | 0.40 / 0.32; 0.48 / 0.29 |
+| shots (3 labels) | 44 | 182 |
+
+The ball is now at the actor for about half the actions instead of a
+tenth to a third. The pipeline then fires three times as many passes and
+carries. F1 rises by 0.09, but its interval includes zero, so no events
+gain is claimed, as registered. Except for passes on M2, every F1 rose
+less than its chance level (the F1 as many events would get at random
+times) did, so most of the rise is the higher event count. Against chance
+the picture is much as before: carries are above it on both windows (p
+0.001-0.07), passes only on M10 (p = 0.03; COCO's 0.06). Shots, all
+false, quadruple. The event rules were tuned
+on a ball that was seldom there; with one that often is, they fire too
+readily. That is the next thing to fix on the events side.
 
 **What this says:**
 
 - **What it does better:** the heatmap's confident pick is the ball four
-  times in five where COCO's is half the time. COCO's wrong picks on M2
-  are mostly the penalty spots. It also finds the play: at passes and
+  times in five where COCO's is half the time. 14 of COCO's 19 wrong
+  picks are the penalty spots on M2. It also finds the play: at passes and
   dribbles its top candidate is near the actor two to three times as often
   as COCO's.
 - **What it does not do better:** in free flight on matches it never saw,
   it finds the ball no more often than COCO (0.50 against 0.58).
-- **T flattered it:** its edge on T (0.75 against 0.58) came from the
-  second halves of the matches it was trained on and did not carry to new
-  matches.
+- **For events:** with it, the ball is at the actor for half the actions,
+  and pass and carry F1 is 0.44 against 0.35. That gain is not shown (the
+  interval includes zero), and the event rules now overfire.
+- **T flattered it:** its edge on T (0.75 against 0.58) was measured on
+  the second halves of the matches it was trained on, and did not carry
+  to new matches.
 - **Why, plausibly:** the labels are mostly the ball at someone's feet,
   and only 724 ball-free patches taught it what is not the ball. At `tau`
   0.15 or below it gives the 8 candidates a frame it is capped at.
