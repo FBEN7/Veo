@@ -15,6 +15,7 @@ All coordinates are in pitch metres (0-105 x 0-68).
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Any
 
 import numpy as np
@@ -56,6 +57,12 @@ PASS_UNKNOWN_BRIDGE_S = 2.5      # Longer unknown bridges for partial visibility
 SHOT_MIN_KMH = 10.0              # Lower speed for visible shots
 SHOT_MAX_DIST_FROM_GOAL_M = 50.0 # Shots from further (limited angle coverage)
 SHOT_COOLDOWN_S = 0.5            # Faster shot detection in limited play
+
+# Where a shot's ray must cross the goal line: within the goal mouth
+# (+-3.66 m of its centre) plus this margin. None keeps the v1 rule, a
+# direction within about 70 degrees of the goal's centre, which on a ball that
+# is often there fired 182 shots against 3 labels on two report windows.
+SHOT_MOUTH_MARGIN_M: float | None = None
 CARRY_MIN_TIME_S = 0.8           # Shorter carries (limited distance visible)
 
 # No distance requirement. Swept over 0 to 12 m on four windows across two
@@ -195,6 +202,29 @@ EMIT_INTERCEPTION_AS_SEPARATE_EVENT = False
 MERGE_WINDOW_S = 0.0
 
 MERGE_WINDOW_BY_TYPE: dict[str, float] = {}
+
+# The constants `detect_events(params=...)` may override for one call (an
+# events sweep). Only names read at call time are listed: a constant bound as
+# a default argument (VEL_SMOOTH_WINDOW) would ignore the override, and
+# src/constants.py defines other values under some of the same names.
+EVENT_PARAMS = ("POSSESSION_RADIUS_M", "MIN_POSSESSION_HOLD_S",
+                "CARRY_MIN_TIME_S", "MIN_PASS_DISTANCE_M", "SHOT_MIN_KMH",
+                "SHOT_MAX_DIST_FROM_GOAL_M", "SHOT_MOUTH_MARGIN_M")
+
+
+@contextmanager
+def overridden(params: dict[str, Any]):
+    """Set the module constants in `params` (names from EVENT_PARAMS; any
+    other name raises) for the duration of the block, then restore them."""
+    unknown = sorted(set(params) - set(EVENT_PARAMS))
+    if unknown:
+        raise ValueError(f"not overridable event parameters: {unknown}")
+    saved = {k: globals()[k] for k in params}
+    globals().update(params)
+    try:
+        yield
+    finally:
+        globals().update(saved)
 
 
 # ---------------------------------------------------------------------------
@@ -577,6 +607,17 @@ def _toward_goal(vx: float, vy: float, bx: float, by: float) -> bool:
     return bool(cosang >= 0.35)
 
 
+def _ray_on_goal(vx: float, vy: float, bx: float, by: float,
+                 margin_m: float) -> bool:
+    """Whether the ball's ray, forward from (bx, by), crosses the nearest
+    goal's line within +-(GOAL_HALF + margin_m) of the goal's centre."""
+    gx = 0.0 if bx < 52.5 else 105.0
+    if abs(vx) < 1e-6 or (gx - bx) * vx < 0:
+        return False
+    y = by + vy * (gx - bx) / vx
+    return bool(abs(y - 34.0) <= GOAL_HALF + margin_m)
+
+
 def _distance(a: tuple[float, float], b: tuple[float, float]) -> float:
     return float(np.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2))
 
@@ -734,7 +775,8 @@ def _emit_possession_transition_event(
 
 def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
                   absolute_pitch: bool = True,
-                  ball_time_aware: bool = False) -> list[dict[str, Any]]:
+                  ball_time_aware: bool = False,
+                  params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Detect football events from tracking data in metres.
 
     Parameters
@@ -768,11 +810,20 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
         default, as tuned on broadcast run every frame; a fixed-view run
         detecting every second frame otherwise reads every speed double.
 
+    params : dict, optional
+        Values for some of this module's constants (EVENT_PARAMS; any other
+        name raises), for this call only (`overridden`). None or {} is the
+        module's own rules.
+
     Returns
     -------
     list[dict]
         Each dict is ready for ``MatchDatabase.insert_events()``.
     """
+    if params:
+        with overridden(params):
+            return detect_events(tracks, H, absolute_pitch, ball_time_aware)
+
     events: list[dict[str, Any]] = []
 
     # ---- 1. Ball kinematics ------------------------------------------------
@@ -957,6 +1008,8 @@ def detect_events(tracks: pd.DataFrame, H: np.ndarray | None = None,
             and prev_team != "unknown"
             and (t - last_shot_time) >= SHOT_COOLDOWN_S
             and _toward_goal(vx, vy, bx, by)
+            and (SHOT_MOUTH_MARGIN_M is None
+                 or _ray_on_goal(vx, vy, bx, by, SHOT_MOUTH_MARGIN_M))
         ):
             dist_goal = _dist_to_nearest_goal(bx, by)
             if dist_goal <= SHOT_MAX_DIST_FROM_GOAL_M:
@@ -1210,3 +1263,52 @@ def team_event_totals(events: list[dict]) -> dict[str, dict[str, int]]:
         elif ev["event_type"] == "goal":
             s["n_goals"] += 1
     return result
+
+
+def _check():
+    """Synthetic: a player at (80, 34) strikes the ball at 90 km/h, once
+    wide (crossing the goal line 20 m off centre) and once on goal. The v1
+    rule calls both shots; SHOT_MOUTH_MARGIN_M = 5 only the second.
+    Overrides are restored, and unknown names raise."""
+    import contextlib
+    import io
+
+    def run(aim_y: float, params=None):
+        rows = []
+        for f in range(80):
+            t = f / 25
+            rows.append(dict(frame=f, time_s=t, cls="player", track_id=1,
+                             team="team_A", px=80.0, py=34.0))
+            bx, by = 80.5, 34.0
+            if f >= 40:
+                d = np.array([105.0 - bx, aim_y - by])
+                bx, by = (bx, by) + (f - 40) / 25 * 25.0 * d / np.hypot(*d)
+            if bx < 104.0:
+                rows.append(dict(frame=f, time_s=t, cls="ball", track_id=-1,
+                                 team="ball", px=float(bx), py=float(by)))
+        tracks = pd.DataFrame(rows)
+        tracks["x"], tracks["y"] = tracks.px, tracks.py
+        with contextlib.redirect_stdout(io.StringIO()):
+            ev = detect_events(tracks, absolute_pitch=True, params=params)
+        return sum(e["event_type"] == "shot" for e in ev)
+
+    assert run(54.0) >= 1 and run(36.0) >= 1
+    assert run(54.0, {"SHOT_MOUTH_MARGIN_M": 5.0}) == 0
+    assert run(36.0, {"SHOT_MOUTH_MARGIN_M": 5.0}) >= 1
+    assert SHOT_MOUTH_MARGIN_M is None
+    assert _ray_on_goal(1.0, 0.0, 100.0, 34.0, 0.0)
+    assert not _ray_on_goal(-1.0, 0.0, 100.0, 34.0, 0.0)
+    try:
+        with overridden({"VEL_SMOOTH_WINDOW": 3}):
+            pass
+        raise AssertionError("unknown name accepted")
+    except ValueError:
+        pass
+    try:
+        with overridden({"POSSESSION_RADIUS_M": 2.0}):
+            assert POSSESSION_RADIUS_M == 2.0
+            raise KeyError
+    except KeyError:
+        pass
+    assert POSSESSION_RADIUS_M == 8.0
+    print("events check ok")

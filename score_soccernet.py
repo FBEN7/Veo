@@ -24,6 +24,7 @@ nothing derived from it belongs in the product or in this repository.
 
 import argparse
 import json
+import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -263,7 +264,7 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
                                         track_kit_features,
                                         FIXED_VIEW_KIT_FEATURE,
                                         FIXED_VIEW_CORE_DEPTH)
-    from src import (auto_tune, pixel_scale, ball_selection, track_reid,
+    from src import (auto_tune, pixel_scale, ball_selection,
                      ball_pitch_filter, player_filter, camera_motion,
                      ground_plane)
     from src import events as ev_module
@@ -422,10 +423,7 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
                                             classes=("ball",))
         print(f"  [pitch] {before} -> {int((capped.cls == 'ball').sum())} "
               "ball candidates inside the outline")
-    selected = ball_selection.select_single_ball(
-        capped, scale, fps=profile.fps, verbose=True)
-    merged = track_reid.merge_fragments(
-        selected, scale, fps=profile.fps, verbose=True)
+    merged = select_ball(capped, scale, profile.fps, verbose=True)
     merged.to_parquet(out_dir / "tracks_merged.parquet")
 
     # A scale taken from player height is the scale for motion across the
@@ -434,12 +432,8 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     # replace the coordinate system -- see ground_plane.effective_px_per_m for
     # why the geometrically correct map measures worse than this scalar.
     if to_pitch is not None:
-        metric = pixel_scale.to_pitch_metres(merged, to_pitch)
-        events = ev_module.detect_events(metric, absolute_pitch=True,
-                                         ball_time_aware=True)
-        (out_dir / "events.json").write_text(json.dumps(
-            events, indent=1, default=lambda v: v.item()
-            if hasattr(v, "item") else str(v)))
+        events, metric = events_on_pitch(merged, to_pitch)
+        write_events(out_dir / "events.json", events)
     else:
         plane = ground_plane.load_or_build(
             clip, merged, clip_info["width"], clip_info["height"],
@@ -458,6 +452,212 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
     if return_tracks:
         return events, profile, metric
     return events, profile
+
+
+# ---- The pipeline after teams, from a cached run ------------------------------
+#
+# On a fixed view everything up to teams (detection, the pitch outline,
+# teams) is cached in a run directory, and the ball rows can be swapped
+# without touching it: nothing before the ball selection reads them except
+# the grass fraction. So two ball sources, or two ways of choosing one ball
+# per frame, can be compared with the players and teams held identical.
+
+RUN_FILES = ("clip.json", "profile.json", "pitch.json", "team_features.json")
+SELECTIONS = ("v1", "link")
+LINK_PARAMS = ("c_null", "c_static")
+
+
+def write_events(path: Path, events: list[dict]) -> None:
+    """events.json as run_pipeline writes it."""
+    Path(path).write_text(json.dumps(
+        events, indent=1, default=lambda v: v.item()
+        if hasattr(v, "item") else str(v)))
+
+
+def select_ball(capped: pd.DataFrame, scale: float, fps: float,
+                select: str = "v1", cal: dict | None = None,
+                link_params: dict | None = None, top_k: int | None = None,
+                tau: float | None = None,
+                verbose: bool = False) -> pd.DataFrame:
+    """One ball row per frame, then player fragments merged.
+
+    The ball candidates with confidence >= ``tau`` (None: all), at most
+    ``top_k`` a frame by confidence (None: all), are chosen from by
+    ``select``:
+
+    - "v1": `ball_selection.select_single_ball`, a Viterbi in pixels at one
+      ``scale`` (px/m) for the whole picture;
+    - "link": `ball_link.link`, a skip-Viterbi in pitch metres through the
+      camera ``cal``, with ``link_params`` (c_null, c_static) and ``tau``
+      (0.5 when None) in its candidate cost.
+
+    `track_reid.merge_fragments` then relabels the player tracks in both
+    cases. It reads only the player rows, so the players and teams are the
+    same whichever ball is chosen (`player_hash`). With the defaults this is
+    run_pipeline's own step.
+    """
+    from src import ball_link, ball_selection, track_reid
+
+    if select not in SELECTIONS:
+        raise ValueError(f"select must be one of {SELECTIONS}, not {select!r}")
+    unknown = sorted(set(link_params or {}) - set(LINK_PARAMS))
+    if unknown:
+        raise ValueError(f"unknown link parameters: {unknown}")
+    is_ball = capped.cls == "ball"
+    if tau is not None or top_k is not None:
+        balls = capped[is_ball]
+        if tau is not None:
+            balls = balls[balls.confidence >= tau]
+        if top_k is not None:
+            balls = (balls.sort_values("confidence", ascending=False,
+                                       kind="stable")
+                     .groupby("frame", sort=False).head(top_k))
+        capped = capped.drop(index=capped.index[is_ball].difference(balls.index))
+        is_ball = capped.cls == "ball"
+    if select == "v1":
+        selected = ball_selection.select_single_ball(
+            capped, scale, fps=fps, verbose=verbose)
+    else:
+        if cal is None:
+            raise ValueError("select='link' needs the camera calibration")
+        balls = capped[is_ball]
+        kept = ball_link.link(balls, cal, capped[capped.cls == "player"],
+                              fps=fps, tau=0.5 if tau is None else tau,
+                              **(link_params or {}))
+        selected = capped.drop(index=balls.index.difference(kept.index))
+        if verbose:
+            print(f"  [ball] {len(balls)} candidates -> {len(kept)} linked")
+    return track_reid.merge_fragments(selected, scale, fps=fps,
+                                      verbose=verbose)
+
+
+def player_hash(tracks: pd.DataFrame) -> str:
+    """A digest of the player rows (every column, in order): equal across
+    ball selections of one run, or the comparison is confounded."""
+    import hashlib
+
+    players = tracks[tracks.cls == "player"].reset_index(drop=True)
+    h = pd.util.hash_pandas_object(players, index=False).to_numpy()
+    return hashlib.sha256(h.tobytes()).hexdigest()[:16]
+
+
+def events_on_pitch(merged: pd.DataFrame, to_pitch,
+                    event_params: dict | None = None):
+    """(events, metric tracks) of a calibrated fixed view: the tracks put
+    on the pitch (`pixel_scale.to_pitch_metres`), events with absolute
+    positions and time-aware ball speeds, ``event_params`` overriding the
+    rules' constants (`events.detect_events`)."""
+    from src import events as ev_module, pixel_scale
+
+    metric = pixel_scale.to_pitch_metres(merged, to_pitch)
+    events = ev_module.detect_events(metric, absolute_pitch=True,
+                                     ball_time_aware=True,
+                                     params=event_params)
+    return events, metric
+
+
+def swap_ball_rows(src_dir, dst_dir, rows: pd.DataFrame | None = None) -> Path:
+    """A run directory ``dst_dir`` holding ``src_dir``'s cached pipeline
+    (clip, profile, pitch, team features, detections, teams) with its ball
+    rows replaced by ``rows`` (a detector's candidates as `tracks.parquet`
+    rows; extra columns dropped), at the frames the pipeline detected on: a
+    ball sample in a frame without players (a detector's extra frames)
+    would read as a gap in possession. Players come first within a frame,
+    as they did for the heatmap's events. ``rows`` None keeps the ball rows,
+    and the grass fractions measured on them. Later stages in ``dst_dir``
+    are deleted; `merged_from_cached` rebuilds the grass fractions from the
+    clip."""
+    src, dst = Path(src_dir), Path(dst_dir)
+    if src.resolve() == dst.resolve():
+        raise ValueError("swap_ball_rows would overwrite its source")
+    dst.mkdir(parents=True, exist_ok=True)
+    for name in ("tracks_grass.parquet", "tracks_merged.parquet",
+                 "events.json"):
+        (dst / name).unlink(missing_ok=True)
+    for name in RUN_FILES:
+        if (src / name).exists():
+            shutil.copy(src / name, dst / name)
+    raw = pd.read_parquet(src / "tracks.parquet")
+    teamed = pd.read_parquet(src / "tracks_teams.parquet")
+    if rows is None:
+        if (src / "tracks_grass.parquet").exists():
+            shutil.copy(src / "tracks_grass.parquet",
+                        dst / "tracks_grass.parquet")
+    else:
+        balls = rows[(rows.cls == "ball")
+                     & rows.frame.isin(raw.frame.unique())]
+        balls = balls.reindex(columns=raw.columns)
+        raw = pd.concat([raw[raw.cls != "ball"], balls], ignore_index=True)
+        teamed = pd.concat([teamed[teamed.cls != "ball"],
+                            balls.assign(team="ball")], ignore_index=True)
+        raw = raw.sort_values("frame", kind="stable").reset_index(drop=True)
+        teamed = teamed.sort_values("frame",
+                                    kind="stable").reset_index(drop=True)
+    raw.to_parquet(dst / "tracks.parquet")
+    teamed.to_parquet(dst / "tracks_teams.parquet")
+    return dst
+
+
+def merged_from_cached(run_dir, cal: dict, select: str = "v1",
+                       link_params: dict | None = None,
+                       top_k: int | None = None, tau: float | None = None,
+                       verbose: bool = False) -> pd.DataFrame:
+    """run_pipeline's steps from its cached teams to the merged tracks, on
+    a fixed view with a pitch outline and a calibration: grass fractions
+    (cached in tracks_grass.parquet, measured on the clip when absent),
+    ball candidates off the grass dropped, the roster cap, ball candidates
+    outside the outline dropped, then `select_ball`. The player hash is in
+    ``merged.attrs["player_hash"]``."""
+    from src import auto_tune, ball_pitch_filter, pixel_scale, player_filter
+
+    run_dir = Path(run_dir)
+    profile = auto_tune.VideoProfile.load(run_dir / "profile.json")
+    if profile.compensate_camera:
+        raise SystemExit(f"{run_dir}: a cached run is replayed for a fixed "
+                         "view only (its profile compensates camera motion)")
+    setting = json.loads((run_dir / "pitch.json").read_text())
+    grass = run_dir / "tracks_grass.parquet"
+    if grass.exists():
+        tracks = pd.read_parquet(grass)
+    else:
+        clip = json.loads((run_dir / "clip.json").read_text())["path"]
+        check_cache_provenance(run_dir, probe_clip(clip))
+        tracks = ball_pitch_filter.annotate_grass_fraction(
+            pd.read_parquet(run_dir / "tracks_teams.parquet"), clip,
+            verbose=verbose)
+        tracks.to_parquet(grass)
+
+    filtered = ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=verbose)
+    scale = pixel_scale.estimate_px_per_m(filtered)
+    filtered = filtered.assign(px_raw=filtered.px, py_raw=filtered.py)
+    capped = player_filter.filter_players(filtered, verbose=verbose)
+    capped = player_filter.inside_pitch(capped, setting["pitch"],
+                                        setting["margin_px"],
+                                        classes=("ball",))
+    merged = select_ball(capped, scale, profile.fps, select=select, cal=cal,
+                         link_params=link_params, top_k=top_k, tau=tau,
+                         verbose=verbose)
+    merged.attrs["player_hash"] = player_hash(merged)
+    return merged
+
+
+def events_from_cached(run_dir, cal: dict, select: str = "v1",
+                       link_params: dict | None = None,
+                       top_k: int | None = None, tau: float | None = None,
+                       event_params: dict | None = None,
+                       verbose: bool = False):
+    """(events, merged) of a cached fixed-view run (`merged_from_cached`,
+    then `events_on_pitch` through ``cal``, `soccertrack_v2.calibration`).
+    With the defaults this reproduces run_pipeline(..., to_pitch=) on the
+    same cache. Nothing is written but the grass fractions' cache."""
+    from src import soccertrack_v2 as st
+
+    merged = merged_from_cached(run_dir, cal, select=select,
+                                link_params=link_params, top_k=top_k,
+                                tau=tau, verbose=verbose)
+    events, _ = events_on_pitch(merged, lambda uv: st.image_to_pitch(uv, cal),
+                                event_params)
+    return events, merged
 
 
 def main():
