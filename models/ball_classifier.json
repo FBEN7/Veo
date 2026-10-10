@@ -1,0 +1,11 @@
+{
+ "held_out": [
+  "08fd33",
+  "2e57b9",
+  "4b770a"
+ ],
+ "held_out_auc": 0.956,
+ "balls": 565,
+ "look_alikes": 667,
+ "data": "Roboflow football-players-detection v1 (CC BY 4.0)"
+}

@@ -1,0 +1,30 @@
+{
+  "features": [
+    "distance_m",
+    "angle_rad"
+  ],
+  "coefficients": [
+    -0.09730664653765063,
+    1.6036829033718059
+  ],
+  "intercept": -1.3322292755501435,
+  "n_train": 7833,
+  "n_test": 2747,
+  "base_rate": 0.11694114643176305,
+  "metrics": {
+    "brier": 0.08590778790020738,
+    "brier_base": 0.0976218752846828,
+    "log_loss": 0.29750297670794956,
+    "auc": 0.7655342100330597
+  },
+  "source": "xGHub (mguti97), CVIU",
+  "convention": "goal_centre",
+  "play_patterns": [
+    "corner",
+    "free kick",
+    "regular"
+  ],
+  "penalty_xg": 0.76,
+  "note": "Reduced model: classical shot geometry only. The orientation features that are xGHub's contribution are not available from this pipeline.",
+  "domain": "Fitted on open play, free kicks and corners. xGHub contains NO PENALTIES, so the fitted part has never seen one and puts a central shot from the penalty spot at about 0.20 -- right for open play from there, where the dataset's own shots convert at 0.17, and wrong for a penalty. Penalties are therefore not scored by the fit at all: pass is_penalty to predict() and they take the fixed penalty_xg, which is assumed from football's conversion rate rather than fitted here."
+}
