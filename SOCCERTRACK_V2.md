@@ -425,15 +425,139 @@ here.
 The dataset has no ball boxes to train on (its ball track is interpolated
 between the actions; its curated `mot/` boxes are players only).
 
+## A ball detector for the panorama
+
+No ball boxes are released, so the labels are weak, taken from the
+actions: at a pass, dribble, cross, free kick or tackle, the ball is near
+the actor's feet and near the release's ball track, and the calibration
+puts both in the picture. Between actions the ball is somewhere near the
+interpolated track.
+
+- `build_ball_patches.py` streams a half and cuts 256 px patches around
+  those points (jittered; `.cache/`, not committed).
+- `build_ball_labels.py` gives each patch a code per 4 x 4 cell, sized in
+  metres through the calibration (60 px is 3 m on the far side, 0.7 m on
+  the near one):
+  - **At an action:** a 1.5 m region around the actor's feet and the track
+    point is "the ball is somewhere here". The other players' bodies and
+    the actor's head are hard negatives. The rest is negative.
+  - **Between actions:** a 2.5 m region, positive only.
+  - **Ball-free patches** come from the same halves, 20 m or more from the
+    ball.
+- `src/ball_heatmap.py` is a ResNet-18 (ImageNet) cut at stride 8, with a
+  stride-4 lateral and a one-channel head.
+- `train_ball_heatmap.py` trains it with a multiple-instance loss: a smooth
+  maximum over each region should be high, negatives low (focal). From
+  step 1000 the worst 15-25% of bags in a batch are dropped, since a hidden
+  ball makes a bag wrong.
+- `src.ball_heatmap.detect` returns peaks above `tau` inside the pitch
+  outline.
+
+Training: first halves of M3, M4, M5, M6 and M8 gave 4,622 action bags,
+1,944 between-action bags and 724 ball-free patches. M1 (another camera)
+is excluded. 3,000 steps of 16 took 35 minutes on 4 CPUs.
+
+**Protocol.** It was written before any checkpoint existed
+(`eval_ball_detector.py`):
+
+- **Tuning windows T:** second halves of M4, M6 and M8, minutes 10-13, so
+  the same matches as training.
+- **Report windows V:** M2 and M10, matches never trained on.
+- **Primary measure, "free-flight hit":** over the middle half of every
+  completed ground pass (10 m or more, team-mate receiver), the top
+  candidate counts as a hit when it is within 1 m of the passer-receiver
+  line and 2 m or more from every player. A detector of feet cannot pass
+  this.
+- **Baseline:** COCO's "sports ball" (yolov8s at full width, confidence
+  0.02 and up, inside the outline).
+- **Choices on T:** the checkpoint (best free-flight hit, the later
+  within 0.02) and `tau` (the smallest giving at most one candidate a
+  frame on random frames).
+- **Gate G1 on T:** free-flight hit at least 0.30 and twice COCO's, before
+  anything ran on V.
+
+**On T the gate failed.** The checkpoint is step 3000 (0.240, against
+0.234 and 0.203 for steps 2250 and 1500) and `tau` is 0.7.
+
+| T (48 passes) | heatmap | COCO |
+|---|---|---|
+| free-flight hit (geometric) | 0.24 | 0.25 |
+| difference, 95% interval | -0.01 [-0.10, 0.07] | |
+| top candidate near the actor or track at PASS/DRIVE frames | 0.41-0.50 | 0.09-0.23 (random point: 0) |
+
+**The gate's measure was wrong, and blind tiles show it**
+(`ball_tiles.py`):
+
+- **How the tiles work:** tiles around detectors' top candidates and
+  around random pitch points (decoys) are shuffled and numbered. Each is
+  judged "the match ball is in the marked 24 px box" or not (unsure counts
+  as not). The key is read only afterwards. The judge is me, by eye.
+  Decoys were judged "ball" 0 times in 88.
+- **What the tiles showed:** on one frame per pass in T, the heatmap's top
+  candidate is the match ball in play 36 times in 48 and COCO's 28 times.
+  Another 11 of COCO's are a ball resting by a goal, one of the heatmap's.
+  Paired, the heatmap alone has 10 and COCO alone 2 (p = 0.04).
+- **Why the geometric measure fails:** it missed 26 of the heatmap's 36
+  confirmed hits and 15 of COCO's 28, and never counted a false one. A
+  ball in flight is 1.3-3 m off the line between the two players'
+  positions; 1 m was too tight.
+
+So the run went on to V under a second protocol, written after T and
+before anything ran on V. It keeps the same checkpoint and `tau`, adds the
+blind free-flight check as primary, and still reports the registered
+measures. That is a deviation, and it is reported as one.
+
+**On V (M2 and M10, 38 passes):**
+
+| V | heatmap | COCO |
+|---|---|---|
+| free-flight hit, geometric (registered) | 0.23 | 0.23 |
+| difference, 95% interval | 0.00 [-0.07, 0.07] | |
+| **free-flight, blind tiles: match ball in play** | **19/38 (0.50)** | **22/38 (0.58)** |
+| passes found by one detector only | 3 | 6 (p = 0.51) |
+| top candidate near the actor or track at PASS/DRIVE frames | 0.42, 0.43 | 0.15, 0.35 (random point: 0) |
+| precision, blind: confident top candidate (p >= 0.7 / any) is the match ball | 32/40 (0.80) | 21/40 (0.53) |
+| frames with such a candidate (random frames) | 0.64-0.80 | 0.50-0.64 |
+
+**Events with the heatmap's candidates** (pass and carry F1 on M2 and M10,
+against COCO's): being measured.
+
+**What this says:**
+
+- **What it does better:** the heatmap's confident pick is the ball four
+  times in five where COCO's is half the time. COCO's wrong picks on M2
+  are mostly the penalty spots. It also finds the play: at passes and
+  dribbles its top candidate is near the actor two to three times as often
+  as COCO's.
+- **What it does not do better:** in free flight on matches it never saw,
+  it finds the ball no more often than COCO (0.50 against 0.58).
+- **T flattered it:** its edge on T (0.75 against 0.58) came from the
+  second halves of the matches it was trained on and did not carry to new
+  matches.
+- **Why, plausibly:** the labels are mostly the ball at someone's feet,
+  and only 724 ball-free patches taught it what is not the ball. At `tau`
+  0.15 or below it gives the 8 candidates a frame it is capped at.
+- **Caveats:**
+  - one seed;
+  - one judge (me), who knew the hypothesis but not the source of a tile;
+  - 38 passes on V, enough only to see a large difference;
+  - M2 and M10 are other matches but from the same rigs and league.
+
 ## Next
 
-1. **A ball detector for the panorama**: everything about events waits
-   on it. No ball boxes are released, so labels must be made: clicked
-   (`make_ball_labeller.py`), or taken weakly from the actions themselves
-   -- at an action's frame the ball is at the actor's feet, whose pitch
-   position the calibration puts in the picture (21,000 such moments, with
-   the ball often hidden at the feet). For a Veo panorama the pitch
-   calibration would be a one-off click; the release's is used here.
+1. **The ball in flight.** The heatmap above finds the ball at the feet
+   and is precise when confident, but in free flight on new matches it
+   does no better than COCO. The labels are the next lever:
+   - a bag along each ground pass's line (the ball is somewhere on it, for
+     the pass's middle half);
+   - far more ball-free patches, with the penalty spots and touchline
+     balls as hard negatives;
+   - all eight non-report matches.
+
+   Then the measure should be the blind free-flight check on V, with the
+   geometric measure's tolerance widened to the 3 m the tiles showed.
+   Clicked labels (`make_ball_labeller.py`) remain the way to a proper
+   test set.
 2. A score that tolerates the boxes: the foot distance above, or the
    pitch positions once (1) exists.
 3. **Teams, what is left**: giving every track its true majority side --
