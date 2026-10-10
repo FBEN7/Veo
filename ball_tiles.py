@@ -7,7 +7,8 @@ Judge each tile: `ball` if the match ball's centre is inside the box the
 four ticks mark (24 x 24 px in the frame), else `not ball` (`unsure`
 counts as not ball).
 
-    python ball_tiles.py --scores scores.json --take heatmap.pt=40 coco=40 \\
+    python ball_tiles.py --scores heatmap.json coco.json \\
+        --take ball_heatmap.3000.pt=40 coco=40 \\
         --tau 0.2 --decoys 20 --out DIR
 """
 
@@ -45,7 +46,8 @@ def tile(image, u, v, number):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scores", required=True, help="eval_ball_detector.py --save")
+    ap.add_argument("--scores", nargs="+", required=True,
+                    help="eval_ball_detector.py --save files (same windows)")
     ap.add_argument("--take", nargs="+", required=True,
                     help="detector=count, top-1 candidates sampled per detector")
     ap.add_argument("--tau", type=float, default=0.0,
@@ -55,7 +57,11 @@ def main():
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
-    results = json.loads(Path(args.scores).read_text())["results"]
+    merged = {}
+    for path in args.scores:
+        for r in json.loads(Path(path).read_text())["results"]:
+            merged.setdefault(r["window"], {}).update(r)
+    results = list(merged.values())
     picks = []
     for spec in args.take:
         name, n = spec.rsplit("=", 1)
