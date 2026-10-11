@@ -683,6 +683,53 @@ reported.
   The T-only figures are recorded: the ball sits a median 1.4 m off the
   line, and +0.14 of the pass ahead of the constant-speed point.
 
+**Built and trained.**
+- **Training data:** 21,340 strips from the 8 training halves: 7,004 in
+  flight, 7,089 at actions, 5,015 ball-free, 1,432 dribbles and 800
+  lofted passes.
+- **Motion scales,** measured on the strips: D 0.0535 and F 0.0174.
+- **Train against inference:** the motion input on a window decoded for
+  inference matches the strips (D std ratio 0.97), so inference needs no
+  change.
+- **Training:** 4,000 steps, 85 min on 4 CPUs. The motion stem learnt
+  (its weight norm grew from 0 to 0.99).
+- **Held-out check:** on 300 held-out strips, the top peak falls in the
+  ball's region 74% of the time (in flight 0.60).
+
+**On U (M6, 63 passes) the gate failed, for both variants.** So, as
+registered, the detector makes no claim on M2/M10, and V's variant is not
+spent.
+
+| detector (M6) | FF-auto | minus COCO, 95% | placebo before kick / after reception |
+|---|---|---|---|
+| v2 with motion, steps 2500 / 3250 / **4000** | 0.603 / 0.599 / **0.627** | **+0.24 [+0.12, +0.37]** | 0.074 / 0.036 |
+| the same, motion zeroed (diagnostic) | 0.575 | +0.19 [+0.10, +0.30] | 0.088 / 0.000 |
+| v2 RGB-only fallback, 2500 / 3250 / 4000 | 0.440 / 0.560 / 0.540 | +0.16 [+0.03, +0.29] (4000) | 0.088 / 0.000 |
+| v1 | 0.623 | +0.24 [+0.14, +0.35] | 0.074 / 0.018 |
+| COCO | 0.385 | | 0.015 / 0.018 |
+
+**Why it failed:**
+- **G1:** FF-auto 0.627 is below the 0.65 bar, although v2 is clearly
+  above COCO.
+- **G2:** the pre-kick placebo is 0.074, above 0.05. v1 has the same
+  0.074, so this is not a corridor prior new to v2.
+- **The fallback:** the RGB-only model fails both.
+
+**What this says:**
+- **The new labels did not make a better detector.** Trained on them,
+  the RGB-only model sits below v1.
+- **Motion brings v2 back to v1's level, not beyond.** v2 minus its own
+  zeroed-motion run is +0.05 [-0.01, +0.10]. v2 minus v1 is +0.004
+  [-0.05, +0.06].
+- **The same holds on M6's second half,** which v1 never trained on: v2
+  0.64, v1 0.62, COCO 0.50.
+- **On a match neither trained on,** the top candidate finds the ball in
+  flight about 60% of the time, whichever heatmap is used.
+
+**Events go ahead with v2 at 4000 steps,** the highest on U by 0.004 over
+v1 (disclosed). It is calibrated on U: Platt a = 0.895, b = -0.928, ECE
+0.014, and `tau` 0.25, giving 0.91 candidates a frame.
+
 ## Next
 
 1. **The ball in flight.** The heatmap above finds the ball at the feet
