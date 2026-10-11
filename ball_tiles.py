@@ -10,6 +10,32 @@ counts as not ball).
     python ball_tiles.py --scores heatmap.json coco.json \\
         --take ball_heatmap.3000.pt=40 coco=40 \\
         --tau 0.2 --decoys 20 --out DIR
+
+Protocol v3's sittings add (all optional; without them the tiles, their
+order and numbers are as before):
+
+- `--pass-frame q`: instead of random measured frames, the top-1 of each
+  `--take` detector (names only; any p, none = no tile) at the q-th
+  (1-based) of the four frames of every pass, or of `--passes-per-match
+  N` passes sampled per match;
+- `--dedupe-px 6`: detectors' picks at one frame within 6 px become one
+  tile, credited to each (the key's "sources");
+- `--confident NAME=TAU:N`: N top-1 picks of NAME at p >= TAU on random
+  frames (p_cal when the rows carry a logit: the calibration from the
+  scores file, `<ckpt>.calib.json` or `--calib NAME=JSON`);
+- `--corridor-decoys N`: grass on a pass's segment where the ball is not:
+  at t = s +- 0.40 (within [0.05, 0.95]) of a pass frame, offset across
+  the segment by U(-1.5, 1.5) m, 1 m or more from every person and 30 px
+  or more from every detector's candidates -- decoys where FF-auto looks;
+- `--rejudge KEY:N`: N old detector tiles of another sitting, drawn
+  again (the old judgement is not read here), for the judge's drift.
+
+Every key record has "tile", "window", "frame", "u", "v", "source" (a
+detector, "decoy", "corridor-decoy" or "rejudge"; detectors joined by "+"
+when deduped), "sources", "kind" and, at a pass frame, "pass" and "q"
+(0-based). With `--pass-frame`, `key_passes.json` lists for every pass
+the tile of each detector (None: no candidate, a miss). Both are key:
+read them only after judging.
 """
 
 from __future__ import annotations
@@ -20,11 +46,18 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import pandas as pd
 
 from src.paths import DATA_DIR
 
 HALF, ZOOM, BOX = 36, 3, 12
 PER_SHEET, COLS = 30, 5
+CORRIDOR_DT = 0.40          # t = s +- this
+CORRIDOR_T = (0.05, 0.95)
+CORRIDOR_OFF = 1.5          # m across the segment, uniform
+CORRIDOR_PEOPLE = 1.0       # m from every person
+CORRIDOR_PX = 30.0          # px from every detector's candidate
+TRIES = 50
 
 
 def tile(image, u, v, number):
@@ -44,35 +77,235 @@ def tile(image, u, v, number):
     return np.vstack([strip, t])
 
 
+class Windows:
+    """What the new picks need of a window, read once: its json, passes
+    and random frames (from the scores file, else `frames_of`), people
+    and calibration."""
+
+    def __init__(self, results: dict):
+        self.results, self.cache = results, {}
+
+    def get(self, w: str) -> dict:
+        if w not in self.cache:
+            from eval_ball_detector import frame_sets, frames_detail
+            from src import soccertrack_v2 as st
+
+            info = json.loads((DATA_DIR / "soccertrack_v2" / f"{w}.json").read_text())
+            fr = self.results.get(w, {}).get("frames")
+            if fr is None:
+                lab = pd.read_csv(DATA_DIR / "soccertrack_v2" / f"{w}_events.csv")
+                gt = pd.read_parquet(DATA_DIR / "soccertrack_v2" / f"{w}_gt.parquet",
+                                     columns=["frame"])
+                fr = frames_detail(frame_sets(lab, gt.frame.nunique(), w))
+            gt = pd.read_parquet(DATA_DIR / "soccertrack_v2" / f"{w}_gt.parquet")
+            self.cache[w] = {"info": info, "frames": fr,
+                             "cal": st.calibration(info["match"]),
+                             "people": {f: g[["x", "y"]].to_numpy(float)
+                                        for f, g in gt.groupby("frame")},
+                             "at": {f: (p["i"], q) for p in fr["passes"]
+                                    for q, f in enumerate(p["frames"])}}
+        return self.cache[w]
+
+
+def pick(w, f, u, v, source, kind, **extra) -> dict:
+    return {"window": w, "frame": int(f), "u": float(u), "v": float(v), "source": source,
+            "sources": [source], "kind": kind, **extra}
+
+
+def pass_picks(results, wins, names, q, per_match, rng):
+    """Top-1 of each detector at the q-th frame of every (sampled) pass;
+    and every pass's tiles to fill in key_passes.json."""
+    by_match = {}
+    for w in results:
+        d = wins.get(w)
+        for p in d["frames"]["passes"]:
+            by_match.setdefault(str(d["info"]["match"]), []).append((w, p))
+    chosen = []
+    for m, ps in by_match.items():
+        if per_match is not None and per_match < len(ps):
+            keep = sorted(rng.choice(len(ps), per_match, replace=False))
+            ps = [ps[i] for i in keep]
+        chosen += ps
+    picks, passes = [], []
+    for w, p in chosen:
+        f = p["frames"][q]
+        rec = {"window": w, "pass": p["i"], "q": q, "frame": f, "tiles": {}}
+        for name in names:
+            rows = results[w][name]["candidates"].get(str(f))
+            if rows is None:
+                raise ValueError(f"{name} was not measured at {w} frame {f}")
+            if rows:
+                picks.append(pick(w, f, rows[0][0], rows[0][1], name, "pass", **{
+                    "pass": p["i"], "q": q, "size": rows[0][3]}))
+                rec["tiles"][name] = len(picks) - 1          # pick index for now
+            else:
+                rec["tiles"][name] = None
+        passes.append(rec)
+    return picks, passes
+
+
+def calibration_of(name, meta, calib_args):
+    from src.ball_heatmap import load_calibration
+
+    if name in calib_args:
+        return load_calibration(calib_args[name])
+    m = meta.get(name, {})
+    if m.get("calib"):
+        return m["calib"]
+    return load_calibration(m["path"]) if m.get("path") else None
+
+
+def confident_picks(results, wins, spec, meta, calib_args, rng):
+    """N top-1 picks of a detector at p >= TAU on random frames."""
+    from src.ball_heatmap import p_cal
+
+    name, rest = spec.split("=", 1)
+    tau, n = rest.split(":")
+    tau, n = float(tau), int(n)
+    cal = calibration_of(name, meta, calib_args)
+    pool = []
+    for w, r in results.items():
+        if name not in r:
+            continue
+        for f in wins.get(w)["frames"]["random"]:
+            rows = r[name]["candidates"].get(str(f)) or []
+            if not rows:
+                continue
+            if len(rows[0]) > 4:
+                if cal is None:
+                    raise ValueError(f"{name}: rows carry logits but there is no "
+                                     f"calibration; pass --calib {name}=JSON")
+                score = float(p_cal(rows[0][4], cal))
+            else:
+                score = rows[0][2]
+            if score >= tau:
+                pool.append(pick(w, f, rows[0][0], rows[0][1], name, "confident",
+                                 size=rows[0][3]))
+    return [pool[i] for i in rng.choice(len(pool), min(n, len(pool)), replace=False)]
+
+
+def corridor_decoys(results, wins, n, q, rng):
+    """Grass on a pass segment away from the ball: see the module docstring."""
+    from src import soccertrack_v2 as st
+    from src.ball_heatmap import BALL_M, local_scale, pitch_to_image
+
+    allp = [(w, p) for w in results for p in wins.get(w)["frames"]["passes"]]
+    out = []
+    while len(out) < n and allp:
+        for _ in range(TRIES):
+            w, p = allp[rng.integers(len(allp))]
+            d = wins.get(w)
+            qq = q if q is not None else int(rng.integers(4))
+            f, s = p["frames"][qq], p["s"][qq]
+            ts = [t for t in (s + CORRIDOR_DT, s - CORRIDOR_DT)
+                  if CORRIDOR_T[0] <= t <= CORRIDOR_T[1]]
+            t = ts[rng.integers(len(ts))] if ts else float(np.clip(s, *CORRIDOR_T))
+            a, b = np.asarray(p["from"], float), np.asarray(p["to"], float)
+            ab = b - a
+            nrm = np.array([-ab[1], ab[0]]) / max(np.hypot(*ab), 1e-9)
+            g = a + t * ab + rng.uniform(-CORRIDOR_OFF, CORRIDOR_OFF) * nrm
+            people = d["people"].get(f, np.zeros((0, 2)))
+            if len(people) and np.hypot(*(people - g).T).min() < CORRIDOR_PEOPLE:
+                continue
+            ug, vg = pitch_to_image([g], d["cal"])[0]
+            size = BALL_M * max(local_scale(g, d["cal"]))
+            u, v = float(ug), float(vg - size / 2)
+            back = st.image_to_pitch([[u, v + size / 2]], d["cal"])[0]
+            poly = np.asarray(d["info"]["pitch"], np.float32).reshape(-1, 1, 2)
+            if (not np.isfinite(back).all()
+                    or cv2.pointPolygonTest(poly, (u, v), False) < 0):
+                continue
+            cands = [row for k, val in results[w].items()
+                     if isinstance(val, dict) and "candidates" in val
+                     for row in val["candidates"].get(str(f), [])]
+            if any(np.hypot(row[0] - u, row[1] - v) < CORRIDOR_PX for row in cands):
+                continue
+            out.append(pick(w, f, u, v, "corridor-decoy", "corridor-decoy",
+                            **{"pass": p["i"], "q": qq, "size": size, "t": round(t, 3)}))
+            break
+        else:
+            raise RuntimeError(f"no corridor decoy found in {TRIES} tries")
+    return out
+
+
+def rejudge_picks(spec, rng):
+    path, n = spec.rsplit(":", 1)
+    old = [k for k in json.loads(Path(path).read_text())
+           if "decoy" not in k.get("source", "")]
+    return [pick(k["window"], k["frame"], k["u"], k["v"], "rejudge", "rejudge",
+                 old_key=str(path), old_tile=k["tile"], old_source=k["source"])
+            for k in (old[i] for i in rng.choice(len(old), min(int(n), len(old)),
+                                                 replace=False))]
+
+
+def dedupe(picks, px: float):
+    """Detector picks at one (window, frame) within `px` of each other as
+    one tile credited to each; returns the picks and old index -> new."""
+    out, where = [], {}
+    for i, p in enumerate(picks):
+        j = None
+        if px > 0 and p["kind"] in ("pass", "random", "confident"):
+            j = next((k for k, o in enumerate(out)
+                      if o["kind"] == p["kind"] and (o["window"], o["frame"]) ==
+                      (p["window"], p["frame"]) and p["source"] not in o["sources"]
+                      and np.hypot(o["u"] - p["u"], o["v"] - p["v"]) <= px), None)
+        if j is None:
+            out.append(dict(p))
+            j = len(out) - 1
+        else:
+            out[j]["sources"] = out[j]["sources"] + p["sources"]
+            out[j]["source"] = "+".join(out[j]["sources"])
+        where[i] = j
+    return out, where
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scores", nargs="+", required=True,
                     help="eval_ball_detector.py --save files (same windows)")
-    ap.add_argument("--take", nargs="+", required=True,
-                    help="detector=count, top-1 candidates sampled per detector")
+    ap.add_argument("--take", nargs="+", default=[],
+                    help="detector=count, top-1 candidates sampled per detector "
+                         "(with --pass-frame: detector names)")
     ap.add_argument("--tau", type=float, default=0.0,
                     help="heatmap candidates below are not taken (COCO: 0.02)")
     ap.add_argument("--decoys", type=int, default=20)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--pass-frame", type=int, metavar="Q",
+                    help="one tile per pass and detector at the Q-th (1-4) frame")
+    ap.add_argument("--passes-per-match", type=int,
+                    help="with --pass-frame: sample this many passes per match")
+    ap.add_argument("--dedupe-px", type=float, default=0.0)
+    ap.add_argument("--confident", nargs="*", default=[], metavar="NAME=TAU:N")
+    ap.add_argument("--calib", nargs="*", default=[], metavar="NAME=JSON")
+    ap.add_argument("--corridor-decoys", type=int, default=0)
+    ap.add_argument("--rejudge", nargs="*", default=[], metavar="KEY:N")
     args = ap.parse_args()
+    from eval_ball_detector import load_scores
+
     rng = np.random.default_rng(args.seed)
-    merged = {}
-    for path in args.scores:
-        for r in json.loads(Path(path).read_text())["results"]:
-            merged.setdefault(r["window"], {}).update(r)
+    merged, meta = load_scores(args.scores)
     results = list(merged.values())
-    picks = []
-    for spec in args.take:
-        name, n = spec.rsplit("=", 1)
-        pool = []
-        for r in results:
-            floor = 0.02 if name == "coco" else args.tau
-            for f, rows in r[name]["candidates"].items():
-                if rows and rows[0][2] >= floor:
-                    pool.append((r["window"], int(f), rows[0][0], rows[0][1], name))
-        for i in rng.choice(len(pool), min(int(n), len(pool)), replace=False):
-            picks.append(pool[i])
+    wins = Windows(merged)
+    q = None if args.pass_frame is None else args.pass_frame - 1
+    picks, passes = [], []
+    if q is not None:
+        if not 0 <= q < 4 or any("=" in t for t in args.take):
+            ap.error("--pass-frame takes Q in 1-4 and --take detector names")
+        picks, passes = pass_picks(merged, wins, args.take, q, args.passes_per_match, rng)
+    else:
+        for spec in args.take:
+            name, n = spec.rsplit("=", 1)
+            pool = []
+            for r in results:
+                floor = 0.02 if name == "coco" else args.tau
+                for f, rows in r[name]["candidates"].items():
+                    if rows and rows[0][2] >= floor:
+                        pool.append((r["window"], int(f), rows[0][0], rows[0][1], name,
+                                     rows[0][3]))
+            for i in rng.choice(len(pool), min(int(n), len(pool)), replace=False):
+                w, f, u, v, name, size = pool[i]
+                picks.append(pick(w, f, u, v, name, "random", size=size))
     frames = [(r["window"], int(f)) for r in results
               for f in next(iter(v for k, v in r.items()
                                  if isinstance(v, dict) and "candidates" in v))
@@ -87,15 +320,24 @@ def main():
             if cv2.pointPolygonTest(poly.reshape(-1, 1, 2), (float(u), float(v)),
                                     False) > 0:
                 break
-        picks.append((w, f, float(u), float(v), "decoy"))
+        picks.append(pick(w, f, float(u), float(v), "decoy", "decoy"))
+    for spec in args.confident:
+        picks += confident_picks(merged, wins, spec, meta,
+                                 dict(c.split("=", 1) for c in args.calib), rng)
+    if args.corridor_decoys:
+        picks += corridor_decoys(merged, wins, args.corridor_decoys, q, rng)
+    for spec in args.rejudge:
+        picks += rejudge_picks(spec, rng)
+    picks, where = dedupe(picks, args.dedupe_px)
     order = rng.permutation(len(picks))
     picks = [picks[i] for i in order]
+    number = {int(j): k + 1 for k, j in enumerate(order)}     # pick index -> tile
     tiles = [None] * len(picks)
-    for w in sorted({p[0] for p in picks}):
+    for w in sorted({p["window"] for p in picks}):
         want = {}
         for k, p in enumerate(picks):
-            if p[0] == w:
-                want.setdefault(p[1], []).append(k)
+            if p["window"] == w:
+                want.setdefault(p["frame"], []).append(k)
         cap = cv2.VideoCapture(str(DATA_DIR / "soccertrack_v2" / f"{w}.mp4"))
         idx = 0
         while idx <= max(want):
@@ -103,7 +345,7 @@ def main():
             if not ok:
                 break
             for k in want.get(idx, []):
-                tiles[k] = tile(image, picks[k][2], picks[k][3], k + 1)
+                tiles[k] = tile(image, picks[k]["u"], picks[k]["v"], k + 1)
             idx += 1
         cap.release()
     out = Path(args.out)
@@ -116,11 +358,70 @@ def main():
         rows = [np.hstack(sheet[i:i + COLS]) for i in range(0, len(sheet), COLS)]
         cv2.imwrite(str(out / f"sheet_{s // PER_SHEET + 1}.jpg"), np.vstack(rows),
                     [cv2.IMWRITE_JPEG_QUALITY, 92])
-    (out / "key.json").write_text(json.dumps(
-        [{"tile": k + 1, "window": p[0], "frame": p[1], "u": p[2], "v": p[3],
-          "source": p[4]} for k, p in enumerate(picks)], indent=1))
+    key = []
+    for k, p in enumerate(picks):
+        rec = {"tile": k + 1, "window": p["window"], "frame": p["frame"], "u": p["u"],
+               "v": p["v"], "source": p["source"]}
+        rec.update({k2: v2 for k2, v2 in p.items() if k2 not in rec})
+        at = None if "pass" in p else wins.get(p["window"])["at"].get(p["frame"])
+        if at:
+            rec.update({"pass": at[0], "q": at[1]})
+        key.append(rec)
+    (out / "key.json").write_text(json.dumps(key, indent=1))
+    if passes:
+        for rec in passes:
+            rec["tiles"] = {n: None if i is None else number[where[i]]
+                            for n, i in rec["tiles"].items()}
+        (out / "key_passes.json").write_text(json.dumps(passes, indent=1))
     print(f"  {len(picks)} tiles on {-(-len(picks) // PER_SHEET)} sheets in {out}")
 
 
+def _check():
+    """The new picks without video: one tile per pass and detector (none for
+    a miss), per-match sampling, deduping within 6 px credited to both,
+    confident picks on p_cal, and key_passes' tile numbers."""
+    s = [0.25, 0.25 + 0.5 / 3, 0.25 + 1 / 3, 0.75]
+
+    class Fake:
+        def get(self, w):
+            ps = [{"i": i, "frames": [10 * i + q for q in range(4)], "s": s}
+                  for i in range(1, 4)]
+            return {"info": {"match": w[0]}, "frames": {"passes": ps, "random": [5, 6]}}
+
+    results = {"mw": {"A": {"candidates": {"10": [[100, 50, .9, 4]],
+                                           "20": [[300, 50, .9, 4]],
+                                           "30": [[9, 9, .2, 4]], "5": [[1, 1, .99, 4]],
+                                           "6": []}},
+                      "B": {"candidates": {"10": [[103, 54, .5, 4, .1]], "20": [],
+                                           "30": [[9, 30, .2, 4, 0.0]],
+                                           "5": [[2, 2, .5, 4, 3.0]],
+                                           "6": [[3, 3, .9, 4, -1.0]]}}}}
+    rng = np.random.default_rng(0)
+    picks, passes = pass_picks(results, Fake(), ["A", "B"], 0, None, rng)
+    assert [p["frame"] for p in picks] == [10, 10, 20, 30, 30]
+    assert passes[1]["tiles"] == {"A": 2, "B": None}
+    out, where = dedupe(picks, 6.0)
+    assert len(out) == 4 and out[0]["sources"] == ["A", "B"] and out[0]["source"] == "A+B"
+    assert where == {0: 0, 1: 0, 2: 1, 3: 2, 4: 3}         # 21 px apart: two tiles
+    assert len(dedupe(picks, 0)[0]) == 5
+    two, _ = pass_picks(results, Fake(), ["A"], 0, 2, np.random.default_rng(0))
+    assert len(two) == 2
+    # Confident on p_cal (logit 3.0 at a = 1, b = 0 is 0.95; -1.0 is 0.27).
+    cal = {"B": {"calib": {"a": 1.0, "b": 0.0}}}
+    conf = confident_picks(results, Fake(), "B=0.9:5", cal, {}, rng)
+    assert [(c["frame"], c["source"]) for c in conf] == [(5, "B")]
+    try:
+        confident_picks(results, Fake(), "B=0.9:5", {}, {}, rng)
+        raise AssertionError("logits without a calibration were taken")
+    except ValueError:
+        pass
+    print("  ball_tiles: pass tiles and misses, sampling, dedupe, confident picks: ok")
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if "--check" in sys.argv:
+        _check()
+    else:
+        main()
