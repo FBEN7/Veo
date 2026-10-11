@@ -730,6 +730,28 @@ spent.
 v1 (disclosed). It is calibrated on U: Platt a = 0.895, b = -0.928, ECE
 0.014, and `tau` 0.25, giving 0.91 candidates a frame.
 
+**Event rules frozen before any V event** (`sweep_events_v2.py` on the
+two M6 windows; events_v3.json sha256 fd260061...):
+- **Ball selection:** the pitch-metre linker (`src/ball_link.py`; null
+  cost 1, static penalty 2, top 4 candidates), replacing
+  `select_single_ball`.
+- **Possession radius:** 2 m (v1: 8 m).
+- **Minimum pass distance:** 3 m (v1: 0.3 m).
+- **Shots:** at least 50 km/h (v1: 10).
+- **Everything else:** as v1.
+
+On M6, where they were chosen (pass + carry at 1 s, pooled):
+
+| | events (86 labels) | F1 | F1 at random times |
+|---|---|---|---|
+| frozen rules | 87 | 0.43 | 0.24 |
+| v1 rules, same ball | 193 | 0.37 | 0.29 |
+
+- **Gate G-E** (F1 above chance, pooled) passes: +0.19 against +0.08.
+- **Leave one window out:** rules chosen on one window and scored on the
+  other beat v1's rules on both windows (+0.12 against +0.01, and +0.19
+  against +0.13).
+
 ## Next
 
 1. **The ball in flight.** The heatmap above finds the ball at the feet
