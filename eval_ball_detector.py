@@ -48,15 +48,27 @@ bootstrap (blocks: window x minute of the kick; 4,000 draws, seed 0):
 the 2.5th percentile is the one-sided 0.025 lower bound.
 
 Detectors: COCO (unless `--no-coco`), `--heatmap` v1 checkpoints,
-`--v2` motion checkpoints (`ball_heatmap.build(motion=True)`; a first
-pass over the window keeps the background samples (`motion_bg`), then one
-sequential decode runs every detector, the motion ones with frames t-2,
-t+2 from a ring buffer; `--motion-zero` adds each with zero motion,
+`--v2` checkpoints (`ball_heatmap.load_v2`: a motion one with the motion
+scales of its provenance, an RGB-only `--no-motion` one with zero motion,
+exactly its RGB net, "rgb_only" in the metadata; a first pass over the
+window keeps the background samples (`motion_bg`), then one sequential
+decode runs every detector, the motion ones with frames t-2, t+2 from a
+ring buffer; `--motion-zero` adds each motion checkpoint with zero motion,
 named `<ckpt>:motion-zero`), and `--candidates NAME=PARQUET` (rows of
-`detect_ball_heatmap.py`; `{window}` in the path is replaced; the file
-must cover every measured frame, which `--extra-frames` does). A v2
-checkpoint is refused on a match of its training provenance unless
+`detect_ball_heatmap.py --v2`; `{window}` in the path is replaced). The
+parquet's sidecar `<parquet>.meta.json` says which frames were processed:
+only those are measured, and a measured frame it did not process is
+refused (rerun with `--extra-frames measured`) unless `--allow-partial`.
+A v2 checkpoint is refused on a match of its training provenance unless
 `--allow-seen` (the T diagnostic only).
+
+A frame a detector did not measure (not processed, past the video's end,
+`--limit-frames`, a partial file) is left out of FF-auto and the
+placebos, never counted as a miss: a pass with such a frame is not scored
+("ff per pass" None, counted in "ff incomplete passes") nor paired in
+`compare_ff()`, a placebo frame is None. The legacy measures count it as
+a miss, as they always did; every run logs each detector's measured-frame
+count when it falls short.
 
 `--reuse SCORES.json [...]` measures again from saved candidates, without
 the video (several files are merged per window and detector; `--candidates`
@@ -80,11 +92,15 @@ reads and merges several):
                  "ff-auto": {NAME: {"pooled", "passes", "windows": {W: x},
                                     "matches": {M: x}}},
                  "ff-auto paired": {"A vs B": compare_ff(...)},
-                 "placebo": {NAME: {"pre", "pre frames", "post",
-                                    "post frames", "windows"}}},
+                 "placebo": {NAME: {"pre", "pre frames", "pre not measured",
+                                    "post", "post frames", "post not measured",
+                                    "windows"}}},
      "detectors": {NAME: {"kind": "coco" | "v1" | "v2" | "v2-motion-zero",
                           "path", "calib" (<ckpt>.calib.json if there),
-                          "train" (provenance), "source": "parquet"}},
+                          "train" (provenance), "ckpt sha256", "rgb_only",
+                          "sigma" ({"SIGMA_D", "SIGMA_F"} used),
+                          "source": "parquet", "windows" ({W: its sidecar
+                          less the frame list})}},
      "protocol": {the FF-auto and placebo constants},
      "results": [one per window: {
         "window", "passes" (count), "actions" (count),
@@ -104,6 +120,7 @@ reads and merges several):
         "people": {"frame": [[x, y], ...]},   # ground-truth persons, m
         "n_bg": {"frame": n},     # background samples: decoded in v2 runs,
                                   # else those a complete decode would have
+        "frames to measure",      # the window's measured frames, all kinds
         NAME: {
           "free-flight hit", "per pass", "feet share", "action hit",
           "candidates per frame",                           # legacy
@@ -111,8 +128,11 @@ reads and merges several):
               # v2 rows are [u, v, p_raw, size, logit] (p_raw >= 0.05,
               # at most 8); v1 [u, v, p, size] (p >= 0.01, at most 8);
               # COCO [u, v, conf, box height]; frames are local
-          "ff-auto", "ff per pass", "ff frames" ([4 hits] per pass),
-          "placebo pre", "placebo post" ({"rate", "hits", "frames"}),
+          "frames measured",                                # of those
+          "ff-auto", "ff per pass" (None: incomplete), "ff frames" ([4
+              hits] per pass, None where not measured), "ff incomplete passes",
+          "placebo pre", "placebo post" ({"rate", "hits", "frames",
+              "not measured"}),
           "placebo pre hits", "placebo post hits"}]}  # per entry, None
                                                      # where not measured
 
@@ -412,12 +432,24 @@ def decode(wd: dict, detectors: dict, motion: dict, wanted,
     return cands, n_bg
 
 
-def parquet_candidates(path, wanted, top_k: int = TOP_K) -> dict:
-    """{frame: rows} at `wanted` local frames from a dense ball-rows parquet
-    (`detect_ball_heatmap.py`): [u, v, p_raw, size, logit] when it has a
-    logit column (p_raw = sigmoid(logit) unless saved), else [u, v,
-    confidence, size]; best first, at most `top_k`. A wanted frame without
-    rows is a measured frame without candidates."""
+def parquet_candidates(path, wanted, top_k: int = TOP_K, allow_partial: bool = False,
+                       window: str | None = None, sidecar: dict | None = None) -> dict:
+    """{frame: rows} at the `wanted` local frames a dense ball-rows parquet
+    (`detect_ball_heatmap.py --v2`) processed, as its sidecar
+    (`<path>.meta.json`) lists them: [u, v, p_raw, size, logit] when it has
+    a logit column (p_raw = sigmoid(logit) unless saved), else [u, v,
+    confidence, size]; best first, at most `top_k`. A processed frame
+    without rows is a measured frame without candidates; a wanted frame
+    not processed raises (`allow_partial`: left out, i.e. not measured),
+    as do a missing or stale sidecar, one of another `window`, and rows
+    at a frame it does not list. `sidecar`, when given, receives the
+    sidecar's contents."""
+    from detect_ball_heatmap import read_sidecar
+
+    meta = read_sidecar(path)
+    if window is not None and meta.get("window") not in (None, window):
+        raise ValueError(f"{path}: the sidecar is of window {meta['window']}, not {window}")
+    done = {int(f) for f in meta["frames"]}
     df = pd.read_parquet(path)
     if "cls" in df:
         df = df[df.cls == "ball"]
@@ -428,10 +460,24 @@ def parquet_candidates(path, wanted, top_k: int = TOP_K) -> dict:
     else:
         cols = np.c_[df.px, df.py, df.confidence, df.crop_h]
     frames = df.frame.to_numpy(int)
+    stray = sorted(set(frames.tolist()) - done)
+    if stray:
+        raise ValueError(f"{path}: rows at {len(stray)} frames its sidecar does not "
+                         f"list as processed (e.g. {stray[:5]})")
+    want = sorted({int(f) for f in wanted})
+    missing = [f for f in want if f not in done]
+    if missing and not allow_partial:
+        raise ValueError(f"{path}: {len(missing)} of {len(want)} measured frames were "
+                         f"not processed (e.g. {missing[:5]}); rerun "
+                         f"detect_ball_heatmap.py --v2 with --extra-frames measured, "
+                         f"or --allow-partial to leave them unmeasured")
+    if sidecar is not None:
+        sidecar.update(meta)
     out = {}
-    for f in wanted:
-        rows = cols[frames == f]
-        out[f] = rows[np.argsort(-rows[:, 2], kind="stable")][:top_k]
+    for f in want:
+        if f in done:
+            rows = cols[frames == f]
+            out[f] = rows[np.argsort(-rows[:, 2], kind="stable")][:top_k]
     return out
 
 
@@ -450,9 +496,10 @@ def _saved(rows) -> list:
 
 
 def _rate(hits) -> dict:
+    """Hit rate over the measured entries (None: not measured, counted)."""
     h = [x for x in hits if x is not None]
     return {"rate": round(float(np.mean(h)), 3) if h else None,
-            "hits": int(sum(h)), "frames": len(h)}
+            "hits": int(sum(h)), "frames": len(h), "not measured": len(hits) - len(h)}
 
 
 def measure(wd: dict, cands: dict, seed: int = 0, n_bg: dict | None = None) -> dict:
@@ -495,10 +542,13 @@ def measure(wd: dict, cands: dict, seed: int = 0, n_bg: dict | None = None) -> d
             act.append(float(ok))
         per_frame = {t: float(np.mean([(c[f][:, 2] >= t).sum() if len(c.get(f, ())) else 0
                                        for f in sets["random"]])) for t in TAUS}
-        # Protocol v3.
-        ff = [[int(f in c and ff_hit(top_ground(c[f], cal), p, q, people.get(f)))
+        # Protocol v3. A frame not in `c` was not measured: None, as for the
+        # placebos; a pass with one is incomplete (None), not a miss.
+        ff = [[None if f not in c else int(ff_hit(top_ground(c[f], cal), p, q,
+                                                  people.get(f)))
                for q, f in enumerate(p["frames"])] for p in sets["passes"]]
-        ff_pass = [float(np.mean(h)) for h in ff]
+        ff_pass = [None if None in h else float(np.mean(h)) for h in ff]
+        scored = [x for x in ff_pass if x is not None]
         placebo = {}
         for kind, (lo, hi) in (("pre", PRE_T), ("post", POST_T)):
             placebo[kind] = []
@@ -513,8 +563,10 @@ def measure(wd: dict, cands: dict, seed: int = 0, n_bg: dict | None = None) -> d
                      "action hit": round(float(np.mean(act)), 3) if act else None,
                      "candidates per frame": {str(k): round(v, 2)
                                               for k, v in per_frame.items()},
-                     "ff-auto": round(float(np.mean(ff_pass)), 3) if ff_pass else None,
+                     "frames measured": sum(f in c for f in measured_frames(sets)),
+                     "ff-auto": round(float(np.mean(scored)), 3) if scored else None,
                      "ff per pass": ff_pass, "ff frames": ff,
+                     "ff incomplete passes": len(ff_pass) - len(scored),
                      "placebo pre": _rate(placebo["pre"]),
                      "placebo post": _rate(placebo["post"]),
                      "placebo pre hits": placebo["pre"],
@@ -530,6 +582,7 @@ def measure(wd: dict, cands: dict, seed: int = 0, n_bg: dict | None = None) -> d
                start_frame=int(info["start_frame"]), frames=frames_detail(sets),
                people={str(f): np.round(people[f], 3).tolist()
                        for f in measured_frames(sets) if f in people})
+    out["frames to measure"] = len(measured_frames(sets))
     # Background samples per measured frame: as decoded for v2, else as a
     # complete decode of the window gives them.
     from src.motion_bg import bg_sample_frames
@@ -577,12 +630,43 @@ def run_window(window: str, detectors: dict, seed: int = 0, motion: dict | None 
     for name, fn in (extra or {}).items():
         rows = fn(window, wanted)
         cands[name] = {f: rows[f] for f in wanted if f in rows}
+    log_coverage(window, cands, wanted, log)
     return measure(wd, cands, seed, n_bg)
 
 
-def parquet_source(path: str):
+def log_coverage(window: str, cands: dict, wanted, log=print):
+    """Log the detectors measured at fewer than the `wanted` frames, with
+    their measured-frame counts (counts only: allowed when sealed)."""
+    want = set(wanted)
+    short = {k: len(want & set(v)) for k, v in cands.items()}
+    short = {k: n for k, n in short.items() if n < len(want)}
+    if short:
+        log(f"  {window}: not every one of its {len(want)} frames measured: " +
+            ", ".join(f"{k} {n}" for k, n in short.items()))
+
+
+def sealed_counts(r: dict, names) -> str:
+    """A window's line of the `--sealed` log: frame counts only -- passes,
+    placebo frames, and per detector the frames it measured, with its
+    incomplete passes and placebo frames not measured."""
+    def gaps(d):
+        n = d["ff incomplete passes"]
+        g = [f"{n} passes incomplete"] if n else []
+        g += [f"{d[f'placebo {k}']['not measured']} placebo {k} frames not measured"
+              for k in ("pre", "post") if d[f"placebo {k}"]["not measured"]]
+        return f" ({', '.join(g)})" if g else ""
+
+    fr = r["frames"]
+    per = ", ".join(f"{n} {r[n]['frames measured']}{gaps(r[n])}" for n in names if n in r)
+    return (f"  {r['window']}: {len(fr['passes'])} passes, {len(fr['placebo_pre'])} + "
+            f"{len(fr['placebo_post'])} placebo frames, frames measured of "
+            f"{r['frames to measure']}: {per}")
+
+
+def parquet_source(path: str, allow_partial: bool = False):
     """`--candidates` reader: fn(window, frames) over `path`, with
-    `{window}` replaced; a path without it serves one window only."""
+    `{window}` replaced; a path without it serves one window only.
+    `fn.sidecars` keeps each window's sidecar, less its frame list."""
     seen = set()
 
     def fn(window, wanted):
@@ -590,8 +674,14 @@ def parquet_source(path: str):
         if "{window}" not in path and len(seen) > 1:
             raise ValueError(f"{path}: one parquet for several windows; "
                              "put {window} in the path")
-        return parquet_candidates(path.replace("{window}", window), wanted)
+        side = {}
+        out = parquet_candidates(path.replace("{window}", window), wanted,
+                                 allow_partial=allow_partial, window=window, sidecar=side)
+        fn.sidecars[window] = {k: v for k, v in side.items() if k != "frames"}
+        fn.sidecars[window]["processed"] = len(side["frames"])
+        return out
 
+    fn.sidecars = {}
     return fn
 
 
@@ -638,9 +728,10 @@ def reuse(paths, windows=None, seed: int = 0, extra=None, log=print) -> tuple[li
         for name, fn in (extra or {}).items():
             rows = fn(w, wanted)
             cands[name] = {f: rows[f] for f in wanted if f in rows}
+        log_coverage(w, cands, wanted, log)
         n_bg = {int(f): n for f, n in r.get("n_bg", {}).items()}
         results.append(measure(wd, cands, seed, n_bg))
-        log(f"  {w}: {len(wanted)} frames measured (from saved candidates: "
+        log(f"  {w}: {len(wanted)} frames to measure (from saved candidates: "
             f"{', '.join(cands)})")
     return results, meta
 
@@ -672,15 +763,20 @@ def compare_ff(results, a: str, b: str = "coco", draws: int = DRAWS, seed: int =
     spell of play move together; `blocks=False` draws single passes. The
     2.5th percentile is the one-sided alpha 0.025 lower bound: a > b when
     it is above 0. `full_bg` (v2 diagnostic) keeps only frames whose
-    background had all FULL_BG samples (window edges have fewer).
+    background had all FULL_BG samples (window edges have fewer). A pass
+    with a frame either detector did not measure is left out (counted in
+    "passes not measured"), not paired against a miss.
     Returns the means, the difference, the 2.5th / 97.5th percentiles,
     the number of passes and blocks, and the same per match."""
-    da, db, keys, match = [], [], [], []
+    da, db, keys, match, unmeasured = [], [], [], [], 0
     for r in results:
         if a not in r or b not in r:
             continue
         nb = r.get("n_bg", {})
         for p, fa, fb in zip(r["frames"]["passes"], r[a]["ff frames"], r[b]["ff frames"]):
+            if None in fa or None in fb:
+                unmeasured += 1
+                continue
             if full_bg:
                 keep = [nb.get(str(f)) == FULL_BG for f in p["frames"]]
                 if not any(keep):
@@ -704,7 +800,7 @@ def compare_ff(results, a: str, b: str = "coco", draws: int = DRAWS, seed: int =
     return {"passes": int(len(d)), "blocks": int(len(S)), a: round(float(da.mean()), 3),
             b: round(float(db.mean()), 3), "difference": round(float(d.mean()), 3),
             "2.5%": round(float(lo), 3), "97.5%": round(float(hi), 3),
-            "lower bound above 0": bool(lo > 0),
+            "lower bound above 0": bool(lo > 0), "passes not measured": unmeasured,
             "matches": {m: {"passes": int((match == m).sum()),
                             a: round(float(da[match == m].mean()), 3),
                             b: round(float(db[match == m].mean()), 3),
@@ -713,17 +809,20 @@ def compare_ff(results, a: str, b: str = "coco", draws: int = DRAWS, seed: int =
 
 
 def ff_summary(results, name: str) -> dict:
-    """FF-auto of a detector per window, per match and pooled over passes."""
+    """FF-auto of a detector per window, per match and pooled over passes
+    (complete ones: a pass with an unmeasured frame is counted apart)."""
     rs = [r for r in results if name in r]
-    allp = [x for r in rs for x in r[name]["ff per pass"]]
+    allp = [x for r in rs for x in r[name]["ff per pass"] if x is not None]
     by_match = {}
     for r in rs:
-        by_match.setdefault(r["match"], []).extend(r[name]["ff per pass"])
+        by_match.setdefault(r["match"], []).extend(
+            x for x in r[name]["ff per pass"] if x is not None)
 
     def m(x):
         return round(float(np.mean(x)), 3) if len(x) else None
 
     return {"pooled": m(allp), "passes": len(allp),
+            "incomplete passes": sum(x is None for r in rs for x in r[name]["ff per pass"]),
             "windows": {r["window"]: r[name]["ff-auto"] for r in rs},
             "matches": {k: m(v) for k, v in sorted(by_match.items())}}
 
@@ -734,6 +833,7 @@ def placebo_summary(results, name: str) -> dict:
     for kind in ("pre", "post"):
         s = _rate([h for r in rs for h in r[name][f"placebo {kind} hits"]])
         out[kind], out[f"{kind} frames"] = s["rate"], s["frames"]
+        out[f"{kind} not measured"] = s["not measured"]
     out["windows"] = {r["window"]: {k: r[name][f"placebo {k}"]["rate"]
                                     for k in ("pre", "post")} for r in rs}
     return out
@@ -781,6 +881,42 @@ def kind_of(name: str, results, meta: dict) -> str:
 
 # ---- Command line -----------------------------------------------------------------
 
+def v2_detectors(paths, matches, allow_seen: bool = False, motion_zero: bool = False,
+                 log=print) -> tuple[dict, dict]:
+    """`--v2`: {name: fn(prev, cur, nxt, bg, outline, cal)} and their
+    metadata. Each checkpoint is refused on a training match among
+    `matches` (unless `allow_seen`) and read by `ball_heatmap.load_v2`: a
+    motion one runs with its provenance's motion scales, an RGB-only one
+    with zero motion -- its RGB net, so `motion_zero` adds no second run
+    of it."""
+    import hashlib
+
+    from src import ball_heatmap as bh
+
+    motion, meta = {}, {}
+    for path in paths:
+        for m in matches:
+            bh.check_unseen(path, m, allow_seen)
+        model, info = bh.load_v2(path)
+        prov = bh.read_provenance(path)
+        rgb, sd, sf = info["rgb_only"], info["sigma_d"], info["sigma_f"]
+        if rgb:
+            log(f"  {Path(path).name}: RGB-only, run with zero motion")
+        sha = hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        for zero in (False, True) if motion_zero and not rgb else (False,):
+            name = Path(path).name + (":motion-zero" if zero else "")
+            motion[name] = (lambda mm, z, sd, sf: lambda prev, cur, nxt, bg, pitch, cal:
+                            bh.detect_v2(mm, prev, cur, nxt, bg, pitch, tau=V2_TAU,
+                                         top_k=TOP_K, cal=cal, motion_zero=z,
+                                         sigma_d=sd, sigma_f=sf))(
+                model, zero or rgb, sd, sf)
+            meta[name] = {"kind": "v2-motion-zero" if zero else "v2",
+                          "path": str(path), "calib": bh.load_calibration(path),
+                          "train": prov and prov.get("train"), "ckpt sha256": sha,
+                          "rgb_only": rgb, "sigma": {"SIGMA_D": sd, "SIGMA_F": sf}}
+    return motion, meta
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--heatmap", nargs="*", default=[],
@@ -791,6 +927,9 @@ def main():
                     help="also each --v2 checkpoint with zero motion")
     ap.add_argument("--candidates", nargs="*", default=[], metavar="NAME=PARQUET",
                     help="a detector's rows from a dense parquet ({window} replaced)")
+    ap.add_argument("--allow-partial", action="store_true",
+                    help="--candidates: leave frames the parquet did not process "
+                         "unmeasured instead of refusing")
     ap.add_argument("--windows", nargs="+")
     ap.add_argument("--no-coco", action="store_true")
     ap.add_argument("--reuse", nargs="+", metavar="SCORES.json",
@@ -817,8 +956,9 @@ def main():
     extra, meta = {}, {}
     for spec in args.candidates:
         name, path = spec.split("=", 1)
-        extra[name] = parquet_source(path)
-        meta[name] = {"source": "parquet", "path": path}
+        extra[name] = parquet_source(path, args.allow_partial)
+        meta[name] = {"source": "parquet", "path": path,
+                      "windows": extra[name].sidecars}
 
     if args.reuse:
         results, saved = reuse(args.reuse, args.windows, extra=extra, log=log)
@@ -827,8 +967,6 @@ def main():
                                    if isinstance(v, dict) and "candidates" in v))
     else:
         import torch
-
-        from src import ball_heatmap as bh
 
         torch.set_num_threads(args.threads)
         detectors, motion = {}, {}
@@ -845,23 +983,12 @@ def main():
             detectors[Path(path).name] = (lambda mm: lambda im, pitch, cal: detect(
                 mm, im, pitch, tau=0.01, top_k=8, cal=cal))(m)
             meta[Path(path).name] = {"kind": "v1", "path": str(path)}
-        for path in args.v2:
-            for w in args.windows:
-                info = json.loads((DATA_DIR / "soccertrack_v2" / f"{w}.json").read_text())
-                bh.check_unseen(path, info["match"], args.allow_seen)
-            m = build(motion=True)
-            m.load_state_dict(torch.load(path))
-            m.eval()
-            prov = bh.read_provenance(path)
-            for zero in (False, True) if args.motion_zero else (False,):
-                name = Path(path).name + (":motion-zero" if zero else "")
-                motion[name] = (lambda mm, z: lambda prev, cur, nxt, bg, pitch, cal:
-                                bh.detect_v2(mm, prev, cur, nxt, bg, pitch, tau=V2_TAU,
-                                             top_k=TOP_K, cal=cal,
-                                             motion_zero=z))(m, zero)
-                meta[name] = {"kind": "v2-motion-zero" if zero else "v2",
-                              "path": str(path), "calib": bh.load_calibration(path),
-                              "train": prov and prov.get("train")}
+        if args.v2:
+            matches = [json.loads((DATA_DIR / "soccertrack_v2" / f"{w}.json").read_text())
+                       ["match"] for w in args.windows]
+            motion, v2_meta = v2_detectors(args.v2, matches, args.allow_seen,
+                                           args.motion_zero, log)
+            meta.update(v2_meta)
         results = [run_window(w, detectors, motion=motion, limit=args.limit_frames,
                               extra=extra, log=log, kinds=args.frames)
                    for w in args.windows]
@@ -879,11 +1006,7 @@ def main():
     if args.sealed:
         Path(args.sealed).write_text(json.dumps(blob, indent=1))
         for r in results:
-            fr = r["frames"]
-            done = {f for n in names if n in r for f in r[n]["candidates"]}
-            log(f"  {r['window']}: {len(fr['passes'])} passes, "
-                f"{len(fr['placebo_pre'])} + {len(fr['placebo_post'])} placebo frames, "
-                f"{len(done)} of {len(r['people'])} frames measured")
+            log(sealed_counts(r, names))
         log(f"  sealed: {len(results)} windows, {len(names)} detectors -> {args.sealed} "
             f"[{time.time() - t0:.0f} s]")
         return
@@ -973,9 +1096,12 @@ def _check():
     assert r["line"]["ff per pass"] == [1.0, 1.0, 1.0] and r["line"]["ff-auto"] == 1.0
     assert r["line"]["free-flight hit"] == 1.0                 # on the line: 1 m rule too
     assert r["ahead"]["ff per pass"] == [0.0, 0.0, 0.0]
-    assert r["line"]["placebo pre"] == {"rate": 0.0, "hits": 0, "frames": 4}
-    assert r["ahead"]["placebo pre"] == {"rate": 1.0, "hits": 4, "frames": 4}
+    assert r["line"]["placebo pre"] == {"rate": 0.0, "hits": 0, "frames": 4,
+                                        "not measured": 0}
+    assert r["ahead"]["placebo pre"] == {"rate": 1.0, "hits": 4, "frames": 4,
+                                         "not measured": 0}
     assert r["ahead"]["placebo post hits"] == [0, 0, None]     # 1715 not measured
+    assert r["ahead"]["placebo post"]["not measured"] == 1
     assert r["passes"] == 3 and r["frames"]["passes"][1]["from"] == [0.0, 20.0]
     assert r["n_bg"] == {"62": 15, "71": 9}
     json.dumps(r)
@@ -990,6 +1116,38 @@ def _check():
     s = summarise([r], ["line", "ahead"], {})
     assert s["ff-auto"]["line"]["pooled"] == 1.0 and "paired" not in s
     assert s["placebo"]["ahead"]["pre"] == 1.0
+    assert r["line"]["ff incomplete passes"] == 0 and c["passes not measured"] == 0
+    # A frame not measured is left out, never a miss: "ahead" without pass
+    # 0's 2nd frame and a placebo frame. Pass 0 is incomplete (not scored,
+    # not paired), the placebo frame None; the legacy measures as before.
+    gap = {f: v for f, v in ahead.items() if f not in (P[0]["frames"][1], 35)}
+    logs, n = [], len(measured_frames(sets))
+    log_coverage("syn", {"line": line, "ahead": ahead, "gap": gap}, measured_frames(sets),
+                 logs.append)                                  # all lack 1715
+    assert len(logs) == 1 and f"line {n - 1}, ahead {n - 1}, gap {n - 3}" in logs[0], logs
+    log_coverage("syn", {"line": line}, [62, 71], logs.append)
+    assert len(logs) == 1
+    r2 = measure(wd, {"line": line, "gap": gap})
+    g = r2["gap"]
+    assert g["ff frames"][0] == [0, None, 0, 0] and g["ff per pass"] == [None, 0.0, 0.0]
+    assert g["ff incomplete passes"] == 1 and g["ff-auto"] == 0.0
+    assert g["frames measured"] == r2["frames to measure"] - 3 == n - 3
+    assert g["placebo pre hits"] == [None, 1, 1, 1] and g["placebo pre"]["frames"] == 3
+    assert g["placebo pre"]["not measured"] == 1
+    sp = summarise([r2], ["line", "gap"], {})["placebo"]["gap"]
+    assert sp["pre frames"] == 3 and sp["pre not measured"] == 1
+    # The sealed log: counts only, with each detector's gaps.
+    line_ = sealed_counts(r2, ["line", "gap", "none"])
+    assert line_.endswith(
+        f"frames measured of {n}: line {n - 1} (1 placebo post frames not measured), "
+        f"gap {n - 3} (1 passes incomplete, 1 placebo pre frames not measured, "
+        f"1 placebo post frames not measured)"), line_
+    assert "." not in line_                                    # no rate, no mean
+    assert g["free-flight hit"] == r["ahead"]["free-flight hit"]
+    cg = compare_ff([r2], "line", "gap")
+    assert cg["passes"] == 2 and cg["passes not measured"] == 1 and cg["difference"] == 1.0
+    fs = ff_summary([r2], "gap")
+    assert fs["passes"] == 2 and fs["incomplete passes"] == 1
     # Blocks that move together widen the interval against single passes.
     rng = np.random.default_rng(1)
     eff = np.repeat(rng.normal(0, 0.4, 20), 10)
@@ -1001,20 +1159,84 @@ def _check():
     wp = compare_ff([fake], "a", "b", blocks=False)
     assert wb["97.5%"] - wb["2.5%"] > 1.5 * (wp["97.5%"] - wp["2.5%"])
     # A dense parquet: best first, at most top_k, p_raw from the logit, an
-    # empty measured frame.
+    # empty processed frame; frames it did not process (its sidecar's list)
+    # refused, or left unmeasured with allow_partial; no sidecar refused.
+    from detect_ball_heatmap import sidecar_path, write_sidecar
+
     with tempfile.TemporaryDirectory() as tmp:
         pq = Path(tmp) / "syn_w.parquet"
         pd.DataFrame({"frame": [4, 4, 4, 6], "px": [1.0, 2, 3, 4], "py": [5.0, 6, 7, 8],
                       "confidence": [0.3, 0.9, 0.5, 0.2], "crop_h": [4.0, 4, 4, 4],
                       "logit": [-1.0, 2.0, 0.0, -2.0], "cls": "ball"}).to_parquet(pq)
-        got = parquet_source(str(Path(tmp) / "{window}.parquet"))("syn_w", [4, 5, 6])
+        write_sidecar(pq, [4, 5, 6], window="syn_w", stride=2)
+        src = parquet_source(str(Path(tmp) / "{window}.parquet"))
+        got = src("syn_w", [4, 5, 6])
         assert got[4][:, 0].tolist() == [2.0, 3.0, 1.0] and got[4].shape[1] == 5
         assert abs(got[4][0, 2] - 1 / (1 + np.exp(-2))) < 1e-12 and got[5].shape == (0, 5)
+        side = src.sidecars["syn_w"]
+        assert side["processed"] == 3 and "frames" not in side
         assert len(parquet_candidates(pq, [4], top_k=2)[4]) == 2
+        write_sidecar(pq, [4, 6], window="syn_w")
+        part = parquet_source(str(pq), allow_partial=True)("syn_w", [4, 5, 6])
+        assert sorted(part) == [4, 6]
+        sidecar_path(pq).unlink()
+        for bad in (lambda: parquet_source(str(pq))("syn_w", [4, 5, 6]),
+                    lambda: parquet_candidates(pq, [4], allow_partial=True)):
+            try:
+                bad()
+                raise AssertionError("an unprocessed frame or no sidecar passed")
+            except ValueError:
+                pass
+        _check_v2_detectors(Path(tmp))
     assert _saved(np.array([[1.23456, 2.0, 0.0496123, 3.0, 1.2345678]])) == [
         [1.235, 2.0, 0.049612, 3.0, 1.234568]]
     print("  eval_ball_detector: pass and placebo frames, FF-auto / placebo edges, "
-          "measure, block bootstrap, parquet reader: ok")
+          "measure, unmeasured frames left out and counted, sealed log, block "
+          "bootstrap, parquet reader and its coverage, v2 loading (scales, RGB-only): ok")
+
+
+def _check_v2_detectors(tmp: Path):
+    """`v2_detectors` on two small checkpoints: the motion one with its
+    provenance's scales and a motion-zero twin, the RGB-only one once, with
+    zero motion; a training match refused."""
+    import torch
+
+    from src import ball_heatmap as bh
+
+    torch.manual_seed(0)
+    net = bh.build(motion=True)
+    with torch.no_grad():
+        net.conv1_motion.weight.normal_(0, 0.05)
+        net.head[-1].bias.fill_(0.0)
+    rgb = bh.build()
+    rgb.load_state_dict({k: v for k, v in net.state_dict().items()
+                         if k != "conv1_motion.weight"})
+    mk, rk = tmp / "m.pt", tmp / "rgb.pt"
+    torch.save(net.state_dict(), mk)
+    torch.save(rgb.state_dict(), rk)
+    sigma = {"SIGMA_D": 0.07, "SIGMA_F": 0.03}
+    bh.write_provenance(mk, {"train": {"118575": [1]}, "motion": True, "sigma": sigma})
+    bh.write_provenance(rk, {"train": {"118575": [1]}, "motion": False, "sigma": sigma})
+    motion, meta = v2_detectors([mk, rk], ["118578"], motion_zero=True, log=lambda *a: None)
+    assert list(motion) == ["m.pt", "m.pt:motion-zero", "rgb.pt"]
+    assert meta["m.pt"]["sigma"] == sigma and not meta["m.pt"]["rgb_only"]
+    assert meta["rgb.pt"]["rgb_only"] and meta["rgb.pt"]["kind"] == "v2"
+    assert meta["m.pt:motion-zero"]["kind"] == "v2-motion-zero"
+    rng = np.random.default_rng(0)
+    fr = [rng.integers(0, 255, (64, 96, 3), dtype=np.uint8) for _ in range(3)]
+    args = (fr[0], fr[1], fr[2], cv2.cvtColor(fr[1], cv2.COLOR_BGR2GRAY),
+            [[8, 8], [88, 8], [88, 56], [8, 56]])
+    net.eval()
+    want = bh.detect_v2(net, *args, tau=V2_TAU, top_k=TOP_K, sigma_d=0.07, sigma_f=0.03)
+    assert len(want) and np.array_equal(motion["m.pt"](*args, None), want, equal_nan=True)
+    zero = motion["m.pt:motion-zero"](*args, None)
+    assert np.array_equal(motion["rgb.pt"](*args, None), zero, equal_nan=True)
+    assert not np.array_equal(zero, want)
+    try:
+        v2_detectors([mk], ["118575"])
+        raise AssertionError("a training match was accepted")
+    except ValueError:
+        pass
 
 
 if __name__ == "__main__":

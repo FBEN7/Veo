@@ -46,6 +46,18 @@ within the window) is for smoke tests and the stream-vs-window check
 (`--allow-any` for a match not trained on; `--like DIR` recuts DIR's
 strips at the same frames and places).
 
+A half streams for 20 min or more, and the CDN's signed address lasts an
+hour: the range requests (`open_half`) sign the address again on a 401 /
+403 and try again, with a doubling back-off, on a 5xx, a connection error
+or a timeout (6 tries). The finished rows are saved every 200 strips to
+`strips_<match>_<half>_<source>_<first>-<last>.partial.parquet`; the same
+command run again after a crash keeps the strips whose JPEG and row
+exist, decodes from the first frame the others need, and gives the same
+strips.parquet. A run replaces the earlier rows of its half, frame range,
+kinds and source only. A directory holds strips of one source: the stream
+(training) or windows (checks), never both, since their file names are
+the same.
+
 Output in DIR: `<kind>_<match>_<half>_<frame>_<x0>_<y0>.jpg` and
 `strips.parquet` -- file, match, half, frame, kind, category (flight:
 completed / intercepted; free: cluster / landmark / boundary / random;
@@ -55,7 +67,7 @@ a_y, b_x, b_y), s, t_hat, L, event_a / event_b (rows of
 has_next, width, height, source ("stream" or the window), allow_any.
 
     python build_ball_strips.py --match 118575 --half 1 --out DIR
-    python build_ball_strips.py --window st2_118577_1st_f030000 --out DIR \\
+    python build_ball_strips.py --window st2_118577_1st_f030000 --out DIR_W \\
         [--frames 30000 30600] [--like DIR_A] [--allow-any]
     python build_ball_strips.py --check
 """
@@ -63,7 +75,9 @@ has_next, width, height, source ("stream" or the window), allow_any.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import time
 from pathlib import Path
 
@@ -86,6 +100,8 @@ JITTER = 100                      # px, at most, per axis
 SLACK_PX = 8
 KINDS = ("flight", "lofted", "action", "dribble", "free")
 TEST = {"128057", "132831"}       # never opened
+TRIES, BACKOFF_S = 6, 2.0         # range requests: tries, first back-off (doubling)
+FLUSH_EVERY = 200                 # strips between saves of a run's rows
 
 # Flight and lofted passes.
 FLIGHT_S = (0.25, 0.5, 0.75)
@@ -527,6 +543,108 @@ def check_allowed(match: str, half: int, window: bool, allow_any: bool):
                      f"(ball_heatmap.V2_TRAIN); only --window with --allow-any")
 
 
+def check_source(out: Path, source: str):
+    """Refuse to mix stream strips (training) and window strips (smoke
+    tests, the stream-vs-window check) in one directory: their file names
+    are the same (`strip_name`), so one would overwrite the other's JPEGs.
+    Looks at strips.parquet and at the rows of interrupted runs."""
+    have = set()
+    if (out / "strips.parquet").exists():
+        t = pd.read_parquet(out / "strips.parquet")
+        if "source" in t:
+            have |= set(t.source.astype(str))
+    for p in out.glob("strips_*.partial.parquet"):
+        have |= set(pd.read_parquet(p, columns=["source"]).source.astype(str))
+    clash = sorted(s for s in have if (s == "stream") != (source == "stream"))
+    if clash:
+        raise SystemExit(f"{out} holds strips of {clash[:3]}: {source} strips go in "
+                         f"another directory (training strips from the stream and "
+                         f"window strips are kept apart)")
+
+
+# ---- Streaming a half -----------------------------------------------------------
+
+def resigning_fetch(sign, session=None, tries: int = TRIES, timeout: float = 120,
+                    sleep=time.sleep, log=print):
+    """(fetch, size) for `st.RemoteFile` over the address `sign()` gives,
+    which expires (the CDN signs it for an hour; a half streams for 20 min
+    or more). On a 401 / 403 the address is signed again; a 5xx, a 429, a
+    connection error, a timeout or a short read is tried again after
+    BACKOFF_S, 2 BACKOFF_S, ... s; `tries` tries in all, then the last
+    error is raised. Any other 4xx is raised at once. The revision is
+    pinned, so a new signature serves the same bytes. Errors are logged and
+    raised without the address (a credential while it lasts). `fetch.stats`
+    counts the signatures and the retries."""
+    import requests
+
+    s = requests.Session() if session is None else session
+    address = [None]
+    stats = {"signs": 0, "retries": 0}
+    transient = (requests.ConnectionError, requests.Timeout,
+                 requests.exceptions.ChunkedEncodingError)
+
+    def what(err) -> str:
+        code = getattr(getattr(err, "response", None), "status_code", None)
+        return f"HTTP {code}" if code else type(err).__name__
+
+    def plain(err, n):
+        return type(err)(f"{what(err)} after {n} tr{'y' if n == 1 else 'ies'}",
+                         response=getattr(err, "response", None))
+
+    def call(do):
+        for i in range(tries):
+            try:
+                if address[0] is None:
+                    address[0] = sign()
+                    stats["signs"] += 1
+                r = do(address[0])
+                if r.status_code in (401, 403):          # the signature expired
+                    address[0] = None
+                r.raise_for_status()
+                return r
+            except requests.HTTPError as e:
+                code = None if e.response is None else e.response.status_code
+                if code is not None and 400 <= code < 500 and code not in (401, 403, 429):
+                    raise plain(e, i + 1) from None
+                err = e
+            except transient as e:
+                err = e
+            if i == tries - 1:
+                raise plain(err, tries) from None
+            stats["retries"] += 1
+            wait = 0.0 if address[0] is None else BACKOFF_S * 2 ** i
+            if log:
+                log(f"    {what(err)}: try {i + 2} of {tries}"
+                    f"{' with a new signature' if address[0] is None else ''}"
+                    f" in {wait:.0f} s", flush=True)
+            if wait:
+                sleep(wait)
+        raise AssertionError("unreachable")
+
+    def fetch(a: int, b: int) -> bytes:
+        def do(addr):
+            r = s.get(addr, headers={"Range": f"bytes={a}-{b}"}, timeout=timeout)
+            if r.ok and len(r.content) != b - a + 1:
+                raise requests.ConnectionError(f"bytes {a}-{b}: {len(r.content)} "
+                                               f"came back")
+            return r
+        return call(do).content
+
+    head = call(lambda addr: s.head(addr, allow_redirects=True, timeout=60))
+    fetch.stats = stats
+    return fetch, int(head.headers["Content-Length"])
+
+
+def open_half(match: str, half: int, tries: int = TRIES):
+    """A half's panorama (PyAV container), as `st.open_video` but read
+    through `resigning_fetch`."""
+    import av
+
+    path = st.video_path(match, half)
+    fetch, size = resigning_fetch(lambda: st.signed_url(path), tries=tries)
+    return av.open(st.RemoteFile(fetch=fetch, size=size))
+
+
 # ---- Cutting --------------------------------------------------------------------
 
 def stream_frames(container, first: int, last: int):
@@ -578,11 +696,13 @@ def assemble(crops, bg) -> np.ndarray:
 
 
 def cut(targets: list[dict], frames, first: int, last: int, box, out: Path,
-        match: str, half: int, write=None, log_every: int = 5000) -> list[dict]:
+        match: str, half: int, write=None, log_every: int = 5000, flush=None,
+        flush_every: int = FLUSH_EVERY) -> list[dict]:
     """Decode `frames` in order and write a strip per target, each once its
     background is ready; returns the targets written, with file, n_bg,
     has_prev, has_next. `box` is the pitch box the background is kept in
-    (every crop lies inside it)."""
+    (every crop lies inside it). `flush(done)` is called with the rows so
+    far every `flush_every` strips."""
     if write is None:
         def write(path, strip):
             cv2.imwrite(str(path), strip, [cv2.IMWRITE_JPEG_QUALITY, QUALITY])
@@ -610,6 +730,8 @@ def cut(targets: list[dict], frames, first: int, last: int, box, out: Path,
         write(out / name, assemble(crops, bg))
         done.append(dict(r, file=name, n_bg=int(n), has_prev=crops[0] is not None,
                          has_next=crops[2] is not None))
+        if flush is not None and len(done) % flush_every == 0:
+            flush(done)
 
     k = first - 1
     for k, fetch in frames:
@@ -640,18 +762,93 @@ def cut(targets: list[dict], frames, first: int, last: int, box, out: Path,
     return done
 
 
+def partial_path(out: Path, match: str, half: int, source: str, first: int,
+                 last: int) -> Path:
+    """Where a run keeps its finished rows until merged: by half, source and
+    frame range (the range is the background's, so it is in the strips)."""
+    end = "end" if last >= 10 ** 9 else str(last)
+    return out / f"strips_{match}_{half}_{source}_{first}-{end}.partial.parquet"
+
+
+def _save(table: pd.DataFrame, path: Path):
+    """Write a parquet whole or not at all: a crash leaves the old file."""
+    tmp = path.with_name(path.name + ".tmp")
+    table.to_parquet(tmp)
+    os.replace(tmp, path)
+
+
+@contextlib.contextmanager
+def _locked(out: Path):
+    """strips.parquet to one writer at a time (halves run side by side)."""
+    try:
+        import fcntl
+    except ImportError:                     # not POSIX: no lock
+        yield
+        return
+    with open(out / "strips.parquet.lock", "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+
+def resume_cut(out: Path, targets: list[dict], frames_from, first: int, last: int,
+               box, match: str, half: int, extra: dict, write=None,
+               flush_every: int = FLUSH_EVERY, log_every: int = 5000):
+    """`cut` that a crash costs minutes, not the half: the finished rows
+    (with `extra`: match, half, width, height, source, allow_any) are saved
+    to the run's `partial_path` every `flush_every` strips. Run again, it
+    keeps the saved rows whose JPEG exists and cuts the other targets only,
+    decoding from the first frame they need (`frames_from(k)`: the frames
+    from k on; the background range stays [first, last], so the strips are
+    those of an uninterrupted run). Returns (rows in the order of an
+    uninterrupted run, number of rows kept from the saved ones)."""
+    part = partial_path(out, match, half, extra["source"], first, last)
+    targets = sorted(targets, key=lambda r: r["frame"])
+    order = {strip_name(r, match, half): i for i, r in enumerate(targets)}
+    kept = []
+    if part.exists():
+        kept = [r for r in pd.read_parquet(part).to_dict("records")
+                if r["file"] in order and (out / r["file"]).exists()]
+    have = {r["file"] for r in kept}
+    todo = [r for r in targets if strip_name(r, match, half) not in have]
+    rows = []
+    cut.peak_samples = 0
+    if todo:
+        k0 = max(first, min(min(bg_sample_frames(r["frame"], first, last)[:1]
+                                + [r["frame"] - OFFSET]) for r in todo))
+        if kept:
+            print(f"  resuming: {len(kept)} strips saved, {len(todo)} to cut, "
+                  f"decoding from frame {k0}", flush=True)
+
+        def flush(done):
+            _save(pd.DataFrame(kept + [dict(r, **extra) for r in done]), part)
+
+        rows = cut(todo, frames_from(k0), first, last, box, out, match, half,
+                   write=write, log_every=log_every, flush=flush,
+                   flush_every=flush_every)
+    rows = kept + [dict(r, **extra) for r in rows]
+    rows.sort(key=lambda r: order[r["file"]])
+    return rows, len(kept)
+
+
 def merge(out: Path, rows: list[dict], match: str, half: int, first: int,
-          last: int) -> pd.DataFrame:
+          last: int, kinds=KINDS, source: str | None = None) -> pd.DataFrame:
     """strips.parquet with this run's rows replacing the earlier ones of
-    the same half and frame range."""
+    the same half, frame range, kinds and source (any source when None);
+    the other kinds' and sources' rows stay."""
     table = pd.DataFrame(rows)
     path = out / "strips.parquet"
-    if path.exists():
-        old = pd.read_parquet(path)
-        keep = ~((old.match.astype(str) == match) & (old.half == half)
-                 & old.frame.between(first, last))
-        table = pd.concat([old[keep], table], ignore_index=True)
-    table.to_parquet(path)
+    with _locked(out):
+        if path.exists():
+            old = pd.read_parquet(path)
+            mine = ((old.match.astype(str) == match) & (old.half == half)
+                    & old.frame.between(first, last) & old.kind.isin(list(kinds)))
+            if source is not None and "source" in old:
+                mine &= old.source.astype(str) == source
+            table = pd.concat([old[~mine], table], ignore_index=True)
+        _save(table, path)
     return table
 
 
@@ -669,6 +866,9 @@ def main():
                     "and places) instead of drawing new ones")
     ap.add_argument("--allow-any", action="store_true",
                     help="--window of a match not trained on (smoke / mismatch checks)")
+    ap.add_argument("--flush-every", type=int, default=FLUSH_EVERY,
+                    help="strips between saves of the finished rows (resumed after "
+                    "a crash by running the same command)")
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     if args.check:
@@ -689,11 +889,12 @@ def main():
         match, half, source = str(args.match), args.half, "stream"
         first, last, W, H = 0, 10 ** 9, None, None
     check_allowed(match, half, bool(args.window), args.allow_any)
+    check_source(out, source)
     if args.frames:
         first, last = max(first, args.frames[0]), min(last, args.frames[1])
     container = None
     if not args.window:
-        container = st.open_video(match, half)
+        container = open_half(match, half)
         cc = container.streams.video[0].codec_context
         W, H = cc.width, cc.height
     poly = np.asarray(outline(match, half, W, H), np.float32)
@@ -722,23 +923,27 @@ def main():
           f"{'end' if last >= 10 ** 9 else last}: {len(targets)} samples "
           f"of {n_all}", flush=True)
     t0 = time.time()
-    try:
+    extra = dict(match=match, half=half, width=W, height=H, source=source,
+                 allow_any=bool(args.allow_any))
+
+    def frames_from(k0):
         if args.window:
-            frames = window_frames(DATA_DIR / "soccertrack_v2" / f"{args.window}.mp4",
-                                   start, first, last)
-        else:
-            frames = stream_frames(container, first, last)
-        rows = cut(targets, frames, first, last, box, out, match, half)
+            return window_frames(DATA_DIR / "soccertrack_v2" / f"{args.window}.mp4",
+                                 start, k0, last)
+        return stream_frames(container, k0, last)
+
+    try:
+        rows, resumed = resume_cut(out, targets, frames_from, first, last, box, match,
+                                   half, extra, flush_every=args.flush_every)
     finally:
         if container is not None:
             container.close()
-    for r in rows:
-        r.update(match=match, half=half, width=W, height=H, source=source,
-                 allow_any=bool(args.allow_any))
-    merge(out, rows, match, half, first, last)
+    merge(out, rows, match, half, first, last, args.kinds, source)
+    partial_path(out, match, half, source, first, last).unlink(missing_ok=True)
     t = pd.DataFrame(rows)
     if len(t):
-        print(f"  {len(t)} strips in {time.time() - t0:.0f} s: "
+        print(f"  {len(t)} strips in {time.time() - t0:.0f} s"
+              f"{f' ({resumed} from the interrupted run)' if resumed else ''}: "
               f"{t.kind.value_counts().to_dict()}; background < {BG_MIN} samples "
               f"on {(t.n_bg < BG_MIN).mean():.1%}, no t-2 / t+2 on "
               f"{(~t.has_prev | ~t.has_next).mean():.1%}; at most "
@@ -797,12 +1002,63 @@ def synthetic_half(seed: int = 0):
     return Half("118575", 1, cal=cal, ev=ev, people=people, ball=ball), gsr
 
 
+class _FlakyServer:
+    """A local file served as the CDN serves a half, for `resigning_fetch`
+    (as `session`, with `sign`): every address signed so far stops working
+    (403) at GET number `expire_at`, GET number `timeout_at` times out, and
+    GETs numbered in `fail` get that status instead of the bytes."""
+
+    def __init__(self, path, expire_at=None, timeout_at=None, fail=None):
+        self.data = Path(path).read_bytes()
+        self.expire_at, self.timeout_at = expire_at, timeout_at
+        self.fail = dict(fail or {})
+        self.valid, self.signs, self.n = set(), 0, 0
+
+    def sign(self) -> str:
+        self.signs += 1
+        address = f"https://cdn.invalid/half.mp4?Signature={self.signs}"
+        self.valid.add(address)
+        return address
+
+    @staticmethod
+    def _response(address, status, content=b"", length=None):
+        import requests
+
+        r = requests.Response()
+        r.status_code, r._content, r.url = status, content, address
+        r.headers["Content-Length"] = str(len(content) if length is None else length)
+        return r
+
+    def head(self, address, **kw):
+        return self._response(address, 200 if address in self.valid else 403,
+                              length=len(self.data))
+
+    def get(self, address, headers=None, timeout=None):
+        import requests
+
+        self.n += 1
+        if self.n == self.expire_at:
+            self.valid.clear()
+        if self.n == self.timeout_at:
+            raise requests.Timeout("read timed out (injected)")
+        if self.n in self.fail:
+            return self._response(address, self.fail[self.n])
+        if address not in self.valid:
+            return self._response(address, 403)
+        a, b = (int(x) for x in headers["Range"].split("=")[1].split("-"))
+        return self._response(address, 206, self.data[a:b + 1])
+
+
 def _check():
     """Samples, placement and cutting on a synthetic half: the passes give
     the right flight / lofted / dribble / action samples at the right
     frames, free strips keep 12 m from the ball, crops sit inside the pitch
     box near their bag, and the decode writes [t-2 | t | t+2 | B] with B the
-    median of the 50-frame samples (the moving ball gone)."""
+    median of the 50-frame samples (the moving ball gone). Then the run's
+    safety: a video read through expiring signatures and a timeout decodes
+    to the same frames; a run that crashes and is run again gives the same
+    strips and strips.parquet; a rebuild of some kinds keeps the others'
+    rows; stream and window strips do not share a directory."""
     import contextlib
     import io
     import tempfile
@@ -931,11 +1187,155 @@ def _check():
     assert cut.peak_samples <= 2 * 350 // BG_STEP + 3, cut.peak_samples
     # Read back (luminance: JPEG halves the colour of this noise texture).
     assert np.abs(grey(back).astype(int) - grey(got[done2[0]["file"]])).mean() < 2
+
+    # Crash and resume: a run that dies after some saves and is run again
+    # gives the JPEGs and strips.parquet of an uninterrupted run, cutting
+    # only what was not saved and decoding from the first frame it needs.
+    extra = dict(match="118575", half=1, width=W, height=H, source="stream",
+                 allow_any=False)
+    late = targets + [_row("action", 1900, 400, 200), _row("free", 2000, 700, 250),
+                      _row("action", 2390, 400, 200)]
+
+    def run(d, crash_at=None, flush_every=4):
+        log = {"decoded": [], "written": 0}
+
+        def frames_from(k0):
+            for k, fetch in frames(k0, 2399):
+                if k == crash_at:
+                    raise RuntimeError("crash (injected)")
+                log["decoded"].append(k)
+                yield k, fetch
+
+        def write(path, strip):
+            log["written"] += 1
+            cv2.imwrite(str(path), strip, [cv2.IMWRITE_JPEG_QUALITY, QUALITY])
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            rows_, kept = resume_cut(d, late, frames_from, 1000, 2399, box, "118575",
+                                     1, extra, write=write, flush_every=flush_every,
+                                     log_every=0)
+        merge(d, rows_, "118575", 1, 1000, 2399, KINDS, "stream")
+        partial_path(d, "118575", 1, "stream", 1000, 2399).unlink(missing_ok=True)
+        return kept, log
+
+    with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+        a, b = Path(a), Path(b)
+        kept, log_a = run(a)
+        assert kept == 0 and log_a["decoded"][0] == 1000
+        part = partial_path(b, "118575", 1, "stream", 1000, 2399)
+        try:
+            run(b, crash_at=2000)
+            raise AssertionError("no crash")
+        except RuntimeError:
+            pass
+        saved = pd.read_parquet(part)
+        assert not (b / "strips.parquet").exists() and len(saved) % 4 == 0
+        assert 0 < len(saved) < len(late), len(saved)
+        kept, log_b = run(b)
+        assert kept == len(saved) and log_b["written"] == len(late) - kept
+        assert log_b["decoded"][0] > 1000 and not part.exists()
+        ta = pd.read_parquet(a / "strips.parquet")
+        tb = pd.read_parquet(b / "strips.parquet")
+        pd.testing.assert_frame_equal(ta, tb)
+        assert len(ta) == len(late)
+        files = sorted(p.name for p in a.glob("*.jpg"))
+        assert files == sorted(p.name for p in b.glob("*.jpg")) == sorted(ta.file)
+        assert all((a / f).read_bytes() == (b / f).read_bytes() for f in files)
+        n_resumed, k_resumed = kept, log_b["decoded"][0]
+
+        # Rebuilding some kinds keeps the other kinds' rows, and another
+        # source's rows, of the same half and range.
+        free = ta[ta.kind == "free"].to_dict("records")
+        merge(a, free[:1], "118575", 1, 1000, 2399, ("free",), "stream")
+        t2 = pd.read_parquet(a / "strips.parquet")
+        assert (t2.kind != "free").sum() == (ta.kind != "free").sum()
+        assert (t2.kind == "free").sum() == 1
+        merge(a, [dict(free[0], source="st2_w")], "118575", 1, 1000, 2399, ("free",),
+              "st2_w")
+        merge(a, free[1:2], "118575", 1, 1000, 2399, ("free",), "stream")
+        t3 = pd.read_parquet(a / "strips.parquet")
+        assert t3.groupby("source").size().to_dict() == {"st2_w": 1, "stream": len(t2)}
+        merge(a, free[:1], "118575", 1, 1000, 2399)      # all kinds and sources
+        assert len(pd.read_parquet(a / "strips.parquet")) == 1
+
+        # One source per directory: window strips are refused where stream
+        # strips are (in strips.parquet or an interrupted run's rows), and
+        # the other way round.
+        c = b / "w"
+        c.mkdir()
+        for d, src in ((c, "stream"), (c, "st2_w"), (b, "stream")):
+            check_source(d, src)
+        for d, src in ((b, "st2_118575_1st_f015000"),):
+            try:
+                check_source(d, src)
+                raise AssertionError(f"{src} into a stream directory")
+            except SystemExit:
+                pass
+        _save(saved.assign(source="st2_w"), partial_path(c, "118575", 1, "st2_w", 0, 99))
+        try:
+            check_source(c, "stream")
+            raise AssertionError("stream into a window directory")
+        except SystemExit:
+            pass
+        (b / "strips.parquet").unlink()
+        _save(saved, part)
+        try:
+            check_source(b, "st2_w")
+            raise AssertionError("window next to an interrupted stream run")
+        except SystemExit:
+            pass
+
+    # Streaming: a video served with all signatures expiring mid-decode
+    # (403) and a timeout decodes to the frames of the local file; a 404 is
+    # raised at once, a 503 that lasts after TRIES tries with doubling waits.
+    import av
+    import requests
+
+    with tempfile.TemporaryDirectory() as tmp:
+        mp4 = Path(tmp) / "half.mp4"
+        vw = cv2.VideoWriter(str(mp4), cv2.VideoWriter_fourcc(*"mp4v"), 25, (320, 240))
+        for k in range(60):
+            vw.write(np.roll(base[:240, :320], 5 * k, axis=1))
+        vw.release()
+        with av.open(str(mp4)) as cont:
+            ref = [f() for _, f in stream_frames(cont, 0, 10 ** 9)]
+        server = _FlakyServer(mp4, expire_at=20, timeout_at=30)
+        waits, logged = [], []
+        fetch, size = resigning_fetch(server.sign, session=server, sleep=waits.append,
+                                      log=lambda m, **k: logged.append(m))
+        with av.open(st.RemoteFile(fetch=fetch, size=size, block=4096)) as cont:
+            got = [(k, f()) for k, f in stream_frames(cont, 0, 10 ** 9)]
+        assert [k for k, _ in got] == list(range(60)) and len(ref) == 60
+        assert all((g == r).all() for (_, g), r in zip(got, ref))
+        assert server.n > 30 and server.signs == 2 and waits == [BACKOFF_S]
+        assert fetch.stats == {"signs": 2, "retries": 2}, fetch.stats
+        server.fail = {server.n + 1: 404}
+        try:
+            fetch(0, 99)
+            raise AssertionError("a 404 was not raised")
+        except requests.HTTPError as e:
+            assert e.response.status_code == 404 and server.n == max(server.fail)
+            logged.append(str(e))
+        server.fail = {server.n + k: 503 for k in range(1, 20)}
+        waits.clear()
+        n0 = server.n
+        try:
+            fetch(0, 99)
+            raise AssertionError("a lasting 503 was not raised")
+        except requests.HTTPError as e:
+            assert e.response.status_code == 503 and server.n - n0 == TRIES
+            logged.append(str(e))
+        assert waits == [BACKOFF_S * 2 ** i for i in range(TRIES - 1)], waits
+        assert len(logged) == 2 + TRIES - 1 + 2
+        assert not any("cdn.invalid" in m or "Signature" in m for m in logged), logged
     print(f"  build_ball_strips: {by} samples on a synthetic half (flight "
           f"completed + intercepted, lofted, dribble, actions, free 12 m from the "
           f"ball); {len(done)} strips cut with t-2 / t / t+2 / median background, "
-          f"edges and short backgrounds as zero motion; "
-          f"{time.time() - t_start:.1f} s")
+          f"edges and short backgrounds as zero motion; a crash resumed "
+          f"({n_resumed} strips kept, decoding from {k_resumed}) gives the same "
+          f"strips and strips.parquet; a rebuild of one kind keeps the others; one "
+          f"source per directory; 60 frames read through an expiring signature "
+          f"and a timeout as from the file; {time.time() - t_start:.1f} s")
 
 
 if __name__ == "__main__":

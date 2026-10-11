@@ -47,15 +47,23 @@ Also:
 - `--sigma`: the scales of the motion channels (`motion_bg`) on 1,000
   strips' pitch pixels, for `ball_heatmap.SIGMA_D` / `SIGMA_F` (printed,
   not written);
-- `--compare-window W --strips-a A --strips-b B`: the same statistics for
-  strips cut at the same places from the source stream (A) and from the
-  local window (B), and the ratio of the D scales;
+- `--compare-window W --strips-a A [--strips-b B]`: the seam between
+  training and inference on a training window W. The training input is
+  the stream strips A (crops of the source stream, JPEG q98, background
+  over the half); the inference input is W's frames decoded with OpenCV
+  at the same crops, raw (no JPEG), background over the window, as
+  `detect_v2` builds it. Per channel (D, F), on the same pitch pixels:
+  std, robust std, share of exact zeros; and the ratio of the D stds,
+  inference / training. With B (window strips, `build_ball_strips.py
+  --window W --like A`), also B against A as before (JPEG on both sides);
 - `--t-stats DIR`: where the visually confirmed balls in flight of the T
   judgements (DIR/tiles_ff) are, relative to their pass;
 - `--montage PNG`: strips with their codes drawn over the t crop.
 
     python label_ball_strips.py --strips DIR [--coco] [--holdout 300]
     python label_ball_strips.py --strips DIR --sigma
+    python label_ball_strips.py --compare-window st2_118577_1st_f030000 \\
+        --strips-a DIR [--strips-b DIR_W]
     python label_ball_strips.py --check
 """
 
@@ -571,6 +579,21 @@ def pitch_mask(poly, x0: int, y0: int) -> np.ndarray:
     return m.astype(bool)
 
 
+def _collect(out: dict, r, m: np.ndarray):
+    """Add a strip's channels at its picked pixels (N x 3) to `out`: D- and
+    D+ where t-2 / t+2 exist, F where the background has >= BG_MIN samples."""
+    if r.has_prev:
+        out["D"].append(m[:, 0])
+    if r.has_next:
+        out["D"].append(m[:, 1])
+    if r.n_bg >= BG_MIN:
+        out["F"].append(m[:, 2])
+
+
+def _joined(out: dict) -> dict:
+    return {k: np.concatenate(v) if v else np.zeros(0, np.float32) for k, v in out.items()}
+
+
 def channel_values(root: Path, rows: pd.DataFrame, rng, per_strip: int = SIGMA_PIXELS,
                    pick=None):
     """Raw motion channels (sigma 1: units of 255) at pitch pixels of each
@@ -594,14 +617,8 @@ def channel_values(root: Path, rows: pd.DataFrame, rng, per_strip: int = SIGMA_P
             idx = rng.choice(idx, min(per_strip, len(idx)), replace=False)
         else:
             idx = pick(r, polys[key])
-        m = m.reshape(-1, 3)[idx]
-        if r.has_prev:
-            out["D"].append(m[:, 0])
-        if r.has_next:
-            out["D"].append(m[:, 1])
-        if r.n_bg >= BG_MIN:
-            out["F"].append(m[:, 2])
-    return {k: np.concatenate(v) if v else np.zeros(0, np.float32) for k, v in out.items()}
+        _collect(out, r, m.reshape(-1, 3)[idx])
+    return _joined(out)
 
 
 def scale_stats(x: np.ndarray) -> dict:
@@ -653,35 +670,136 @@ def sigma_of(s: dict) -> tuple[float, str]:
     return s["robust"], f"robust std (1.4826 MAD); std {s['std']:.4f}"
 
 
-def compare_window(window: str, dir_a: Path, dir_b: Path, seed: int = 0) -> dict:
-    """Strips cut at the same frames and places from the source stream (A)
-    and from the local window (B, `build_ball_strips.py --window W --like
-    A`): the motion channels' statistics on the same pitch pixels, the
-    ratio of the D scales (B / A), and the codec gap between the t crops."""
-    info = json.loads((DATA_DIR / "soccertrack_v2" / f"{window}.json").read_text())
+def window_values(video, info: dict, rows: pd.DataFrame, picks: dict, box):
+    """The inference input at the crops of `rows` (frame, kind, x0, y0):
+    the window video decoded with OpenCV as the detectors read it, frames
+    t-2, t, t+2 raw (no JPEG), the background B_t over the window
+    (`motion_bg.BackgroundCache`), i.e. what `detect_v2` builds there.
+    Decoded by `build_ball_strips.cut`, as a window strip is, but kept in
+    memory. Returns ({(frame, kind, x0, y0): raw channels (sigma 1) at
+    `picks[(frame, x0, y0)]`, N x 3}, a table of each crop's has_prev,
+    has_next and n_bg on the window)."""
     match, half = str(info["match"]), int(info["half"])
+    lo = int(info["start_frame"])
+    hi = lo + int(info["frames"]) - 1
+    targets = [{"frame": int(r.frame), "kind": r.kind, "x0": int(r.x0), "y0": int(r.y0)}
+               for r in rows.itertuples()]
+    out = [t for t in targets if not (box[0] <= t["x0"] and t["x0"] + SIZE <= box[2]
+                                      and box[1] <= t["y0"] and t["y0"] + SIZE <= box[3])]
+    if out:
+        raise ValueError(f"{len(out)} crops outside the pitch box {box}, e.g. {out[0]}")
+    key = {bs.strip_name(t, match, half): (t["frame"], t["kind"], t["x0"], t["y0"])
+           for t in targets}
+    vals = {}
+
+    def keep(path, strip):
+        k = key[path.name]
+        m = motion_channels(*split(strip), sigma_d=1.0, sigma_f=1.0)
+        vals[k] = m.reshape(-1, 3)[picks[(k[0], k[2], k[3])]]
+
+    done = bs.cut(targets, bs.window_frames(video, lo, lo, hi), lo, hi, box, Path("."),
+                  match, half, write=keep, log_every=0)
+    return vals, pd.DataFrame(done, columns=["frame", "kind", "x0", "y0", "has_prev",
+                                             "has_next", "n_bg"])
+
+
+def compare_window(window: str, dir_a: Path, dir_b: Path | None = None, seed: int = 0,
+                   info: dict | None = None, video=None) -> dict:
+    """The seam between training and inference, on a training window. The
+    training input is the stream strips (A: crops decoded from the source
+    stream, JPEG q98, background over the half); the inference input is
+    the window video at the same frames and crops, decoded with OpenCV, no
+    JPEG, background over the window (`window_values`). Per channel (D:
+    D- and D+; F), on the same pitch pixels and only where both sides have
+    the channel: std, robust std (1.4826 MAD), share of exact zeros, and
+    the ratio of the stds, inference / training. With `dir_b` (window
+    strips, `build_ball_strips.py --window W --like A`), also the window
+    strips against the stream strips and the codec gap between their t
+    crops, as before. Training halves only: there are no stream strips of
+    the others, and U / V windows are not looked at."""
+    if info is None:
+        info = json.loads((DATA_DIR / "soccertrack_v2" / f"{window}.json").read_text())
+    video = DATA_DIR / "soccertrack_v2" / f"{window}.mp4" if video is None else video
+    match, half = str(info["match"]), int(info["half"])
+    if half not in V2_TRAIN.get(match, ()):
+        raise SystemExit(f"{window}: match {match} half {half} is not a v2 training "
+                         f"half; the stream-vs-window check runs on training windows")
     lo, hi = int(info["start_frame"]), int(info["start_frame"]) + int(info["frames"]) - 1
+    W, H = int(info["width"]), int(info["height"])
     key = ["match", "half", "frame", "kind", "x0", "y0"]
 
-    def load(d):
+    def load(d, stream_only=False):
         t = pd.read_parquet(Path(d) / "strips.parquet")
         t["match"] = t.match.astype(str)
-        return t[(t.match == match) & (t.half == half) & t.frame.between(lo, hi)]
+        t = t[(t.match == match) & (t.half == half) & t.frame.between(lo, hi)]
+        return t[t.source.astype(str) == "stream"] if stream_only else t
 
-    a, b = load(dir_a), load(dir_b)
-    pairs = a.merge(b, on=key, suffixes=("_a", "_b"))
-    if not len(pairs):
-        print(f"  {window}: no strips in common")
+    a = load(dir_a, stream_only=True)
+    if not len(a):
+        print(f"  {window}: no stream strips in {dir_a} at its frames")
         return {}
+    poly = bs.outline(match, half, W, H)
     rng = np.random.default_rng(seed)
     picks = {}
-
-    def pick(r, poly):
-        k = (r.frame, r.x0, r.y0)
+    for r in a.itertuples():
+        k = (int(r.frame), int(r.x0), int(r.y0))
         if k not in picks:
             idx = np.flatnonzero(pitch_mask(poly, r.x0, r.y0))
             picks[k] = rng.choice(idx, min(SIGMA_PIXELS, len(idx)), replace=False)
-        return picks[k]
+
+    def pick(r, _poly):
+        return picks[(int(r.frame), int(r.x0), int(r.y0))]
+
+    def ratio(x: dict, y: dict, k: str):
+        return (y[k] / x[k] if x.get("n") and y.get("n") and x[k] > 0 and y[k] > 0
+                else None)
+
+    def num(x, why="n/a"):
+        return why if x is None else f"{x:.3f}"
+
+    # Training (stream strips) against inference (raw window), on the
+    # channels both have.
+    vals, flags = window_values(video, info, a, picks, bs.pitch_box((H, W), poly))
+    both = a.merge(flags, on=["frame", "kind", "x0", "y0"], suffixes=("", "_w"))
+    for c in ("has_prev", "has_next"):
+        both[c] = both[c].astype(bool) & both[c + "_w"].astype(bool)
+    both["n_bg"] = np.minimum(both.n_bg, both.n_bg_w)
+    va = channel_values(Path(dir_a), both, rng, pick=pick)
+    vr = {"D": [], "F": []}
+    for r in both.itertuples():
+        _collect(vr, r, vals[(int(r.frame), r.kind, int(r.x0), int(r.y0))])
+    sa = {k: scale_stats(v) for k, v in va.items()}
+    sr = {k: scale_stats(v) for k, v in _joined(vr).items()}
+    rr = {k: {"std": ratio(sa[k], sr[k], "std"), "robust": ratio(sa[k], sr[k], "robust")}
+          for k in ("D", "F")}
+    print(f"  {window}: {len(both)} stream strips in the window (D on "
+          f"{int((both.has_prev | both.has_next).sum())}, F on "
+          f"{int((both.n_bg >= BG_MIN).sum())}). Training input: the strips (source "
+          f"stream, JPEG q{bs.QUALITY}, background over the half); inference input: "
+          f"the window decoded with OpenCV at the same crops (no JPEG, background "
+          f"over the window)")
+    for k in ("D", "F"):
+        print(f"    {k} training (stream strips): {_fmt(sa[k])}")
+        print(f"    {k} inference (raw window):   {_fmt(sr[k])}")
+    print(f"  D std ratio (inference raw window / training strips): "
+          f"{num(rr['D']['std'], 'n/a (no D values)')}")
+    print(f"  F std ratio {num(rr['F']['std'], 'n/a (no F values)')}; robust std "
+          f"ratios D {num(rr['D']['robust'])}, F {num(rr['F']['robust'])} (n/a: a MAD "
+          f"is 0); exact zeros D {sa['D'].get('zero', np.nan):.0%} / "
+          f"{sr['D'].get('zero', np.nan):.0%}. Outside 1/1.5-1.5, the critique's x264 "
+          f"augmentation is due")
+    result = {"a": sa, "raw": sr, "ratio_raw": rr, "n": int(len(both))}
+    if dir_b is None:
+        return result
+
+    # Secondary, as before: the window strips (B: JPEG of the window)
+    # against the stream strips.
+    b = load(dir_b)
+    b = b[b.source.astype(str) == window]
+    pairs = a.merge(b, on=key, suffixes=("_a", "_b"))
+    if not len(pairs):
+        print(f"  {window}: no window strips in {dir_b} at the stream strips' places")
+        return result
 
     def side(s):
         cols = {c[:-2]: pairs[c] for c in pairs.columns if c.endswith(s)}
@@ -701,26 +819,24 @@ def compare_window(window: str, dir_a: Path, dir_b: Path, seed: int = 0) -> dict
         ga = grey(split(cv2.imread(str(Path(dir_a) / r.file_a)))[1]).astype(int)
         gb = grey(split(cv2.imread(str(Path(dir_b) / r.file_b)))[1]).astype(int)
         gap.append(np.abs(ga - gb).mean())
-    print(f"  {window}: {len(pairs)} strips at the same frames and places "
-          f"(A {len(a)}, B {len(b)}); t crops differ by {np.mean(gap):.2f} grey "
-          f"levels on average")
+    print(f"  window strips (B, {dir_b}): {len(pairs)} at the stream strips' frames "
+          f"and places (A {len(a)}, B {len(b)}); t crops differ by "
+          f"{np.mean(gap):.2f} grey levels on average")
     for k in ("D", "F"):
-        print(f"    {k} stream (A): {_fmt(sa[k])}")
-        print(f"    {k} window (B): {_fmt(sb[k])}")
-    ratio = {}
+        print(f"    {k} stream strips (A): {_fmt(sa[k])}")
+        print(f"    {k} window strips (B): {_fmt(sb[k])}")
+    rb = {}
     if sa["D"].get("n") and sb["D"].get("n"):
         a_, b_ = sa["D"], sb["D"]
-        ratio = {"std": b_["std"] / max(a_["std"], 1e-12),
-                 "mean_abs": b_["mean_abs"] / max(a_["mean_abs"], 1e-12),
-                 "robust": (b_["robust"] / a_["robust"]
-                            if a_["robust"] > 0 and b_["robust"] > 0 else None)}
-        rob = ("n/a (a MAD is 0: exact zeros)" if ratio["robust"] is None
-               else f"{ratio['robust']:.2f}")
-        print(f"  D-scale ratio window / stream: {ratio['std']:.2f} (std), "
-              f"{ratio['mean_abs']:.2f} (mean |D|), {rob} (robust std); exact zeros "
-              f"{a_['zero']:.0%} / {b_['zero']:.0%}. Outside 1/1.5-1.5, the "
-              f"critique's x264 augmentation is due")
-    return {"a": sa, "b": sb, "ratio": ratio, "codec_gap": float(np.mean(gap))}
+        rb = {"std": b_["std"] / max(a_["std"], 1e-12),
+              "mean_abs": b_["mean_abs"] / max(a_["mean_abs"], 1e-12),
+              "robust": ratio(a_, b_, "robust")}
+        print(f"  D-scale ratio window strips / stream strips: {rb['std']:.2f} (std), "
+              f"{rb['mean_abs']:.2f} (mean |D|), "
+              f"{num(rb['robust'], 'n/a (a MAD is 0: exact zeros)')} (robust std); "
+              f"exact zeros {a_['zero']:.0%} / {b_['zero']:.0%} (both JPEG: the "
+              f"inference ratio above is the one that counts)")
+    return dict(result, a_strips=sa, b=sb, ratio=rb, codec_gap=float(np.mean(gap)))
 
 
 # ---- The T judgements -------------------------------------------------------------
@@ -880,9 +996,11 @@ def main():
                     help="label strips of halves not trained on (smoke tests)")
     ap.add_argument("--sigma", action="store_true",
                     help="measure the motion channels' scales instead of labelling")
-    ap.add_argument("--compare-window")
-    ap.add_argument("--strips-a")
-    ap.add_argument("--strips-b")
+    ap.add_argument("--compare-window", help="a training window: its raw frames "
+                    "(inference input) against the stream strips (training input)")
+    ap.add_argument("--strips-a", help="stream strips (training) covering the window")
+    ap.add_argument("--strips-b", help="optional: window strips at the same places "
+                    "(build_ball_strips.py --window W --like A)")
     ap.add_argument("--t-stats", help="the scratchpad dir holding tiles_ff")
     ap.add_argument("--montage", help="draw labelled strips into this PNG")
     ap.add_argument("--montage-n", type=int, default=8)
@@ -895,10 +1013,10 @@ def main():
         t_stats(Path(args.t_stats))
         return
     if args.compare_window:
-        if not (args.strips_a and args.strips_b):
-            ap.error("--compare-window needs --strips-a and --strips-b")
-        compare_window(args.compare_window, Path(args.strips_a), Path(args.strips_b),
-                       args.seed)
+        if not args.strips_a:
+            ap.error("--compare-window needs --strips-a (and optionally --strips-b)")
+        compare_window(args.compare_window, Path(args.strips_a),
+                       Path(args.strips_b) if args.strips_b else None, args.seed)
         return
     if not args.strips:
         ap.error("--strips DIR is needed")
@@ -921,7 +1039,8 @@ def _check():
     crop that misses the bag is dropped; the lofted curtain is ignored; the
     v1 action rule (and the throw-in's tall bag); a positive-only dribble;
     free strips with bodies, landmarks and a COCO ignore disk; the holdout
-    by kind; the motion scales of known noise."""
+    by kind; the motion scales of known noise; the stream-vs-window seam
+    (`compare_window`) against the raw window frames."""
     import tempfile
     from types import SimpleNamespace as NS
 
@@ -1076,11 +1195,115 @@ def _check():
         st_meta.to_parquet(tmp / "strips.parquet")
         img = cv2.imread(str(montage(tmp, tmp / "m.png", n=3)))
         assert img.shape == (3 * (SIZE + 26), 4 * SIZE, 3)
+
+    # The seam (--compare-window) on a synthetic training window (MJPG, a
+    # still texture with frame noise): the inference side is exactly the
+    # motion channels of the raw OpenCV crops with the window's background;
+    # stream strips cut from the same frames (JPEG q98) give a D std ratio
+    # near 1, from noisier frames well below 1; window strips identical to
+    # the stream strips give 1 and no codec gap; only stream rows count as
+    # training input; a half not trained on is refused.
+    import contextlib
+    import io
+    import shutil
+
+    from src.motion_bg import bg_sample_frames, median_u8
+
+    W_, H_, lo_, n_ = 800, 400, 1000, 360
+    wpoly = np.array([[80, 70], [720, 70], [780, 390], [20, 390]], np.float32)
+    wbox = bs.pitch_box((H_, W_), wpoly)
+    info = {"match": "118575", "half": 1, "start_frame": lo_, "frames": n_,
+            "width": W_, "height": H_}
+    targets = [{"frame": 1050, "kind": "free", "x0": 100, "y0": 60},
+               {"frame": 1200, "kind": "action", "x0": 400, "y0": 70}]
+    extra = dict(match="118575", half=1, width=W_, height=H_, allow_any=False)
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        video = tmp / "st2_synth.avi"
+        tex = cv2.GaussianBlur(rng.integers(40, 200, (H_, W_, 3)).astype(np.uint8),
+                               (0, 0), 2)
+        still = [np.clip(tex + rng.normal(0, 3, (H_, W_, 1)), 0, 255).astype(np.uint8)
+                 for _ in range(8)]
+        vw = cv2.VideoWriter(str(video), cv2.VideoWriter_fourcc(*"MJPG"), 25, (W_, H_))
+        for k in range(n_):
+            vw.write(still[k % 8])
+        vw.release()
+        loud = [rng.normal(0, 8, (H_, W_, 1)) for _ in range(5)]
+
+        def frames(noisy=False):
+            for k, f in bs.window_frames(video, lo_, lo_, lo_ + n_ - 1):
+                yield k, (f if not noisy else (lambda f=f, k=k: np.clip(
+                    f() + loud[k % 5], 0, 255).astype(np.uint8)))
+
+        def strips(d, source, noisy=False):
+            d.mkdir()
+            rows = bs.cut(targets, frames(noisy), lo_, lo_ + n_ - 1, wbox, d,
+                          "118575", 1, log_every=0)
+            pd.DataFrame([dict(r, **extra, source=source) for r in rows]) \
+                .to_parquet(d / "strips.parquet")
+            return rows
+
+        a_dir, b_dir, n_dir = tmp / "a", tmp / "b", tmp / "n"
+        assert len(strips(a_dir, "stream")) == 2
+        strips(n_dir, "stream", noisy=True)
+        shutil.copytree(a_dir, b_dir)
+        pd.read_parquet(b_dir / "strips.parquet").assign(source="st2_synth") \
+            .to_parquet(b_dir / "strips.parquet")
+
+        # Inference side, against the channels built here from cv2 frames.
+        need = {k for t in targets
+                for k in (t["frame"] - 2, t["frame"], t["frame"] + 2,
+                          *bg_sample_frames(t["frame"], lo_, lo_ + n_ - 1))}
+        cap, got = cv2.VideoCapture(str(video)), {}
+        for k in range(lo_, lo_ + n_):
+            image = cap.read()[1]
+            if k in need:
+                got[k] = image
+        cap.release()
+        everything = {(t["frame"], t["x0"], t["y0"]): np.arange(SIZE * SIZE)
+                      for t in targets}
+        vals, flags = window_values(video, info, pd.DataFrame(targets), everything, wbox)
+        assert flags.has_prev.all() and flags.has_next.all() and (flags.n_bg == 8).all()
+        for t in targets:
+            f, x0, y0 = t["frame"], t["x0"], t["y0"]
+            crop = [got[k][y0:y0 + SIZE, x0:x0 + SIZE] for k in (f - 2, f, f + 2)]
+            bg = median_u8([grey(got[k])[y0:y0 + SIZE, x0:x0 + SIZE]
+                            for k in bg_sample_frames(f, lo_, lo_ + n_ - 1)])
+            want = motion_channels(*crop, bg, sigma_d=1.0, sigma_f=1.0)
+            assert np.array_equal(vals[(f, t["kind"], x0, y0)], want.reshape(-1, 3))
+
+        bs_outline = bs.outline
+        bs.outline = lambda *a: wpoly.tolist()        # the synthetic pitch
+        try:
+            log = io.StringIO()
+            with contextlib.redirect_stdout(log):
+                same = compare_window("st2_synth", a_dir, b_dir, info=info, video=video)
+                loud_ = compare_window("st2_synth", n_dir, info=info, video=video)
+                none = compare_window("st2_synth", b_dir, info=info, video=video)
+            try:
+                compare_window("st2_synth", a_dir, info=dict(info, match="118578"),
+                               video=video)
+                raise AssertionError("a never-train window compared")
+            except SystemExit:
+                pass
+        finally:
+            bs.outline = bs_outline
+        r_same, r_loud = same["ratio_raw"]["D"]["std"], loud_["ratio_raw"]["D"]["std"]
+        assert same["n"] == 2 and same["a"]["D"]["n"] == same["raw"]["D"]["n"] > 0
+        assert same["raw"]["F"]["n"] > 0 and same["raw"]["D"]["zero"] < 0.5
+        assert 0.85 < r_same < 1.15 and r_loud < 0.6, (r_same, r_loud)
+        assert same["ratio"]["std"] == 1.0 and same["codec_gap"] == 0.0
+        assert "b" not in loud_ and none == {}
+        lines = [x for x in log.getvalue().splitlines()
+                 if "D std ratio (inference raw window / training strips): " in x]
+        assert len(lines) == 2 and lines[0].endswith(f"{r_same:.3f}"), lines
     print(f"  label_ball_strips: flight bag along the pass at t_hat, off feet "
           f"and bodies, far bodies -3, dropped when off the crop; lofted curtain; "
           f"v1 action rule and the throw-in; dribble positive only; free with "
           f"landmarks and a COCO ignore disk; holdout by kind; motion scales "
-          f"of known noise; {time.time() - t_start:.1f} s")
+          f"of known noise; the stream-vs-window seam against the raw window "
+          f"(D std ratio {r_same:.2f} for the same frames, {r_loud:.2f} for noisier "
+          f"strips); {time.time() - t_start:.1f} s")
 
 
 if __name__ == "__main__":

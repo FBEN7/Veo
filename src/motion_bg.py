@@ -12,8 +12,10 @@ the RGB branch):
     D+ = (g_t - g_{t+2}) / 255 / SIGMA_D
     F  = (g_t - B_t)     / 255 / SIGMA_F
 
-g is cv2's BGR2GRAY (uint8, then float); the sigmas are
-`ball_heatmap.SIGMA_D` / `SIGMA_F`, read at call time. A missing t-2 or
+g is cv2's BGR2GRAY (uint8, then float); the sigmas are the caller's --
+at inference those a checkpoint was trained with (`ball_heatmap.load_v2`,
+passed on by `detect_v2`) -- else `ball_heatmap.SIGMA_D` / `SIGMA_F`,
+read at call time (training). A missing t-2 or
 t+2 (an edge of a half or window) is taken as t itself (D = 0), a missing
 background as F = 0.
 
@@ -315,6 +317,17 @@ def _check():
     md = motion_channels(p, c, nx, np.repeat(full[:, :, None], 3, 2))
     assert np.allclose(md[:, :, 0] * bh.SIGMA_D, m[:, :, 0], atol=1e-5)
     assert np.allclose(md[:, :, 2] * bh.SIGMA_F, mf[:, :, 2], atol=1e-5)
+    # Sigmas given (a checkpoint's own) do not follow later edits of the
+    # constants; the defaults do.
+    old = bh.SIGMA_D, bh.SIGMA_F
+    bh.SIGMA_D, bh.SIGMA_F = 2 * old[0], 2 * old[1]
+    try:
+        given = motion_channels(p, c, nx, full, sigma_d=old[0], sigma_f=old[1])
+        now = motion_channels(p, c, nx, full)
+    finally:
+        bh.SIGMA_D, bh.SIGMA_F = old
+    assert np.array_equal(given, motion_channels(p, c, nx, full))
+    assert np.allclose(2 * now, given, atol=1e-5)
     # Dropping: a cached background goes with its first sample, and is
     # refused afterwards; after finish(), a sample never added is missing.
     cache.drop_before(1050)
@@ -338,7 +351,8 @@ def _check():
     dt = time.time() - t0
     print(f"  motion_bg: background drops the moving ball and keeps the still "
           f"player, unready/dropped/short backgrounds refused, D and F at the "
-          f"ball, zero at edges; median of 15 x 1000 x 4096 in {dt:.2f} s")
+          f"ball, zero at edges, given sigmas held; median of 15 x 1000 x 4096 "
+          f"in {dt:.2f} s")
 
 
 if __name__ == "__main__":

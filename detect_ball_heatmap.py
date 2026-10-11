@@ -25,6 +25,16 @@ missing at the window's edges). It is the decode of `eval_ball_detector.py
   `--range A B` (local, B excluded; a window split over several runs
   gives the same rows, the background always coming from the whole
   window).
+- The checkpoint is read by `ball_heatmap.load_v2`: a motion one runs with
+  the motion scales of its provenance, an RGB-only one (`--no-motion`)
+  with zero motion (exactly its RGB net; same rows, logits included).
+- `<out>.meta.json` (`write_sidecar`, read back by `read_sidecar`) records
+  the local frames actually processed -- a frame without rows is then a
+  frame without candidates, a frame not listed was not run (off the
+  stride, outside `--range`, past the video's end) -- with the stride,
+  range, window, the checkpoint's and calibration's sha256, a / b / tau,
+  the motion scales used and the parquet's own sha256 (a rewritten parquet
+  no longer matches it). `eval_ball_detector.py --candidates` needs it.
 - A checkpoint is refused on a match of its training provenance
   (`ball_heatmap.check_unseen`) unless `--allow-seen`, and the test
   matches are never opened. Only frame counts and timings are printed.
@@ -36,8 +46,10 @@ missing at the window's edges). It is the decode of `eval_ball_detector.py
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import time
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -88,9 +100,14 @@ def background_pass(path, first: int, last: int, need, crop):
 
 def dense_v2(path, info: dict, model, frames, calib: dict | None = None,
              cal: dict | None = None, tau: float = 0.05, top_k: int = 8,
-             log=print, every: int = 500) -> pd.DataFrame:
+             log=print, every: int = 500, motion_zero: bool = False,
+             sigma_d: float | None = None,
+             sigma_f: float | None = None) -> tuple[pd.DataFrame, list[int]]:
     """`detect_v2` at the local `frames` of a window video (`info`: its
-    json: start_frame, frames, width, height, pitch), as tracks rows."""
+    json: start_frame, frames, width, height, pitch), as tracks rows, and
+    the frames it ran on (those of `frames` the video has). `motion_zero`,
+    `sigma_d`, `sigma_f` go to `detect_v2` (`ball_heatmap.load_v2`'s
+    info: an RGB-only checkpoint runs with zero motion)."""
     from src.ball_heatmap import detect_v2, p_cal, pitch_box
     from src.motion_bg import BG_HALF_SPAN, BG_STEP, OFFSET, RingBuffer, bg_sample_frames
 
@@ -115,7 +132,8 @@ def dense_v2(path, info: dict, model, frames, calib: dict | None = None,
         bg, n = cache.get(first + t)
         prev, cur, nxt = ring.triple(t)
         for u, v, p, size, z in detect_v2(model, prev, cur, nxt, bg, pitch, tau=tau,
-                                          top_k=top_k, cal=cal):
+                                          top_k=top_k, cal=cal, motion_zero=motion_zero,
+                                          sigma_d=sigma_d, sigma_f=sigma_f):
             rows.append((t, t / fps, -1, "ball", u, v, size, np.nan, "heatmap_v2",
                          float(p_cal(z, calib)), z, p, n))
         done.add(t)
@@ -140,9 +158,46 @@ def dense_v2(path, info: dict, model, frames, calib: dict | None = None,
             run(t, ring)
     if len(done) < len(wanted):
         log(f"  WARNING: {len(wanted) - len(done)} frames past the end of the "
-            f"video (decoded {idx})")
+            f"video (decoded {idx}): not processed")
     df = pd.DataFrame(rows, columns=list(V2_COLUMNS))
-    return df.astype(V2_COLUMNS)
+    return df.astype(V2_COLUMNS), sorted(done)
+
+
+def _sha256(path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def sidecar_path(out) -> Path:
+    return Path(f"{out}.meta.json")
+
+
+def write_sidecar(out, processed, **info) -> Path:
+    """`<out>.meta.json` of a parquet already written at `out`: the local
+    frames `processed`, the parquet's sha256 and `info` (window, stride,
+    range, checkpoint, calibration, ...)."""
+    blob = {"parquet sha256": _sha256(out),
+            "frames": sorted(int(f) for f in processed), **info}
+    path = sidecar_path(out)
+    path.write_text(json.dumps(blob, indent=1))
+    return path
+
+
+def read_sidecar(out) -> dict:
+    """The sidecar of the parquet at `out`; raises ValueError when it is
+    missing or belongs to another version of the file."""
+    path = sidecar_path(out)
+    if not path.exists():
+        raise ValueError(f"{out}: no {path.name}, so which frames were processed is "
+                         f"unknown; write the parquet with detect_ball_heatmap.py --v2")
+    meta = json.loads(path.read_text())
+    if meta.get("parquet sha256") != _sha256(out):
+        raise ValueError(f"{path.name} does not match {out} (sha256 differs): the "
+                         f"parquet was rewritten after it")
+    return meta
 
 
 def extra_frames(window: str, specs) -> list[int]:
@@ -173,29 +228,47 @@ def main_v2(args):
         bh.check_unseen(args.weights, info["match"], args.allow_seen)
     except ValueError as e:
         raise SystemExit(f"refused: {e}")
-    calib = None
+    calib, cfile = None, None
     if not args.no_calib:
         calib = bh.load_calibration(args.calib or args.weights)
+        cfile = (Path(args.calib) if str(args.calib or "").endswith(".json")
+                 else bh.calib_path(args.calib or args.weights))
         if calib is None:
-            where = args.calib or bh.calib_path(args.weights)
-            raise SystemExit(f"no calibration {where}: fit it with "
+            raise SystemExit(f"no calibration {cfile}: fit it with "
                              f"calibrate_ball_heatmap.py, or --no-calib for p_raw")
         print(f"  calibration: a = {calib['a']}, b = {calib['b']}, tau = "
               f"{calib.get('tau')}")
     torch.set_num_threads(args.threads)
-    model = build(motion=True)
-    model.load_state_dict(torch.load(args.weights))
-    model.eval()
+    try:
+        model, minfo = bh.load_v2(args.weights)
+    except ValueError as e:
+        raise SystemExit(f"refused: {e}")
+    if minfo["rgb_only"]:
+        print("  RGB-only checkpoint: run with zero motion (its RGB net)")
     start, stop = args.range or (0, None)
     frames = v2_frames(int(info["frames"]), args.stride,
                        extra_frames(args.window, args.extra_frames), start, stop)
+    tau = args.tau if args.tau is not None else 0.05
+    top_k = args.top_k or 8
     t0 = time.time()
-    df = dense_v2(DATA_DIR / "soccertrack_v2" / f"{args.window}.mp4", info, model,
-                  frames, calib=calib, cal=st.calibration(info["match"]),
-                  tau=args.tau if args.tau is not None else 0.05,
-                  top_k=args.top_k or 8)
+    df, done = dense_v2(DATA_DIR / "soccertrack_v2" / f"{args.window}.mp4", info, model,
+                        frames, calib=calib, cal=st.calibration(info["match"]),
+                        tau=tau, top_k=top_k, motion_zero=minfo["rgb_only"],
+                        sigma_d=minfo["sigma_d"], sigma_f=minfo["sigma_f"])
     df.to_parquet(args.out)
-    print(f"  {len(frames)} frames detected -> {args.out} [{time.time() - t0:.0f} s]")
+    side = write_sidecar(
+        args.out, done, window=args.window, match=str(info["match"]),
+        half=int(info["half"]), start_frame=int(info["start_frame"]),
+        requested=len(frames), stride=args.stride, range=args.range,
+        extra_frames=list(args.extra_frames), ckpt=str(args.weights),
+        **{"ckpt sha256": _sha256(args.weights)}, rgb_only=minfo["rgb_only"],
+        sigma={"SIGMA_D": minfo["sigma_d"], "SIGMA_F": minfo["sigma_f"]},
+        calib=None if calib is None else {
+            "path": str(cfile), "sha256": _sha256(cfile), "a": calib["a"],
+            "b": calib["b"], "tau": calib.get("tau")},
+        tau=tau, top_k=top_k, detection_method="heatmap_v2")
+    print(f"  {len(done)} of {len(frames)} frames detected -> {args.out}, {side.name} "
+          f"[{time.time() - t0:.0f} s]")
 
 
 def main():
@@ -263,7 +336,10 @@ def _check():
     frame by frame with t-2, t+2 and the background built from the whole
     video (edges: no t-2 at 0 / 1, no t+2 at the end, few samples at the
     start); a window split by `--range` gives the same rows; stride and
-    extra frames; p_cal in `confidence`."""
+    extra frames; p_cal in `confidence`; zero motion (RGB-only checkpoints)
+    and given motion scales passed through; the processed frames (not
+    those past the end) in the sidecar, read back by
+    `eval_ball_detector.parquet_candidates`."""
     import tempfile
     from pathlib import Path
 
@@ -314,11 +390,12 @@ def _check():
         calib = {"a": 0.5, "b": -0.3}
         frames = v2_frames(N, 2, extra=[1, 3, 401, N - 1])
         quiet = lambda *a, **k: None  # noqa: E731
-        df = dense_v2(path, info, model, frames, calib=calib, log=quiet)
+        df, done = dense_v2(path, info, model, frames, calib=calib, log=quiet)
+        assert done == frames
         a = dense_v2(path, info, model, frames, calib=calib, log=quiet,
-                     every=7)[lambda d: d.frame < 200]
+                     every=7)[0][lambda d: d.frame < 200]
         parts = [dense_v2(path, info, model, v2_frames(N, 2, [1, 3, 401, N - 1], lo, hi),
-                          calib=calib, log=quiet) for lo, hi in ((0, 200), (200, N))]
+                          calib=calib, log=quiet)[0] for lo, hi in ((0, 200), (200, N))]
         assert pd.concat(parts, ignore_index=True).equals(df)
         assert a.reset_index(drop=True).equals(parts[0])
         # The reference: every frame decoded, the background from all of them.
@@ -350,11 +427,68 @@ def _check():
         m0 = detect_v2(model, video[t - 2], video[t], video[t + 2], b, outline,
                        motion_zero=True)
         assert not np.array_equal(m1, m0)
-        empty = dense_v2(path, info, model, [], log=quiet)
-        assert empty.empty and list(empty.columns) == list(V2_COLUMNS)
+        empty, none = dense_v2(path, info, model, [], log=quiet)
+        assert empty.empty and list(empty.columns) == list(V2_COLUMNS) and none == []
+        # Zero motion (an RGB-only checkpoint) and given motion scales reach
+        # detect_v2; frames past the end are not processed.
+        few = [0, 1, 200, 201, N - 1]
+        for kw in ({"motion_zero": True}, {"sigma_d": 1.0, "sigma_f": 1.0}):
+            got, _ = dense_v2(path, info, model, few, log=quiet, **kw)
+            ref = []
+            for t in few:
+                bg, n = cache.get(first + t)
+                prev = video[t - 2] if t >= 2 else None
+                nxt = video[t + 2] if t + 2 < N else None
+                ref += [(t, u, v, p, z) for u, v, p, _, z in
+                        detect_v2(model, prev, video[t], nxt, bg, outline, **kw)]
+            assert np.array_equal(got[["frame", "px", "py", "p_raw", "logit"]].to_numpy(),
+                                  np.array(ref)), kw
+        assert not got.equals(dense_v2(path, info, model, few, log=quiet)[0])
+        warned = []
+        past, ran = dense_v2(path, info, model, [N - 2, N - 1, N, N + 5],
+                             log=lambda *a, **k: warned.append(a[0]))
+        assert ran == [N - 2, N - 1] and set(past.frame) <= {N - 2, N - 1}
+        assert any("not processed" in s for s in warned)
+        # The sidecar: written after the parquet, read back with its frames;
+        # eval's reader returns the processed frames only (a processed frame
+        # without rows: no candidates), refuses a frame not processed unless
+        # partial coverage is allowed, and a parquet rewritten after it.
+        from eval_ball_detector import parquet_candidates
+        out = Path(tmp) / "w.parquet"
+        df.to_parquet(out)
+        write_sidecar(out, done, window="w", stride=2)
+        meta = read_sidecar(out)
+        assert meta["frames"] == frames and meta["window"] == "w"
+        assert 5 not in frames and 7 not in frames
+        write_sidecar(out, done + [5], window="w")       # 5: processed, no rows
+        got = parquet_candidates(out, [frames[0], 5, 7], window="w", allow_partial=True)
+        assert set(got) == {frames[0], 5} and got[5].shape == (0, 5)
+        assert len(got[frames[0]]) == (df.frame == frames[0]).sum()
+        for bad in (lambda: parquet_candidates(out, [frames[0], 7]),
+                    lambda: parquet_candidates(out, [frames[0]], window="v")):
+            try:
+                bad()
+                raise AssertionError("an unprocessed frame or another window passed")
+            except ValueError:
+                pass
+        f0 = int(df.frame.iloc[0])
+        rest = [f for f in done if f != f0]
+        write_sidecar(out, rest, window="w")             # rows at a frame not listed
+        try:
+            parquet_candidates(out, rest[:2])
+            raise AssertionError("rows of an unlisted frame were accepted")
+        except ValueError:
+            pass
+        df.iloc[:-1].to_parquet(out)
+        try:
+            read_sidecar(out)
+            raise AssertionError("a stale sidecar was accepted")
+        except ValueError:
+            pass
     print("  detect_ball_heatmap: dense v2 = detect_v2 frame by frame with the "
           "whole-window background, edges, split windows, stride / extra frames, "
-          "p_cal: ok")
+          "p_cal, zero motion and given scales, processed frames in the sidecar "
+          "and its reader: ok")
 
 
 if __name__ == "__main__":

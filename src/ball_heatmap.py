@@ -24,6 +24,13 @@ and keeps the raw logit, for the Platt calibration in `<ckpt>.calib.json`
 (`load_calibration`, `p_cal`). A v2 checkpoint records what it was trained
 on in `<ckpt>.provenance.json` (`write_provenance`), and `check_unseen`
 refuses to measure it on those matches.
+
+`load_v2()` is the one loader of v2 checkpoints for inference: a motion
+checkpoint with the motion scales (SIGMA_D, SIGMA_F) it was trained with,
+from its provenance -- `detect_v2` is given those, not this module's
+current constants; an RGB-only one (`train_ball_heatmap.py --no-motion`)
+into the motion net with its zero motion stem, run with `motion_zero`:
+exactly the RGB net, with the same rows and logits as a motion model.
 """
 
 from __future__ import annotations
@@ -42,9 +49,14 @@ BALL_M = 0.22
 # 255 grey levels: a robust std of the frame differences (D) and of the
 # difference to the background (F) on training strips' pitch pixels.
 # Placeholders until `label_ball_strips.py --sigma` measures them; the
-# measured values are written here by hand (one line each) before training.
+# measured values are written here by hand (one line each) before training,
+# together with SIGMA_MEASURED = True; until then `train_ball_heatmap.py`
+# refuses a v2 run. A checkpoint records the values it was trained with in
+# its provenance, and inference uses those (`load_v2`), not these.
 SIGMA_D = 0.02
 SIGMA_F = 0.05
+SIGMA_MEASURED = False
+SIGMA_PLACEHOLDERS = (0.02, 0.05)       # refused for training, even if "measured"
 
 # v2 training data (protocol v3): matches and halves, absolute frame ranges
 # left out, and matches never to be trained on (tuning U, report V, M1 on
@@ -197,7 +209,9 @@ def _peaks(logit, x0: int, y0: int, poly, tau: float, top_k: int,
     out = []
     for k in order:
         y, x = gy[k], gx[k]
-        ys, xs = slice(max(y - 1, 0), y + 2), slice(max(x - 1, 0), x + 2)
+        # Clipped at the map's far edges too: mgrid does not clip as indexing does.
+        ys = slice(max(y - 1, 0), min(y + 2, prob.shape[0]))
+        xs = slice(max(x - 1, 0), min(x + 2, prob.shape[1]))
         w = prob[ys, xs]
         yy, xx = np.mgrid[ys, xs]
         cu = x0 + ((xx + 0.5) * STRIDE * w).sum() / w.sum()
@@ -248,8 +262,10 @@ def detect(model, frame, outline, tau: float = 0.15, top_k: int = 4,
 _SCRATCH: dict = {}
 
 
-def _input_v2(crop, prev, nxt, bg, ph: int, pw: int):
-    """`to_tensor_v2` of the crop and its motion channels, both zero-padded
+def _input_v2(crop, prev, nxt, bg, ph: int, pw: int, sigma_d: float | None = None,
+              sigma_f: float | None = None):
+    """`to_tensor_v2` of the crop and its motion channels (scaled by
+    `sigma_d` / `sigma_f`, None: SIGMA_D / SIGMA_F), both zero-padded
     by (ph, pw), built in place in one buffer kept between calls: fresh
     full-frame temporaries (a 100 MB input) cost about as much in page
     faults as the motion stem computes. The tensor is valid until the
@@ -272,14 +288,16 @@ def _input_v2(crop, prev, nxt, bg, ph: int, pw: int):
         d -= MEAN[c]
         d /= STD[c]
     x[0, 3:, h:], x[0, 3:, :h, w:] = 0.0, 0.0
-    motion_planes(prev, crop, nxt, bg, out=x[0, 3:, :h, :w])
+    motion_planes(prev, crop, nxt, bg, out=x[0, 3:, :h, :w], sigma_d=sigma_d,
+                  sigma_f=sigma_f)
     return torch.from_numpy(x)
 
 
 def detect_v2(model, prev, cur, nxt, bg, outline, tau: float = 0.05,
               top_k: int = 8, margin_px: float = 10.0, cal: dict | None = None,
               motion_zero: bool = False, pad_above: int = 64,
-              pad_below: int = 32) -> np.ndarray:
+              pad_below: int = 32, sigma_d: float | None = None,
+              sigma_f: float | None = None) -> np.ndarray:
     """Ball candidates of the motion model (`build(motion=True)`) in frame
     `cur` (BGR, full frame): (u, v, p_raw, size_px, logit) rows, at most
     `top_k` local maxima with p_raw >= tau inside the outline (+
@@ -291,7 +309,10 @@ def detect_v2(model, prev, cur, nxt, bg, outline, tau: float = 0.05,
     told apart by its shape; `motion_bg.BackgroundCache(crop=pitch_box(..))`
     stores the latter. `size_px` is 0.22 m at the larger of the two local
     scales (`cal` given; NaN otherwise). `motion_zero` feeds zero motion
-    (a diagnostic), as the 3-channel input: the RGB branch alone, exactly."""
+    (a diagnostic, and how an RGB-only checkpoint runs), as the 3-channel
+    input: the RGB branch alone, exactly. `sigma_d` / `sigma_f` scale the
+    motion channels as in the checkpoint's training (`load_v2`'s info);
+    None takes the module's SIGMA_D / SIGMA_F."""
     import cv2
     import torch
 
@@ -316,7 +337,7 @@ def detect_v2(model, prev, cur, nxt, bg, outline, tau: float = 0.05,
         x = to_tensor([cv2.copyMakeBorder(crop, 0, ph, 0, pw,
                                           cv2.BORDER_CONSTANT)])
     else:
-        x = _input_v2(crop, cut(prev), cut(nxt), bg, ph, pw)
+        x = _input_v2(crop, cut(prev), cut(nxt), bg, ph, pw, sigma_d, sigma_f)
     model.eval()
     with torch.inference_mode():
         peaks = _peaks(model(x)[0], x0, y0, poly, tau, top_k, margin_px)
@@ -414,6 +435,55 @@ def check_unseen(ckpt, match, allow_seen: bool = False):
                          f"{halves}); allowed only with --allow-seen")
 
 
+def provenance_sigma(prov: dict | None) -> tuple[float | None, float | None]:
+    """(SIGMA_D, SIGMA_F) a checkpoint was trained with, from its provenance
+    ({"SIGMA_D", "SIGMA_F"}, or a [d, f] pair); None where not recorded."""
+    s = (prov or {}).get("sigma")
+    if isinstance(s, dict):
+        s = (s.get("SIGMA_D"), s.get("SIGMA_F"))
+    if not isinstance(s, (list, tuple)) or len(s) != 2:
+        return None, None
+    return tuple(None if v is None else float(v) for v in s)
+
+
+def load_v2(ckpt):
+    """A v2 checkpoint for inference: (`build(motion=True)` in eval mode,
+    info {"rgb_only", "sigma_d", "sigma_f"}).
+
+    A motion checkpoint loads strictly, and must have its motion scales in
+    its provenance (raises otherwise): they go to `detect_v2` (`sigma_d`,
+    `sigma_f`), so editing SIGMA_D / SIGMA_F later cannot rescale its
+    input. An RGB-only checkpoint (no `conv1_motion.weight`: `--no-motion`)
+    loads with that one key missing -- anything else missing or unexpected
+    raises -- leaving the motion stem at its zero init; run it with
+    `motion_zero=True` (`rgb_only`), exactly the RGB net. The provenance's
+    "motion", when recorded, must agree with the weights."""
+    import torch
+
+    state = torch.load(ckpt, map_location="cpu")
+    prov = read_provenance(ckpt)
+    rgb_only = "conv1_motion.weight" not in state
+    if prov is not None and "motion" in prov and bool(prov["motion"]) == rgb_only:
+        raise ValueError(f"{ckpt}: provenance says motion={prov['motion']}, the "
+                         f"weights {'lack' if rgb_only else 'have'} conv1_motion")
+    model = build(motion=True)
+    if rgb_only:
+        r = model.load_state_dict(state, strict=False)
+        if list(r.missing_keys) != ["conv1_motion.weight"] or r.unexpected_keys:
+            raise ValueError(f"{ckpt}: not a v2 state dict (missing "
+                             f"{list(r.missing_keys)}, unexpected "
+                             f"{list(r.unexpected_keys)})")
+    else:
+        model.load_state_dict(state)
+    model.eval()
+    sigma_d, sigma_f = provenance_sigma(prov)
+    if not rgb_only and (sigma_d is None or sigma_f is None):
+        raise ValueError(f"{ckpt}: a motion checkpoint without SIGMA_D / SIGMA_F in "
+                         f"{provenance_path(ckpt).name}; its motion input's scale "
+                         f"is unknown")
+    return model, {"rgb_only": rgb_only, "sigma_d": sigma_d, "sigma_f": sigma_f}
+
+
 # ---- Self-check ---------------------------------------------------------------
 
 # Names and shapes of v1's state dict (.cache/ball_heatmap.3000.pt), hashed.
@@ -431,9 +501,11 @@ def _check():
     """v1's net is unchanged and v1 checkpoints load; the motion net is the
     RGB net when its motion input is zero (and at the start, whatever the
     input) while its motion weights get a gradient at once; `detect_v2`
-    with `motion_zero` gives `detect`'s candidates; peaks, outline and
-    refinement on a known logit map; ball size from the larger local scale;
-    calibration and provenance files."""
+    with `motion_zero` gives `detect`'s candidates, and given motion scales
+    hold whatever the constants are; peaks, outline and refinement on a
+    known logit map (a peak on its far edge too); ball size from the larger
+    local scale; calibration and provenance files; `load_v2` of motion and
+    RGB-only checkpoints, and its refusals."""
     import tempfile
 
     import cv2
@@ -498,6 +570,8 @@ def _check():
     ref = to_tensor_v2([pad(cr)], [pad(motion_channels(pr, cr, nr, br))])
     assert torch.equal(_input_v2(cr, pr, nr, br, 5, 3), ref)
     assert torch.equal(_input_v2(cr, None, nr, None, 5, 3)[:, 3:4], 0 * ref[:, 3:4])
+    raw = to_tensor_v2([pad(cr)], [pad(motion_channels(pr, cr, nr, br, 1.0, 1.0))])
+    assert torch.equal(_input_v2(cr, pr, nr, br, 5, 3, 1.0, 1.0), raw)
     # detect_v2 with zero motion gives detect's rows (and the logit); with
     # motion it differs; a full-frame and a cropped background agree.
     a = detect(v1, frame, outline, tau=0.05, top_k=8)
@@ -512,6 +586,19 @@ def _check():
     d = detect_v2(m, prev, frame, nxt, bg[y0:y1, x0:x1], outline, tau=0.05,
                   top_k=8)
     assert np.array_equal(c, d, equal_nan=True) and not np.array_equal(c, b)
+    # The motion scales a caller gives hold whatever the module's constants
+    # are (`motion_bg` reads them at call time); other scales, other rows.
+    from . import motion_bg
+    old = motion_bg.bh.SIGMA_D, motion_bg.bh.SIGMA_F
+    run = lambda **k: detect_v2(m, prev, frame, nxt, bg, outline, tau=0.05,  # noqa: E731
+                                top_k=8, **k)
+    assert np.array_equal(run(sigma_d=old[0], sigma_f=old[1]), c, equal_nan=True)
+    motion_bg.bh.SIGMA_D, motion_bg.bh.SIGMA_F = 3 * old[0], 3 * old[1]
+    try:
+        held, moved = run(sigma_d=old[0], sigma_f=old[1]), run()
+    finally:
+        motion_bg.bh.SIGMA_D, motion_bg.bh.SIGMA_F = old
+    assert np.array_equal(held, c, equal_nan=True) and not np.array_equal(moved, c)
     for bad in (lambda: detect_v2(m, prev, frame, nxt, bg[:50, :50], outline),
                 lambda: detect_v2(v1, prev, frame, nxt, None, outline)):
         try:
@@ -532,6 +619,12 @@ def _check():
     assert rows.shape == (2, 4) and out.shape == (1, 4)
     assert np.allclose(rows[1, :2], (122, 82))      # 2nd best; box from 0, 0
     assert np.allclose(out[0, :3], (150, 82, 1 / (1 + np.exp(-3))))  # x 28
+    # A maximum in the map's last row and column: refined on the cells there are.
+    corner = torch.full((50, 120), -6.0)
+    corner[49, 119] = 3.0
+    rows = detect(_Fixed(corner), np.zeros((200, 480, 3), np.uint8),
+                  [[0, 0], [480, 0], [480, 200], [0, 200]], tau=0.5)
+    assert rows.shape == (1, 4) and np.allclose(rows[0, :2], (478, 198), atol=0.1)
     # Size: 0.22 m at the larger local scale, through a camera.
     cal = {"K": np.array([[400.0, 0, 240], [0, 400, 100], [0, 0, 1]]),
            "D": np.zeros((4, 1)),
@@ -574,10 +667,55 @@ def _check():
                 raise AssertionError("a seen match or bad provenance passed")
             except ValueError:
                 pass
+        assert provenance_sigma(prov) == (SIGMA_D, SIGMA_F)          # as a pair
+        assert provenance_sigma(None) == (None, None)
+        # load_v2: a motion checkpoint strictly, with its provenance's scales
+        # (refused without them); an RGB-only one into the motion net, its
+        # stem zero, run with motion_zero: detect's rows, with the logit;
+        # a motion flag contradicting the weights, or a foreign state dict,
+        # refused.
+        mk, rk, xk = (Path(tmp) / f"{n}.pt" for n in ("m", "rgb", "x"))
+        torch.save(m.state_dict(), mk)
+        torch.save(v1.state_dict(), rk)
+        torch.save(dict(v1.state_dict(), extra=torch.zeros(1)), xk)
+        write_provenance(mk, {"train": V2_TRAIN, "motion": True,
+                              "sigma": {"SIGMA_D": 0.07, "SIGMA_F": 0.03}})
+        lm, info = load_v2(mk)
+        assert info == {"rgb_only": False, "sigma_d": 0.07, "sigma_f": 0.03}
+        assert torch.equal(lm.conv1_motion.weight, m.conv1_motion.weight)
+        assert not lm.training
+        lr, info = load_v2(rk)
+        assert info == {"rgb_only": True, "sigma_d": None, "sigma_f": None}
+        assert not lr.conv1_motion.weight.any()
+        got = detect_v2(lr, prev, frame, nxt, bg, outline, tau=0.05, top_k=8,
+                        motion_zero=info["rgb_only"])
+        assert np.array_equal(got, b, equal_nan=True)
+        write_provenance(rk, {"train": V2_TRAIN, "motion": False,
+                              "sigma": {"SIGMA_D": 0.07, "SIGMA_F": 0.03}})
+        assert load_v2(rk)[1]["rgb_only"]
+        for path, prov_ in ((mk, {"train": V2_TRAIN, "motion": True}),
+                            (mk, {"train": V2_TRAIN, "motion": False,
+                                  "sigma": {"SIGMA_D": 0.07, "SIGMA_F": 0.03}}),
+                            (rk, {"train": V2_TRAIN, "motion": True}),
+                            (xk, {"train": V2_TRAIN, "motion": False})):
+            write_provenance(path, prov_)
+            try:
+                load_v2(path)
+                raise AssertionError(f"load_v2 accepted {path.name} with {prov_}")
+            except ValueError:
+                pass
+        provenance_path(mk).unlink()
+        try:
+            load_v2(mk)
+            raise AssertionError("a motion checkpoint without provenance loaded")
+        except ValueError:
+            pass
+    assert isinstance(SIGMA_MEASURED, bool)
     print("  ball_heatmap: v1 net unchanged, motion net = RGB net at zero motion "
-          "(and at the start), detect_v2 = detect with motion zeroed, peaks "
-          "refined and outlined, size at the larger scale, calibration and "
-          "provenance guard")
+          "(and at the start), detect_v2 = detect with motion zeroed, motion "
+          "scales as given, peaks refined and outlined, size at the larger scale, "
+          "calibration and provenance guard, load_v2 (motion with its scales, "
+          "RGB-only = the RGB net, mismatches refused)")
 
 
 class _Fixed:

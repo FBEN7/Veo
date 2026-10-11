@@ -578,6 +578,111 @@ readily. That is the next thing to fix on the events side.
   - 38 passes on V, enough only to see a large difference;
   - M2 and M10 are other matches but from the same rigs and league.
 
+## Ball detector v2: the ball in flight, then events (protocol v3)
+
+Registered here before any v2 training strip was cut, any v2 checkpoint
+existed or any new report window was cut. The full protocol is kept
+outside the repository with the judgements (sha256 5c5e7538...); what
+binds is below.
+
+**What changes from v1.**
+- **Motion.** The network also sees motion: three grey channels next to
+  the colour frame.
+  - the differences to the frames 2 before and 2 after;
+  - the difference to a running median background (15 frames, every
+    50th, within ±14 s), which removes lines, spots and resting balls.
+  - They feed a zero-initialised stem, so training starts from v1's
+    ImageNet net (`src/motion_bg.py`, `build(motion=True)`).
+- **Labels for the ball in flight** (`build_ball_strips.py`,
+  `label_ball_strips.py`):
+  - a corridor along every pass between passer and receiver, around where
+    a decelerating ball should be;
+  - every body outside the corridor as a hard negative;
+  - ball-free strips with landmark hard negatives (penalty spots, centre
+    spot, corners, posts);
+  - a COCO "ball" found off the landmarks is ignored, not called "not a
+    ball".
+- **Data.** Both halves of M3, M4, M5 and M8, about 20,000 strips; the
+  old T minutes ±60 s are kept out.
+- **Loss.** A pool normalised to the ball's footprint, plus suppression
+  of the strongest wrong peaks (`train_ball_heatmap.py --strips`).
+
+**Splits.**
+- **Choices:** every choice is made on M6 (U), a whole match never
+  trained on: 4 windows.
+- **Diagnostic only:** the old T windows (seen matches).
+- **Reports:**
+  - V-old is M2 and M10 as before.
+  - V-new is 6 new 3-minute windows of M2 and M10, cut only after the
+    detector is frozen: about 146 passes in all.
+- **Never opened:** M7 and M9.
+
+**Measure.** FF-auto replaces the 1 m rule. The 1 m rule is still
+reported.
+- **Rule:** a pass frame counts when the top candidate is:
+  - within 4 m of the passer-receiver segment;
+  - at the right place along it (|t - s| ≤ 0.30);
+  - at least 1 m from every player.
+- **Validation (`validate_ff_auto.py`):** against the 410 blind
+  judgements above, kappa is 0.82 on T (where the rule was chosen) and
+  0.81 on V-old. It never counts a decoy, and chance is 1.2%.
+- **v1 by this measure:** 0.65 against COCO 0.50 on T, and 0.53 against
+  0.50 on V-old.
+- **Placebos:** the same rule just before the kick, and just after the
+  reception. They catch a detector that has learnt "the grass between two
+  team-mates".
+
+**Decisions on U, in this order:**
+1. the checkpoint (2500/3250/4000 steps);
+2. a Platt calibration;
+3. `tau`, the smallest giving at most one candidate a frame.
+
+**Gate on U before anything v2 runs on V.**
+- FF-auto ≥ 0.65 and ≥ COCO + 0.10, with the bootstrap lower bound above
+  0.
+- Placebos ≤ 0.05.
+- A blind sitting: the match ball in play at ≥ 0.65 of U passes, the
+  measure agreeing with the judge (kappa ≥ 0.6), and decoys ≤ 2 of 24.
+- If the gate fails, one RGB-only fallback is trained. If that fails
+  too, nothing runs on V.
+
+**Claim on V (variant 2 of 3).**
+- **H1:** v2 better than COCO by paired FF-auto over V-old and V-new.
+  - 1-minute block bootstrap, 4,000 draws, rejected when the 2.5th
+    percentile is above 0.
+  - Paired SD 0.28, so the smallest detectable difference is about
+    0.075.
+  - The measure's validity is checked on new blind tiles. If that check
+    fails, the blind McNemar is the primary.
+- **"Clearly better"** also needs all of:
+  - a difference of at least 0.10 by FF-auto and blind;
+  - the same sign on M2 and on M10;
+  - a positive difference on V-new alone.
+- **H2:** v2 better than v1, tested only after H1.
+
+**Events, after the detector is frozen and reported.**
+- **Tuning:** a staged grid (`sweep_events_v2.py`) on two M6 windows.
+  - It covers ball selection: the old one, or a linker in pitch metres
+    that penalises a resting ball (`src/ball_link.py`).
+  - It also covers the possession, carry and shot settings.
+  - The objective is pass + carry F1 at 1 s above chance, with the event
+    count kept within 0.6-1.5 × the labels.
+- **Rules:** frozen, with their hash recorded, then run once on V-old.
+- **Claims:**
+  - H3: better than COCO's 0.35.
+  - H4: better than v1's 0.44.
+- V-old's events were seen when this grid was designed; that is
+  disclosed.
+
+**Deviations disclosed in advance:**
+- the new measure;
+- V extended;
+- T demoted to a diagnostic;
+- M6 held out;
+- the label constants were chosen on T judgements pooled with V-old.
+  The T-only figures are recorded: the ball sits a median 1.4 m off the
+  line, and +0.14 of the pass ahead of the constant-speed point.
+
 ## Next
 
 1. **The ball in flight.** The heatmap above finds the ball at the feet

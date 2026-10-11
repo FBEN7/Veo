@@ -15,9 +15,12 @@ Protocol v3's sittings add (all optional; without them the tiles, their
 order and numbers are as before):
 
 - `--pass-frame q`: instead of random measured frames, the top-1 of each
-  `--take` detector (names only; any p, none = no tile) at the q-th
-  (1-based) of the four frames of every pass, or of `--passes-per-match
-  N` passes sampled per match;
+  `--take` detector (names only; any p, none = no tile) at frame q of the
+  four of every pass, or of `--passes-per-match N` passes sampled per
+  match. q is 0-based, as the key's "q": 0-3 is s = 0.25 / 0.417 / 0.583
+  / 0.75 along the pass; the s used is printed. Protocol v3's sittings
+  use q = 1 (s = 0.417): the frame of the registered free-flight sittings
+  (tiles_ff, tiles_ffV) and of FF-auto's validation;
 - `--dedupe-px 6`: detectors' picks at one frame within 6 px become one
   tile, credited to each (the key's "sources");
 - `--confident NAME=TAU:N`: N top-1 picks of NAME at p >= TAU on random
@@ -113,8 +116,11 @@ def pick(w, f, u, v, source, kind, **extra) -> dict:
 
 
 def pass_picks(results, wins, names, q, per_match, rng):
-    """Top-1 of each detector at the q-th frame of every (sampled) pass;
-    and every pass's tiles to fill in key_passes.json."""
+    """Top-1 of each detector at frame q (0-based, of the 4) of every
+    (sampled) pass; and every pass's tiles, with its s there, to fill in
+    key_passes.json."""
+    from eval_ball_detector import FF_S
+
     by_match = {}
     for w in results:
         d = wins.get(w)
@@ -129,7 +135,9 @@ def pass_picks(results, wins, names, q, per_match, rng):
     picks, passes = [], []
     for w, p in chosen:
         f = p["frames"][q]
-        rec = {"window": w, "pass": p["i"], "q": q, "frame": f, "tiles": {}}
+        s = float(p["s"][q] if "s" in p else FF_S[q])
+        rec = {"window": w, "pass": p["i"], "q": q, "s": round(s, 3), "frame": f,
+               "tiles": {}}
         for name in names:
             rows = results[w][name]["candidates"].get(str(f))
             if rows is None:
@@ -259,7 +267,17 @@ def dedupe(picks, px: float):
     return out, where
 
 
-def main():
+def pass_frame_of(ap, args) -> int | None:
+    """`--pass-frame` as an index into a pass's 4 frames (0-based, as the
+    key's "q"; the protocol's sittings use 1, s = 0.417), or None."""
+    q = args.pass_frame
+    if q is not None and (not 0 <= q < 4 or any("=" in t for t in args.take)):
+        ap.error("--pass-frame takes Q in 0-3 (0-based; the protocol's sittings "
+                 "use 1) and --take detector names")
+    return q
+
+
+def arg_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scores", nargs="+", required=True,
                     help="eval_ball_detector.py --save files (same windows)")
@@ -272,7 +290,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", required=True)
     ap.add_argument("--pass-frame", type=int, metavar="Q",
-                    help="one tile per pass and detector at the Q-th (1-4) frame")
+                    help="one tile per pass and detector at frame Q (0-based, 0-3: "
+                         "s = 0.25/0.417/0.583/0.75); the protocol's sittings use 1")
     ap.add_argument("--passes-per-match", type=int,
                     help="with --pass-frame: sample this many passes per match")
     ap.add_argument("--dedupe-px", type=float, default=0.0)
@@ -280,19 +299,25 @@ def main():
     ap.add_argument("--calib", nargs="*", default=[], metavar="NAME=JSON")
     ap.add_argument("--corridor-decoys", type=int, default=0)
     ap.add_argument("--rejudge", nargs="*", default=[], metavar="KEY:N")
+    return ap
+
+
+def main():
+    ap = arg_parser()
     args = ap.parse_args()
+    q = pass_frame_of(ap, args)
     from eval_ball_detector import load_scores
 
     rng = np.random.default_rng(args.seed)
     merged, meta = load_scores(args.scores)
     results = list(merged.values())
     wins = Windows(merged)
-    q = None if args.pass_frame is None else args.pass_frame - 1
     picks, passes = [], []
     if q is not None:
-        if not 0 <= q < 4 or any("=" in t for t in args.take):
-            ap.error("--pass-frame takes Q in 1-4 and --take detector names")
         picks, passes = pass_picks(merged, wins, args.take, q, args.passes_per_match, rng)
+        print(f"  pass frame q = {q} (0-based): s = "
+              f"{', '.join(f'{s:.3f}' for s in sorted({r['s'] for r in passes}))}, "
+              f"{len(passes)} passes")
     else:
         for spec in args.take:
             name, n = spec.rsplit("=", 1)
@@ -378,8 +403,9 @@ def main():
 
 def _check():
     """The new picks without video: one tile per pass and detector (none for
-    a miss), per-match sampling, deduping within 6 px credited to both,
-    confident picks on p_cal, and key_passes' tile numbers."""
+    a miss), per-match sampling, `--pass-frame` 0-based (1: s = 0.417),
+    deduping within 6 px credited to both, confident picks on p_cal, and
+    key_passes' tile numbers."""
     s = [0.25, 0.25 + 0.5 / 3, 0.25 + 1 / 3, 0.75]
 
     class Fake:
@@ -406,6 +432,30 @@ def _check():
     assert len(dedupe(picks, 0)[0]) == 5
     two, _ = pass_picks(results, Fake(), ["A"], 0, 2, np.random.default_rng(0))
     assert len(two) == 2
+    # --pass-frame is 0-based: 1 is the registered frame (s = 0.417), the
+    # 2nd of the 4; 4 and NAME=N are refused.
+    import contextlib
+    import io
+
+    ap = arg_parser()
+    base = ["--scores", "x.json", "--out", "o"]
+    args = ap.parse_args(base + ["--pass-frame", "1", "--take", "A"])
+    q = pass_frame_of(ap, args)
+    for i in range(1, 4):
+        results["mw"]["A"]["candidates"][str(10 * i + 1)] = [[50, 50, .5, 4]]
+    picks1, passes1 = pass_picks(results, Fake(), ["A"], q, None, rng)
+    assert q == 1 and [p["frame"] for p in picks1] == [11, 21, 31]
+    assert {r["s"] for r in passes1} == {0.417} and {r["q"] for r in passes1} == {1}
+    assert passes[0]["s"] == 0.25
+    for bad in (["--pass-frame", "4", "--take", "A"],
+                ["--pass-frame", "1", "--take", "A=3"]):
+        try:
+            with contextlib.redirect_stderr(io.StringIO()):
+                pass_frame_of(ap, ap.parse_args(base + bad))
+            raise AssertionError(f"{bad} was accepted")
+        except SystemExit:
+            pass
+    assert pass_frame_of(ap, ap.parse_args(base + ["--take", "A=3"])) is None
     # Confident on p_cal (logit 3.0 at a = 1, b = 0 is 0.95; -1.0 is 0.27).
     cal = {"B": {"calib": {"a": 1.0, "b": 0.0}}}
     conf = confident_picks(results, Fake(), "B=0.9:5", cal, {}, rng)
@@ -415,7 +465,8 @@ def _check():
         raise AssertionError("logits without a calibration were taken")
     except ValueError:
         pass
-    print("  ball_tiles: pass tiles and misses, sampling, dedupe, confident picks: ok")
+    print("  ball_tiles: pass tiles and misses, sampling, 0-based pass frame, dedupe, "
+          "confident picks: ok")
 
 
 if __name__ == "__main__":

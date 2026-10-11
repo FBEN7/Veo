@@ -70,9 +70,15 @@ run aborts, exit status 3), negative peaks with p > 0.15 per strip, and
 the motion weights' norm (it must grow). Checkpoints at 2500, 3250 and
 4000 steps, each with `<ckpt>.provenance.json` (`ball_heatmap.
 write_provenance`): the matches and halves trained on, the ranges left
-out, the label constants, the motion sigmas, the recipe hash (this file
-and `label_ball_strips.py`) and the seed. Only strips of
-`ball_heatmap.V2_TRAIN` less `V2_EXCLUDE` are accepted.
+out, the label constants (with the labels' COCO flag and seed), the
+motion sigmas (inference scales by these: `ball_heatmap.load_v2`), the
+recipe hash (this file and `label_ball_strips.py`) and the seed. Only strips of
+`ball_heatmap.V2_TRAIN` less `V2_EXCLUDE` are accepted, and only those cut
+from the source stream are kept (window strips dropped and counted;
+`--allow-window-strips` for smoke runs). A run refuses to start on the
+placeholder motion scales: `ball_heatmap.SIGMA_D` / `SIGMA_F` must be the
+measured ones, with `SIGMA_MEASURED = True` (`--placeholder-sigma` for
+smoke runs; `--bench` and `--check` do not ask).
 
     python train_ball_heatmap.py --strips .cache/soccertrack_v2/ball_strips \\
         --motion --steps 4000 --out .cache/ball_v2
@@ -244,12 +250,31 @@ MONITOR_EVERY, PEAKY_MAX, PEAKY_FROM, NEG_P = 250, 30.0, 1500, 0.15
 GREY_W = np.array([0.114, 0.587, 0.299])         # B, G, R: cv2's BGR2GRAY
 
 
-def load_strips(root: Path):
+class _RowsOf:
+    """Rows `index` of an array (the memory-mapped codes), read on demand:
+    the codes of the strips kept, without copying them all."""
+
+    def __init__(self, a, index):
+        self.a, self.index = a, np.asarray(index)
+        self.shape = (len(self.index),) + tuple(a.shape[1:])
+
+    def __len__(self):
+        return len(self.index)
+
+    def __getitem__(self, i):
+        return self.a[self.index[i]]
+
+
+def load_strips(root: Path, allow_window_strips: bool = False, log=print):
     """`labels.parquet`, `labels_codes.npy` (memory-mapped) and the label
     constants of a strips dir (`labels_meta.json`, else the code's).
     Refuses a strip of a half not in `ball_heatmap.V2_TRAIN`, of a `NEVER`
     match, or whose t-2 .. t+2 touch a `V2_EXCLUDE` range: the provenance
-    says what was trained on, so the data must agree with it."""
+    says what was trained on, so the data must agree with it. Then keeps
+    only strips cut from the source stream (`source` "stream"): one cut
+    from a window video (x264 re-encoded, background from the window only)
+    is dropped, and the number logged, unless `allow_window_strips` (smoke
+    tests)."""
     from build_ball_strips import excluded
     from src.ball_heatmap import NEVER, V2_TRAIN
 
@@ -269,6 +294,21 @@ def load_strips(root: Path):
     if bad:
         raise SystemExit(f"{len(bad)} strips outside the v2 training halves "
                          f"(V2_TRAIN less V2_EXCLUDE), e.g. {bad[:3]}")
+    if "source" not in table:
+        if not allow_window_strips:
+            raise SystemExit(f"{path} has no source column: cannot tell stream strips "
+                             f"from window strips (--allow-window-strips to take all)")
+    elif not allow_window_strips:
+        keep = (table.source.astype(str) == "stream").to_numpy()
+        if not keep.all():
+            log(f"  {int((~keep).sum())} window strips dropped (sources "
+                f"{sorted(set(table.source[~keep].astype(str)))}); training on "
+                f"{int(keep.sum())} stream strips")
+            table = table[keep].reset_index(drop=True)
+            codes = _RowsOf(codes, np.flatnonzero(keep))
+        if not len(table):
+            raise SystemExit(f"{path}: no stream strips (--allow-window-strips for "
+                             f"window strips)")
     meta_path = root / "labels_meta.json"
     meta = json.loads(meta_path.read_text()) if meta_path.exists() else None
     return table, codes, meta
@@ -609,8 +649,11 @@ def recipe_constants() -> dict:
 
 
 def provenance_info(root: Path, table: pd.DataFrame, meta, motion: bool, seed: int,
-                    step: int, steps: int, history: list, mix=MIX_V2) -> dict:
-    """What `<ckpt>.provenance.json` records (`ball_heatmap.write_provenance`)."""
+                    step: int, steps: int, history: list, mix=MIX_V2,
+                    allow_window_strips: bool = False) -> dict:
+    """What `<ckpt>.provenance.json` records (`ball_heatmap.write_provenance`).
+    "sigma" is what inference scales the motion channels by
+    (`ball_heatmap.load_v2`)."""
     from src import ball_heatmap as bh
     from src.ball_heatmap import V2_EXCLUDE
 
@@ -625,9 +668,13 @@ def provenance_info(root: Path, table: pd.DataFrame, meta, motion: bool, seed: i
         "label_constants_from": ("labels_meta.json" if meta
                                  else "label_ball_strips.py (no labels_meta.json)"),
         "label_constants_as_code": (meta["constants"] == code) if meta else True,
+        # COCO ignore disks on free strips (resting balls -1 or not), labels' seed.
+        "labels_coco": meta.get("coco") if meta else None,
+        "labels_seed": meta.get("seed") if meta else None,
         "sigma": {"SIGMA_D": bh.SIGMA_D, "SIGMA_F": bh.SIGMA_F},
+        "sigma_measured": bool(bh.SIGMA_MEASURED),
         **recipe(), "seed": seed, "motion": motion, "step": step, "steps": steps,
-        "strips": str(root),
+        "strips": str(root), "window_strips_allowed": allow_window_strips,
         "labels_sha256": _sha(root / "labels.parquet", root / "labels_codes.npy"),
         "n_train": table[~held].kind.value_counts().sort_index().to_dict(),
         "n_holdout": table[held].kind.value_counts().sort_index().to_dict(),
@@ -735,17 +782,42 @@ class Run:
                 "peak": peak.sum().item() / n}
 
 
+def check_sigma(placeholder_ok: bool = False, log=print) -> bool:
+    """Refuse to train v2 on the placeholder motion scales: SIGMA_D and
+    SIGMA_F must have been measured (`label_ball_strips.py --sigma`) and
+    written into src/ball_heatmap.py together with SIGMA_MEASURED = True.
+    `placeholder_ok` (smoke runs) passes, noted. True when measured."""
+    from src import ball_heatmap as bh
+
+    values = (bh.SIGMA_D, bh.SIGMA_F)
+    if bh.SIGMA_MEASURED and values != tuple(bh.SIGMA_PLACEHOLDERS):
+        return True
+    why = ("SIGMA_MEASURED is True but SIGMA_D / SIGMA_F are still the placeholders "
+           f"{values}" if bh.SIGMA_MEASURED else
+           f"SIGMA_MEASURED is False: SIGMA_D / SIGMA_F = {values} are placeholders")
+    if not placeholder_ok:
+        raise SystemExit(f"refused: {why}. Measure them (label_ball_strips.py --strips "
+                         f"DIR --sigma), write both into src/ball_heatmap.py and set "
+                         f"SIGMA_MEASURED = True there; --placeholder-sigma for a smoke run")
+    log(f"  note: {why} (smoke run; the provenance records it)")
+    return False
+
+
 def train_v2(root, out, steps: int = STEPS_V2, motion: bool = True, seed: int = 0,
              checkpoints=CHECKPOINTS_V2, monitor_every: int = MONITOR_EVERY,
-             mix=MIX_V2, log=print) -> list:
+             mix=MIX_V2, log=print, placeholder_sigma: bool = False,
+             allow_window_strips: bool = False) -> list:
     """Train on the strips in `root`; checkpoints `<out>.<step>.pt` with
-    their provenance. Returns the monitor history."""
+    their provenance. Returns the monitor history. Refuses the placeholder
+    motion scales unless `placeholder_sigma` (`check_sigma`), and window
+    strips unless `allow_window_strips` (`load_strips`)."""
     import torch
 
     from src.ball_heatmap import write_provenance
 
+    check_sigma(placeholder_sigma, log)
     root = Path(root)
-    table, codes, meta = load_strips(root)
+    table, codes, meta = load_strips(root, allow_window_strips, log)
     torch.set_num_threads(4)
     run = Run(root, table, codes, motion, seed, steps, mix)
     tr = table[~table.holdout.astype(bool)]
@@ -784,7 +856,8 @@ def train_v2(root, out, steps: int = STEPS_V2, motion: bool = True, seed: int = 
                 ckpt = f"{out}.{step}.pt"
                 torch.save(run.model.state_dict(), ckpt)
                 prov = write_provenance(ckpt, provenance_info(
-                    root, table, meta, motion, seed, step, steps, history, mix))
+                    root, table, meta, motion, seed, step, steps, history, mix,
+                    allow_window_strips))
                 log(f"  saved {ckpt}, {prov.name}")
     finally:
         run.close()
@@ -792,7 +865,8 @@ def train_v2(root, out, steps: int = STEPS_V2, motion: bool = True, seed: int = 
 
 
 def bench_v2(root, n: int, motion: bool = True, at: int = 1, seed: int = 0,
-             rounds: int = 5, mix=MIX_V2, log=print) -> dict:
+             rounds: int = 5, mix=MIX_V2, log=print,
+             allow_window_strips: bool = False) -> dict:
     """Seconds per training step as training runs them (loading,
     augmentation and motion channels in the prefetch thread; forward,
     backward, update) over `n` steps from step `at` of the schedule
@@ -802,7 +876,7 @@ def bench_v2(root, n: int, motion: bool = True, at: int = 1, seed: int = 0,
     import torch
 
     root = Path(root)
-    table, codes, _ = load_strips(root)
+    table, codes, _ = load_strips(root, allow_window_strips, log)
     torch.set_num_threads(4)
     runs = {m: Run(root, table, codes, m, seed, STEPS_V2, mix)
             for m in ((True, False) if motion else (False,))}
@@ -854,14 +928,20 @@ def main():
                     help="v2: time N steps, save nothing")
     ap.add_argument("--bench-at", type=int, default=1, metavar="STEP",
                     help="v2: the schedule's step the benchmark starts at")
+    ap.add_argument("--placeholder-sigma", action="store_true",
+                    help="v2 smoke runs: train on the placeholder SIGMA_D / SIGMA_F")
+    ap.add_argument("--allow-window-strips", action="store_true",
+                    help="v2 smoke runs: also strips cut from window videos")
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     if args.check:
         _check()
         return
     if args.patches:
-        if args.motion is not None or args.bench or args.seed:
-            ap.error("--motion, --seed and --bench are for --strips")
+        if (args.motion is not None or args.bench or args.seed or args.placeholder_sigma
+                or args.allow_window_strips):
+            ap.error("--motion, --seed, --bench, --placeholder-sigma and "
+                     "--allow-window-strips are for --strips")
         if not args.out:
             ap.error("--out is needed")
         args.steps = args.steps or 3000
@@ -872,12 +952,14 @@ def main():
     motion = True if args.motion is None else args.motion
     if args.bench:
         bench_v2(args.strips, args.bench, motion, args.bench_at, args.seed,
-                 log=lambda s: print(s, flush=True))
+                 log=lambda s: print(s, flush=True),
+                 allow_window_strips=args.allow_window_strips)
         return
     if not args.out:
         ap.error("--out is needed")
     train_v2(args.strips, args.out, args.steps or STEPS_V2, motion, args.seed,
-             log=lambda s: print(s, flush=True))
+             log=lambda s: print(s, flush=True), placeholder_sigma=args.placeholder_sigma,
+             allow_window_strips=args.allow_window_strips)
 
 
 # ---- Self-check -----------------------------------------------------------------
@@ -935,19 +1017,22 @@ def _synthetic_strips(root: Path, seed: int = 0) -> pd.DataFrame:
     table.to_parquet(root / "labels.parquet")
     np.save(root / "labels_codes.npy", np.stack(codes))
     (root / "labels_meta.json").write_text(json.dumps(_jsonable(
-        {"constants": LABEL_CONSTANTS, "seed": seed}), indent=1))
+        {"constants": LABEL_CONSTANTS, "coco": False, "seed": seed}), indent=1))
     return table
 
 
 def _check():
-    """On a synthetic strips dir: the data guard, the batch mix, the
-    augmentation (crops kept in register, codes following the image, time
-    reversal, dropout, missing frames), the same t crops with and without
-    motion, the input equal to `to_tensor_v2`, prefetching, the losses
-    (footprint pool, v1's log-mean-exp and focal terms, peak suppression),
-    the random drops, the optimiser groups, start and schedule; then two
+    """On a synthetic strips dir: the data guard, window strips dropped
+    (codes kept in register), the placeholder motion scales refused, the
+    batch mix, the augmentation (crops kept in register, codes following
+    the image, time reversal, dropout, missing frames), the same t crops
+    with and without motion, the input equal to `to_tensor_v2`,
+    prefetching, the losses (footprint pool, v1's log-mean-exp and focal
+    terms, peak suppression), the random drops, the optimiser groups,
+    start and schedule; then two
     steps of the motion model and one of the RGB-only one (with the
-    monitor, checkpoints and provenance), and a two-step benchmark."""
+    monitor, checkpoints and provenance; both read back by
+    `ball_heatmap.load_v2`), and a two-step benchmark."""
     import tempfile
 
     import torch
@@ -973,8 +1058,40 @@ def _check():
         bad = table.copy()
         bad.loc[0, ["match", "half", "frame"]] = ["118576", 2, 13499]
         _refused(root, bad, codes)
+        # Window strips: dropped and counted, the codes still in register;
+        # kept when allowed; one of a never-train match still refused.
+        win = table.copy()
+        win.loc[[3, 7], "source"] = "st2_118575_1st_f000000"
+        win.to_parquet(root / "labels.parquet")
+        said = []
+        wt, wc, _ = load_strips(root, log=said.append)
+        kept = [i for i in range(len(table)) if i not in (3, 7)]
+        assert len(wt) == len(wc) == len(kept) and set(wt.source) == {"stream"}
+        assert wt.file.tolist() == table.file[kept].tolist()
+        assert all(np.array_equal(wc[j], codes[i]) for j, i in enumerate(kept))
+        assert any(s.startswith("  2 window strips dropped") for s in said), said
+        assert len(load_strips(root, allow_window_strips=True)[0]) == len(table)
+        win.loc[3, "match"] = "118578"
+        _refused(root, win, codes)
         table.to_parquet(root / "labels.parquet")
         rows = list(tab.itertuples(index=False))
+        # The motion scales: placeholders refused, unless a smoke run says
+        # so; measured ones (SIGMA_MEASURED, and other values) pass.
+        from src import ball_heatmap as bh
+
+        saved = bh.SIGMA_D, bh.SIGMA_F, bh.SIGMA_MEASURED
+        quiet = lambda *a: None  # noqa: E731
+        try:
+            for vals, flag, ok in (((0.02, 0.05), False, False), ((0.02, 0.05), True, False),
+                                   ((0.07, 0.03), False, False), ((0.07, 0.03), True, True)):
+                (bh.SIGMA_D, bh.SIGMA_F), bh.SIGMA_MEASURED = vals, flag
+                try:
+                    assert check_sigma(log=quiet) and ok
+                except SystemExit:
+                    assert not ok
+                assert check_sigma(True, log=quiet) == ok
+        finally:
+            bh.SIGMA_D, bh.SIGMA_F, bh.SIGMA_MEASURED = saved
 
         # The mix: 16 a batch; the empty "random" category from all free strips.
         train = np.flatnonzero(~tab.holdout.to_numpy())
@@ -1144,10 +1261,20 @@ def _check():
         small = tuple((k, c, 1) for k, c, _ in MIX_V2)
         logs = []
         hist = {}
+        bh.SIGMA_MEASURED = False
+        try:
+            train_v2(root, Path(tmp) / "no", steps=1, mix=small, log=logs.append)
+            raise AssertionError("a v2 run started on the placeholder motion scales")
+        except SystemExit:
+            pass
+        finally:
+            bh.SIGMA_MEASURED = saved[2]
+        assert not list(Path(tmp).glob("no.*"))
         for motion, steps in ((True, 2), (False, 1)):
             out = Path(tmp) / ("m" if motion else "rgb")
             hist[motion] = train_v2(root, out, steps=steps, motion=motion, checkpoints=(1,),
-                                    monitor_every=1, mix=small, log=logs.append)
+                                    monitor_every=1, mix=small, log=logs.append,
+                                    placeholder_sigma=True)
             for step in range(1, steps + 1):
                 ck = f"{out}.{step}.pt"
                 prov = read_provenance(ck)
@@ -1156,6 +1283,9 @@ def _check():
                 assert ["118576", 2, 13500, 20999] in prov["exclude"]
                 assert prov["label_constants_as_code"] and len(prov["recipe_sha256"]) == 64
                 assert set(prov["sigma"]) == {"SIGMA_D", "SIGMA_F"}
+                assert prov["sigma_measured"] == bh.SIGMA_MEASURED
+                assert prov["window_strips_allowed"] is False
+                assert prov["labels_coco"] is False and prov["labels_seed"] == 0
                 assert len(prov["monitor"]) == step and len(prov["mix"]) == 8
             build_net(motion=motion).load_state_dict(torch.load(f"{out}.{steps}.pt"))
         m = hist[True][-1]
@@ -1167,11 +1297,18 @@ def _check():
         a = torch.load(f"{Path(tmp) / 'm'}.1.pt")
         b = torch.load(f"{Path(tmp) / 'rgb'}.1.pt")
         assert set(a) - set(b) == {"conv1_motion.weight"}
+        # Both load for inference (`ball_heatmap.load_v2`, as eval and detect
+        # do): the motion one with the scales it was trained with.
+        _, im = bh.load_v2(f"{Path(tmp) / 'm'}.2.pt")
+        _, ir = bh.load_v2(f"{Path(tmp) / 'rgb'}.1.pt")
+        assert not im["rgb_only"] and (im["sigma_d"], im["sigma_f"]) == (bh.SIGMA_D, bh.SIGMA_F)
+        assert ir["rgb_only"]
         bench = bench_v2(root, 2, True, at=1201, rounds=1, mix=small, log=logs.append)
         assert bench["ratio"] > 0
-    print(f"  train_ball_heatmap: guard, mix, augmentation in register, input, "
-          f"prefetch, losses, drops, optimiser, steps of both models with monitor "
-          f"and provenance, bench; {time.time() - t_start:.0f} s")
+    print(f"  train_ball_heatmap: guard, window strips dropped, placeholder sigmas "
+          f"refused, mix, augmentation in register, input, prefetch, losses, drops, "
+          f"optimiser, steps of both models with monitor and provenance (both "
+          f"through load_v2), bench; {time.time() - t_start:.0f} s")
 
 
 def _refused(root: Path, table: pd.DataFrame, codes):

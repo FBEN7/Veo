@@ -43,11 +43,16 @@ name in the scores (`--name` otherwise). Fitting reads U windows (match
 118578) only: never a report match (117093, 132877) or a test match, and
 a match of the checkpoint's training provenance, or any other match,
 only with `--allow-seen` (smoke tests). An existing calibration is not
-overwritten without `--force`.
+overwritten without `--force`. The motion scales the scores were made
+with (their metadata's "sigma", `eval_ball_detector.py --v2`, or the
+parquet sidecars' under `--candidates`) must be the checkpoint's own
+(its provenance), and are recorded; a checkpoint sha256 the scores
+record must be this checkpoint's.
 
 `--evaluate CALIB --out FILE` applies a frozen calibration to other
 scores (V's sealed file, for the ECE of p_cal): the same table, ECE and
-candidates per frame at its tau go to FILE, and only counts are printed.
+candidates per frame at its tau go to FILE -- never to an input file --
+and only frame and window counts are printed.
 """
 
 from __future__ import annotations
@@ -327,6 +332,28 @@ def _detector(results, meta: dict, ckpt, name: str | None) -> str:
     return name
 
 
+def _sigma(meta: dict, ckpt) -> dict | None:
+    """The motion scales the scores' detector ran with ("sigma" in the
+    scores' metadata: `eval_ball_detector.py --v2`, or each window's
+    parquet sidecar under `--candidates`; else the checkpoint's
+    provenance). Refuses scores whose scales are not the checkpoint's own
+    (those of an RGB-only run do not matter), or which record another
+    checkpoint's sha256: they are not this checkpoint's candidates."""
+    runs = [meta, *(w for w in (meta.get("windows") or {}).values() if isinstance(w, dict))]
+    shas = {r["ckpt sha256"] for r in runs if r.get("ckpt sha256")}
+    if shas and shas != {_sha256(ckpt)}:
+        raise ValueError(f"the scores were made with another checkpoint than {ckpt} "
+                         f"(sha256 {sorted(shas)})")
+    d, f = bh.provenance_sigma(bh.read_provenance(ckpt))
+    trained = None if d is None and f is None else {"SIGMA_D": d, "SIGMA_F": f}
+    used = [r["sigma"] for r in runs if r.get("sigma") is not None and not r.get("rgb_only")]
+    for u in used:
+        if u != (trained or used[0]):
+            raise ValueError(f"the scores' {u} are not the motion scales of {ckpt}'s "
+                             f"provenance {trained or used[0]}")
+    return used[0] if used else trained
+
+
 def run(scores, ckpt, out=None, name: str | None = None, allow_seen: bool = False,
         force: bool = False, cal_of=st.calibration, log=print) -> dict:
     """The command line's fit: read, guard, calibrate, write, print."""
@@ -335,12 +362,14 @@ def run(scores, ckpt, out=None, name: str | None = None, allow_seen: bool = Fals
     name = _detector(results, meta, ckpt, name)
     results = [r for r in results if name in r]
     check_windows(results, ckpt, allow_seen)
+    sigma = _sigma(meta.get(name, {}), ckpt)
     out = Path(out) if out else bh.calib_path(ckpt)
     if out.exists() and not force:
         raise ValueError(f"{out} exists (a frozen calibration?); --force to replace")
     c = calibrate(results, name, cal_of)
     blob = {"a": c.pop("a"), "b": c.pop("b"), "tau": c.pop("tau"),
             "ckpt": str(ckpt), "ckpt sha256": _sha256(ckpt), "detector": name,
+            "sigma": sigma, "rgb_only": meta.get(name, {}).get("rgb_only"),
             "scores": [{"path": str(p), "sha256": _sha256(p)} for p in scores],
             "windows": [r["window"] for r in results], **c, "rules": _rules()}
     out.write_text(json.dumps(blob, indent=1))
@@ -369,10 +398,18 @@ def run(scores, ckpt, out=None, name: str | None = None, allow_seen: bool = Fals
 
 def run_evaluate(scores, calib_path, out, name: str | None = None,
                  cal_of=st.calibration, log=print) -> dict:
-    """The command line's `--evaluate`: writes, prints counts only."""
+    """The command line's `--evaluate`: writes `out` only (never the
+    calibration or a scores file), prints frame and window counts only --
+    no candidate count, which with the frames would be a measure of the
+    sealed detector."""
     calib = bh.load_calibration(calib_path)
     if calib is None:
         raise ValueError(f"no calibration at {calib_path}")
+    keep = {Path(p).resolve() for p in [*scores, calib_path]}
+    if Path(calib_path).suffix != ".json":
+        keep.add(bh.calib_path(calib_path).resolve())
+    if Path(out).resolve() in keep:
+        raise ValueError(f"--out {out} is an input (the calibration or a scores file)")
     merged, meta = ev.load_scores(scores)
     results = list(merged.values())
     name = _detector(results, meta, calib.get("ckpt", "?"), name or calib.get("detector"))
@@ -385,9 +422,8 @@ def run_evaluate(scores, calib_path, out, name: str | None = None,
             "windows": [r["window"] for r in results],
             **evaluate(results, name, calib, cal_of), "rules": _rules()}
     Path(out).write_text(json.dumps(blob, indent=1))
-    log(f"  {name}: {blob['candidates']} candidates on {blob['frames']['pass']} pass + "
-        f"{blob['frames']['action']} action frames, {blob['random frames']} random "
-        f"frames of {len(results)} windows -> {out}")
+    log(f"  {name}: {blob['frames']['pass']} pass + {blob['frames']['action']} action "
+        f"frames, {blob['random frames']} random frames of {len(results)} windows -> {out}")
     return blob
 
 
@@ -424,8 +460,9 @@ def _check():
     at the edges of the pass and actor rules; a Platt fit recovering the
     (a, b) the labels were drawn with, and calibrated within its bins;
     tau against a brute count, with the save floor and the top-8 cap
-    making grid values inexact; the window guards, the file round trip
-    and `--evaluate`."""
+    making grid values inexact; the window guards, the motion scales of
+    the scores against the checkpoint's, the file round trip and
+    `--evaluate` (frame counts only on the screen, inputs never written)."""
     import tempfile
 
     K = np.array([[1e6, 0, 525.0], [0, 1e6, 340.0], [0, 0, 1]])
@@ -540,7 +577,31 @@ def _check():
         got = bh.load_calibration(ckpt)
         assert got["a"] == blob["a"] == c["a"] and got["tau"] == c["tau"]
         assert got["ckpt sha256"] == hashlib.sha256(b"weights").hexdigest()
-        assert got["windows"] == ["st2_118578_1st_f000000"]
+        assert got["windows"] == ["st2_118578_1st_f000000"] and got["sigma"] is None
+        # The motion scales: the scores' must be the checkpoint's own, in the
+        # eval metadata or a parquet's sidecars (an RGB-only run's do not
+        # matter); a recorded checkpoint sha256 must be this one's.
+        mine, other = {"SIGMA_D": 0.07, "SIGMA_F": 0.03}, {"SIGMA_D": 0.02, "SIGMA_F": 0.05}
+        sha = hashlib.sha256(b"weights").hexdigest()
+        bh.write_provenance(ckpt, {"train": bh.V2_TRAIN, "exclude": bh.V2_EXCLUDE,
+                                   "sigma": mine})
+        side = lambda s, **k: {"source": "parquet", "windows": {  # noqa: E731
+            U["window"]: {"sigma": s, "ckpt sha256": sha, **k}}}
+        for det, ok in (({"sigma": other}, False), ({"sigma": mine}, True),
+                        ({"sigma": mine, "ckpt sha256": sha}, True),
+                        ({"sigma": mine, "ckpt sha256": "0" * 64}, False),
+                        ({"sigma": other, "rgb_only": True}, True),
+                        (side(other), False), (side(mine), True),
+                        (side(other, rgb_only=True), True),
+                        (dict(side(mine), sigma=other), False)):
+            (tmp / "S.json").write_text(json.dumps({
+                "detectors": {"ball_v2.pt": {"kind": "v2", **det}}, "results": [U]}))
+            try:
+                b2 = run([tmp / "S.json"], ckpt, tmp / "s.json", force=True,
+                         cal_of=lambda m: cal, log=quiet)
+                assert ok and b2["sigma"] == mine, det
+            except ValueError:
+                assert not ok, det
         for m, allow in (("117093", True), ("128057", True), ("118577", False),
                          ("117092", False)):
             V = dict(U, window=f"st2_{m}_1st_f000000", match=m)
@@ -564,13 +625,25 @@ def _check():
                 raise AssertionError("an overwrite or a wrong name passed")
             except ValueError:
                 pass
+        # --evaluate: the file gets everything, the screen frame counts only;
+        # an input as --out is refused.
+        said = []
         ev_out = run_evaluate([sc], bh.calib_path(ckpt), tmp / "e.json",
-                              cal_of=lambda m: cal, log=quiet)
+                              cal_of=lambda m: cal, log=said.append)
         assert ev_out["ece"] == c["ece"] and ev_out["at tau"]["tau"] == c["tau"]
         assert json.loads((tmp / "e.json").read_text())["detector"] == "ball_v2.pt"
+        assert len(said) == 1 and "candidates" not in said[0]
+        assert str(ev_out["candidates"]) not in said[0] and "ece" not in said[0].lower()
+        for out in (bh.calib_path(ckpt), sc):
+            try:
+                run_evaluate([sc], ckpt, out, cal_of=lambda m: cal, log=quiet)
+                raise AssertionError(f"--evaluate would write over {out}")
+            except ValueError:
+                pass
     print(f"  calibrate_ball_heatmap: labels at the rule edges, Platt recovers "
           f"(a, b) = ({a0}, {b0}) as ({c['a']:.3f}, {c['b']:.3f}), ECE {c['ece']:.3f}, "
-          f"tau {c['tau']} = brute count, floor / top-8 inexact, guards, files: ok")
+          f"tau {c['tau']} = brute count, floor / top-8 inexact, guards, motion "
+          f"scales, files, --evaluate counts only: ok")
 
 
 if __name__ == "__main__":
