@@ -53,9 +53,9 @@ BALL_M = 0.22
 # together with SIGMA_MEASURED = True; until then `train_ball_heatmap.py`
 # refuses a v2 run. A checkpoint records the values it was trained with in
 # its provenance, and inference uses those (`load_v2`), not these.
-SIGMA_D = 0.02
-SIGMA_F = 0.05
-SIGMA_MEASURED = False
+SIGMA_D = 0.0535      # std: 73% of D is exactly 0 (static x264 blocks)
+SIGMA_F = 0.0174      # robust std (1.4826 MAD)
+SIGMA_MEASURED = True  # label_ball_strips.py --sigma, 1000 training strips
 SIGMA_PLACEHOLDERS = (0.02, 0.05)       # refused for training, even if "measured"
 
 # v2 training data (protocol v3): matches and halves, absolute frame ranges
