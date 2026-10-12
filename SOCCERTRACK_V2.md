@@ -935,6 +935,43 @@ not cut):
   which is conservative for the tracker.
 - V-new is the last unseen M2 / M10 data, and this spends it.
 
+**Gate on U-test: passed** (recorded before any V-new window was cut).
+- **Run:** the tracker covered every measured frame. No fill was longer
+  than 6 frames, and the dense top-1 equals the evaluation's top-1 at all
+  228 shared frames.
+- **Sitting S-U:** 122 tiles judged blind (judgements sha256 228cd536...
+  recorded before the key was read): B 60, N 58, a ball off the pitch 3,
+  a ball resting by a goal 1.
+
+| | result | bar |
+|---|---|---|
+| G-a: passes where tracking gains / loses | 11 / 3 (sign test p = 0.029) | gains > losses |
+| G-b: placebo hits, tracked / raw | before the kick 3 / 4, after 1 / 1 | ≤ raw + 1 |
+| G-c: decoys judged the ball | 0 of 20; offset 0 of 6 | ≤ 2; ≤ 1 |
+| G-d: code check | stride 2, registered checkpoint and calibration, fills ≤ 6 | all |
+
+- **Where the change comes from:** 39 passes give 66 pair frames.
+  - **Gains:** all 13 frames where only the tracked pick is the ball are
+    interpolated: 6 detection frames the linker left empty, and 7 odd
+    frames.
+  - **Losses:** all 3 frames where only the raw pick is are odd frames
+    with no tracked pick.
+  - **At detection frames** the two agree (14 both right, 1 both wrong).
+  - **At q1 alone** the comparison is 1 against 1, which is why pair
+    frames are the primary.
+- **Doubtful tiles:** counting every doubtful raw-only tile as the ball
+  (three were a ball off the pitch, by the fence) still gives 9 against
+  5.
+- **Re-judged old tiles:** 6 of 6 agree.
+- **FF-auto is not valid for tracked picks.** On interpolated tracked
+  tiles it agrees with the judge at kappa 0.17 (PPV 0.89), so for V-new it
+  stays a secondary measure, reported as invalid, as registered.
+- **The registered expected size was too optimistic.** On U-test only 36%
+  of passes are informative (d ≠ 0), so V-new should give about 39 such
+  passes, not 63. Power is about 0.62 at a 70/30 split; U-test's 79/21
+  would give 0.94.
+- **U numbers are optimistic:** the Platt fit used M6.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
