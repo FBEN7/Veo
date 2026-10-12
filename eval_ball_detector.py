@@ -62,6 +62,39 @@ refused (rerun with `--extra-frames measured`) unless `--allow-partial`.
 A v2 checkpoint is refused on a match of its training provenance unless
 `--allow-seen` (the T diagnostic only).
 
+Protocol v4-r1 adds a tracked detector, `--track NAME=PARQUET`
+(`{window}` replaced): `src/ball_track.track` over every row of a dense
+parquet -- refused unless its sidecar is a stride-only run (no extra
+frames, every processed frame on the stride) with a calibration: rows with
+p_cal >= tau, top-k a frame, linked by `ball_link.link` with an empty
+player table over the sidecar's processed frames, gaps of at most `gap`
+frames filled on the pitch when the implied ground speed is at most
+`max_fill_speed`, and the raw top-1 at a processed frame still without a
+position (the fallback). Its pick at a measured frame is one row [u, v,
+p_raw, size, logit] where the track has a row (interpolated rows carry the
+weaker end's p and logit), else none (a miss). It measures every frame
+the parquet covers -- processed, or between two processed frames at most
+the sidecar's stride apart (a stride-2 run's odd frames) -- and a frame
+just past the last processed one (by less than the stride) as none,
+counted; it refuses others unless `--allow-partial`. `--track-params
+[NAME=]JSON` sets tau (default: the sidecar calibration's), top_k, c_null,
+c_static, gap, max_fill_speed, fallback over TRACK_DEFAULT (protocol
+v4-r1's: `ball_track.DEFAULTS`, fallback on); a record with "params" is
+read only from the frozen track_params.json of `tune_ball_track.py`, with
+a matching `.sha256`; NAME= for one --track only. A --track name may not
+be another detector's. It works with `--reuse` (added to saved results, no
+video) and `--sealed`. Its metadata (kind "v2-track") keeps the settings,
+where they came from (inline, or the file's path and sha256), the sha256
+of src/ball_track.py, src/ball_link.py and this file, the calibrations'
+sha256, per window its sidecar with the track's counts, and its "top-1
+check": at the frames both have, how often the dense run's top-1 equals
+each raw v2 of its checkpoint (the eval decode), which the log prints
+(counts only, sealed too) with the measured frames by source. Its result
+per window has "track source" ({frame: detected / interpolated /
+fallback / none}) next to its candidates, for the tiles. The summary pairs
+it with COCO and with each raw v2 of its checkpoint. Nothing else changes:
+the other detectors' results are identical with or without it.
+
 A frame a detector did not measure (not processed, past the video's end,
 `--limit-frames`, a partial file) is left out of FF-auto and the
 placebos, never counted as a miss: a pass with such a frame is not scored
@@ -95,12 +128,21 @@ reads and merges several):
                  "placebo": {NAME: {"pre", "pre frames", "pre not measured",
                                     "post", "post frames", "post not measured",
                                     "windows"}}},
-     "detectors": {NAME: {"kind": "coco" | "v1" | "v2" | "v2-motion-zero",
+     "detectors": {NAME: {"kind": "coco" | "v1" | "v2" | "v2-motion-zero"
+                                  | "v2-track",
                           "path", "calib" (<ckpt>.calib.json if there),
                           "train" (provenance), "ckpt sha256", "rgb_only",
                           "sigma" ({"SIGMA_D", "SIGMA_F"} used),
                           "source": "parquet", "windows" ({W: its sidecar
-                          less the frame list})}},
+                          less the frame list; v2-track: with "track":
+                          {"params", "track rows", "fill", "detected or
+                          fallback off the stride", "measured frames by
+                          source", "past the last processed frame", "not
+                          covered"}}),
+                          v2-track: "track" (the settings), "params from",
+                          "code sha256", "calib sha256", "top-1 check"
+                          ({raw v2: {W: {"shared frames", "same top-1",
+                          "differ"}}})}},
      "protocol": {the FF-auto and placebo constants},
      "results": [one per window: {
         "window", "passes" (count), "actions" (count),
@@ -133,8 +175,10 @@ reads and merges several):
               hits] per pass, None where not measured), "ff incomplete passes",
           "placebo pre", "placebo post" ({"rate", "hits", "frames",
               "not measured"}),
-          "placebo pre hits", "placebo post hits"}]}  # per entry, None
+          "placebo pre hits", "placebo post hits",  # per entry, None
                                                      # where not measured
+          "track source" (v2-track: {"frame": "detected" | "interpolated"
+              | "fallback" | "none"} at its measured frames)}]}
 
 All frames are local to the window (absolute = start_frame + local).
 A frame missing from a detector's "candidates" was not measured; an empty
@@ -159,6 +203,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
+from src import ball_track as bt
 from src import soccertrack_v2 as st
 from src.ball_heatmap import BALL_M, build, detect, local_scale
 from src.paths import DATA_DIR
@@ -621,7 +666,8 @@ def run_window(window: str, detectors: dict, seed: int = 0, motion: dict | None 
     `kinds` only, e.g. the placebo frames to add to an older file; the
     first `limit` of them in a smoke test) and measure. `extra`: name ->
     fn(window, frames) -> {frame: rows}, candidates obtained otherwise
-    (`--candidates`)."""
+    (`--candidates`, `--track`: its "track source" kept,
+    `attach_track_sources`)."""
     wd = window_data(window, seed)
     wanted = measured_frames(wd["sets"], kinds)[:limit]
     cands, n_bg = {}, {}
@@ -631,7 +677,7 @@ def run_window(window: str, detectors: dict, seed: int = 0, motion: dict | None 
         rows = fn(window, wanted)
         cands[name] = {f: rows[f] for f in wanted if f in rows}
     log_coverage(window, cands, wanted, log)
-    return measure(wd, cands, seed, n_bg)
+    return attach_track_sources(measure(wd, cands, seed, n_bg), extra, window)
 
 
 def log_coverage(window: str, cands: dict, wanted, log=print):
@@ -685,6 +731,342 @@ def parquet_source(path: str, allow_partial: bool = False):
     return fn
 
 
+# ---- A tracked detector (protocol v4-r1) --------------------------------------------
+
+TRACK_KEYS = ("tau", *bt.DEFAULTS)
+TRACK_DEFAULT = dict(bt.DEFAULTS)
+TRACK_SOURCES = (*bt.SOURCES, "none")
+TRACK_CODE = ("src/ball_track.py", "src/ball_link.py", "eval_ball_detector.py")
+TOP1_TOL_PX, TOP1_TOL_LOGIT = 0.01, 1e-3
+
+
+def _sha256_file(path) -> str:
+    import hashlib
+
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def read_track_params(spec: str) -> dict:
+    """A tracker setting (`--track-params`): a JSON object, inline
+    ('{"gap": 4}') or a file. A record with "params" (the frozen
+    track_params.json of `tune_ball_track.py`) gives those, and only from a
+    file that says "frozen": true and whose `<file>.sha256` exists and
+    matches it. Keys: TRACK_KEYS, any other refused."""
+    text = spec.strip()
+    inline = text.startswith("{")
+    blob = json.loads(text if inline else Path(text).read_text())
+    if not isinstance(blob, dict):
+        raise ValueError(f"{spec}: not a JSON object")
+    if "params" in blob:
+        if inline:
+            raise ValueError(f"{spec}: a params record is read from its file, with its "
+                             f".sha256")
+        if blob.get("frozen") is not True:
+            raise ValueError(f"{spec}: not a frozen record (\"frozen\": "
+                             f"{blob.get('frozen')!r})")
+        digest = Path(f"{text}.sha256")
+        if not digest.exists():
+            raise ValueError(f"{spec}: no {digest.name} to check it against")
+        want = (digest.read_text().split() or [""])[0]
+        got = _sha256_file(text)
+        if got != want:
+            raise ValueError(f"{spec}: sha256 {got} is not {digest.name}'s {want}")
+        blob = blob["params"]
+        if not isinstance(blob, dict):
+            raise ValueError(f"{spec}: \"params\" is not a JSON object")
+    unknown = sorted(set(blob) - set(TRACK_KEYS))
+    if unknown:
+        raise ValueError(f"unknown tracker parameters {unknown} (known: {list(TRACK_KEYS)})")
+    return dict(blob)
+
+
+def track_params_source(spec: str) -> dict:
+    """Where a `--track-params` setting came from, for the metadata: the
+    inline text, or the file's path and sha256."""
+    text = spec.strip()
+    if text.startswith("{"):
+        return {"inline": text}
+    return {"path": str(Path(text).resolve()), "sha256": _sha256_file(text)}
+
+
+def covered(frames, processed, stride: int) -> set:
+    """Of local `frames`, those a tracker over the `processed` frames
+    measures: the processed ones, and those strictly between two
+    consecutive processed frames at most `stride` apart (a stride-2 run's
+    odd frames). Others -- before the first, after the last, in a range not
+    run -- are not covered (`past_last` for the frames just after the
+    last)."""
+    done = np.unique(np.asarray(list(processed), int))
+    out = set()
+    for f in {int(f) for f in frames}:
+        k = int(np.searchsorted(done, f))
+        if (k < len(done) and done[k] == f) or (
+                0 < k < len(done) and done[k] - done[k - 1] <= stride):
+            out.add(f)
+    return out
+
+
+def past_last(frames, processed, stride: int) -> set:
+    """Of local `frames`, those after the last processed frame by less
+    than `stride` (a whole stride-2 run's last odd frame): the tracker has
+    no position there -- it never extrapolates -- so they are measured as
+    none."""
+    done = [int(f) for f in processed]
+    if not done:
+        return set()
+    last = max(done)
+    return {int(f) for f in frames if last < int(f) < last + stride}
+
+
+def tracked_at(tr: pd.DataFrame, wanted, processed, stride: int) -> tuple[dict, dict]:
+    """The tracked detector at the `wanted` local frames it covers
+    (`covered`, `past_last`): {frame: rows} with one row [u, v, p_raw, size,
+    logit] where the track `tr` (`ball_track.track`, fallback included)
+    has a row, else no row (a miss); and {frame: source}, "detected",
+    "interpolated", "fallback" or "none"."""
+    f = tr.frame.to_numpy(int)
+    if len(np.unique(f)) != len(f):
+        raise ValueError("the track has more than one row at a frame")
+    at = dict(zip(f.tolist(), range(len(f))))
+    a = tr[["u", "v", "p_raw", "size", "logit"]].to_numpy(float)
+    source = tr.source.to_numpy()
+    out, src = {}, {}
+    for k in sorted(covered(wanted, processed, stride) | past_last(wanted, processed, stride)):
+        if k in at:
+            out[k] = a[at[k]][None, :]
+            src[k] = str(source[at[k]])
+        else:
+            out[k] = np.zeros((0, 5))
+            src[k] = "none"
+    return out, src
+
+
+def top1_agreement(dense: dict, raw: dict) -> dict:
+    """The dense run's top-1 ({frame: rows}, `parquet_candidates`) against
+    another decode's (a scores file's {"frame": saved rows}) at the frames
+    both have: the same when both are empty, or both have a row within
+    TOP1_TOL_PX in u, v and size and TOP1_TOL_LOGIT in the logit."""
+    shared = sorted(int(f) for f in dense if str(int(f)) in raw)
+    same = 0
+    for f in shared:
+        a, b = _rows(dense[f])[:1], _rows(raw[str(f)])[:1]
+        if not len(a) and not len(b):
+            same += 1
+        elif (len(a) and len(b) and a.shape[1] == b.shape[1] == 5
+              and np.all(np.abs(a[0, [0, 1, 3]] - b[0, [0, 1, 3]]) <= TOP1_TOL_PX)
+              and abs(a[0, 4] - b[0, 4]) <= TOP1_TOL_LOGIT):
+            same += 1
+    return {"shared frames": len(shared), "same top-1": same, "differ": len(shared) - same}
+
+
+def track_parquet(path, wanted, cal: dict, params: dict | None = None,
+                  allow_partial: bool = False,
+                  window: str | None = None) -> tuple[dict, dict, dict]:
+    """A tracked detector over the dense parquet at `path`, its sidecar
+    checked as `parquet_candidates` does and refused unless it is a
+    stride-only run with a calibration (`ball_track.check_stride_only`):
+    `ball_track.track` over all its rows with `cal` (the match's camera)
+    and the processed frames as detection frames, read at the `wanted`
+    local frames by `tracked_at`. `params`: TRACK_KEYS over TRACK_DEFAULT;
+    tau defaults to the sidecar calibration's (the rows' confidence is
+    p_cal). A wanted frame the run does not cover raises unless
+    `allow_partial` (then it is not measured). Returns {frame: rows}; the
+    sidecar less its frame list, with "processed" and "track" (the
+    settings and counts only); and {"source": {frame: source}, "dense
+    top1": {frame: the dense top-1 rows}} at the processed wanted frames."""
+    from detect_ball_heatmap import read_sidecar
+
+    params = {**TRACK_DEFAULT, **(params or {})}
+    unknown = sorted(set(params) - set(TRACK_KEYS))
+    if unknown:
+        raise ValueError(f"unknown tracker parameters {unknown}")
+    meta = read_sidecar(path)
+    if window is not None and meta.get("window") not in (None, window):
+        raise ValueError(f"{path}: the sidecar is of window {meta['window']}, not {window}")
+    try:
+        done, stride = bt.check_stride_only(meta)
+    except ValueError as e:
+        raise ValueError(f"{path}: {e}") from None
+    calib = meta.get("calib")
+    if not calib:
+        raise ValueError(f"{path}: no calibration in the sidecar: the tracker's rows must "
+                         f"carry p_cal")
+    tau = params.get("tau")
+    if tau is None:
+        tau = calib.get("tau")
+    if tau is None:
+        raise ValueError(f"{path}: no tau given and no calibration tau in the sidecar")
+    df = pd.read_parquet(path)
+    if "cls" in df:
+        df = df[df.cls == "ball"]
+    stray = sorted(set(df.frame.astype(int).tolist()) - set(done))
+    if stray:
+        raise ValueError(f"{path}: rows at {len(stray)} frames its sidecar does not "
+                         f"list as processed (e.g. {stray[:5]})")
+    info = {}
+    tr = bt.track(df, cal, float(tau), top_k=params["top_k"], c_null=params["c_null"],
+                  c_static=params["c_static"], gap=int(params["gap"]),
+                  max_fill_speed=float(params["max_fill_speed"]),
+                  fallback=bool(params["fallback"]), fps=FPS, frames=done, info=info)
+    want = sorted({int(f) for f in wanted})
+    rows, src = tracked_at(tr, want, done, stride)
+    missing = [f for f in want if f not in rows]
+    if missing and not allow_partial:
+        raise ValueError(f"{path}: {len(missing)} of {len(want)} measured frames are not "
+                         f"covered by the processed frames (e.g. {missing[:5]}); "
+                         f"--allow-partial to leave them unmeasured")
+    dset = set(done)
+    top1 = parquet_candidates(path, [f for f in want if f in dset], top_k=1, window=window)
+    side = {k: v for k, v in meta.items() if k != "frames"}
+    side["processed"] = len(done)
+    on_stride = tr.source.isin(["detected", "fallback"]).to_numpy()
+    side["track"] = {
+        "params": {**params, "tau": float(tau)},
+        "track rows": {s: int((tr.source == s).sum()) for s in bt.SOURCES},
+        "fill": {k: info[k] for k in ("pairs within gap", "pairs filled",
+                                      "pairs refused for speed", "longest fill")},
+        "detected or fallback off the stride": int(
+            (on_stride & (tr.frame.to_numpy(int) % stride != 0)).sum()),
+        "measured frames by source": {s: sum(v == s for v in src.values())
+                                      for s in TRACK_SOURCES},
+        "past the last processed frame": len(past_last(want, done, stride)),
+        "not covered": len(missing)}
+    return rows, side, {"source": src, "dense top1": top1}
+
+
+def track_source(path: str, params: dict | None = None, allow_partial: bool = False):
+    """`--track` reader: fn(window, frames) -> {frame: rows}, `track_parquet`
+    over `path` with `{window}` replaced (a path without it serves one
+    window only) and the window's match camera; test matches refused.
+    `fn.sidecars` keeps each window's sidecar as `track_parquet` returns it,
+    `fn.track_sources` each window's {frame: source} (for the results'
+    "track source") and `fn.dense_top1` its dense top-1 rows (for
+    `top1_agreement`); into the scores file only, nothing is printed."""
+    params = dict(params or {})
+    unknown = sorted(set(params) - set(TRACK_KEYS))
+    if unknown:
+        raise ValueError(f"unknown tracker parameters {unknown}")
+    seen = set()
+
+    def fn(window, wanted):
+        seen.add(window)
+        if "{window}" not in path and len(seen) > 1:
+            raise ValueError(f"{path}: one parquet for several windows; "
+                             "put {window} in the path")
+        info = json.loads((DATA_DIR / "soccertrack_v2" / f"{window}.json").read_text())
+        if str(info["match"]) in TEST_MATCHES:
+            raise ValueError(f"{window}: test match {info['match']} is never opened")
+        rows, side, per = track_parquet(path.replace("{window}", window), wanted,
+                                        st.calibration(str(info["match"])), params,
+                                        allow_partial, window)
+        fn.sidecars[window] = side
+        fn.track_sources[window] = {str(f): s for f, s in sorted(per["source"].items())}
+        fn.dense_top1[window] = per["dense top1"]
+        return rows
+
+    fn.sidecars, fn.track_sources, fn.dense_top1 = {}, {}, {}
+    return fn
+
+
+def track_specs(track, track_params) -> list:
+    """`--track NAME=PARQUET ...` with `--track-params [NAME=]JSON ...` (no
+    NAME: every --track; NAME=: that one, over the shared ones):
+    [(name, path, params, where the params came from)]."""
+    bad = [s for s in track if "=" not in s or not s.split("=", 1)[0]]
+    if bad:
+        raise ValueError(f"--track takes NAME=PARQUET, not {bad}")
+    specs = [s.split("=", 1) for s in track]
+    names = [n for n, _ in specs]
+    if len(set(names)) < len(names):
+        raise ValueError(f"--track: a name twice in {names}")
+    shared, per, src_shared, src_per = {}, {}, [], {}
+    for spec in track_params:
+        head, sep, rest = spec.partition("=")
+        if sep and head in names:
+            per.setdefault(head, {}).update(read_track_params(rest))
+            src_per.setdefault(head, []).append(track_params_source(rest))
+        else:
+            shared.update(read_track_params(spec))
+            src_shared.append(track_params_source(spec))
+    return [(name, path, {**shared, **per.get(name, {})},
+             src_shared + src_per.get(name, [])) for name, path in specs]
+
+
+def check_new_names(new, taken) -> None:
+    """Refuses a `--track` name that is already a detector's (decoded,
+    reused or `--candidates`): it would silently replace its candidates."""
+    clash = sorted(set(new) & set(taken))
+    if clash:
+        raise ValueError(f"--track names {clash} are already detectors' names")
+
+
+def attach_track_sources(r: dict, extra: dict | None, window: str) -> dict:
+    """A window's result `r` with each tracked detector's {frame: source}
+    as its "track source" (next to its candidates)."""
+    for name, fn in (extra or {}).items():
+        src = getattr(fn, "track_sources", None)
+        if src is not None and name in r:
+            r[name]["track source"] = src.get(window, {})
+    return r
+
+
+def track_report(results, names, kinds: dict, meta: dict, extra: dict) -> list[str]:
+    """The log lines (counts only) of each tracked detector run here, per
+    window: measured frames by source, the fill's counts, detected /
+    fallback rows off the stride, and the dense top-1 against each raw v2
+    of its checkpoint at shared frames (`top1_agreement`). Its metadata
+    gets the latter ("top-1 check": {raw: {window: counts}}) and the
+    calibrations' sha256 ("calib sha256", from the sidecars)."""
+    lines = []
+    for n in names:
+        fn = (extra or {}).get(n)
+        if kinds.get(n) != "v2-track" or fn is None or not hasattr(fn, "dense_top1"):
+            continue
+        raws = [m for m in names if kinds.get(m) == "v2" and _same_ckpt(meta, n, m)]
+        meta.setdefault(n, {})["calib sha256"] = sorted(
+            {(w.get("calib") or {}).get("sha256") for w in fn.sidecars.values()} - {None})
+        check = meta[n].setdefault("top-1 check", {})
+        for r in results:
+            w = r["window"]
+            side = fn.sidecars.get(w)
+            if side is None:
+                continue
+            t = side["track"]
+            by = ", ".join(f"{s} {k}" for s, k in t["measured frames by source"].items())
+            lines.append(f"  {w}: {n}: measured frames by source {by} "
+                         f"({t['past the last processed frame']} past the last processed "
+                         f"frame, {t['not covered']} not covered); fills "
+                         f"{t['fill']['pairs filled']} of {t['fill']['pairs within gap']} "
+                         f"pairs within the gap ({t['fill']['pairs refused for speed']} "
+                         f"refused for speed), longest {t['fill']['longest fill']} frames; "
+                         f"detected or fallback off the stride "
+                         f"{t['detected or fallback off the stride']}")
+            for m in raws:
+                if m not in r:
+                    continue
+                a = top1_agreement(fn.dense_top1.get(w, {}), r[m]["candidates"])
+                check.setdefault(m, {})[w] = a
+                lines.append(f"  {w}: {n}: dense top-1 = {m}'s top-1 at {a['same top-1']} "
+                             f"of {a['shared frames']} shared frames")
+    return lines
+
+
+def _same_ckpt(meta: dict, a: str, b: str) -> bool:
+    """Whether detectors a and b are of one checkpoint, by their metadata
+    (`_ckpts`); True when either's is not known."""
+    ca, cb = (_ckpts((meta or {}).get(x, {})) for x in (a, b))
+    return not ca or not cb or bool(ca & cb)
+
+
+def _ckpts(m: dict) -> set:
+    """The checkpoints' sha256 a detector's metadata names (its own, its
+    parquet sidecars')."""
+    out = {m.get("ckpt sha256")}
+    out |= {w.get("ckpt sha256") for w in (m.get("windows") or {}).values()
+            if isinstance(w, dict)}
+    return out - {None}
+
+
 # ---- Reuse ------------------------------------------------------------------------
 
 def _rows(rows) -> np.ndarray:
@@ -695,8 +1077,8 @@ def _rows(rows) -> np.ndarray:
 def load_scores(paths) -> tuple[dict, dict]:
     """Several scores files merged: {window: {"frames", "n_bg", ...,
     NAME: {"candidates": {frame: rows}}}} with a detector's candidates
-    united over the files (a later file wins at a shared frame), and the
-    detectors' metadata."""
+    (and a tracked one's "track source") united over the files (a later
+    file wins at a shared frame), and the detectors' metadata."""
     merged, meta = {}, {}
     for path in paths:
         blob = json.loads(Path(path).read_text())
@@ -707,6 +1089,8 @@ def load_scores(paths) -> tuple[dict, dict]:
                 if isinstance(v, dict) and "candidates" in v:
                     m.setdefault(k, {"candidates": {}})["candidates"].update(
                         v["candidates"])
+                    if "track source" in v:
+                        m[k].setdefault("track source", {}).update(v["track source"])
                 elif k == "n_bg":
                     m.setdefault("n_bg", {}).update(v)
                 elif k not in m:
@@ -714,10 +1098,15 @@ def load_scores(paths) -> tuple[dict, dict]:
     return merged, meta
 
 
-def reuse(paths, windows=None, seed: int = 0, extra=None, log=print) -> tuple[list, dict]:
+def reuse(paths, windows=None, seed: int = 0, extra=None, log=print,
+          new=()) -> tuple[list, dict]:
     """Measure again from saved candidates (no video): the results of
-    `load_scores(paths)` per window, in order, and the metadata."""
+    `load_scores(paths)` per window, in order, and the metadata. A saved
+    tracked detector keeps its "track source". `new`: names of `extra`
+    that must not be saved detectors' (`check_new_names`)."""
     merged, meta = load_scores(paths)
+    check_new_names(new, {k for r in merged.values() for k, v in r.items()
+                          if isinstance(v, dict) and "candidates" in v})
     results = []
     for w in windows or list(merged):
         r = merged[w]
@@ -730,7 +1119,11 @@ def reuse(paths, windows=None, seed: int = 0, extra=None, log=print) -> tuple[li
             cands[name] = {f: rows[f] for f in wanted if f in rows}
         log_coverage(w, cands, wanted, log)
         n_bg = {int(f): n for f, n in r.get("n_bg", {}).items()}
-        results.append(measure(wd, cands, seed, n_bg))
+        out = attach_track_sources(measure(wd, cands, seed, n_bg), extra, w)
+        for k, v in r.items():
+            if isinstance(v, dict) and "track source" in v and k not in (extra or {}):
+                out[k]["track source"] = v["track source"]
+        results.append(out)
         log(f"  {w}: {len(wanted)} frames to measure (from saved candidates: "
             f"{', '.join(cands)})")
     return results, meta
@@ -839,11 +1232,12 @@ def placebo_summary(results, name: str) -> dict:
     return out
 
 
-def summarise(results, names, kinds: dict) -> dict:
+def summarise(results, names, kinds: dict, meta: dict | None = None) -> dict:
     """The legacy summary, unchanged ("windows", "paired" when COCO is
     there), then FF-auto, its paired differences (each detector against
-    COCO; each v2 against each v1; v2 also on full backgrounds only) and
-    the placebos."""
+    COCO; each v2 against each v1; v2 also on full backgrounds only; each
+    tracked v2 against each raw v2 of its checkpoint, by `meta`, or every
+    raw v2 when either's checkpoint is not known) and the placebos."""
     summary = {"windows": [{k: r[k] for k in ("window", "passes", "actions",
                                               "random point action hit")} | {
         n: {k: r[n][k] for k in LEGACY} for n in names if n in r} for r in results]}
@@ -854,6 +1248,8 @@ def summarise(results, names, kinds: dict) -> dict:
     pairs = [(n, "coco") for n in names if n != "coco" and "coco" in names]
     pairs += [(n, m) for n in names if kinds.get(n) == "v2"
               for m in names if kinds.get(m) == "v1"]
+    pairs += [(n, m) for n in names if kinds.get(n) == "v2-track"
+              for m in names if kinds.get(m) == "v2" and _same_ckpt(meta, n, m)]
     paired = {f"{a} vs {b}": compare_ff(results, a, b) for a, b in pairs}
     for a, b in pairs:
         if kinds.get(a) == "v2" and b == "coco" and all(r.get("n_bg") for r in results):
@@ -928,8 +1324,16 @@ def main():
     ap.add_argument("--candidates", nargs="*", default=[], metavar="NAME=PARQUET",
                     help="a detector's rows from a dense parquet ({window} replaced)")
     ap.add_argument("--allow-partial", action="store_true",
-                    help="--candidates: leave frames the parquet did not process "
-                         "unmeasured instead of refusing")
+                    help="--candidates / --track: leave frames the parquet did not "
+                         "process (cover) unmeasured instead of refusing")
+    ap.add_argument("--track", nargs="*", default=[], metavar="NAME=PARQUET",
+                    help="a tracked detector: src/ball_track.py over a dense parquet "
+                         "({window} replaced)")
+    ap.add_argument("--track-params", nargs="*", default=[], metavar="[NAME=]JSON",
+                    help="tracker parameters (tau, top_k, c_null, c_static, gap, "
+                         "max_fill_speed, fallback): a JSON object, or the frozen "
+                         "track_params.json (with its .sha256); NAME= for one --track "
+                         "only")
     ap.add_argument("--windows", nargs="+")
     ap.add_argument("--no-coco", action="store_true")
     ap.add_argument("--reuse", nargs="+", metavar="SCORES.json",
@@ -959,9 +1363,26 @@ def main():
         extra[name] = parquet_source(path, args.allow_partial)
         meta[name] = {"source": "parquet", "path": path,
                       "windows": extra[name].sidecars}
+    if args.track_params and not args.track:
+        ap.error("--track-params needs --track")
+    try:
+        specs = track_specs(args.track, args.track_params)
+        decoded = set() if args.reuse else (
+            ({"coco"} if not args.no_coco else set()) | {Path(p).name for p in args.heatmap}
+            | {Path(p).name + z for p in args.v2 for z in ("", ":motion-zero")})
+        check_new_names([n for n, *_ in specs], set(extra) | decoded)
+        code = {f: _sha256_file(Path(__file__).resolve().parent / f) for f in TRACK_CODE}
+        for name, path, params, given in specs:
+            extra[name] = track_source(path, params, args.allow_partial)
+            meta[name] = {"kind": "v2-track", "source": "parquet", "path": path,
+                          "track": {**TRACK_DEFAULT, **params}, "params from": given,
+                          "code sha256": code, "windows": extra[name].sidecars}
+    except ValueError as e:
+        ap.error(str(e))
 
     if args.reuse:
-        results, saved = reuse(args.reuse, args.windows, extra=extra, log=log)
+        results, saved = reuse(args.reuse, args.windows, extra=extra, log=log,
+                               new=[n for n, *_ in specs])
         meta = saved | meta
         names = list(dict.fromkeys(k for r in results for k, v in r.items()
                                    if isinstance(v, dict) and "candidates" in v))
@@ -996,7 +1417,8 @@ def main():
     kinds = {n: kind_of(n, results, meta) for n in names}
     for n in names:
         meta.setdefault(n, {})["kind"] = kinds[n]
-    summary = summarise(results, names, kinds)
+    tracked = track_report(results, names, kinds, meta, extra)
+    summary = summarise(results, names, kinds, meta)
     protocol = {"FF_W": FF_W, "FF_DT": FF_DT, "FF_R": FF_R, "FF_S": FF_S,
                 "PRE_LEADS": PRE_LEADS, "PRE_GAP": PRE_GAP, "PRE_T": PRE_T,
                 "POST_LAG": POST_LAG, "POST_T": POST_T, "BLOCK_FRAMES": BLOCK_FRAMES,
@@ -1007,9 +1429,13 @@ def main():
         Path(args.sealed).write_text(json.dumps(blob, indent=1))
         for r in results:
             log(sealed_counts(r, names))
+        for line in tracked:
+            log(line)
         log(f"  sealed: {len(results)} windows, {len(names)} detectors -> {args.sealed} "
             f"[{time.time() - t0:.0f} s]")
         return
+    for line in tracked:
+        log(line)
     print(json.dumps(summary, indent=1))
     if args.save:
         Path(args.save).write_text(json.dumps(blob, indent=1))
@@ -1188,11 +1614,240 @@ def _check():
             except ValueError:
                 pass
         _check_v2_detectors(Path(tmp))
+        _check_track(Path(tmp), cal, wd, line)
     assert _saved(np.array([[1.23456, 2.0, 0.0496123, 3.0, 1.2345678]])) == [
         [1.235, 2.0, 0.049612, 3.0, 1.234568]]
     print("  eval_ball_detector: pass and placebo frames, FF-auto / placebo edges, "
           "measure, unmeasured frames left out and counted, sealed log, block "
-          "bootstrap, parquet reader and its coverage, v2 loading (scales, RGB-only): ok")
+          "bootstrap, parquet reader and its coverage, v2 loading (scales, RGB-only), "
+          "tracked detector (coverage, picks, fallback, settings, pairs, tiles): ok")
+
+
+def _check_track(tmp: Path, cal: dict, wd: dict, line: dict):
+    """The tracked detector on `_check`'s synthetic window: a stride-2 dense
+    parquet with the ball rolling along pass 0 (kick 50, reception 100)
+    and three missed detections (74-78), and a decoy 30 m away at 76.
+    Coverage (odd frames between processed ones, the frame just past the
+    last as none; not further, or across a hole), non-stride runs refused,
+    the picks at measured frames (track, fallback, none) and their
+    sources, FF-auto on the odd pass frames, the settings' parsing (the
+    frozen record and its sha256), name clashes, the top-1 check, the
+    summary's pairs, the log, and the tiles' pass picks."""
+    import hashlib
+
+    from detect_ball_heatmap import write_sidecar
+
+    assert covered([0, 1, 2, 39, 40, 41], range(0, 41, 2), 2) == {0, 1, 2, 39, 40}
+    assert covered(range(14), [0, 2, 4, 10, 12], 2) == {0, 1, 2, 3, 4, 10, 11, 12}
+    assert past_last([39, 40, 41, 42, 43], range(0, 41, 2), 2) == {41}
+    assert past_last([5], [], 2) == set()
+    P = wd["sets"]["passes"]
+    a, b = np.array(P[0]["from"]), np.array(P[0]["to"])
+
+    def row(f, g, p, z):
+        return dict(frame=f, cls="ball", px=(g[0] + 52.5) * 10, py=(g[1] + 34) * 10 - 2,
+                    crop_h=4.0, confidence=p, logit=z, p_raw=p - 0.05)
+
+    rows = [row(f, a + (f - 50) / 50 * (b - a), 0.6, 0.4 + 0.001 * f)
+            for f in range(50, 102, 2) if f not in (74, 76, 78)]
+    rows.append(row(76, (a + b) / 2 + (0, 30), 0.3, -0.85))
+    pq = tmp / "syn_track.parquet"
+    pd.DataFrame(rows).to_parquet(pq)
+    calib = {"a": 1.0, "b": 0.0, "tau": 0.25, "sha256": "c" * 64}
+    write_sidecar(pq, range(0, 2000, 2), window="syn", stride=2, extra_frames=[],
+                  calib=calib, **{"ckpt sha256": "aa"})
+    sets = wd["sets"]
+    wanted = measured_frames(sets)
+    # gap 12 bridges 72 -> 80: pass 0's four frames (two odd) on the line;
+    # 1999 (just past the last processed frame, 1998) is measured as none.
+    t12, side, per = track_parquet(pq, wanted + [1999], cal, {"gap": 12}, window="syn")
+    assert set(t12) == set(wanted) | {1999} and side["processed"] == 1000
+    assert len(t12[1999]) == 0 and per["source"][1999] == "none"
+    tk = side["track"]
+    assert tk["past the last processed frame"] == 1 and tk["not covered"] == 0
+    assert all(len(t12[f]) == 1 for f in P[0]["frames"])
+    assert tk["params"]["tau"] == 0.25 and tk["params"]["gap"] == 12
+    assert tk["params"]["fallback"] is True and tk["params"]["max_fill_speed"] == 35.0
+    assert tk["track rows"] == {"detected": 23, "interpolated": 28, "fallback": 0}
+    assert tk["fill"] == {"pairs within gap": 22, "pairs filled": 22,     # 23 picks
+                          "pairs refused for speed": 0, "longest fill": 8}
+    assert tk["detected or fallback off the stride"] == 0
+    src = per["source"]
+    assert [src[f] for f in P[0]["frames"]] == ["detected", "interpolated",
+                                                "interpolated", "detected"]
+    r79 = t12[79][0]
+    want = a + (79 - 50) / 50 * (b - a)
+    assert np.allclose(r79[:2], [(want[0] + 52.5) * 10, (want[1] + 34) * 10 - 2])
+    assert np.isclose(r79[2], 0.55) and np.isclose(r79[4], 0.4 + 0.001 * 72)
+    assert np.isclose(r79[3], 4.0)
+    m = measure(wd, {"T": t12, "line": line})
+    assert m["T"]["ff frames"][0] == [1, 1, 1, 1] and m["T"]["ff per pass"][1:] == [0.0, 0.0]
+    # Not covered: past the last by the stride or more; refused, or left
+    # unmeasured with allow_partial (counted).
+    try:
+        track_parquet(pq, wanted + [2001], cal, {"gap": 12}, window="syn")
+        raise AssertionError("an uncovered frame was accepted")
+    except ValueError:
+        pass
+    tp_, sp_, _ = track_parquet(pq, [72, 2001], cal, window="syn", allow_partial=True)
+    assert sorted(tp_) == [72] and sp_["track"]["not covered"] == 1
+    # gap 6: 79 (odd, between 72 and 80) is a miss; with the fallback (the
+    # default), the processed 76 takes the raw top-1 (the decoy), the odd 77
+    # still none.
+    fr = [72, 76, 77, 79, 80]
+    t6, s6, _ = track_parquet(pq, fr, cal, {"gap": 6, "fallback": False}, window="syn")
+    assert [len(t6[f]) for f in fr] == [1, 0, 0, 0, 1]
+    tf, sf, pf = track_parquet(pq, fr, cal, {"gap": 6}, window="syn")
+    assert [len(tf[f]) for f in fr] == [1, 1, 0, 0, 1]
+    assert np.isclose(tf[76][0][4], -0.85) and np.isclose(tf[76][0][2], 0.25)
+    assert pf["source"] == {72: "detected", 76: "fallback", 77: "none", 79: "none",
+                            80: "detected"}
+    assert sf["track"]["measured frames by source"] == {
+        "detected": 2, "interpolated": 0, "fallback": 1, "none": 2}
+    assert sf["track"]["track rows"]["fallback"] == 1          # 76: the only one with rows
+    # The dense top-1 at the processed wanted frames, for the top-1 check.
+    assert sorted(pf["dense top1"]) == [72, 76, 80]
+    assert np.isclose(pf["dense top1"][76][0][4], -0.85)
+    # tau above the ball's p: nothing tracked; the fallback still reads raw.
+    th, _, ph = track_parquet(pq, [72], cal, {"tau": 0.7}, window="syn")
+    assert np.isclose(th[72][0][2], 0.55) and ph["source"][72] == "fallback"
+    # The fill's speed limit: 10 m/s along the pass, refused at 5 m/s.
+    ts, ss, _ = track_parquet(pq, [79], cal, {"gap": 12, "max_fill_speed": 5.0},
+                              window="syn")
+    assert len(ts[79]) == 0 and ss["track"]["fill"]["pairs filled"] == 0
+    assert ss["track"]["fill"]["pairs refused for speed"] == 22
+    for bad in (lambda: track_parquet(pq, fr, cal, {"gap": 6}, window="other"),
+                lambda: track_parquet(pq, fr, cal, {"speed": 3}),
+                lambda: track_parquet(pq, fr, cal, {"gap": 14}),       # could cross a restart
+                lambda: read_track_params('{"gap": 6, "speed": 3}')):
+        try:
+            bad()
+            raise AssertionError("a wrong window or setting was accepted")
+        except ValueError:
+            pass
+    # Non-stride runs refused: extra frames, a frame off the stride, no
+    # record of extra frames, no calibration.
+    for kw in ({"extra_frames": ["measured"]}, {"extra_frames": [], "odd": True},
+               {}, {"extra_frames": [], "calib": None}):
+        bad = tmp / "syn_bad.parquet"
+        pd.DataFrame(rows).to_parquet(bad)
+        done = list(range(0, 2000, 2)) + ([77] if kw.pop("odd", False) else [])
+        write_sidecar(bad, done, window="syn", stride=2, **{"calib": calib, **kw})
+        try:
+            track_parquet(bad, fr, cal, window="syn")
+            raise AssertionError(f"a dense run with {kw} was accepted")
+        except ValueError:
+            pass
+    # Settings: inline, the frozen record (with its sha256), shared / per name.
+    tp = tmp / "track_params.json"
+    tp.write_text(json.dumps({"frozen": True, "params": {"c_null": 2.0, "gap": 4,
+                                                          "fallback": False}}))
+    Path(f"{tp}.sha256").write_text(
+        f"{hashlib.sha256(tp.read_bytes()).hexdigest()}  {tp.name}\n")
+    assert read_track_params(str(tp)) == {"c_null": 2.0, "gap": 4, "fallback": False}
+    assert track_params_source(str(tp))["sha256"] == hashlib.sha256(
+        tp.read_bytes()).hexdigest()
+    sub = tmp / "subset.json"
+    for blob in ({"params": {"gap": 4}, "frozen": False}, {"params": {"gap": 4}},
+                 {"params": {"gap": 4}, "frozen": "yes"}):
+        sub.write_text(json.dumps(blob))
+        Path(f"{sub}.sha256").write_text(hashlib.sha256(sub.read_bytes()).hexdigest())
+        try:
+            read_track_params(str(sub))
+            raise AssertionError(f"{blob} was accepted")
+        except ValueError:
+            pass
+    for bad in (lambda: read_track_params(json.dumps({"frozen": True, "params": {}})),
+                lambda: (Path(f"{tp}.sha256").write_text("0" * 64 + "  x\n"),
+                         read_track_params(str(tp))),
+                lambda: (Path(f"{tp}.sha256").unlink(), read_track_params(str(tp)))):
+        try:
+            bad()
+            raise AssertionError("an inline record, a stale or missing sha256 was accepted")
+        except ValueError:
+            pass
+    specs = track_specs(["A=x.parquet", "B=y.parquet"], ['{"c_null": 2.0}', 'B={"gap": 4}'])
+    assert specs == [("A", "x.parquet", {"c_null": 2.0}, [{"inline": '{"c_null": 2.0}'}]),
+                     ("B", "y.parquet", {"c_null": 2.0, "gap": 4},
+                      [{"inline": '{"c_null": 2.0}'}, {"inline": '{"gap": 4}'}])]
+    for bad in (["A"], ["A=x", "A=y"]):
+        try:
+            track_specs(bad, [])
+            raise AssertionError(f"{bad} was accepted")
+        except ValueError:
+            pass
+    # Names: a --track name may not be another detector's.
+    check_new_names(["T"], {"coco", "raw"})
+    try:
+        check_new_names(["T", "raw"], {"coco", "raw"})
+        raise AssertionError("a name clash was accepted")
+    except ValueError:
+        pass
+    # The top-1 check: same within 0.01 px / 0.001 logit, both empty the
+    # same; a frame either lacks is not shared.
+    dense = {4: np.array([[1.0, 2.0, 0.5, 4.0, 0.1]]), 6: np.zeros((0, 5)),
+             8: np.array([[1.0, 2.0, 0.5, 4.0, 0.1]]), 10: np.zeros((0, 5)),
+             12: np.array([[1.0, 2.0, 0.5, 4.0, 0.1]])}
+    saved = {"4": [[1.004, 2.0, 0.5, 4.0, 0.1004], [9.0, 9.0, 0.1, 4.0, -2.0]], "6": [],
+             "8": [[1.02, 2.0, 0.5, 4.0, 0.1]], "10": [[1.0, 2.0, 0.5, 4.0, 0.1]], "5": []}
+    assert top1_agreement(dense, saved) == {"shared frames": 4, "same top-1": 2, "differ": 2}
+    # The summary pairs a tracked detector with COCO and the raw v2 of its
+    # checkpoint only; the others' entries are as without it.
+    r = measure(wd, {"coco": line, "raw": line, "raw2": line, "v1": line, "T": t12})
+    kinds = {"coco": "coco", "raw": "v2", "raw2": "v2", "v1": "v1", "T": "v2-track"}
+    meta = {"raw": {"ckpt sha256": "aa"}, "raw2": {"ckpt sha256": "bb"},
+            "T": {"windows": {"syn": {"ckpt sha256": "aa"}}}}
+    s = summarise([r], list(kinds), kinds, meta)
+    assert {"T vs coco", "T vs raw"} <= set(s["ff-auto paired"])
+    assert "T vs raw2" not in s["ff-auto paired"]
+    base = summarise([r], ["coco", "raw", "raw2", "v1"], kinds, meta)
+    for k in ("windows", "ff-auto paired", "placebo", "ff-auto", "paired"):
+        got = s[k]
+        if isinstance(got, dict):
+            got = {n: v for n, v in got.items() if not n.startswith("T")}
+        else:
+            got = [{n: v for n, v in w.items() if n != "T"} for w in got]
+        assert json.dumps(got) == json.dumps(base[k]), k
+    assert len(summarise([r], list(kinds), kinds)["ff-auto paired"]) == len(
+        s["ff-auto paired"]) + 1                                   # no meta: both raws
+    # The reader as main uses it: sidecars, sources (into the result), the
+    # dense top-1; the log (counts only) and the metadata's top-1 check
+    # against the raw v2 of its checkpoint.
+    fn = track_source(str(pq), {"gap": 12})
+    fn.sidecars["syn"], fn.track_sources["syn"], fn.dense_top1["syn"] = (
+        side, {str(f): v for f, v in per["source"].items()}, per["dense top1"])
+    r = attach_track_sources(r, {"T": fn, "raw": lambda w, f: {}}, "syn")
+    assert r["T"]["track source"]["79"] == "interpolated" and "track source" not in r["raw"]
+    meta["T"] = {"kind": "v2-track", "windows": fn.sidecars}
+    lines = track_report([r], list(kinds), kinds, meta, {"T": fn})
+    assert len(lines) == 2 and "past the last processed frame" in lines[0]
+    assert lines[1].endswith("frames") and "raw2" not in lines[1]
+    chk = meta["T"]["top-1 check"]["raw"]["syn"]
+    assert chk["shared frames"] == len([f for f in wanted if f % 2 == 0])
+    assert meta["T"]["calib sha256"] == ["c" * 64] and "raw2" not in meta["T"]["top-1 check"]
+    assert not any(c in "".join(lines) for c in "%") and "0." not in "".join(lines)
+    # Its saved candidates tile like any detector's: one per pass at q = 1,
+    # deduped within 6 px of another detector's pick; "track source" kept
+    # through load_scores.
+    from ball_tiles import dedupe, pass_picks
+
+    saved = json.loads(json.dumps(r))
+    sc = tmp / "T.json"
+    sc.write_text(json.dumps({"detectors": meta, "results": [saved]}))
+    merged, _ = load_scores([sc])
+    assert merged["syn"]["T"]["track source"] == saved["T"]["track source"]
+    assert "track source" not in merged["syn"]["raw"]
+
+    class Wins:
+        def get(self, w):
+            return {"info": {"match": "000000"}, "frames": saved["frames"]}
+
+    picks, passes = pass_picks({"syn": saved}, Wins(), ["T", "raw"], 1, None,
+                               np.random.default_rng(0))
+    assert passes[0]["tiles"]["T"] is not None and passes[1]["tiles"]["T"] is None
+    assert [p["frame"] for p in picks[:2]] == [71, 71]          # odd: interpolated
+    out, where = dedupe(picks, 6.0)
+    assert len(out) == len(picks) - 1 and out[where[0]]["sources"] == ["T", "raw"]
 
 
 def _check_v2_detectors(tmp: Path):

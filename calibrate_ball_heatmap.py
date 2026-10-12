@@ -327,8 +327,12 @@ def _detector(results, meta: dict, ckpt, name: str | None) -> str:
     if name not in have:
         raise ValueError(f"detector {name!r} not in the scores (have {have}); "
                          f"use --name")
-    if meta.get(name, {}).get("kind") == "v2-motion-zero":
+    kind = meta.get(name, {}).get("kind")
+    if kind == "v2-motion-zero":
         raise ValueError(f"{name}: the motion-zeroed diagnostic is not calibrated")
+    if kind == "v2-track":
+        raise ValueError(f"{name}: a tracked detector (src/ball_track.py) is not "
+                         f"calibrated: its rows are p_cal already, or interpolated")
     return name
 
 
@@ -617,6 +621,22 @@ def _check():
         (tmp / "T.json").write_text(json.dumps({"results": [T]}))
         run([tmp / "T.json"], ckpt, tmp / "t.json", allow_seen=True,
             cal_of=lambda m: cal, log=quiet)
+        # Neither the motion-zeroed diagnostic nor a tracked detector is
+        # fitted or evaluated (the same scores as "v2" are).
+        for kind in ("v2", "v2-motion-zero", "v2-track"):
+            (tmp / "K.json").write_text(json.dumps({
+                "detectors": {"ball_v2.pt": {"kind": kind}}, "results": [U]}))
+            fit, evl = tmp / f"k_{kind}.json", tmp / f"ke_{kind}.json"
+            for go in (lambda: run([tmp / "K.json"], ckpt, fit, cal_of=lambda m: cal,
+                                   log=quiet),
+                       lambda: run_evaluate([tmp / "K.json"], bh.calib_path(ckpt), evl,
+                                            cal_of=lambda m: cal, log=quiet)):
+                try:
+                    go()
+                    assert kind == "v2", f"a {kind} detector was calibrated"
+                except ValueError:
+                    assert kind != "v2", kind
+            assert fit.exists() == evl.exists() == (kind == "v2"), kind
         for bad in (lambda: run([sc], ckpt, cal_of=lambda m: cal, log=quiet),
                     lambda: run([sc], ckpt, tmp / "y.json", name="nope",
                                 cal_of=lambda m: cal, log=quiet)):

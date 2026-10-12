@@ -836,6 +836,105 @@ Pass + carry at 1 s, 130 labels:
   rules need a ball that is there, and COCO's is near the actor at only
   0.10 and 0.37 of the actions.
 
+## Tracking the ball across frames (protocol v4)
+
+Registered here before the tracker has run on any M6 test window or any
+V-new window is cut. The full protocol is kept outside the repository
+(sha256 f982b5fc...); what binds is below. Nothing is tuned: every value
+comes from the frozen detector and the frozen events linker.
+
+**Question.** Does linking v2's candidates over time, with short gap
+fill, make v2's pick the match ball in play more often than v2's raw top
+candidate at the same frame, in free flight, on matches never used for
+any choice?
+
+**The tracker (`src/ball_track.py`).**
+1. **Input:** v2 dense at stride 2 (`detect_ball_heatmap.py --v2
+   --stride 2`, no extra frames; anything else is refused). It keeps
+   candidates with p_cal ≥ 0.25, the top 4 a frame.
+2. **Link:** `ball_link.link` as frozen for events (c_null 1, c_static
+   2), with no players, so no ground truth is used.
+3. **Fill:** between two picks at most 6 frames apart, the ground point
+   is interpolated in pitch metres and projected back, only when the
+   implied speed is ≤ 35 m/s. No extrapolation.
+4. **Fallback:** a detection frame with no pick and no fill gets the raw
+   top-1.
+5. **Frozen settings** (`tune_ball_track.py`, which only writes them):
+   tau 0.25, top_k 4, c_null 1, c_static 2, gap 6, fill speed 35 m/s,
+   fallback on (sha256 0ecf6095...).
+6. **Where it runs:** inside `eval_ball_detector.py --track
+   T=... --track-params ...`. Each pick records its source: detected,
+   interpolated, fallback or none.
+
+**Code frozen (sha256).**
+
+| file | sha256 |
+|---|---|
+| `src/ball_track.py` | 68e287a4... |
+| `src/ball_link.py` | 4250c6c2... (as in events v3) |
+| `eval_ball_detector.py` | a98e7bc5... |
+| `ball_tiles.py` | 1715eabf... |
+| `score_ball_track.py` | 9c0bdf4d... |
+| `validate_ff_auto.py` | d2cebb59... |
+| checkpoint `ball_v2.4000.pt` / calibration | 31f9a5eb... / 77799641... |
+
+**Splits.**
+- **Dry run, U-E** (the 2 M6 windows events were tuned on, 24 passes):
+  counts and implementation checks only.
+- **Gate, U-test** (the other 2 M6 windows, 39 passes).
+- **Report, V-new:** the 6 M2 / M10 windows registered in protocol v3,
+  still not cut, about 108 passes.
+- **Not used:** V-old. M7 and M9 are never opened.
+
+**Measure: blind pair tiles.** FF-auto rewards any point on the pass
+line, which is where interpolation puts the ball, so the judge is
+primary.
+- **Pair frames:** every pass frame (q0-q3) where the tracked and raw v2
+  picks are more than 6 px apart or exactly one is empty, plus q1 of
+  every pass.
+- **Judging:** a tile counts when the centre of the match ball in play is
+  inside its 24 px box; unsure counts as not. The judgements are hashed
+  before the key is read (`score_ball_track.py` refuses otherwise).
+- **Decoys:** random, corridor, and offset (a tracked pick moved 18-20 px,
+  away from every candidate), plus re-judged old tiles.
+
+**Gate on U-test** (all must hold, else U-test is reported and V-new is
+not cut):
+- **G-a:** passes where tracking gains outnumber passes where it loses.
+- **G-b:** tracked placebo hits ≤ raw's + 1, before the kick and after
+  the reception.
+- **G-c:** decoys judged the ball ≤ 2 of 20 (random + corridor) and ≤ 1
+  of 6 (offset).
+- **G-d:** stride-only input, the registered checkpoint and calibration,
+  no fill over 6 frames, and no detected or fallback pick at an odd
+  frame.
+
+**Claims on V-new** (one shot, sealed until judged):
+- **H5 (primary):** per pass, d = frames where only the tracked pick is
+  the ball minus frames where only the raw one is. Exact one-sided sign
+  test over passes with d ≠ 0, p < 0.025, with more d > 0. The expected
+  size is about 63 informative passes, power about 0.75 at a 70/30
+  split.
+- **H6 (only if H5 holds):** tracked v2 against COCO's raw top-1 at q1,
+  exact one-sided McNemar.
+- **Secondary:**
+  - the q1-only McNemar;
+  - a breakdown by pick source, frame parity, match and distance;
+  - FF-auto paired, counted only if it agrees with the judge on
+    interpolated tiles (kappa ≥ 0.6);
+  - placebos and decoys.
+
+**Disclosed.**
+- One seed, one detector.
+- The Platt fit used M6 pass frames, so U numbers are optimistic; V-new is
+  unaffected.
+- The linker constants were chosen on U-E for events, with players; here
+  it runs without them.
+- GT-free counts on U-E were seen before this registration.
+- At odd frames raw has a detection the deployed tracker never ran,
+  which is conservative for the tracker.
+- V-new is the last unseen M2 / M10 data, and this spends it.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),

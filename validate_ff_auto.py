@@ -123,6 +123,22 @@ def mcnemar(b: int, c: int) -> float:
     return min(1.0, 2 * sum(math.comb(n, i) for i in range(k + 1)) / 2 ** n)
 
 
+def binom_upper(k: int, n: int) -> float:
+    """P(X >= k), X ~ Binomial(n, 1/2): the exact one-sided p of a sign
+    test with k of n on the predicted side (protocol v4's H5 over passes
+    with d != 0), and of McNemar with b = k predicted-side and n - k other
+    discordant pairs (`mcnemar_one_sided`)."""
+    if not n:
+        return 1.0
+    return sum(math.comb(n, i) for i in range(max(k, 0), n + 1)) / 2 ** n
+
+
+def mcnemar_one_sided(b: int, c: int) -> float:
+    """Exact one-sided McNemar p that b (the predicted side's discordant
+    pairs) exceeds c."""
+    return binom_upper(b, b + c)
+
+
 class Window:
     """A window's calibration, passes (frames_of), pass frame -> (pass, q),
     and people, read once."""
@@ -418,6 +434,10 @@ def _check():
     assert (a["tp"], a["fn"], a["tn"], a["kappa"]) == (69, 9, 34, 0.823), a
     assert a["ppv"] == 1.0 and a["recall"] == round(69 / 78, 3)
     assert mcnemar(0, 0) == 1.0 and abs(mcnemar(10, 2) - 2 * (1 + 12 + 66) / 4096) < 1e-12
+    assert mcnemar_one_sided(0, 0) == 1.0 and binom_upper(0, 5) == 1.0
+    assert abs(mcnemar_one_sided(10, 2) - (1 + 12 + 66) / 4096) < 1e-12
+    assert abs(mcnemar_one_sided(2, 10) - (4096 - 1 - 12) / 4096) < 1e-12
+    assert binom_upper(15, 20) < 0.025 < binom_upper(14, 20)     # 15 of 20 needed
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         old = tmp / "old"
