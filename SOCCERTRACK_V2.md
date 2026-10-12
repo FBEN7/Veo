@@ -752,21 +752,56 @@ On M6, where they were chosen (pass + carry at 1 s, pooled):
   other beat v1's rules on both windows (+0.12 against +0.01, and +0.19
   against +0.13).
 
+**Events on V (M2 + M10, the old windows).** v2 ran densely on them for
+this, which is disclosed; no detector measure was computed there. Pass +
+carry at 1 s, 130 labels:
+
+| ball + rules | events | F1 | F1 at random times | F1 above chance | shots (3 labels) |
+|---|---|---|---|---|---|
+| C0: COCO + v1 rules (published) | 91 | 0.353 | 0.249 | +0.104 | 44 |
+| C1: v1 heatmap + v1 rules (published) | 282 | 0.442 | 0.337 | +0.105 | 182 |
+| C2: v2 + v1 rules | 264 | 0.497 | 0.340 | +0.157 | 180 |
+| **C3: v2 + frozen rules** | **136** | **0.436** | 0.280 | **+0.156** | **13** |
+| C0': COCO + frozen rules | 39 | 0.201 | 0.128 | +0.073 | 4 |
+
+**The registered claims fail.**
+- **H3** (C3 beats C0): +0.083, 95% interval [-0.053, +0.227]. Not shown.
+- **H4** (C3 beats C1): not tested. It is -0.006 [-0.096, +0.086].
+
+**What this says:**
+- **The ball.** v2's ball is no better for events than v1's. It is within
+  3 m of the actor at 0.54 and 0.57 of the actions; v1's is at 0.52 and
+  0.55.
+- **The rules.**
+  - **Counts:** the frozen rules make the event count match the labels
+    (136 for 130, against 264-282).
+  - **Shots:** false shots fall from about 180 to 13.
+  - **Team:** the team of the matched passes is right 20 times in 22,
+    against 26 in 34.
+  - **F1 above chance:** it stays at the same margin as v1's rules with
+    the same ball (+0.156 against +0.157). Raw F1 is lower only because
+    fewer events also lower the F1 that random times get.
+- **COCO's ball under the new rules collapses** to 39 events. The new
+  rules need a ball that is there, and COCO's is near the actor at only
+  0.10 and 0.37 of the actions.
+
 ## Next
 
-1. **The ball in flight.** The heatmap above finds the ball at the feet
-   and is precise when confident, but in free flight on new matches it
-   does no better than COCO. The labels are the next lever:
-   - a bag along each ground pass's line (the ball is somewhere on it, for
-     the pass's middle half);
-   - far more ball-free patches, with the penalty spots and touchline
-     balls as hard negatives;
-   - all eight non-report matches.
+1. **The ball in flight.** Weak labels from the actions seem to have
+   reached their limit.
+   - **What was tried (v2):** pass corridors, 5,000 ball-free strips, both
+     halves of four matches, and motion input.
+   - **The result:** v2 matches v1 on an unseen match (FF-auto about
+     0.62), and the labels alone do not help.
 
-   Then the measure should be the blind free-flight check on V, with the
-   geometric measure's tolerance widened to the 3 m the tiles showed.
-   Clicked labels (`make_ball_labeller.py`) remain the way to a proper
-   test set.
+   Next:
+   - **Clicked balls** (`make_ball_labeller.py`): a few hundred in-flight
+     frames per match. They would be the first labels that are the ball
+     itself, and also a test set that needs no corridor rule.
+   - **Tracking across frames:** the ball's flight as a curve, so a
+     detection missed in one frame is bridged by its neighbours.
+     `src/ball_link.py` does this crudely, for events only.
+   - **Higher input resolution on the far side,** where the ball is 5 px.
 2. A score that tolerates the boxes: the foot distance above, or the
    pitch positions once (1) exists.
 3. **Teams, what is left**: giving every track its true majority side --
