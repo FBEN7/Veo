@@ -972,6 +972,74 @@ not cut):
   would give 0.94.
 - **U numbers are optimistic:** the Platt fit used M6.
 
+**Result on V-new: the registered claim is not met.** The 6 new windows
+of M2 and M10 hold 139 passes.
+- **Run:** every measured frame was covered. The dense top-1 equals the
+  evaluation's top-1 at all 754 shared frames, no fill was longer than 6
+  frames, and the code check holds.
+- **Sitting S-V:** 332 tiles judged blind (judgements sha256 48219b60...
+  recorded before the key was read): B 147, N 156, a ball off the pitch or
+  not in play 25, a ball in or by a goal 4.
+  - Decoys judged the ball: 0 of 24 random and corridor, 0 of 12 offset.
+  - Old tiles re-judged: 12 of 12 agree.
+
+| | tracked only | raw only | one-sided p | bar |
+|---|---|---|---|---|
+| **H5: passes (pair frames)** | **18** | **9** | **0.061** | < 0.025 |
+| q1 alone (McNemar) | 7 | 2 | 0.090 | secondary |
+| H6: tracked v2 vs COCO at q1 | 37 | 2 | -- | not tested: H5 failed |
+
+- **Underpowered.** Only 27 of 139 passes are informative (d ≠ 0), against
+  a registered expectation of 63 (U-test suggested 39). With 27 the test
+  needs 20 passes for tracking, and power at a 70/30 split is 0.41.
+- **Where it comes from** (descriptive, not tested):
+  - **At detection frames (even),** the tracked pick alone is the ball 14
+    times and the raw pick alone 0 times:
+    - 3 times the linker took a lower-ranked candidate that was the ball;
+    - 11 times it rejected a wrong top-1 and a fill put the pick on the
+      ball.
+  - **At odd frames,** it is 6 against 10. Nine of raw's 10 are odd frames
+    where the tracker has no pick: the gap was over 6 frames, or too fast
+    to fill. Raw has a detection there only because the evaluation detects
+    at every measured frame; the deployed stride-2 tracker never does
+    (disclosed at registration as conservative for the tracker).
+  - **By match,** at frame level: M2 10 against 3, M10 10 against 7.
+- **Robustness to the judge** (not registered).
+  - **Three further blind judges** (no access to the key) labelled the
+    same 332 tiles. Each agrees with the registered judgements on ball /
+    not ball at 324-325 of 332 tiles.
+  - **Their H5:** 17 / 9 (p 0.084), 18 / 11 (p 0.13) and 18 / 9 (p
+    0.061). The majority of the three gives 19 / 9 (p 0.044), and the
+    majority of all four 17 / 9 (p 0.084).
+  - **Bounds:** if every tile I marked doubtful went against tracking it
+    would be 13 / 11; if every one went for it, 22 / 7.
+  - Every judge gives the same direction, and no judging reaches the
+    registered p < 0.025.
+  - An independent recomputation of every count from the judgements and
+    the key matched the scorer.
+- **FF-auto:** on interpolated tracked tiles it agrees with the judge at
+  kappa -0.00. So its paired difference (+0.031, interval [+0.005,
+  +0.053]) does not count as a measure, as registered.
+- **Placebos:** before the kick, tracked 9 against raw 10 (136 frames);
+  after the reception, 8 against 9 (128 frames).
+- **The scorer prints "G-c FAIL" on S-V.** That gate checks M6's
+  registered decoy counts (20 and 6), and S-V used 12 per kind. No decoy
+  was judged the ball.
+
+**What this says.**
+- **Against raw v2:** tracking is not shown to put v2's pick on the ball
+  more often at the same frame. The direction favours it in both matches
+  and for every judge, but the effect is rare: about 1 pass in 5 changes,
+  and about 2 in 3 of those favour tracking.
+- **Against COCO:** the tracked pick looks far better at q1 (37 against
+  2). The registered order stops at H5, so this is untested.
+- **What would remove the losses** (post hoc): they are all frames the
+  stride-2 tracker never ran. Tracking at stride 1, or filling longer
+  gaps, would remove most of them. That is a hypothesis for new data, not
+  a result.
+- **V-new is spent.** A further test needs the test matches (M7, M9) or
+  clicked labels.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
@@ -986,9 +1054,12 @@ not cut):
    - **Clicked balls** (`make_ball_labeller.py`): a few hundred in-flight
      frames per match. They would be the first labels that are the ball
      itself, and also a test set that needs no corridor rule.
-   - **Tracking across frames:** the ball's flight as a curve, so a
-     detection missed in one frame is bridged by its neighbours.
-     `src/ball_link.py` does this crudely, for events only.
+   - **Tracking across frames:** tried in protocol v4 (`src/ball_track.py`,
+     stride 2, gaps of up to 6 frames filled on the pitch). It is not
+     shown better than v2's raw pick on V-new (18 against 9 passes, p
+     0.061; underpowered). At detection frames it was never worse. The
+     next version should track at stride 1, and be tested on M7 / M9 or
+     clicked balls.
    - **Higher input resolution on the far side,** where the ball is 5 px.
 2. A score that tolerates the boxes: the foot distance above, or the
    pitch positions once (1) exists.
