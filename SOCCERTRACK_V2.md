@@ -683,6 +683,18 @@ reported.
   The T-only figures are recorded: the ball sits a median 1.4 m off the
   line, and +0.14 of the pass ahead of the constant-speed point.
 
+*Clarifications, written after the results:* where this summary differs
+from the registered protocol file, the file binds.
+- **V-new:** about 108 passes; 146 is with V-old.
+- **FF-auto kappas:** they come from the 209 pass-frame detector tiles
+  (112 T, 97 V-old), with the 88 decoys checked separately. V-old's kappa
+  was seen during design.
+- **G2:** the pre-kick placebo must be ≤ 0.05 and ≤ v1's + 0.03; the
+  post-reception one ≤ max(v1, COCO) + 0.03.
+- **G3:** it also needs PPV ≥ 0.85 and 9 of 12 confident picks.
+- **Deviation:** the dropped U window st2_118578_1st_f015000 (9 passes)
+  is a deviation too.
+
 **Built and trained.**
 - **Training data:** 21,340 strips from the 8 training halves: 7,004 in
   flight, 7,089 at actions, 5,015 ball-free, 1,432 dribbles and 800
@@ -691,22 +703,35 @@ reported.
 - **Train against inference:** the motion input on a window decoded for
   inference matches the strips (D std ratio 0.97), so inference needs no
   change.
-- **Training:** 4,000 steps, 85 min on 4 CPUs. The motion stem learnt
+- **Training:** 4,000 steps, 84 min on 4 CPUs. The motion stem learnt
   (its weight norm grew from 0 to 0.99).
-- **Held-out check:** on 300 held-out strips, the top peak falls in the
+- **Held-out check:** of the 300 held-out strips, 218 have a ball region
+  (actions, dribbles, flights). On those, the top peak falls in the
   ball's region 74% of the time (in flight 0.60).
 
 **On U (M6, 63 passes) the gate failed, for both variants.** So, as
-registered, the detector makes no claim on M2/M10, and V's variant is not
-spent.
+registered, the detector makes no claim on M2/M10, and V-new was never
+cut. v2 did then run on V-old, for the events below.
 
 | detector (M6) | FF-auto | minus COCO, 95% | placebo before kick / after reception |
 |---|---|---|---|
 | v2 with motion, steps 2500 / 3250 / **4000** | 0.603 / 0.599 / **0.627** | **+0.24 [+0.12, +0.37]** | 0.074 / 0.036 |
 | the same, motion zeroed (diagnostic) | 0.575 | +0.19 [+0.10, +0.30] | 0.088 / 0.000 |
-| v2 RGB-only fallback, 2500 / 3250 / 4000 | 0.440 / 0.560 / 0.540 | +0.16 [+0.03, +0.29] (4000) | 0.088 / 0.000 |
+| v2 RGB-only fallback, 2500 / 3250 / 4000 | 0.440 / 0.560 / 0.540 | +0.15 [+0.03, +0.29] (4000) | 0.088 / 0.000 |
 | v1 | 0.623 | +0.24 [+0.14, +0.35] | 0.074 / 0.018 |
 | COCO | 0.385 | | 0.015 / 0.018 |
+
+**COCO is depressed on M6 by resting balls by a goal**, as the protocol
+registered: it scores 0.22 on M6's first half and 0.50 on its second. So
+the margins over COCO are optimistic.
+
+**The registered legacy measures favour v1.** Two of the four U windows
+are in M6's first half, whose actions v1 was trained on.
+
+| legacy measure (M6) | v2 | v1 | RGB-only | COCO |
+|---|---|---|---|---|
+| 1 m free-flight hit | 0.28 | 0.29 | 0.22 | 0.20 |
+| action hit (194 actions; random point 0.005) | 0.34 | 0.43 | 0.33 | 0.10 |
 
 **Why it failed:**
 - **G1:** FF-auto 0.627 is below the 0.65 bar, although v2 is clearly
@@ -714,21 +739,32 @@ spent.
 - **G2:** the pre-kick placebo is 0.074, above 0.05. v1 has the same
   0.074, so this is not a corridor prior new to v2.
 - **The fallback:** the RGB-only model fails both.
+- **G3, the blind sitting,** was not held: with G1 and G2 failed, the
+  gate could not pass.
+- **Order:** Platt and `tau` were fitted after the gate decision,
+  although the registered order put them before it. This does not touch
+  G1 or G2, which use the top candidate at any p.
 
 **What this says:**
-- **The new labels did not make a better detector.** Trained on them,
-  the RGB-only model sits below v1.
-- **Motion brings v2 back to v1's level, not beyond.** v2 minus its own
-  zeroed-motion run is +0.05 [-0.01, +0.10]. v2 minus v1 is +0.004
-  [-0.05, +0.06].
-- **The same holds on M6's second half,** which v1 never trained on: v2
-  0.64, v1 0.62, COCO 0.50.
-- **On a match neither trained on,** the top candidate finds the ball in
-  flight about 60% of the time, whichever heatmap is used.
+- **The new labels did not make a better detector in this attempt** (one
+  seed). The RGB-only model trained on them sits below v1: -0.08 [-0.15,
+  -0.01] on U, and [-0.17, +0.02] on M6's second half.
+- **Motion brings v2 back to v1's level by FF-auto, not beyond.**
+  - v2 minus its own zeroed-motion run is +0.05 [-0.01, +0.10].
+  - v2 minus v1 is +0.004 [-0.05, +0.06].
+  - By the legacy measures v1 is ahead.
+- **On M6's second half, unseen by both v1 and v2,** FF-auto is v2 0.64,
+  v1 0.62 and COCO 0.50.
 
 **Events go ahead with v2 at 4000 steps,** the highest on U by 0.004 over
-v1 (disclosed). It is calibrated on U: Platt a = 0.895, b = -0.928, ECE
-0.014, and `tau` 0.25, giving 0.91 candidates a frame.
+v1. It is calibrated on U: Platt a = 0.895, b = -0.928, ECE 0.014, and
+`tau` 0.25, giving 0.91 candidates a frame.
+- **Why v2 ran on V-old:** the registered failure branch says events
+  proceed with the variant of highest U FF-auto. That needs the variant
+  on V-old, while the same clause also says "no v2 run on V".
+- **How I read it:** as "no detector claim on V", so v2 ran on V-old for
+  the events. V-old has now seen v2, its second of three variants; V-new
+  is untouched.
 
 **Event rules frozen before any V event** (`sweep_events_v2.py` on the
 two M6 windows; events_v3.json sha256 fd260061...):
@@ -751,12 +787,20 @@ On M6, where they were chosen (pass + carry at 1 s, pooled):
 - **Leave one window out:** rules chosen on one window and scored on the
   other beat v1's rules on both windows (+0.12 against +0.01, and +0.19
   against +0.13).
+- **Not registered:** in the sweep's first two stages no setting met the
+  event-count constraint. The sweep then took the best objective
+  regardless, a fallback the protocol does not define. The final
+  re-check meets the constraint.
 
-**Events on V (M2 + M10, the old windows).** v2 ran densely on them for
-this, which is disclosed; no detector measure was computed there. Pass +
-carry at 1 s, 130 labels:
+**Events on V (M2 + M10, the old windows).**
+- **What ran:** v2 ran densely on these windows for this.
+- **What was measured:** FF-auto and the other free-flight measures were
+  not computed there. One registered legacy detector measure was: the
+  events scorer's "ball within 3 m of the actor", below.
 
-| ball + rules | events | F1 | F1 at random times | F1 above chance | shots (3 labels) |
+Pass + carry at 1 s, 130 labels:
+
+| ball + rules | events | F1 | F1 at random times | F1 above chance | shots (2 labels) |
 |---|---|---|---|---|---|
 | C0: COCO + v1 rules (published) | 91 | 0.353 | 0.249 | +0.104 | 44 |
 | C1: v1 heatmap + v1 rules (published) | 282 | 0.442 | 0.337 | +0.105 | 182 |
@@ -769,30 +813,38 @@ carry at 1 s, 130 labels:
 - **H4** (C3 beats C1): not tested. It is -0.006 [-0.096, +0.086].
 
 **What this says:**
-- **The ball.** v2's ball is no better for events than v1's. It is within
-  3 m of the actor at 0.54 and 0.57 of the actions; v1's is at 0.52 and
-  0.55.
+- **The ball.** v2's ball is not shown to be better than v1's.
+  - **Under v1's rules,** it gives F1 0.50 against v1's 0.44 (above
+    chance +0.16 against +0.11), but that comparison was neither
+    registered nor tested.
+  - **Within 3 m of the actor:** v2's ball, through v1's selection, at
+    0.51 and 0.57 of the actions (0.53 and 0.57 through the linker);
+    v1's at 0.52 and 0.55.
 - **The rules.**
   - **Counts:** the frozen rules make the event count match the labels
     (136 for 130, against 264-282).
   - **Shots:** false shots fall from about 180 to 13.
-  - **Team:** the team of the matched passes is right 20 times in 22,
-    against 26 in 34.
+  - **Team:** at 0.5 s (the only tolerance at which the scorer checks
+    the team), the team of the matched passes is right 20 times in 22,
+    against 26 in 34 for v1's rules with the same ball.
   - **F1 above chance:** it stays at the same margin as v1's rules with
-    the same ball (+0.156 against +0.157). Raw F1 is lower only because
-    fewer events also lower the F1 that random times get.
+    the same ball (+0.156 against +0.157). So on V the rules gained
+    nothing by the registered objective (on U: +0.19 against +0.08).
+  - **Recall:** they match 58 labels against 98, so there are fewer
+    false events but also fewer true ones.
 - **COCO's ball under the new rules collapses** to 39 events. The new
   rules need a ball that is there, and COCO's is near the actor at only
   0.10 and 0.37 of the actions.
 
 ## Next
 
-1. **The ball in flight.** Weak labels from the actions seem to have
-   reached their limit.
+1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
+   weak labels from the actions did not beat v1.
    - **What was tried (v2):** pass corridors, 5,000 ball-free strips, both
      halves of four matches, and motion input.
-   - **The result:** v2 matches v1 on an unseen match (FF-auto about
-     0.62), and the labels alone do not help.
+   - **The result:** v2 equals v1 by FF-auto on M6 (0.63 against 0.62;
+     0.64 against 0.62 on its second half, unseen by both). v1 leads on
+     the legacy measures, and the labels alone scored below v1.
 
    Next:
    - **Clicked balls** (`make_ball_labeller.py`): a few hundred in-flight
