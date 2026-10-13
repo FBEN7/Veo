@@ -1,0 +1,4 @@
+  st2_117093_2nd_f015000: background pass, 4451 frames, 90 samples [36 s]
+  st2_117093_2nd_f015000: 271 frames measured, 4488 decoded [1203 s; coco 696 s, ball_v2.4000.pt 423 s]
+  st2_117093_2nd_f015000: 26 passes, 24 + 24 placebo frames, frames measured of 271: coco 271, ball_v2.4000.pt 271
+  sealed: 1 windows, 2 detectors -> /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/vnew/raw_st2_117093_2nd_f015000.part.json [1212 s]

@@ -1,0 +1,552 @@
+====================================================================================================
+Component F is built and all three regression checks pass. The default events path is unchanged on the three training windows, both cached reruns match their published totals, and `events_from_cached` rebuilds the cached `events.json` exactly.
+
+## Files changed
+- `/home/user/Veo/src/events.py` (modified)
+- `/home/user/Veo/score_soccernet.py` (modified)
+- `/home/user/Veo/src/ball_link.py` (new)
+- `/home/user/Veo/score_events_paired.py` (new)
+- `/home/user/Veo/sweep_events_v2.py` (new)
+
+`src/ball_heatmap.py` and `src/motion_bg.py` also show as modified or new in git status. Those belong to component B; I didn't touch them.
+
+## Public API
+
+**`src/events.py`**
+- `detect_events(tracks, H=None, absolute_pitch=True, ball_time_aware=False, params=None)`. If `params` is given, it re-calls itself with the overrides applied.
+- `EVENT_PARAMS` is the whitelist of 7 names from the contract.
+- `overridden(params)` is a context manager. Unknown names raise `ValueError`, and values are restored in `finally`.
+- `SHOT_MOUTH_MARGIN_M = None`. When set, a shot also needs the ball's ray to cross the nearest goal line within ±(3.66 + margin) m. The test is `_ray_on_goal(vx, vy, bx, by, margin_m)`, added to the shot condition.
+- `_check()`.
+
+**`src/ball_link.py`**
+- `link(rows, cal, players, c_null=1.0, c_static=2.0, fps=25, tau=0.5, frames=None) -> DataFrame`: returns the chosen subset of `rows`, at most one per frame, with the same columns and index.
+- Helpers: `ground_points`, `ground_sigma`, `static_mask`, `clear_of_players`, `motion_cost`, and the constants (`MAX_SKIP=5`, 35/60 m/s, 1.5 px clipped to [0.05, 1] m, static 0.5 m / 2 s / 3 m).
+- `_check()`.
+
+**`score_soccernet.py`**
+- `write_events(path, events)`
+- `select_ball(capped, scale, fps, select="v1"|"link", cal=None, link_params=None, top_k=None, tau=None, verbose=False)`: applies tau, then top-k, then the selection, then `merge_fragments` in both paths. `run_pipeline` now calls this with its defaults.
+- `player_hash(tracks)`
+- `events_on_pitch(merged, to_pitch, event_params=None) -> (events, metric)`
+- `swap_ball_rows(src_dir, dst_dir, rows=None) -> Path`
+- `merged_from_cached(run_dir, cal, select, link_params, top_k, tau, verbose) -> merged`, with the hash in `merged.attrs["player_hash"]`.
+- `events_from_cached(run_dir, cal, select="v1", link_params=None, top_k=None, tau=None, event_params=None, verbose=False) -> (events, merged)`.
+
+**`score_events_paired.py`**
+- Functions: `labels_of`, `duration_of`, `preds_of`, `counts`, `chance_draws`, `score(events_by_w, truths, durations, tols, n_chance=200, seed=0)`, `block_table`, `paired(ev_a, ev_b, truths, tol=1, block_s=10, n=4000, seed=0)`.
+- `score` returns TP, events, labels, F1, chance and p per window and pooled, plus `objective` (F1 minus chance at 1 s).
+- `paired` returns `diff`, `lower` (2.5th percentile), `upper` (97.5th), `rejected`.
+- CLI: `--windows ... --configs A [B]` (a name under `output_<w>/` or a `{w}` template), `--json`, `--check`.
+
+**`sweep_events_v2.py`**
+- Sweep: `--balls W=PARQUET ... --calib CKPT.calib.json | --tau T --out events_v3.json [--stages] [--chance 200] [--allow-train]`.
+  - Runs stages A, A2, B, C, D and A′ per E2, with the E3 objective, constraint and tie-breaks.
+  - Gate G-E is pooled against C2 (top-4, `select_single_ball`, v1 rules) and reports leave-one-window-out.
+  - Writes `events_v3.json` and `events_v3.json.sha256`, plus every stage's table, the player hashes and code sha256s.
+- Apply: `--apply events_v3.json --window W --name NAME [--balls W=PARQUET] [--rules frozen|v1] [--ball-input frozen|v1] [--overwrite]`.
+  - Checks the sha256 file, writes `events.json`, `tracks_merged.parquet` and `applied.json`, and prints event counts only.
+  - Gives C3 (the default), C2 (`--rules v1 --ball-input v1`) and C0′ (no `--balls`, COCO through the v1 path with the frozen rules).
+  - Refuses a second run on the same directory unless `--overwrite`.
+- The sweep refuses V and test matches, and refuses training windows unless `--allow-train`.
+
+## Tests and outputs
+- **`_check()`s:** all five pass (events, ball_link, score_events_paired, sweep_events_v2). The ball_link check confirms it:
+  - follows a ball across 4 missing frames;
+  - refuses a confident decoy 15 m off the ball's path;
+  - prefers the moving ball to a brighter resting one;
+  - keeps one row per frame.
+- **Regression 1 (default `detect_events`):** on `events_v1` of 118575_1st_f015000, 118576_1st_f030000 and 128058_1st_f030000:
+  - output equals the cached `events.json` and the HEAD version of `src/events.py`;
+  - `params={}` and explicit v1 values give identical events;
+  - radius 3 changes the events and the constant is restored afterwards.
+- **`run_pipeline` unchanged:** on a copy of the 118575 cache, `events.json` and `tracks_merged.parquet` are byte-identical.
+- **Regression 2 (paired scorer):** reproduces e5_score.py's TP/pred/labels:
+  - events_coco: (39, 91, 130), equal;
+  - events_heatmap: (91, 282, 130), equal;
+  - with e5's 2000 draws, the bootstrap percentiles are also equal.
+- **Regression 3 (`events_from_cached`):** `events.json` and `tracks_merged.parquet` are identical for events_coco and events_heatmap on both V-old windows, and for the three training `events_v1` runs.
+- **`swap_ball_rows`:** reproduces e5's heatmap-run `tracks.parquet` and `tracks_teams.parquet` exactly on both V-old windows, checked by equality only.
+- **Linker on V-old:** on 117093 it runs in about 4.5 s (equality and timing only, no measures). The player hash is identical across the COCO and heatmap runs.
+- **Sweep smoke (`--allow-train`, 118575 + 118576, COCO balls, stages A and D):** about 75 s; JSON and sha256 written. `--apply` works, and the overwrite guard works.
+- **Link smoke on 118575 (COCO plus synthetic decoys):** with `c_static=2` the linker still picks a decoy resting ball at the penalty spot (p 0.8) in 1,871 of 2,025 ball rows. With `c_static=6` it picks it only in 52, the frames where a player is within 3 m.
+
+## Deviations from the contract
+- `link()` gains `tau=0.5` and `frames=None`. The unary needs logit(tau), and the contract signature has no way to pass it; `select_ball` passes the events tau.
+- Restart rule in the linker. A gap longer than 5 detection frames ends the chain, and the next one may start anywhere with no motion term. Every frame without a ball costs c_null, including frames between chains. The spec doesn't say what happens beyond a 5-frame skip, so this is my reading.
+- Tau and top-k are applied after the grass and outline filters, just before the selection.
+- `swap_ball_rows` drops ball rows at frames the pipeline didn't detect on (for example `--extra-frames`). A ball sample in a frame without players would read as a gap in possession. Copying the source unchanged (`rows=None`) also copies its grass fractions.
+- When `tracks_grass.parquet` is absent, `merged_from_cached` measures the grass fractions from the clip and caches them. That decodes the window once.
+- Stage D's "most permissive" is made concrete as: the most shots among settings with at most 3, then fewest changes from v1, then grid order. Shots are counted as `shot` events only.
+- "Fewest changes from v1" counts against top-k 4 with `select_single_ball`, which is what the published heatmap events run used. c_null and c_static only count when the linker is selected.
+
+## Open issues for other components
+- **U-E window 118578 2nd half:** `st2_118578_2nd_f015000` has no `output_<w>/events_v1` yet, and the sweep needs it. My guess at the original settings, taken from the cached `profile.json` and `pitch.json`, not confirmed: `python eval_soccertrack_v2.py data/soccertrack_v2/st2_118578_2nd_f015000.mp4 --run --calibrated --model yolov8s.pt --stride 2 --pitch-margin 10 --out output_st2_118578_2nd_f015000/events_v1`.
+- **E (dense rows):** rows need `confidence` = p_cal and `crop_h` = size, because the linker's ground point uses v + crop_h/2. They need `frame`, `time_s`, `cls="ball"` and `track_id=-1`; extra columns such as `logit` are dropped. Rows should sit on the pipeline's stride-2 frames.
+- **E (calibration file):** `<ckpt>.calib.json` must contain `"tau"` for `--calib`.
+- **Linker behaviour:**
+  - The rows are already filtered to p_cal ≥ tau, so every candidate's unary is ≤ 0, which is below c_null. Any stretch with candidates therefore gets a pick at least every 7 frames.
+  - c_static is what removes a resting ball. A static candidate with p = 0.8 and tau = 0.5 is still taken at c_static = 2; the A2 grid's c_static = 6 is needed.
+- **First sweep run:** it decodes each U-E window once for the grass fractions (about 1–2 min each) and caches them under `output_<w>/events_v2_sweep/`.
+
+Scratch regression scripts are in `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/F/`: `reg1_events.py`, `reg2_paired.py`, `reg3_cached.py`, `smoke_link.py`.
+====================================================================================================
+**Component B: report**
+
+Both files are written. Both `_check()`s pass, v1 gives identical results, and both go/no-go gates pass under the per-step conditions below, but the training gate fails for the first 800 steps (about 1.7×).
+
+**Files changed**
+- `/home/user/Veo/src/motion_bg.py` (new)
+- `/home/user/Veo/src/ball_heatmap.py`
+
+My test scripts are in `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compB/` (`regress_v1.py`, `smoke_v2.py`, `bench_inf.py`, `bench_train.py`, plus a copy of the original module).
+
+**Public API**
+
+`src/motion_bg.py`:
+- Constants: `BG_STEP=50`, `BG_HALF_SPAN=350`, `BG_MIN=8`, `OFFSET=2`
+- `bg_centre(t) -> int`
+- `bg_sample_frames(t, first, last) -> list[int]`
+- `grey(image) -> uint8`
+- `median_u8(images, rows=32) -> uint8`
+- `class BackgroundCache(first, last, crop=None)`:
+  - `.add(abs_frame, bgr_or_grey) -> bool`
+  - `.ready(t) -> bool`
+  - `.get(t) -> (grey_uint8 | None, n_samples)`
+  - `.drop_before(abs_frame)`
+  - extras: `.finish()`, `.nbytes`
+- `motion_channels(prev_bgr, cur_bgr, nxt_bgr, bg_grey, sigma_d=None, sigma_f=None) -> float32 HxWx3`
+- `motion_planes(prev, cur, nxt, bg, out=None, sigma_d=None, sigma_f=None) -> 3xHxW` (can write in place)
+- `class RingBuffer(n=5)`: `.push(abs_frame, bgr)`, `.get(abs_frame)`, `.triple(t) -> (t-2, t, t+2)`
+- `_check()`, also runnable as `python -m src.motion_bg --check`
+
+`src/ball_heatmap.py`:
+- Constants: `SIGMA_D=0.02`, `SIGMA_F=0.05` (placeholders), `V2_TRAIN`, `V2_EXCLUDE`, `NEVER`
+- `build(motion: bool = False)`
+- `to_tensor_v2(rgb_list, motion_list) -> N x 6 x H x W`
+- `pitch_box(shape, outline, pad_above=64, pad_below=32) -> (x0, y0, x1, y1)`
+- `detect(...)`: unchanged API
+- `detect_v2(model, prev, cur, nxt, bg, outline, tau=0.05, top_k=8, margin_px=10.0, cal=None, motion_zero=False, pad_above=64, pad_below=32) -> rows (u, v, p_raw, size, logit)`
+  - Returns `np.zeros((0, 5))` when there are no candidates.
+  - `bg` can be the full-frame grey background or its `pitch_box` crop; the shape decides which, and any other shape raises.
+- `calib_path(ckpt)`, `load_calibration(ckpt) -> dict | None`
+- `p_cal(logit, calib)`: with `calib=None` it is plain sigmoid.
+- `provenance_path(ckpt)`, `write_provenance(ckpt, info) -> Path`, `read_provenance(ckpt) -> dict | None`
+- `check_unseen(ckpt, match, allow_seen=False)`
+- `_check()`
+
+**What I tested**
+- **Self-checks:** both `_check()`s pass (motion_bg under 1 s, ball_heatmap about 14 s). The ball_heatmap check covers:
+  - v1's state-dict names and shapes are pinned by hash and load strictly.
+  - The motion model equals the RGB model at the start and at zero motion, and `conv1_motion` gets a non-zero gradient at once.
+  - `detect_v2(motion_zero=True)` gives exactly `detect`'s rows.
+  - The in-place input is bit-for-bit `to_tensor_v2` of the padded crop and motion.
+  - Peaks, refinement and the outline filter on a known logit map; size uses `max(sx, sy)`.
+  - The calibration and provenance guards.
+- **v1 regression:** the new `detect()` is identical to the original module on 4 frames of `st2_118575_1st_f015000`, `st2_118577_1st_f030000` and `st2_118576_1st_f030000`, at 3 settings each (12 cases, empty-result shapes included).
+- **Real frames, `st2_118577_1st_f030000`:** with v1 weights and `conv1_motion` at zero, `detect_v2` returns exactly v1's (u, v, p) on frames 30400/30402/30404. The background built by sequential decode and by seeking to every 50th frame is identical (15/15 samples, max difference 0).
+- **Window-start edge, `st2_118575_1st_f015000`:** at frame 15000 the previous frame is missing and the background has 8 samples. It runs and returns 8 rows with finite sizes.
+- **Raw motion scales** (training window only, informational, sigma = 1):
+  - D− robust std (1.4826 × MAD) is 0.0174 on one frame and 0.0000 on the other two, where 81% of pitch pixels are exactly 0 because x264 copies static blocks.
+  - D std is 0.030–0.036; 99.9th percentile of |D| is 0.45.
+  - F robust std is 0.0174, std 0.032.
+
+**Go/no-go timings** (synthetic, 4 threads, CPU shared with other jobs; per-round median ratios from calm runs)
+
+| What | Ratio | Gate |
+|---|---|---|
+| Network forward, 1000×4096 | 1.04–1.08× v1 (v1 1.55–1.64 s) | ≤ 1.10: GO |
+| Per-frame `detect_v2` vs `detect` (pitch box 1064×4080, preprocessing included) | 0.86× synthetic; 0.84× on real frames (1.05 s vs 1.26 s) | ≤ 1.10: GO |
+| Training step, batch 16 at 320 px, forward+backward, all layers trainable (steps 801–4000) | 0.96–1.04× (RGB 1.16–1.31 s) | ≤ 1.25: GO |
+| Same, early layers frozen (steps 1–800) | 1.66–1.70× (RGB 0.64–0.77 s, motion 1.07–1.28 s) | ≤ 1.25: fails |
+| Whole 4,000-step run (800 frozen + 3,200 trainable) | 1.06–1.12× | ≤ 1.25: GO |
+
+- The frozen-phase cost is built into the design: `conv1_motion` trains from step 1, so the backward pass goes through layer1 and bn1, which the RGB-only schedule skips.
+- `detect_v2` beats v1 per frame only because its input is built in place; v1's `to_tensor` is wasteful and I left it unchanged.
+- One run under heavy load from other jobs gave meaningless numbers (times tripled mid-run) and is excluded.
+
+**Deviations from the contract**
+1. **One 6-channel convolution.** `conv1_motion` keeps its own parameter (`conv1_motion.weight`, separate learning rate), but the forward pass runs one convolution with `cat([conv1.weight, conv1_motion.weight], 1)`. That is the same sum before bn1, at 1.06× v1 instead of 1.15–1.20× for two convolutions.
+   - Zero motion through the 6-channel path matches the RGB net to about 1e-6.
+   - A 3-channel input to the motion model is exact zero motion; `motion_zero=True` uses it.
+2. **Background centre** rounds half up: t = 25 mod 50 goes to the next multiple. This is consistent as long as everyone calls `bg_centre`.
+3. **`ready(t)`** is true once decoding has passed the last sample frame, or after `finish()`. A sample that was never added counts as missing, so decode gaps are tolerated. It is the same as the contract when every frame is added.
+4. **`get(t)` raises** if called before `ready(t)` or after its samples were dropped, instead of returning a background from fewer samples.
+5. **Even-count median** is the mean of the middle two, rounded half up. The median uses a sorting network: about 0.08 s for 15 × 1000×4096, against 0.6–1.6 s with numpy or torch.
+6. **`check_unseen` also raises when the checkpoint has no provenance**, unless `allow_seen`.
+7. **Provenance format:** `"train"` is required as {match: [halves]}; `"exclude"` (V2_EXCLUDE) is stored as rows [match, half, first, last]. `write_provenance` refuses any NEVER match.
+8. **`load_calibration`** also accepts a `.json` path directly.
+9. **Shared input buffer:** `detect_v2` builds its input in one module-level buffer reused between calls (about 100 MB kept alive). The input tensor is only valid until the next call, and it is not thread-safe.
+10. **`motion_channels`** takes optional `sigma_d` / `sigma_f`; pass 1.0 to get the raw differences.
+
+**Open issues for other components**
+- **C (sigma measurement):** 1.4826 × MAD of D can be 0 on window frames (x264), and is probably small on strips too. Use std or a floor, and print strip vs window statistics for the mismatch check.
+  - With SIGMA_D = 0.02, D has heavy tails (up to about 50) going into a zero-initialised convolution. D (training) may want to clip; the contract does not say to.
+  - SIGMA_F = 0.05 is about 3× the measured robust std (0.017).
+- **C (backgrounds):** for a half, use `BackgroundCache(0, last_frame_of_half, crop=pitch_box(...))`, or call `finish()` at end of stream if the last frame is unknown.
+  - The 3-channel B read back from the strip JPEG is accepted (converted with BGR2GRAY).
+  - The last 25 frames of every window and half have only 7 samples, so B is None and F = 0; the same applies in training and inference.
+  - A safe way to free memory is `drop_before(t - BG_HALF_SPAN - BG_STEP)`.
+- **D (optimiser groups):** `model.conv1_motion` at 3e-4 from step 1; `model.stem[0]`, `model.stem[1]` and `model.layer1` frozen to step 800; `model.layer2`; `model.lat` + `model.head`.
+  - `write_provenance(f"{out}.{step}.pt", {"train": V2_TRAIN, "exclude": V2_EXCLUDE, ...})` writes `<out>.<step>.pt.provenance.json`.
+- **A / E (inference):** `BackgroundCache(start_frame, start_frame + frames - 1, crop=pitch_box((height, width), pitch))`, a `RingBuffer(5)`, then `detect_v2(m, *ring.triple(t), cache.get(t)[0], pitch, cal=cal)`.
+  - The calibration file is `bh.calib_path(ckpt)` = `<ckpt>.calib.json`, e.g. `ball_v2.4000.pt.calib.json`.
+  - v1 `detect` keeps its old quirk: it returns shape (0,) when peaks exist but all fall outside the outline.
+====================================================================================================
+**Component C report: strips and labels**
+
+Both files are written and both `_check()`s pass (about 2 s each). The smoke test produced 33 strips covering all five kinds on the training window, and all 33 were labelled. The montage is at `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/v2_smoke/montage_codes.png`. Two data issues need your decision (sigma values on window strips, and the accuracy of the dataset's player positions); they are under Open issues.
+
+**Files changed**
+- `/home/user/Veo/build_ball_strips.py` (new)
+- `/home/user/Veo/label_ball_strips.py` (new)
+- No other repo file was touched; v1 and Component B files have no diff against HEAD.
+- Side effect: the ball-track file is now cached at `.cache/soccertrack_v2/ball/118577_1st_ball.npz`.
+- My scratch scripts are in `scratchpad/ball/compC/`. Smoke outputs are in `scratchpad/ball/v2_smoke/` (`strips/`, `strips_like/`, `montage_codes.png`, `zoom_flight.png`, `feet_overlay.png`).
+
+**Public API**
+
+`build_ball_strips.py`
+- Command line: `--match M --half H --out DIR [--kinds ...] [--seed 0]`, or `--window W --out DIR [--allow-any]`.
+  - New options: `--frames FIRST LAST` (absolute frames; also sets the background range), `--like DIR` (recut DIR's samples at the same frames and places), `--check`.
+- Constants:
+  - Strip: `SIZE=320`, `CELLS=80`, `QUALITY=98`, `JITTER=100`, `KINDS`.
+  - Flight bag: `WINDOW=(0.22, 0.28)`, `NARROW=(0.15, 0.20)`, `CLEAR_A_M`, `CLEAR_B_M`, `T_BOUNDS`, `BAG_PERP_M`, `BAG_PX`, `BAG_HEIGHT_M`.
+  - Others: `FREE_MIX`, `LANDMARKS` (the 29 points from the contract), `ACTION = KEEP_ACTION | {"THROW IN"}`, `THROW_HEIGHT=2.6`.
+- Geometry functions: `t_hat(s)`, `bag_window(th, L, narrow=False)`, `scales(xy, cal)`, `flight_bbox(...)`, `disc_bbox(...)`, `place(bbox, rng, limits)`, `crop_ground(...)`.
+- Data access: `People(gsr, shift)` with `.at(f)` and `.of(f, pid)`; `events_of(match, half)`; `people_of(match, half, window)`; `ball_track(match, half)` (cached); `outline(match, half, W, H)`; `Half(match, half, window=None)`.
+- Sampling and cutting:
+  - `samples(h, kinds, limits, poly, seed)`
+  - `excluded(frame, match, half)`
+  - `check_allowed(...)`: test matches 128057 and 132831 are always refused.
+  - `stream_frames(...)` (PyAV) and `window_frames(...)` (OpenCV, the same decoder inference uses)
+  - `cut(targets, frames, first, last, box, out, match, half, write=None)`
+  - `assemble(crops, bg)`, `merge(...)`, `synthetic_cal()`, `synthetic_half()`, `_check()`
+- `strips.parquet` columns:
+  - From the contract: file, match, half, frame, kind, category, x0, y0, A and B as `a_x, a_y, b_x, b_y`, s, t_hat, L, `event_a`/`event_b` (row numbers in `st.events(match)`), n_bg.
+  - Added: label, player_a, player_b, has_prev, has_next, width, height, source ("stream" or the window name), allow_any.
+
+`label_ball_strips.py`
+- Command line: `--strips DIR [--coco] [--holdout 300] [--seed 0] [--allow-any]`.
+  - Modes: `--sigma`; `--compare-window W --strips-a A --strips-b B`; `--t-stats SCRATCH_DIR`; `--montage PNG [--montage-n 8]`; `--check`.
+- `LABEL_CONSTANTS` dict, also written to `labels_meta.json`.
+- Code functions: `flight_codes(r, h) -> (codes, narrow) | None`, `lofted_codes`, `action_codes`, `dribble_codes`, `free_codes(r, h, balls=None) -> (codes, n_coco)`.
+- Helpers: `Canvas`, `body_slices`, `line_uv`, `landmark_mask`, `coco_balls`, `split(strip)`, `holdout_mask`.
+- Entry points: `label(...)`, `measure_sigma(...)`, `sigma_of(stats)`, `compare_window(...)`, `t_stats(...)`, `montage(...)`, `_check()`.
+- Outputs:
+  - `labels.parquet` with the contract's columns (file, match, half, frame, kind, category, x0, y0, positive_only, weight, holdout), plus label, n_bg, has_prev, has_next, narrow, coco_balls, source.
+  - `labels_codes.npy` (N × 80 × 80 int8, same row order as `labels.parquet`).
+  - `labels_meta.json`.
+
+**What I tested**
+- **build `_check()`**, on a synthetic half with a fisheye camera model:
+  - The right flight samples (completed and intercepted), lofted, dribble, action and free samples at the right frames.
+  - Every cell of a free strip is at least 12 m from the actor and the track point; crops sit inside the pitch box and within the jitter of their bag.
+  - Random draws are per sample, so changing the frame range or kinds changes nothing.
+  - Decoding writes exact t-2 / t / t+2 crops, a background equal to numpy's median, and grey t when the background has fewer than 8 samples or a neighbour is missing.
+  - Only needed frames are converted, at most 17 background samples are held, and the JPEG reads back.
+- **label `_check()`**:
+  - The flight bag runs along the pass around t_hat and stays off feet; a player on the line is 0, a far one is -3; an off-crop bag is dropped.
+  - The lofted curtain is all 0. The v1 action rule works, and the throw-in bag is taller.
+  - Dribble codes are only 0 and 1. A free strip gets landmark -3 cells and a COCO ignore disk, except for a "ball" on the centre spot.
+  - Holdout counts by kind are right. The noise scale is recovered, and the zero-heavy case falls back to the std.
+- **Smoke test** on `st2_118577_1st_f030000`, frames 30400–31400:
+  - 33 samples of the window's 2,305 in this range: 13 action, 9 flight, 7 free, 2 dribble, 2 lofted. Decoding took 19 s; every strip has n_bg ≥ 8, t-2 and t+2.
+  - Labelling with `--coco` kept all 33 (2 flight strips on the narrower stretch, 1 COCO disk) and held out 1.
+  - `--like` recut gives bit-identical JPEGs. `--compare-window` on those two copies reports ratio 1.00 (code-path test only).
+  - In the zoomed montage, the visible ball is inside the bag on one flight strip. On the other it sits just above the bag in the ignore band, at the receiver's feet, because the next labelled action comes after the receiver already has the ball.
+- **`--sigma` on these 33 window strips** (x264, so not the training values):
+
+  | Channel | Exact zeros | Robust std | Std |
+  |---|---|---|---|
+  | D | 58% | 0.0000 | 0.0757 |
+  | F | 8% | 0.0233 | 0.0685 |
+
+- **`--t-stats`**, T = 118576 and 128058 second halves only (16 tiles on 118578 were left out; only their count was printed):
+
+  | Statistic | Value |
+  |---|---|
+  | Balls | 26 |
+  | Perpendicular distance to the segment | median 1.38 m, 90% 3.45 m (far 1.48, near 0.98) |
+  | Pixel distance | median 8.3, 90% 21.0 |
+  | t − s | median +0.14, 5–95% [−0.01, +0.49] |
+  | At least 1 m from every player | 96% |
+
+  The plan's numbers were 1.19 m / 6 px / +0.10 / [−0.13, +0.41].
+
+**Deviations from the contract**
+1. **Sigma rule.** `--sigma` uses the robust std unless more than 25% of values are exactly zero; then it uses the std and says so on the printed line. The MAD alone printed `SIGMA_D = 0.0000` here.
+2. **Crops stay inside the pitch box**, not just the frame, so the background (kept for the pitch box only) always covers the crop.
+3. **The 10 m minimum length** applies to intercepted passes as well as completed ones.
+4. **Lofted passes** need the next action to be an on-ball label within 0.8–4 s, with both actors positioned.
+5. **Dribbles** need the same player to make the next action (v1's condition).
+6. **Throw-ins** get a bag 2.6 m high and the thrower's head is not marked -3; under the plain v1 rule the ball in the hands would be labelled a hard negative.
+7. **Flight bag ordering.** Bag cells on a body stay 0 even when that body is a hard negative; hard negatives only override the ignore band.
+8. **V2_EXCLUDE** is applied always (to frames t-2 through t+2), even with `--allow-any`.
+9. **Holdout** is min(300, ⌈1.5% of strips⌉), at least 1.
+10. **`--sigma`** is a separate mode: it measures and prints, it does not label.
+
+**Open issues**
+- **Main agent (sigma values):** window strips have 58% exact zeros in D. Run `--sigma` on the stream-built training strips before editing `SIGMA_D`/`SIGMA_F`. The printed D and F lines may then use different rules (std for D, robust for F); pick one rule for both if you prefer.
+- **Main agent / A (mismatch check):** the cheap way to run it is `--match 118577 --half 1 --frames 29900 34600 --out A`, then `--window st2_118577_1st_f030000 --like A --out B`, then `--compare-window`. Judge the ratio by its std: the robust ratio is "n/a" whenever a MAD is zero.
+- **Label constants vs. T statistics:** the 95th percentile of t − s (+0.49) is beyond the bag's upper edge (about s + 0.38). Constants are unchanged, as instructed.
+- **Data quality, for the main agent:** the dataset's player positions, checked against YOLO person feet on 8 frames of the 118577 and 118575 windows, show no systematic shift (median about 0 px) but scatter of 10–17 px (about 1.2–1.5 m), up to 23 px on M5's near side; the worst cases are 30–45 px off. Body boxes (-3) partly miss bodies, and the 1 m feet zone is only 2–5 px deep on the far side. Constants were left as the contract fixed them.
+- **D (training):**
+  - Codes refer to the t crop, columns 320:640 of the strip.
+  - Read the strip via `split()`. Pass None for t-2 when `has_prev` is false, None for t+2 when `has_next` is false, and None for B when `n_bg < 8` (the missing slots are stored as t or grey t, which is almost zero motion).
+  - Train only on rows with `source == "stream"`; window strips are for checks.
+  - Free strips have category landmark, cluster, boundary or random.
+  - `LABEL_CONSTANTS` can be imported from `label_ball_strips`, or read from `labels_meta.json` (which also records whether `--coco` was used).
+- **Expected cost per training half:** a full streamed decode (PyAV, only needed frames converted to images) plus about 1,350 background medians (about 0.07 s each). The COCO pass is about 5,200 yolov8s runs at 640 px across all halves.
+====================================================================================================
+**Component A (measurement): report**
+
+All three self-checks pass. `--reuse V.json` reproduces the registered geometric free-flight 0.23 / 0.23 and every per-window and per-pass value, except a few "candidates per frame" cells (explained below). `validate_ff_auto.py` reproduces all 15 values recorded at the freeze. The v1 path gives the same numbers as git HEAD.
+
+**Files changed**
+- `/home/user/Veo/eval_ball_detector.py`
+- `/home/user/Veo/ball_tiles.py`
+- `/home/user/Veo/validate_ff_auto.py` (new)
+- Test scripts are in `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compA/`: `make_ckpts.py`, `smoke_decode.py`, `regress_legacy.py`, `fake_scores.py`, plus copies of the HEAD versions of the two existing files. `validate_out.txt` there holds the full validate output.
+
+**Public API**
+
+`eval_ball_detector.py`:
+- Constants: `FF_W=4.0`, `FF_DT=0.30`, `FF_R=1.0`, `FF_S`, `PRE_LEADS=(15,30)`, `PRE_GAP=35`, `PRE_T=(0.2,0.9)`, `POST_LAG=15`, `POST_T=(0.1,0.7)`, `BLOCK_FRAMES=1500`, `DRAWS=4000`, `FULL_BG=15`, `V2_TAU=0.05`, `TOP_K=8`, `TEST_MATCHES`, `FRAME_KINDS`.
+- Frames:
+  - `frames_of(window, seed=0)`: same passes, actions and random frames as before. Each pass also gains `i`, `event`, `kick`, `reception`, `s`, `minute`, `block`, and the result gains `placebo_pre` and `placebo_post`.
+  - `frame_sets(lab, n, window, seed=0)`, `measured_frames(sets, kinds=FRAME_KINDS)`
+- Geometry: `top_ground(rows, cal)`, `corridor_hit(g, a, b, t_lo, t_hi, people, s=None)`, `ff_hit(g, p, q, people)`. Unchanged: `ground`, `seg_dist`, `coco_candidates`.
+- Running and measuring:
+  - `window_data(window, seed)`, `ball_track(info)` (now cached in `.cache/soccertrack_v2/ball/`)
+  - `decode(wd, detectors, motion, wanted, log)`
+  - `run_window(window, detectors, seed=0, motion=None, limit=None, extra=None, log=print, kinds=FRAME_KINDS)`
+  - `measure(wd, cands, seed=0, n_bg=None)`, `frames_detail(sets)`
+- Saved candidates: `parquet_candidates(path, wanted, top_k=8)`, `parquet_source(path)`, `load_scores(paths) -> (merged, meta)`, `reuse(paths, windows=None, seed=0, extra=None, log=print)`
+- Statistics:
+  - `compare(...)`: legacy, unchanged.
+  - `compare_ff(results, a, b="coco", draws=4000, seed=0, blocks=True, full_bg=False)`: returns `passes`, `blocks`, the two means, `difference`, `2.5%`, `97.5%`, `lower bound above 0`, and `matches` (per-match passes, means, difference).
+  - `ff_summary`, `placebo_summary`, `summarise(results, names, kinds)`, `kind_of`
+- `_check()`, also runnable as `--check`.
+- CLI flags: `--heatmap`, `--v2 CKPT...`, `--motion-zero`, `--candidates NAME=PARQUET` (`{window}` in the path is replaced), `--windows`, `--no-coco`, `--reuse S.json...`, `--allow-seen`, `--save`, `--sealed OUT`, `--frames {passes,placebo,actions,random}...`, `--limit-frames N`, `--threads`.
+
+`validate_ff_auto.py`:
+- `read_judged`, `agreement(auto, judged)` (counts, kappa, PPV, recall), `mcnemar(b, c)`, `Window`, `tile_table(root)`, `detector_tiles(df)`, `chance(windows, n=300, seed=1)`, `validate(root)`
+- `sealed_check(scores, judged_dir, detectors=None, draws, seed) -> dict`, `print_sealed`, `_check()`
+- CLI: `--dir SCRATCH/ball`, or `--sealed-check S.json --judged DIR [--detectors V2 coco]`.
+
+`ball_tiles.py`:
+- Legacy CLI unchanged. New flags:
+  - `--pass-frame Q`, with `--take` given detector names only
+  - `--passes-per-match N`, `--dedupe-px D`
+  - `--confident NAME=TAU:N`, `--calib NAME=JSON`
+  - `--corridor-decoys N`, `--rejudge KEY:N`
+- Helpers: `pass_picks`, `confident_picks`, `corridor_decoys`, `rejudge_picks`, `dedupe`, `Windows`, `_check()`.
+- Every key record has `sources`, `kind`, and `pass` / `q` at pass frames. With `--pass-frame`, a `key_passes.json` gives the tile of each detector for every pass (None means no candidate, a miss).
+
+**What I tested**
+- **Self-checks:** all three pass in about 1 s each. They use synthetic data: a distortion-free camera at 10 px per metre and a synthetic events table. They cover the pass and placebo frame rules, FF-auto edge cases (4 m, |t−s| 0.30, 1 m from people, t outside [0, 1]), `measure`, the block bootstrap, the parquet reader, kappa and McNemar, a synthetic sitting checked against a sealed file, and dedupe, sampling and confident picks.
+- **`--reuse V.json --sealed`:** the legacy `paired` block is identical (0.23 / 0.23, [−0.066, 0.066]). The per-pass arrays, free-flight hit, feet share, action hit and random-point values are identical too. 6 of 32 "candidates per frame" cells differ by one candidate. The cause is that old files stored p rounded to 3 decimals, so a stored p exactly equal to a threshold is ambiguous; I checked by hand that two such ties at 0.2 resolve in opposite directions. The T files behave the same way.
+- **v1 regression against git HEAD:** `regress_legacy.py` runs both `run_window` versions on 8 frames of `st2_118576_1st_f030000` with COCO and v1. Legacy fields and candidates are identical.
+- **Legacy `ball_tiles`:** on a training-window file, HEAD and the new code give identical key fields and a byte-identical sheet.
+- **`validate_ff_auto.py --dir`:** every recorded value reproduces.
+  - T: 112 tiles, counts (69, 0, 9, 34), kappa 0.82.
+  - V-old: 97 tiles, counts (55, 3, 6, 33), kappa 0.81.
+  - Auto rate against judged rate: 0.62 / 0.74, 0.61 / 0.65, 0.58 / 0.60, 0.62 / 0.67.
+  - Decoys: 0 of 88 judged B; FF-auto hits 0 of 65.
+  - Chance: 0.0185 for the corridor without the |t−s| guard; 0.012 for FF-auto itself.
+  - T pooled: 0.651 / 0.500, +0.151 [0.089, 0.214] over single passes; [0.097, 0.219] with 1-minute blocks.
+  - V-old pooled: 0.533 / 0.500, +0.033 [−0.072, 0.138] over single passes; [−0.065, 0.202] with blocks.
+  - All 5 per-window values match.
+- **Decode smoke, `st2_118577_1st_f030000`, 5 frames:** COCO, v1, two v2 test checkpoints and both motion-zero variants.
+  - The zero-initialised v2 equals v1 in (u, v, p) at p ≥ 0.05, and motion-zero equals it.
+  - The random-motion checkpoint differs.
+  - Without `--allow-seen` the run is refused.
+- **Decode against an independent full-decode background (`smoke_decode.py`):** identical rows at frame 672 (15 background samples) and at the last frame 4499 (7 samples, no t+2).
+- **`--candidates` parquet, `--reuse` combined with `--candidates`, and `--frames placebo` merged via `--reuse`:** all work on training windows.
+- **New `ball_tiles` options and `--sealed-check` end to end:** run on a fake scores file and fake judgements for the training window.
+
+**Deviations from the contract**
+1. **Pass detail location.** The detail lists go under `results[*]["frames"]` (`passes` / `actions` / `random` / `placebo_pre` / `placebo_post`), not `results[*]["passes"]`. That key and `actions` stay integer counts so the legacy summary is unchanged. The layout is documented in the `eval_ball_detector.py` docstring for E.
+2. **Saved precision.** Candidates are now saved with p and logit to 6 decimals; u, v and size stay at 3. This makes future reuse exact; measures are unchanged.
+3. **"A PASS received by the passer"** for placebo-pre is read as a completed pass to him: same side, another player.
+4. **v2 eval threshold.** v2 candidates in eval use p_raw ≥ 0.05 and top 8, matching the dense path. v1 keeps 0.01.
+5. **`n_bg` is always recorded.** It is the decoded value in v2 runs, otherwise the count a complete window decode gives. This adds a "(full background)" paired diagnostic for every v2 detector.
+6. **Additions:**
+   - `--frames` in eval, needed for step 9's "v1 and COCO at the V-old placebo frames".
+   - In `ball_tiles`: `--passes-per-match` (for S2's 25 passes per match), `--calib`, and `key_passes.json`.
+   - In `--sealed-check`: a 90% bias upper bound, confirmed false hits beyond 12 px, McNemar, confident-pick and re-judge counts.
+   - A refusal for the test matches.
+7. **`--rejudge`** samples only non-decoy old tiles. The rejudged-agreement count reads the old sitting's `judged.txt`, found next to that key.
+
+**Open issues for other components**
+- **E (fields and helpers):** read the scores file with `ev.load_scores()`. Recompute geometry with `ev.ground` and `ev.ff_hit` / `ev.corridor_hit`, using `results[*]["people"][frame]` and `frames.passes[i]` with `s[q]`. PASS/DRIVE actors are in `frames.actions` (x, y).
+- **E (candidate coverage):** v2 rows are `[u, v, p_raw, size, logit]` with p_raw ≥ 0.05 and at most 8. The candidates-per-frame count at a very low p_cal tau is therefore capped.
+- **E (dense parquet):** it needs a `logit` column (`p_raw` optional), local frames, and coverage of every measured frame (`--extra-frames`). A measured frame with no rows counts as measured with no candidate, i.e. a miss.
+- **E (calibration):** eval copies `<ckpt>.calib.json` into `detectors[NAME]["calib"]` only if it exists at eval time. Otherwise `ball_tiles --confident` falls back to the checkpoint path, or needs `--calib`.
+- **Main agent (protocol wording):** record that the registered chance of 1.9% is the corridor without the |t−s| guard; FF-auto's own chance is 1.2%. With 1-minute blocks, T has only 9 blocks and V-old 6, so V-old's block interval is wider than the registered single-pass one.
+- **Main agent (V-old placebo):** V.json has no placebo frames. Run step 9 as `--windows V-old --heatmap v1 --frames placebo --sealed X`, then `--reuse V.json X`.
+- **Placebo-post caveat:** a quick return pass by the receiver puts the real ball back on the just-completed segment, so it scores as a placebo hit. The contract defines it this way; it may be worth disclosing.
+====================================================================================================
+**Component E: report**
+
+Both files are written and their self-checks pass. On 10 real frames of the training window st2_118577_1st_f030000, `detect_ball_heatmap.py --v2` gives exactly the same rows as component A's `eval_ball_detector.decode`.
+
+**Files changed**
+- `/home/user/Veo/calibrate_ball_heatmap.py` (new, 582 lines)
+- `/home/user/Veo/detect_ball_heatmap.py` (+303 / −3; the v1 code is the same apart from how `--tau` and `--top-k` are read, see deviation 6)
+
+My test scripts are in `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compE/`: `make_ckpts.py`, `agree.py`, `fake_v2_scores.py`, plus the test checkpoints and outputs.
+
+**Public API**
+
+`calibrate_ball_heatmap.py`:
+- **Command line:** `--scores S.json [...] --ckpt CKPT [--out] [--name] [--allow-seen] [--force]`, or `--evaluate CALIB --out FILE`. Without `--out`, it writes `bh.calib_path(ckpt)`.
+- **Constants:** `U_MATCHES={"118578"}`, `REPORT_MATCHES={"117093","132877"}`, `ACTOR_R=1.5`, `BINS=10`, `TAU_GRID` (0.05 to 0.95), `MAX_PER_FRAME=1.0`.
+- **Functions:**
+  - `samples(results, name, cal_of) -> {"logit","label","kind","window","frames"}`
+  - `random_logits(results, name) -> list[np.ndarray]`
+  - `fit_platt(z, y, iters=100) -> (a, b, info)`
+  - `reliability(p, y, bins=10) -> (table, ece)`
+  - `per_frame(logits, calib, grid=TAU_GRID, top_k=8, floor=0.05) -> [{"tau","candidates per frame","exact"}]`
+  - `choose_tau(grid_counts, max_per_frame=1.0)`
+  - `check_windows(results, ckpt, allow_seen=False)`
+  - `calibrate(results, name, cal_of) -> dict`
+  - `evaluate(results, name, calib, cal_of) -> dict`
+  - `run(scores, ckpt, out=None, name=None, allow_seen=False, force=False, cal_of=st.calibration, log=print)`
+  - `run_evaluate(scores, calib_path, out, name=None, cal_of=..., log=...)`
+  - `_check()`
+- **Calibration file:** `a`, `b`, `tau`, `ckpt`, `ckpt sha256`, `detector`, `scores` (path and sha256), `windows`, `candidates`, `positives`, `by kind`, `frames`, `fit`, `reliability`, `ece`, `random frames`, `tau grid`, `rules`.
+- **Inputs:** it reads A's scores with `ev.load_scores`, `ev.ground` and `ev.ff_hit`, using the documented fields `frames.passes[i].{frames,s,from,to}`, `frames.actions[].{frame,x,y}`, `frames.random`, `people`, and `NAME.candidates` rows of the form `[u,v,p_raw,size,logit]`.
+
+`detect_ball_heatmap.py`:
+- **Command line:** `--v2 --window W --weights CKPT [--calib PATH | --no-calib] [--tau 0.05] [--top-k 8] [--stride 2] [--extra-frames F ... | measured] [--range A B] [--allow-seen] [--threads N] --out P`
+- **Functions:**
+  - `v2_frames(n, stride, extra=(), start=0, stop=None)`
+  - `background_pass(path, first, last, need, crop) -> (BackgroundCache, grabbed)`
+  - `dense_v2(path, info, model, frames, calib=None, cal=None, tau=0.05, top_k=8, log=print, every=500) -> DataFrame`
+  - `extra_frames(window, specs)`
+  - `main_v2(args)`
+  - `_check()`
+- **Output rows:** the v1 columns, plus `logit`, `p_raw` and `n_bg`. `detection_method` is "heatmap_v2" and `confidence` is p_cal.
+
+**What I tested**
+- **`calibrate --check`** (synthetic, 2 s):
+  - Labels come out right on both sides of each rule boundary: 3.9 vs 4.1 m from the pass line, 0.5 m from a person, t − s of 0.29 vs 0.31, and 1.4 / 1.6 m from the actor (including a row with no size).
+  - Platt recovers the true (a, b) = (0.7, −0.8) as (0.669, −0.828), with ECE 0.013.
+  - The chosen tau equals a brute-force count. The 0.05 grid value is flagged inexact because it falls below the save floor, and a frame with all 8 rows above the threshold makes that value inexact too.
+  - Platt refuses a single class, labels the logit separates, and a negative slope.
+  - Refusals: report matches, test matches, and training or non-U matches without `--allow-seen`; an existing calibration is not overwritten without `--force`.
+  - The file round-trips through `bh.load_calibration`, and `--evaluate` works.
+- **`detect --check`** (synthetic video, 8.5 s):
+  - The dense run equals `detect_v2` called frame by frame with t−2, t+2 and the background built from the whole video.
+  - This holds at the edges: no t−2 at frames 0 and 1, no t+2 at the end, and only 7 background samples at the start (the start frame is not a multiple of 50, so B is None there).
+  - A window split by `--range` gives the same rows, and stride, extra frames, p_cal, empty output and dtypes are right.
+- **Real frames, st2_118577_1st_f030000, frames 400–418:**
+  - The untrained `build(motion=True)` model gives 0 rows at p_raw ≥ 0.05, as expected with the head bias at −4.6. It took 57 s under load average 9; the background pass grabbed 751 frames (15 samples) in 11 s.
+  - v1 weights plus a random motion stem, with a fake calibration file: 80 rows, identical to `ev.decode` (u, v, p_raw, size, logit and n_bg). `confidence` equals p_cal(logit), and `ev.parquet_candidates` reads the file back identically.
+- **Refusals on real data:** a checkpoint with no provenance file, a training-provenance match, a missing calibration, and a test-match window name are all refused with clean exits.
+- **`--extra-frames measured`** on that window adds 187 measured frames (89 odd), 2339 frames in all.
+- **Calibrate on a real-format file:** the scores file is on the training window (`ev.measure` output with fake candidates). Without `--allow-seen` it is refused. With it, it fitted a = 0.83, b = −0.77 on 690 candidates (178 positive), ECE 0.029, tau 0.15, and `--evaluate` ran.
+- No U or V window was opened.
+
+**Deviations from the contract**
+1. **Exact counts for tau.** A grid value is used only if the saved rows give its count exactly. That means p_cal at logit(0.05) + 1e-4 must be ≤ tau, and no random frame may have all 8 saved rows above it. Otherwise rows that were never saved could hide candidates and make a grid value look like it meets ≤ 1.0. If no grid value qualifies, tau is null and a warning is printed.
+2. **Pass frames without ground-truth people are skipped.** `ff_hit` would label every candidate there negative.
+3. **Platt is plain maximum-likelihood logistic regression.** There are no Platt target-smoothing priors. The (a, b) are rounded to 6 decimals before the table is computed, so the file's (a, b) reproduce its table exactly.
+4. **Additions:**
+   - calibrate: `--name`, `--force`, `--evaluate` (the ECE of a frozen calibration on V, writing only to a file), and the window guards.
+   - detect: `--range A B`, `--extra-frames measured`, `--no-calib`, and the `p_raw` and `n_bg` columns.
+5. **A missing calibration file is an error** unless `--no-calib` is given.
+6. **`--tau` and `--top-k` are no longer required by the parser** for v1. v1 still errors without `--tau`, and `--top-k` still defaults to 4, so valid v1 runs behave the same.
+7. **The `--v2` path prints only frame counts and timings,** never candidate counts.
+
+**Open issues for other components**
+- **A:** my reading of the scores relies on the field names in `eval_ball_detector`'s docstring and on `load_scores`, `ground`, `ff_hit`, `V2_TAU`, `TOP_K` and `TEST_MATCHES`. If any of these are renamed, calibrate breaks.
+- **Main agent:**
+  - Calibrating on a T diagnostic window needs `--allow-seen`, which also lets through any non-U window except V and the test matches.
+  - p_cal is in-sample on U. Its ECE on V is `--evaluate` against the sealed file.
+- **F / events:** read tau from `bh.load_calibration(ckpt)["tau"]`, which can be null. `confidence` in the dense parquet is already p_cal.
+- **Speed:** the 10-frame run took about 4.5–5.5 s per frame because the CPU was shared (load average 9). On an idle machine it should be about 1 s per frame.
+====================================================================================================
+I implemented component D (training) in `train_ball_heatmap.py`, and it works end to end: the self-check passes, both models train for 10 steps on C's real strips, the monitor, provenance and `--bench` all run, and the v1 path gives bit-identical weights. The main open point is the timing gate: with motion, a training step costs 1.36–1.41× the RGB-only step for the first 800 steps (gate is 1.25×). It is about 1.06× over the whole run, but every timing was taken on a heavily loaded CPU and needs redoing on an idle machine.
+
+**Files changed**
+- `/home/user/Veo/train_ball_heatmap.py` is the only repo file I edited.
+- Scratch files are in `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compD/`: a copy of the original trainer, a copy of C's smoke strips (`strips_smoke/`), and the smoke checkpoints with their provenance files.
+
+**Command line**
+- v1: `--patches DIR --out P [--steps 3000] [--exclude-matches ...]` — same code as before.
+- v2: `--strips DIR --out P [--motion | --no-motion] [--steps 4000] [--seed 0]`. Motion is the default.
+- Benchmark: `--strips DIR [--motion] --bench N [--bench-at STEP]`.
+- Self-check: `--check`.
+- A peakiness abort exits with status 3 and writes no checkpoint.
+
+**Public API**
+- Constants: `MIX_V2`, `STEPS_V2=4000`, `CHECKPOINTS_V2=(2500, 3250, 4000)`, `LR_V2`, `FREEZE_TO=800`, `WARMUP=100`, `DROP_FROM=1200`, `DROP_V2`, `FOOTPRINT=4`, `POOL_R=8`, `LME_R=5`, `GAMMA=2`, `HARD=3`, `N_PEAKS=16`, `PEAK_WIN=5`, `AUG`, `MONITOR_EVERY=250`, `PEAKY_MAX=30`, `PEAKY_FROM=1500`, `NEG_P=0.15`.
+- `load_strips(root) -> (table, codes_memmap, meta)`. It refuses any strip whose match is in `NEVER`, whose half is not in `V2_TRAIN`, or whose t-2..t+2 touch a `V2_EXCLUDE` range.
+- `Sampler(table, index, mix=MIX_V2)` with `.draw(rng)` and `.fallback`.
+- `read_strip(root, row, motion=True) -> (prev, cur, nxt, bg)`: prev, nxt or bg is `None` when `has_prev`, `has_next` or `n_bg >= BG_MIN` says it is missing.
+- `draw_aug(gen) -> dict`; `augment_strip(prev, cur, nxt, bg, codes, p, motion=True) -> (prev, cur, nxt, bg, codes)`.
+- `make_batch(root, rows, codes_all, idx, seeds=None, motion=True) -> (x N×6|3×320×320, codes N×80×80)`. The input is built in place and is bit-identical to `to_tensor_v2` / `to_tensor`.
+- `strip_losses(logits, codes, flight, weight, positive_only) -> (pos, has, neg, peak)`; `drop_worst(pos, has, kinds, rng) -> bool[]`.
+- `optimiser(model) -> (AdamW, early_params)`; `lr_scale(step, steps)`.
+- `monitor(model, root, rows, codes_all, idx, motion) -> dict`.
+- `recipe()`, `recipe_constants()`, `provenance_info(...)`.
+- `Batches(...)` (prepares the next batch in a thread; `.next()`, `.close()`) and `Run(...)` (`.batch()`, `.step()`, `.close()`).
+- `train_v2(root, out, steps=4000, motion=True, seed=0, checkpoints=CHECKPOINTS_V2, monitor_every=250, mix=MIX_V2, log=print) -> history`.
+- `bench_v2(root, n, motion=True, at=1, seed=0, rounds=5, mix=MIX_V2, log=print) -> dict`.
+- `train_v1(args)`, `_check()`.
+
+**Tests and outputs**
+- **Self-check:** passes in 40 s at load average 4–5, and 59 s at 7–8, on the 4 shared cores. It covers:
+  - the data guard and the batch mix 5/3/1/1/2/2/1/1, with the fallback for an empty free category;
+  - the four crops kept in register: D is exactly 0 and F within 2 grey levels on identical crops, and the bag follows the ball through flip and scale;
+  - time reversal swapping D- and D+, dropout and missing frames giving zero motion, and per-crop JPEG and noise;
+  - identical t crops with and without motion, and the in-place input equal to `to_tensor_v2` / `to_tensor`;
+  - prefetching not changing the batches;
+  - the losses:
+    - flight pool: 4 cells score z, 1 cell z − 0.17, N cells z + log(N/4)/8;
+    - action/dribble term and focal term equal to v1's `bag_losses`;
+    - peak suppression on the 16 highest negative maxima, and a finite gradient when a strip has no bag;
+  - drop shares averaging 1.25 / 0.45 / 0.25 bags, worst first;
+  - the optimiser groups cover every parameter once, both models start from the same weights, and the schedule is right;
+  - 2 steps of the motion model and 1 of the RGB-only one, with monitor, checkpoints and provenance, plus a 2-step bench from step 1201 (drops on).
+- **v1 regression:** the original trainer and the new one, 3 steps each on `.cache/soccertrack_v2/ball_patches`, give identical state dicts (same keys, every tensor equal).
+- **Smoke, 10 steps on C's strips of `st2_118577_1st_f030000`** (32 training strips, 1 held out):
+  - `--motion`: step-10 loss 2.2206; monitor ran; `conv1_motion` norm 0.0019.
+  - `--no-motion`: step-10 loss 2.2208 (same batches as the motion run).
+  - Both checkpoints and provenance files were written. The provenance holds train `{"118577": [1]}`, the exclude rows, label constants, sigmas, recipe sha256 and seed 0.
+  - The motion checkpoint loads strictly into `build(motion=True)`, the RGB-only one into `build()`.
+- **Abort test:** forcing the threshold aborts at the first monitor with exit 3 and no checkpoint.
+- **`--bench 10 --motion`**, load average about 6:
+
+| From step | Motion s/step | RGB-only s/step | Ratio | Gate (≤ 1.25) |
+|---|---|---|---|---|
+| 1 (stem frozen) | 4.96 | 3.63 | 1.36 | fails |
+| 1201 (all trainable, drops on) | 5.66 | 5.59 | 1.01 | passes |
+| 801 (all trainable, no drops; separate bench) | 5.81 | 5.38 | 1.08 | passes |
+
+  - Over a whole 4,000-step run (800 frozen steps, 3,200 trainable) that is about 1.06×.
+  - Batch preparation took 0.3–0.9 s per batch in the background thread and was fully hidden (the step waited 0.001 s for it).
+
+**Deviations from the contract and why**
+1. **Colour augmentation.** Saturation is a blend with the grey image instead of v1's HSV scaling, so luminance — all the motion channels see — is unchanged. Brightness, contrast and saturation are one affine map (one `cv2.transform`), centred on the t crop's mean, applied identically to all four crops. The grey background gets only brightness and contrast, which is exact up to rounding. With HSV, the stored grey background would no longer match the frame and F would carry a spurious offset.
+2. **Noise.** It is luminance noise (the same value on B, G and R), independent on each of t-2, t and t+2, with its own sigma drawn from 0–2. The background gets none: it is a median of 15 frames, and t's noise already reaches F.
+3. **Scale.** The factor is drawn log-uniform in 0.8–1.25 and rounded to whole cells. When cropping back to 320 px the bag is kept inside where it fits; when padding, the image is reflected and the codes there are 0.
+4. **Drop-worst rounds at random.** With 3 action bags and 1 dribble bag per batch, ordinary rounding would never drop either (0.45 and 0.25 bags). Random rounding gives the stated 25/15/25% on average. Drops start after step 1200, matching v1's `> 1000`.
+5. **Missing neighbours and backgrounds** are read as `None`, using `has_prev`, `has_next` and `n_bg`, so the motion is exactly zero as at inference. The copies of t stored in those slots would carry JPEG and noise differences.
+6. **Abort** fires at any monitor from step 1500 on (1500 included), in both `--motion` and `--no-motion`. Peakiness is pooled over flight, action and dribble bags; per-kind values are printed too.
+7. **Provenance `train`** lists the matches and halves actually present in `labels.parquet`, checked against `V2_TRAIN`, rather than copying `V2_TRAIN`. Label constants come from `labels_meta.json` (what the codes were made with), with a `label_constants_as_code` flag and a log note if they differ from the current `label_ball_strips.py`. Extras: file and label hashes, the mix, learning rates, augmentation settings, monitor history and counts per kind.
+8. **Additions not in the contract:**
+   - a prefetch thread for batch preparation (batches stay deterministic);
+   - `--bench` with `--motion` also times the RGB-only step on the same batches, interleaved, and prints the ratio;
+   - `--bench-at` picks the schedule step to start from;
+   - the log prints the mean loss over the last 100 steps.
+
+**Open issues for other components**
+- **Sigmas:** `SIGMA_D` and `SIGMA_F` in `src/ball_heatmap.py` are still the 0.02 / 0.05 placeholders. The trainer records whatever is there at the time, so they must be edited before the real run. C's smoke `labels_meta.json` predates C's new `sigma` key, so the trainer prints a note.
+- **Clipping (B's question):** nothing in training clips the heavy-tailed D channel. If clipping is wanted, it belongs in `motion_bg` so training and inference match.
+- **A / E — RGB-only checkpoints:** a `--no-motion` checkpoint has no `conv1_motion.weight`. It loads strictly into `build()`, or into `build(motion=True)` with `strict=False`; `detect_v2(motion_zero=True)` then gives exact RGB results. Its provenance has `"motion": false` so loaders can tell.
+- **Go/no-go:** the timings above are 3–4× inflated by other jobs. Re-run `--bench 20` and `--bench 20 --bench-at 801` on an idle CPU with the real strips dir (`.cache/soccertrack_v2/ball_strips` does not exist yet). The frozen-phase ratio is where the gate can fail.
+- **Monitor cost:** it re-reads the 300 held-out strips every 250 steps, about 19 forward passes; I estimate about 10 s each time on an idle machine.

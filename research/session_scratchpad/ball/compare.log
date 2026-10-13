@@ -1,0 +1,7 @@
+  st2_118577_1st_f030000: 193 stream strips in the window (D on 193, F on 193). Training input: the strips (source stream, JPEG q98, background over the half); inference input: the window decoded with OpenCV at the same crops (no JPEG, background over the window)
+    D training (stream strips): robust std 0.0000, std 0.0657, mean |x| 0.0167, |x| 99% 0.365 / 99.9% 0.624, exactly 0 72% (1581056 px)
+    D inference (raw window):   robust std 0.0000, std 0.0637, mean |x| 0.0158, |x| 99% 0.353 / 99.9% 0.612, exactly 0 73% (1581056 px)
+    F training (stream strips): robust std 0.0233, std 0.0625, mean |x| 0.0295, |x| 99% 0.322 / 99.9% 0.561, exactly 0 8% (790528 px)
+    F inference (raw window):   robust std 0.0233, std 0.0609, mean |x| 0.0281, |x| 99% 0.314 / 99.9% 0.557, exactly 0 10% (790528 px)
+  D std ratio (inference raw window / training strips): 0.969
+  F std ratio 0.974; robust std ratios D n/a, F 1.000 (n/a: a MAD is 0); exact zeros D 72% / 73%. Outside 1/1.5-1.5, the critique's x264 augmentation is due

@@ -1,0 +1,19 @@
+{
+  "video": "data/soccertrack_v2/st2_117093_1st_f015000.mp4",
+  "width": 4096,
+  "height": 1080,
+  "fps": 25.0,
+  "n_frames": 4500,
+  "imgsz": 4096,
+  "conf_player": 0.25,
+  "conf_ball": 0.5,
+  "px_per_m": 24.761788504464285,
+  "player_height_px": 43.3331298828125,
+  "ball_size_px": 5.4475934709821425,
+  "min_detection_height_px": 15.166595458984373,
+  "compensate_camera": false,
+  "camera_motion_px": 0.0,
+  "players_per_frame": 40.5,
+  "ball_per_frame": 3.5833333333333335,
+  "notes": []
+}

@@ -1,0 +1,11 @@
+{
+ "written": "2026-10-10, after the tuning windows T were measured and before any detector ran on V (M2, M10)",
+ "deviation": "G1 failed on its frozen geometric free-flight metric (heatmap 0.24, COCO 0.25 on T). On T, blind tiles showed that metric misses 26 of the heatmap's 36 and 15 of COCO's 28 visually confirmed free-flight hits, with no false hit. Going to V anyway, on the measures below; G1's failure is reported as registered.",
+ "frozen_from_T": {"checkpoint": "ball_heatmap.3000.pt (rule: best geometric free-flight hit, later within 0.02)", "tau": 0.7, "top_k_events": 4},
+ "V": ["st2_117093_1st_f015000", "st2_132877_1st_f015000"],
+ "E3_registered": "geometric free-flight hit, heatmap minus COCO, bootstrap over passes; reported as registered",
+ "E3v_primary": "blind visual free-flight hit: one frame per completed ground pass (the second of the four), top-1 of each detector (heatmap at any p, COCO at conf >= 0.02, none = miss), 24 decoys, shuffled with seed 2, judged before the key is read: B the match ball in play inside the box, B* a ball resting by a goal, N otherwise (unsure = N); hit = B. Claim: heatmap better than COCO if the exact McNemar test on discordant passes gives p < 0.05 with more heatmap-only hits",
+ "E4_registered": "blind precision: 40 heatmap top-1 (p >= 0.7) + 40 COCO top-1 + 20 decoys over V's measured frames, seed 0",
+ "E5_registered": "pass + carry F1 at 1 s pooled over M2 + M10, heatmap candidates (tau 0.7, at most 4 a frame) replacing COCO's ball rows in the fixed-view pipeline; claim an events gain only if the F1 difference's bootstrap lower bound (10 s blocks) > 0",
+ "variant_cap": "this is the first and only heatmap variant run on V"
+}

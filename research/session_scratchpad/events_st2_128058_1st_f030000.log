@@ -1,0 +1,27 @@
+clip: 4096x1080 @ 25 fps, 3000 frames (137.3 MB)
+cached profile:
+  resolution     4096x1080 @ 25 fps
+  imgsz          4096
+  conf_player    0.50  -> 23.0 players/frame
+  conf_ball      0.50  -> 3.25 ball/frame
+  scale          22.3 px/m (player 39 px, ball ~4.9 px)
+  min height     14 px
+  camera         static (0.00 px/frame)
+  ! ball is only ~4.9 px across; detection will be unreliable regardless of threshold
+  [pitch] 30538 -> 27691 player rows inside the outline (+10 px)
+assigning teams...
+  [teams] 6 tracks rejected as non-players (> 2.5x the kit spread from either kit)
+  [teams] 28 tracks outside the pitch core put in 'other'
+  [teams] 127 tracks clustered: {'other': np.int64(36), 'team_A': np.int64(49), 'team_B': np.int64(42)}
+annotating grass fraction...
+  [pitch] 4778 ball candidates, grass fraction median 0.94, 100.0% on pitch
+  [pitch] dropping 1 of 4778 ball candidates below 0.40 grass
+camera: static, not compensated
+  [roster] 27691 -> 27571 player rows (cap 11/team/frame)
+  [pitch] 4777 -> 84 ball candidates inside the outline
+  [ball] 84 candidates over 84 frames -> 84 selected
+  [re-id] 127 fragments -> 90 tracks
+[Events] Detected: {'carry': 4, 'shot': 2, 'pass': 3, 'recovery': 1, 'tackle': 1}
+
+ball coverage 5.6%, 11 events, scale 25.4 px/m
+EVENTS st2_128058_1st_f030000 11 {'carry': 4, 'shot': 2, 'pass': 3, 'recovery': 1, 'tackle': 1}

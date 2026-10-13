@@ -1,0 +1,60 @@
+  RGB-only model, 21040 strips ({'action': 6989, 'dribble': 1412, 'flight': 6906, 'free': 4944, 'lofted': 789}) of ['118575', '118576', '118577', '128058'], 300 held out
+  step 100: loss 1.6002 (bags 1.4420, negatives 0.0939, peaks 0.0644)  [69 s]
+  step 200: loss 1.0710 (bags 0.8372, negatives 0.1473, peaks 0.0865)  [135 s]
+  monitor 250 (300 held out): bag hit 0.65 (action 0.73, dribble 0.75, flight 0.55), peakiness 1.3 (action 1.15, dribble 1.20, flight 1.47), negative peaks > 0.15 1.33 a strip (action 1.63, flight 1.24, free 1.08, lofted 0.91), loss 1.240
+  step 300: loss 0.9943 (bags 0.7769, negatives 0.1367, peaks 0.0806)  [208 s]
+  step 400: loss 0.9701 (bags 0.7557, negatives 0.1382, peaks 0.0762)  [277 s]
+  step 500: loss 0.9428 (bags 0.7209, negatives 0.1459, peaks 0.0760)  [346 s]
+  monitor 500 (300 held out): bag hit 0.63 (action 0.69, dribble 0.75, flight 0.55), peakiness 1.4 (action 1.16, dribble 1.20, flight 1.59), negative peaks > 0.15 0.67 a strip (action 0.76, flight 0.66, free 0.59, lofted 0.45), loss 1.178
+  step 600: loss 0.8931 (bags 0.6907, negatives 0.1309, peaks 0.0714)  [421 s]
+  step 700: loss 0.8848 (bags 0.6890, negatives 0.1256, peaks 0.0702)  [486 s]
+  monitor 750 (300 held out): bag hit 0.68 (action 0.76, dribble 0.80, flight 0.57), peakiness 2.1 (action 1.93, dribble 2.15, flight 2.35), negative peaks > 0.15 1.34 a strip (action 1.69, flight 1.17, free 1.08, lofted 1.18), loss 1.137
+  step 800: loss 0.8518 (bags 0.6624, negatives 0.1209, peaks 0.0684)  [560 s]
+  step 900: loss 0.8129 (bags 0.6226, negatives 0.1215, peaks 0.0688)  [666 s]
+  step 1000: loss 0.8458 (bags 0.6484, negatives 0.1302, peaks 0.0672)  [774 s]
+  monitor 1000 (300 held out): bag hit 0.71 (action 0.82, dribble 0.75, flight 0.59), peakiness 1.5 (action 1.31, dribble 1.50, flight 1.62), negative peaks > 0.15 0.68 a strip (action 0.89, flight 0.70, free 0.39, lofted 0.36), loss 1.058
+  step 1100: loss 0.8338 (bags 0.6335, negatives 0.1350, peaks 0.0654)  [888 s]
+  step 1200: loss 0.8474 (bags 0.6518, negatives 0.1325, peaks 0.0632)  [997 s]
+  monitor 1250 (300 held out): bag hit 0.70 (action 0.79, dribble 0.75, flight 0.60), peakiness 1.1 (action 0.92, dribble 1.05, flight 1.38), negative peaks > 0.15 0.34 a strip (action 0.47, flight 0.38, free 0.15, lofted 0.09), loss 1.123
+  step 1300: loss 0.5213 (bags 0.3770, negatives 0.0907, peaks 0.0536)  [1114 s]
+  step 1400: loss 0.6011 (bags 0.4358, negatives 0.1145, peaks 0.0508)  [1232 s]
+  step 1500: loss 0.5208 (bags 0.3832, negatives 0.0879, peaks 0.0498)  [1354 s]
+  monitor 1500 (300 held out): bag hit 0.70 (action 0.79, dribble 0.75, flight 0.60), peakiness 1.9 (action 1.87, dribble 1.95, flight 1.87), negative peaks > 0.15 1.03 a strip (action 1.33, flight 0.96, free 0.82, lofted 0.27), loss 1.008
+  step 1600: loss 0.5375 (bags 0.3997, negatives 0.0903, peaks 0.0475)  [1479 s]
+  step 1700: loss 0.5021 (bags 0.3711, negatives 0.0834, peaks 0.0476)  [1588 s]
+  monitor 1750 (300 held out): bag hit 0.72 (action 0.84, dribble 0.75, flight 0.60), peakiness 2.2 (action 2.16, dribble 2.45, flight 2.09), negative peaks > 0.15 1.07 a strip (action 1.26, flight 1.06, free 0.90, lofted 0.45), loss 0.982
+  step 1800: loss 0.4795 (bags 0.3553, negatives 0.0759, peaks 0.0484)  [1704 s]
+  step 1900: loss 0.5196 (bags 0.3701, negatives 0.1076, peaks 0.0419)  [1814 s]
+  step 2000: loss 0.5091 (bags 0.3718, negatives 0.0900, peaks 0.0473)  [1922 s]
+  monitor 2000 (300 held out): bag hit 0.72 (action 0.84, dribble 0.75, flight 0.60), peakiness 1.8 (action 1.86, dribble 1.60, flight 1.87), negative peaks > 0.15 0.54 a strip (action 0.64, flight 0.58, free 0.38, lofted 0.18), loss 0.936
+  step 2100: loss 0.4921 (bags 0.3485, negatives 0.0989, peaks 0.0447)  [2039 s]
+  step 2200: loss 0.4849 (bags 0.3539, negatives 0.0863, peaks 0.0447)  [2148 s]
+  monitor 2250 (300 held out): bag hit 0.73 (action 0.86, dribble 0.75, flight 0.60), peakiness 2.3 (action 2.30, dribble 2.45, flight 2.26), negative peaks > 0.15 0.84 a strip (action 0.97, flight 0.85, free 0.72, lofted 0.36), loss 0.911
+  step 2300: loss 0.5400 (bags 0.4017, negatives 0.0947, peaks 0.0436)  [2261 s]
+  step 2400: loss 0.4618 (bags 0.3386, negatives 0.0788, peaks 0.0444)  [2367 s]
+  step 2500: loss 0.4596 (bags 0.3298, negatives 0.0870, peaks 0.0428)  [2477 s]
+  monitor 2500 (300 held out): bag hit 0.73 (action 0.85, dribble 0.75, flight 0.60), peakiness 1.4 (action 1.37, dribble 1.20, flight 1.37), negative peaks > 0.15 0.34 a strip (action 0.39, flight 0.41, free 0.18, lofted 0.18), loss 0.987
+  saved .cache/ball_v2rgb.2500.pt, ball_v2rgb.2500.pt.provenance.json
+  step 2600: loss 0.4919 (bags 0.3658, negatives 0.0842, peaks 0.0420)  [2592 s]
+  step 2700: loss 0.5028 (bags 0.3780, negatives 0.0820, peaks 0.0427)  [2704 s]
+  monitor 2750 (300 held out): bag hit 0.73 (action 0.84, dribble 0.75, flight 0.61), peakiness 1.8 (action 1.94, dribble 1.70, flight 1.72), negative peaks > 0.15 0.55 a strip (action 0.67, flight 0.56, free 0.39, lofted 0.27), loss 0.916
+  step 2800: loss 0.5141 (bags 0.3724, negatives 0.1011, peaks 0.0405)  [2824 s]
+  step 2900: loss 0.5363 (bags 0.3919, negatives 0.1027, peaks 0.0416)  [2934 s]
+  step 3000: loss 0.4706 (bags 0.3436, negatives 0.0844, peaks 0.0426)  [3039 s]
+  monitor 3000 (300 held out): bag hit 0.74 (action 0.87, dribble 0.75, flight 0.61), peakiness 1.5 (action 1.57, dribble 1.45, flight 1.43), negative peaks > 0.15 0.31 a strip (action 0.39, flight 0.31, free 0.21, lofted 0.27), loss 0.940
+  step 3100: loss 0.4890 (bags 0.3546, negatives 0.0944, peaks 0.0400)  [3155 s]
+  step 3200: loss 0.4397 (bags 0.3322, negatives 0.0678, peaks 0.0397)  [3270 s]
+  monitor 3250 (300 held out): bag hit 0.74 (action 0.86, dribble 0.75, flight 0.61), peakiness 1.8 (action 1.97, dribble 1.70, flight 1.68), negative peaks > 0.15 0.42 a strip (action 0.54, flight 0.45, free 0.24, lofted 0.27), loss 0.903
+  saved .cache/ball_v2rgb.3250.pt, ball_v2rgb.3250.pt.provenance.json
+  step 3300: loss 0.4737 (bags 0.3397, negatives 0.0945, peaks 0.0396)  [3395 s]
+  step 3400: loss 0.4784 (bags 0.3717, negatives 0.0664, peaks 0.0402)  [3513 s]
+  step 3500: loss 0.4437 (bags 0.3144, negatives 0.0855, peaks 0.0438)  [3631 s]
+  monitor 3500 (300 held out): bag hit 0.74 (action 0.86, dribble 0.75, flight 0.61), peakiness 1.9 (action 2.02, dribble 1.85, flight 1.77), negative peaks > 0.15 0.49 a strip (action 0.61, flight 0.51, free 0.32, lofted 0.27), loss 0.893
+  step 3600: loss 0.4993 (bags 0.3526, negatives 0.1059, peaks 0.0408)  [3758 s]
+  step 3700: loss 0.4646 (bags 0.3334, negatives 0.0903, peaks 0.0409)  [3883 s]
+  monitor 3750 (300 held out): bag hit 0.74 (action 0.86, dribble 0.75, flight 0.61), peakiness 1.7 (action 1.82, dribble 1.60, flight 1.68), negative peaks > 0.15 0.43 a strip (action 0.57, flight 0.44, free 0.24, lofted 0.27), loss 0.902
+  step 3800: loss 0.4711 (bags 0.3342, negatives 0.0964, peaks 0.0405)  [4007 s]
+  step 3900: loss 0.4567 (bags 0.3602, negatives 0.0566, peaks 0.0399)  [4122 s]
+  step 4000: loss 0.4476 (bags 0.3221, negatives 0.0849, peaks 0.0406)  [4239 s]
+  monitor 4000 (300 held out): bag hit 0.74 (action 0.86, dribble 0.75, flight 0.61), peakiness 1.8 (action 1.93, dribble 1.70, flight 1.71), negative peaks > 0.15 0.46 a strip (action 0.60, flight 0.48, free 0.25, lofted 0.27), loss 0.895
+  saved .cache/ball_v2rgb.4000.pt, ball_v2rgb.4000.pt.provenance.json

@@ -1,0 +1,15 @@
+{
+ "events_v3": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/fix_e5/smoke_fix_v3.json",
+ "sha256": "b3854c2c3ec3fea726cf9d8116ab89947a697be718c6e113769add94d505bb23",
+ "window": "st2_118576_1st_f030000",
+ "balls": "source run's",
+ "select": "v1",
+ "link_params": null,
+ "top_k": null,
+ "tau": null,
+ "rules": {
+  "SHOT_MIN_KMH": 30.0
+ },
+ "player_hash": "e56cf31da6ba7e44",
+ "source_player_hash": "e56cf31da6ba7e44"
+}

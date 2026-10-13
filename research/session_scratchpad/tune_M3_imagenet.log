@@ -1,0 +1,75 @@
+  cut None join None: 91 pieces -> 91 identities, IDF1 0.457, split 13.12, purity 0.787
+  cut None join 0.5: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut None join 0.6: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut None join 0.7: 91 pieces -> 39 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut None join 0.8: 91 pieces -> 42 identities, IDF1 0.515, split 10.95, purity 0.688
+  cut None join 0.85: 91 pieces -> 46 identities, IDF1 0.515, split 10.99, purity 0.691
+  cut None join 0.9: 91 pieces -> 51 identities, IDF1 0.515, split 11.07, purity 0.695
+  cut None join 0.95: 91 pieces -> 65 identities, IDF1 0.509, split 11.79, purity 0.708
+  cut None join 0.97: 91 pieces -> 80 identities, IDF1 0.484, split 12.63, purity 0.734
+  cut 0.3 join None: 91 pieces -> 91 identities, IDF1 0.457, split 13.12, purity 0.787
+  cut 0.3 join 0.5: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.3 join 0.6: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.3 join 0.7: 91 pieces -> 39 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.3 join 0.8: 91 pieces -> 42 identities, IDF1 0.515, split 10.95, purity 0.688
+  cut 0.3 join 0.85: 91 pieces -> 46 identities, IDF1 0.515, split 10.99, purity 0.691
+  cut 0.3 join 0.9: 91 pieces -> 51 identities, IDF1 0.515, split 11.07, purity 0.695
+  cut 0.3 join 0.95: 91 pieces -> 65 identities, IDF1 0.509, split 11.79, purity 0.708
+  cut 0.3 join 0.97: 91 pieces -> 80 identities, IDF1 0.484, split 12.63, purity 0.734
+  cut 0.4 join None: 91 pieces -> 91 identities, IDF1 0.457, split 13.12, purity 0.787
+  cut 0.4 join 0.5: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.4 join 0.6: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.4 join 0.7: 91 pieces -> 39 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.4 join 0.8: 91 pieces -> 42 identities, IDF1 0.515, split 10.95, purity 0.688
+  cut 0.4 join 0.85: 91 pieces -> 46 identities, IDF1 0.515, split 10.99, purity 0.691
+  cut 0.4 join 0.9: 91 pieces -> 51 identities, IDF1 0.515, split 11.07, purity 0.695
+  cut 0.4 join 0.95: 91 pieces -> 65 identities, IDF1 0.509, split 11.79, purity 0.708
+  cut 0.4 join 0.97: 91 pieces -> 80 identities, IDF1 0.484, split 12.63, purity 0.734
+  cut 0.5 join None: 91 pieces -> 91 identities, IDF1 0.457, split 13.12, purity 0.787
+  cut 0.5 join 0.5: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.5 join 0.6: 91 pieces -> 37 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.5 join 0.7: 91 pieces -> 39 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.5 join 0.8: 91 pieces -> 42 identities, IDF1 0.515, split 10.95, purity 0.688
+  cut 0.5 join 0.85: 91 pieces -> 46 identities, IDF1 0.515, split 10.99, purity 0.691
+  cut 0.5 join 0.9: 91 pieces -> 51 identities, IDF1 0.515, split 11.07, purity 0.695
+  cut 0.5 join 0.95: 91 pieces -> 65 identities, IDF1 0.509, split 11.79, purity 0.708
+  cut 0.5 join 0.97: 91 pieces -> 80 identities, IDF1 0.484, split 12.63, purity 0.734
+  cut 0.6 join None: 93 pieces -> 93 identities, IDF1 0.457, split 13.12, purity 0.787
+  cut 0.6 join 0.5: 93 pieces -> 38 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.6 join 0.6: 93 pieces -> 38 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.6 join 0.7: 93 pieces -> 39 identities, IDF1 0.515, split 10.68, purity 0.685
+  cut 0.6 join 0.8: 93 pieces -> 42 identities, IDF1 0.515, split 10.95, purity 0.688
+  cut 0.6 join 0.85: 93 pieces -> 48 identities, IDF1 0.515, split 10.99, purity 0.692
+  cut 0.6 join 0.9: 93 pieces -> 52 identities, IDF1 0.515, split 11.07, purity 0.695
+  cut 0.6 join 0.95: 93 pieces -> 65 identities, IDF1 0.509, split 11.79, purity 0.708
+  cut 0.6 join 0.97: 93 pieces -> 82 identities, IDF1 0.484, split 12.63, purity 0.734
+  cut 0.7 join None: 118 pieces -> 118 identities, IDF1 0.452, split 15.03, purity 0.817
+  cut 0.7 join 0.5: 118 pieces -> 39 identities, IDF1 0.521, split 11.52, purity 0.686
+  cut 0.7 join 0.6: 118 pieces -> 40 identities, IDF1 0.521, split 11.52, purity 0.686
+  cut 0.7 join 0.7: 118 pieces -> 41 identities, IDF1 0.521, split 11.52, purity 0.686
+  cut 0.7 join 0.8: 118 pieces -> 45 identities, IDF1 0.521, split 11.74, purity 0.691
+  cut 0.7 join 0.85: 118 pieces -> 49 identities, IDF1 0.521, split 11.83, purity 0.694
+  cut 0.7 join 0.9: 118 pieces -> 58 identities, IDF1 0.52, split 12.09, purity 0.7
+  cut 0.7 join 0.95: 118 pieces -> 83 identities, IDF1 0.507, split 13.48, purity 0.721
+  cut 0.7 join 0.97: 118 pieces -> 102 identities, IDF1 0.484, split 14.09, purity 0.756
+  cut 0.8 join None: 369 pieces -> 369 identities, IDF1 0.298, split 28.84, purity 0.967
+  cut 0.8 join 0.5: 369 pieces -> 46 identities, IDF1 0.526, split 14.52, purity 0.741
+  cut 0.8 join 0.6: 369 pieces -> 47 identities, IDF1 0.526, split 14.52, purity 0.741
+  cut 0.8 join 0.7: 369 pieces -> 48 identities, IDF1 0.526, split 14.52, purity 0.741
+  cut 0.8 join 0.8: 369 pieces -> 58 identities, IDF1 0.526, split 14.93, purity 0.747
+  cut 0.8 join 0.85: 369 pieces -> 99 identities, IDF1 0.526, split 16.99, purity 0.772
+  cut 0.8 join 0.9: 369 pieces -> 178 identities, IDF1 0.519, split 20.73, purity 0.798
+  cut 0.8 join 0.95: 369 pieces -> 277 identities, IDF1 0.497, split 24.96, purity 0.86
+  cut 0.8 join 0.97: 369 pieces -> 328 identities, IDF1 0.443, split 26.94, purity 0.911
+  cut 0.9: 1866 pieces, skipped
+Traceback (most recent call last):
+  File "/home/user/Veo/tune_st2_split.py", line 118, in <module>
+    main()
+    ~~~~^^
+  File "/home/user/Veo/tune_st2_split.py", line 114, in main
+    print(json.dumps(choose(table)))
+                     ~~~~~~^^^^^^^
+  File "/home/user/Veo/tune_st2_split.py", line 98, in choose
+    near["_join"] = -near.join.fillna(2.0)        # no join, then highest
+                     ^^^^^^^^^^^^^^^^
+AttributeError: 'function' object has no attribute 'fillna'

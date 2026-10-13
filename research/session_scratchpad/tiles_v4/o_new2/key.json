@@ -1,0 +1,379 @@
+[
+ {
+  "tile": 1,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 2723,
+  "u": 2179.733949324483,
+  "v": 307.3359654694531,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 2,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 816,
+  "u": 2495.7187841975515,
+  "v": 587.3891778030022,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 3,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 940,
+  "u": 1329.922,
+  "v": 246.098,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 5.917,
+  "pass": 6,
+  "q": 1
+ },
+ {
+  "tile": 4,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 182,
+  "u": 3790.2237373449757,
+  "v": 558.4327869516318,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 5,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 3627,
+  "u": 3044.03,
+  "v": 259.914,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 3.431
+ },
+ {
+  "tile": 6,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 3507,
+  "u": 2623.084,
+  "v": 203.751,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 4.17
+ },
+ {
+  "tile": 7,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 2753,
+  "u": 2219.258,
+  "v": 306.676,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 8.358,
+  "pass": 13,
+  "q": 1
+ },
+ {
+  "tile": 8,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 781,
+  "u": 3833.216,
+  "v": 544.386,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "confident",
+  "size": 2.804
+ },
+ {
+  "tile": 9,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 1117,
+  "u": 2077.144,
+  "v": 335.507,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 10.405,
+  "pass": 7,
+  "q": 3
+ },
+ {
+  "tile": 10,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 360,
+  "u": 3096.022,
+  "v": 292.978,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 4.421
+ },
+ {
+  "tile": 11,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 3837,
+  "u": 3367.922,
+  "v": 336.42,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "confident",
+  "size": 2.88
+ },
+ {
+  "tile": 12,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 4179,
+  "u": 2455.576636431039,
+  "v": 665.8521192733238,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 13,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 2375,
+  "u": 3190.492,
+  "v": 276.628,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 5.234
+ },
+ {
+  "tile": 14,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 651,
+  "u": 1341.087,
+  "v": 248.204,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 7.03,
+  "pass": 4,
+  "q": 1
+ },
+ {
+  "tile": 15,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 1943,
+  "u": 2221.41,
+  "v": 184.14,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 4.707
+ },
+ {
+  "tile": 16,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 1740,
+  "u": 2651.271,
+  "v": 176.15,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 3.358
+ },
+ {
+  "tile": 17,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 1395,
+  "u": 2083.962339720636,
+  "v": 219.7688773711606,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 18,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 834,
+  "u": 3168.655,
+  "v": 296.877,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 3.964,
+  "pass": 1,
+  "q": 1
+ },
+ {
+  "tile": 19,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 1371,
+  "u": 2441.121,
+  "v": 234.33,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 7.746,
+  "pass": 3,
+  "q": 1
+ },
+ {
+  "tile": 20,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 196,
+  "u": 2015.167,
+  "v": 285.181,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 9.045
+ },
+ {
+  "tile": 21,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 1345,
+  "u": 2021.544,
+  "v": 367.616,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 9.898
+ },
+ {
+  "tile": 22,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 3648,
+  "u": 1063.2,
+  "v": 351.653,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 5.615
+ },
+ {
+  "tile": 23,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 1602,
+  "u": 2888.053,
+  "v": 502.234,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 12.867,
+  "pass": 5,
+  "q": 1
+ },
+ {
+  "tile": 24,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 245,
+  "u": 2350.978,
+  "v": 227.576,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 8.336
+ },
+ {
+  "tile": 25,
+  "window": "st2_118578_2nd_f015000",
+  "frame": 2502,
+  "u": 2717.751,
+  "v": 558.283,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 12.458,
+  "pass": 10,
+  "q": 0
+ },
+ {
+  "tile": 26,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 99,
+  "u": 1980.08,
+  "v": 297.54,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "confident",
+  "size": 7.921
+ },
+ {
+  "tile": 27,
+  "window": "st2_128058_2nd_f015000",
+  "frame": 1201,
+  "u": 2912.906,
+  "v": 503.081,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 13.479
+ },
+ {
+  "tile": 28,
+  "window": "st2_118576_2nd_f015000",
+  "frame": 419,
+  "u": 2970.515,
+  "v": 224.327,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 3.086,
+  "pass": 0,
+  "q": 1
+ }
+]

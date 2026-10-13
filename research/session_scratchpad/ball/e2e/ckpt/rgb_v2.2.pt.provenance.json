@@ -1,0 +1,448 @@
+{
+ "train": {
+  "118577": [
+   1
+  ]
+ },
+ "exclude": [
+  [
+   "118576",
+   2,
+   13500,
+   20999
+  ],
+  [
+   "128058",
+   2,
+   13500,
+   20999
+  ]
+ ],
+ "label_constants": {
+  "strip": {
+   "size_px": 320,
+   "cell_px": 4,
+   "jpeg_q": 98,
+   "jitter_px": 100,
+   "slack_margin_px": 8
+  },
+  "flight": {
+   "s": [
+    0.25,
+    0.5,
+    0.75
+   ],
+   "s_jitter": 0.08,
+   "s_range": [
+    0.17,
+    0.83
+   ],
+   "t_hat": "s + 0.4 s (1 - s)",
+   "window": [
+    0.22,
+    0.28
+   ],
+   "narrow": [
+    0.15,
+    0.2
+   ],
+   "clear_passer_m": 2.0,
+   "clear_receiver_m": 1.5,
+   "t_bounds": [
+    0.08,
+    0.95
+   ],
+   "min_pass_m": 10.0,
+   "min_flight_s": 0.8,
+   "max_intercept_s": 4.0,
+   "intercept_labels": [
+    "DRIVE",
+    "HIGH PASS",
+    "PASS"
+   ],
+   "bag_perp_m": 2.5,
+   "bag_px": 20.0,
+   "bag_height_m": 1.0,
+   "feet_m": 1.0,
+   "ignore_m": 6.0,
+   "ignore_px": 48.0,
+   "curtain_m": 2.0,
+   "hard_from_bag_m": 1.0,
+   "min_inside": 0.85,
+   "canvas_px": 640
+  },
+  "lofted": {
+   "labels": [
+    "CROSS",
+    "HIGH PASS"
+   ],
+   "s": [
+    0.35,
+    0.65
+   ],
+   "max_flight_s": 4.0,
+   "next_labels": [
+    "BALL PLAYER BLOCK",
+    "CROSS",
+    "DRIVE",
+    "HEADER",
+    "HIGH PASS",
+    "PASS",
+    "PLAYER SUCCESSFUL TACKLE",
+    "SHOT"
+   ],
+   "curtain_h": "clip(0.3 L, 3, 15) m",
+   "ground_m": 4.0,
+   "ground_px": 32.0
+  },
+  "action": {
+   "labels": [
+    "CROSS",
+    "DRIVE",
+    "FREE KICK",
+    "HIGH PASS",
+    "PASS",
+    "PLAYER SUCCESSFUL TACKLE",
+    "THROW IN"
+   ],
+   "radius_m": 1.5,
+   "height_m": 0.5,
+   "throw_in_height_m": 2.6,
+   "band_m": 0.5,
+   "max_actor_track_m": 3.0,
+   "min_inside": 0.75,
+   "cap_px": 112.0,
+   "other_bodies_beyond_m": 2.5
+  },
+  "dribble": {
+   "gap_s": 1.5,
+   "radius_m": 1.5,
+   "height_m": 0.5,
+   "same_player_next": true,
+   "min_inside": 0.75
+  },
+  "free": {
+   "per_frame": 2,
+   "every": 2,
+   "mix": {
+    "cluster": 0.35,
+    "landmark": 0.25,
+    "boundary": 0.25,
+    "random": 0.15
+   },
+   "min_m": 12.0,
+   "tries": 10,
+   "cluster": [
+    5.0,
+    2
+   ],
+   "boundary": [
+    2.0,
+    60.0
+   ]
+  },
+  "landmarks": {
+   "radius_m": 0.75,
+   "min_px": 12.0,
+   "points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     -41.5,
+     0.0
+    ],
+    [
+     41.5,
+     0.0
+    ],
+    [
+     0.0,
+     -34.0
+    ],
+    [
+     0.0,
+     34.0
+    ],
+    [
+     -52.5,
+     -34.0
+    ],
+    [
+     -52.5,
+     34.0
+    ],
+    [
+     52.5,
+     -34.0
+    ],
+    [
+     52.5,
+     34.0
+    ],
+    [
+     -52.5,
+     -3.66
+    ],
+    [
+     -52.5,
+     3.66
+    ],
+    [
+     52.5,
+     -3.66
+    ],
+    [
+     52.5,
+     3.66
+    ],
+    [
+     -36.0,
+     -20.16
+    ],
+    [
+     -36.0,
+     20.16
+    ],
+    [
+     36.0,
+     -20.16
+    ],
+    [
+     36.0,
+     20.16
+    ],
+    [
+     -52.5,
+     -20.16
+    ],
+    [
+     -52.5,
+     20.16
+    ],
+    [
+     52.5,
+     -20.16
+    ],
+    [
+     52.5,
+     20.16
+    ],
+    [
+     -47.0,
+     -9.16
+    ],
+    [
+     -47.0,
+     9.16
+    ],
+    [
+     47.0,
+     -9.16
+    ],
+    [
+     47.0,
+     9.16
+    ],
+    [
+     -52.5,
+     -9.16
+    ],
+    [
+     -52.5,
+     9.16
+    ],
+    [
+     52.5,
+     -9.16
+    ],
+    [
+     52.5,
+     9.16
+    ]
+   ]
+  },
+  "coco": {
+   "model": "yolov8s.pt",
+   "conf": 0.25,
+   "upsample": 2,
+   "radius_m": 1.0,
+   "min_px": 12.0,
+   "landmark_m": 1.0
+  },
+  "weight": {
+   "flight": 1.0,
+   "lofted": 1.0,
+   "action": 1.0,
+   "dribble": 0.5,
+   "free": 1.0
+  },
+  "positive_only": [
+   "dribble"
+  ],
+  "holdout": {
+   "n": 300,
+   "frac": 0.015
+  },
+  "sigma": {
+   "strips": 1000,
+   "pixels_per_strip": 4096,
+   "scale": "1.4826 MAD; std if > 25% exact zeros"
+  }
+ },
+ "label_constants_from": "labels_meta.json",
+ "label_constants_as_code": true,
+ "sigma": {
+  "SIGMA_D": 0.02,
+  "SIGMA_F": 0.05
+ },
+ "recipe_sha256": "6797e6af45fb66d1f2231881d3b94f853f6de8ab45dd3942aa68e4a53526eb9f",
+ "files_sha256": {
+  "train_ball_heatmap.py": "a67ba48d175529218bcf4693584f81b6eb9888a4ff95596cc0b52e9a5f2768bf",
+  "label_ball_strips.py": "4c438b3c01db6935f21c6ec93beb086e711b26424dcab01a60a5b0748413740d",
+  "build_ball_strips.py": "c4c30845ddb1154118b95db6443176ee28cc6f89a84a618e12534d4fa4bb1ee7",
+  "ball_heatmap.py": "c40bb1e29789fc34c4e5877c6f12571a7df5e36ae176253434ac298c6b72cc9f",
+  "motion_bg.py": "d83b9632f7306f58269a61633b2c6421d3c5224aa38d6e4bed999ba89a121f4b"
+ },
+ "seed": 0,
+ "motion": false,
+ "step": 2,
+ "steps": 2,
+ "strips": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/e2e/strips",
+ "labels_sha256": "91760f889d3c0aa4cba1d4a197e8221220444305dccb02a550444372886d4bdd",
+ "n_train": {
+  "action": 21,
+  "dribble": 3,
+  "flight": 15,
+  "free": 11,
+  "lofted": 2
+ },
+ "n_holdout": {
+  "action": 1
+ },
+ "sources": {
+  "st2_118577_1st_f030000": 53
+ },
+ "mix": [
+  [
+   "flight",
+   null,
+   5
+  ],
+  [
+   "action",
+   null,
+   3
+  ],
+  [
+   "dribble",
+   null,
+   1
+  ],
+  [
+   "lofted",
+   null,
+   1
+  ],
+  [
+   "free",
+   "landmark",
+   2
+  ],
+  [
+   "free",
+   "cluster",
+   2
+  ],
+  [
+   "free",
+   "boundary",
+   1
+  ],
+  [
+   "free",
+   "random",
+   1
+  ]
+ ],
+ "lr": {
+  "head": 0.0003,
+  "motion": 0.0003,
+  "layer2": 0.0001,
+  "early": 3e-05
+ },
+ "weight_decay": 0.0001,
+ "freeze_to": 800,
+ "warmup": 100,
+ "drop_from": 1200,
+ "drop": {
+  "flight": 0.25,
+  "action": 0.15,
+  "dribble": 0.25
+ },
+ "loss": {
+  "footprint": 4,
+  "pool_r": 8.0,
+  "lme_r": 5.0,
+  "gamma": 2,
+  "hard": 3.0,
+  "peaks": 16,
+  "peak_window": 5
+ },
+ "augment": {
+  "flip": 0.5,
+  "contrast": [
+   0.75,
+   1.25
+  ],
+  "brightness": [
+   0.75,
+   1.25
+  ],
+  "saturation": [
+   0.8,
+   1.2
+  ],
+  "scale": [
+   0.8,
+   1.25
+  ],
+  "blur_p": 0.2,
+  "blur_sigma": [
+   0.3,
+   1.0
+  ],
+  "jpeg_p": 0.3,
+  "jpeg_q": [
+   80,
+   95
+  ],
+  "noise": [
+   0.0,
+   2.0
+  ],
+  "reverse_p": 0.5,
+  "dropout_p": 0.1
+ },
+ "monitor": [
+  {
+   "n": 1,
+   "loss": 4.729706764221191,
+   "hit": 1.0,
+   "hit_by_kind": {
+    "action": 1.0
+   },
+   "peaky": 0.0,
+   "peaky_by_kind": {
+    "action": 0.0
+   },
+   "negpk": 0.0,
+   "negpk_by_kind": {
+    "action": 0.0
+   },
+   "motion_norm": null,
+   "step": 2
+  }
+ ]
+}

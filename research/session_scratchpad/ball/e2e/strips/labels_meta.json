@@ -1,0 +1,280 @@
+{
+ "constants": {
+  "strip": {
+   "size_px": 320,
+   "cell_px": 4,
+   "jpeg_q": 98,
+   "jitter_px": 100,
+   "slack_margin_px": 8
+  },
+  "flight": {
+   "s": [
+    0.25,
+    0.5,
+    0.75
+   ],
+   "s_jitter": 0.08,
+   "s_range": [
+    0.17,
+    0.83
+   ],
+   "t_hat": "s + 0.4 s (1 - s)",
+   "window": [
+    0.22,
+    0.28
+   ],
+   "narrow": [
+    0.15,
+    0.2
+   ],
+   "clear_passer_m": 2.0,
+   "clear_receiver_m": 1.5,
+   "t_bounds": [
+    0.08,
+    0.95
+   ],
+   "min_pass_m": 10.0,
+   "min_flight_s": 0.8,
+   "max_intercept_s": 4.0,
+   "intercept_labels": [
+    "DRIVE",
+    "HIGH PASS",
+    "PASS"
+   ],
+   "bag_perp_m": 2.5,
+   "bag_px": 20.0,
+   "bag_height_m": 1.0,
+   "feet_m": 1.0,
+   "ignore_m": 6.0,
+   "ignore_px": 48.0,
+   "curtain_m": 2.0,
+   "hard_from_bag_m": 1.0,
+   "min_inside": 0.85,
+   "canvas_px": 640
+  },
+  "lofted": {
+   "labels": [
+    "CROSS",
+    "HIGH PASS"
+   ],
+   "s": [
+    0.35,
+    0.65
+   ],
+   "max_flight_s": 4.0,
+   "next_labels": [
+    "BALL PLAYER BLOCK",
+    "CROSS",
+    "DRIVE",
+    "HEADER",
+    "HIGH PASS",
+    "PASS",
+    "PLAYER SUCCESSFUL TACKLE",
+    "SHOT"
+   ],
+   "curtain_h": "clip(0.3 L, 3, 15) m",
+   "ground_m": 4.0,
+   "ground_px": 32.0
+  },
+  "action": {
+   "labels": [
+    "CROSS",
+    "DRIVE",
+    "FREE KICK",
+    "HIGH PASS",
+    "PASS",
+    "PLAYER SUCCESSFUL TACKLE",
+    "THROW IN"
+   ],
+   "radius_m": 1.5,
+   "height_m": 0.5,
+   "throw_in_height_m": 2.6,
+   "band_m": 0.5,
+   "max_actor_track_m": 3.0,
+   "min_inside": 0.75,
+   "cap_px": 112.0,
+   "other_bodies_beyond_m": 2.5
+  },
+  "dribble": {
+   "gap_s": 1.5,
+   "radius_m": 1.5,
+   "height_m": 0.5,
+   "same_player_next": true,
+   "min_inside": 0.75
+  },
+  "free": {
+   "per_frame": 2,
+   "every": 2,
+   "mix": {
+    "cluster": 0.35,
+    "landmark": 0.25,
+    "boundary": 0.25,
+    "random": 0.15
+   },
+   "min_m": 12.0,
+   "tries": 10,
+   "cluster": [
+    5.0,
+    2
+   ],
+   "boundary": [
+    2.0,
+    60.0
+   ]
+  },
+  "landmarks": {
+   "radius_m": 0.75,
+   "min_px": 12.0,
+   "points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     -41.5,
+     0.0
+    ],
+    [
+     41.5,
+     0.0
+    ],
+    [
+     0.0,
+     -34.0
+    ],
+    [
+     0.0,
+     34.0
+    ],
+    [
+     -52.5,
+     -34.0
+    ],
+    [
+     -52.5,
+     34.0
+    ],
+    [
+     52.5,
+     -34.0
+    ],
+    [
+     52.5,
+     34.0
+    ],
+    [
+     -52.5,
+     -3.66
+    ],
+    [
+     -52.5,
+     3.66
+    ],
+    [
+     52.5,
+     -3.66
+    ],
+    [
+     52.5,
+     3.66
+    ],
+    [
+     -36.0,
+     -20.16
+    ],
+    [
+     -36.0,
+     20.16
+    ],
+    [
+     36.0,
+     -20.16
+    ],
+    [
+     36.0,
+     20.16
+    ],
+    [
+     -52.5,
+     -20.16
+    ],
+    [
+     -52.5,
+     20.16
+    ],
+    [
+     52.5,
+     -20.16
+    ],
+    [
+     52.5,
+     20.16
+    ],
+    [
+     -47.0,
+     -9.16
+    ],
+    [
+     -47.0,
+     9.16
+    ],
+    [
+     47.0,
+     -9.16
+    ],
+    [
+     47.0,
+     9.16
+    ],
+    [
+     -52.5,
+     -9.16
+    ],
+    [
+     -52.5,
+     9.16
+    ],
+    [
+     52.5,
+     -9.16
+    ],
+    [
+     52.5,
+     9.16
+    ]
+   ]
+  },
+  "coco": {
+   "model": "yolov8s.pt",
+   "conf": 0.25,
+   "upsample": 2,
+   "radius_m": 1.0,
+   "min_px": 12.0,
+   "landmark_m": 1.0
+  },
+  "weight": {
+   "flight": 1.0,
+   "lofted": 1.0,
+   "action": 1.0,
+   "dribble": 0.5,
+   "free": 1.0
+  },
+  "positive_only": [
+   "dribble"
+  ],
+  "holdout": {
+   "n": 300,
+   "frac": 0.015
+  },
+  "sigma": {
+   "strips": 1000,
+   "pixels_per_strip": 4096,
+   "scale": "1.4826 MAD; std if > 25% exact zeros"
+  }
+ },
+ "coco": true,
+ "seed": 0,
+ "strips": 53,
+ "labelled": 53,
+ "holdout": 1
+}

@@ -1,0 +1,44 @@
+=== src.motion_bg
+  motion_bg: background drops the moving ball and keeps the still player, unready/dropped/short backgrounds refused, D and F at the ball, zero at edges; median of 15 x 1000 x 4096 in 0.12 s
+rc=0
+=== src.ball_heatmap
+  ball_heatmap: v1 net unchanged, motion net = RGB net at zero motion (and at the start), detect_v2 = detect with motion zeroed, peaks refined and outlined, size at the larger scale, calibration and provenance guard
+rc=0
+=== src.ball_link
+ball_link check ok: 96 of 197 rows kept
+rc=0
+=== src.events
+events check ok
+rc=0
+=== build_ball_strips
+  build_ball_strips: {'action': 7, 'dribble': 1, 'flight': 6, 'free': 7, 'lofted': 2} samples on a synthetic half (flight completed + intercepted, lofted, dribble, actions, free 12 m from the ball); 25 strips cut with t-2 / t / t+2 / median background, edges and short backgrounds as zero motion; 1.6 s
+rc=0
+=== label_ball_strips
+  label_ball_strips: flight bag along the pass at t_hat, off feet and bodies, far bodies -3, dropped when off the crop; lofted curtain; v1 action rule and the throw-in; dribble positive only; free with landmarks and a COCO ignore disk; holdout by kind; motion scales of known noise; 0.9 s
+rc=0
+=== eval_ball_detector
+  eval_ball_detector: pass and placebo frames, FF-auto / placebo edges, measure, block bootstrap, parquet reader: ok
+rc=0
+=== calibrate_ball_heatmap
+  calibrate_ball_heatmap: labels at the rule edges, Platt recovers (a, b) = (0.7, -0.8) as (0.669, -0.828), ECE 0.013, tau 0.2 = brute count, floor / top-8 inexact, guards, files: ok
+rc=0
+=== detect_ball_heatmap
+  detect_ball_heatmap: dense v2 = detect_v2 frame by frame with the whole-window background, edges, split windows, stride / extra frames, p_cal: ok
+rc=0
+=== score_events_paired
+score_events_paired check ok
+rc=0
+=== sweep_events_v2
+sweep_events_v2 check ok
+rc=0
+=== validate_ff_auto
+  all decoys judged B: 0 of 2 (<= 2: yes)
+  re-judged old tiles agree: 1 of 1 (>= 1: yes)
+  validate_ff_auto: kappa, McNemar, a synthetic sitting against a sealed file: ok
+rc=0
+=== ball_tiles
+  ball_tiles: pass tiles and misses, sampling, dedupe, confident picks: ok
+rc=0
+=== train_ball_heatmap
+  train_ball_heatmap: guard, mix, augmentation in register, input, prefetch, losses, drops, optimiser, steps of both models with monitor and provenance, bench; 17 s
+rc=0

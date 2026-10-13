@@ -1,0 +1,200 @@
+[
+ {
+  "window": "st2_118576_2nd_f015000",
+  "pass": 0,
+  "q": 1,
+  "s": 0.417,
+  "frame": 419,
+  "tiles": {
+   "ball_heatmap.3000.pt": 12,
+   "coco": 24
+  }
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "pass": 1,
+  "q": 1,
+  "s": 0.417,
+  "frame": 797,
+  "tiles": {
+   "ball_heatmap.3000.pt": 10,
+   "coco": 35
+  }
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "pass": 4,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1417,
+  "tiles": {
+   "ball_heatmap.3000.pt": 33,
+   "coco": 33
+  }
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "pass": 7,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1919,
+  "tiles": {
+   "ball_heatmap.3000.pt": 7,
+   "coco": 32
+  }
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "pass": 8,
+  "q": 1,
+  "s": 0.417,
+  "frame": 2095,
+  "tiles": {
+   "ball_heatmap.3000.pt": 14,
+   "coco": 3
+  }
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "pass": 9,
+  "q": 1,
+  "s": 0.417,
+  "frame": 3214,
+  "tiles": {
+   "ball_heatmap.3000.pt": 11,
+   "coco": 11
+  }
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "pass": 2,
+  "q": 1,
+  "s": 0.417,
+  "frame": 898,
+  "tiles": {
+   "ball_heatmap.3000.pt": 9,
+   "coco": 23
+  }
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "pass": 3,
+  "q": 1,
+  "s": 0.417,
+  "frame": 965,
+  "tiles": {
+   "ball_heatmap.3000.pt": 27,
+   "coco": 27
+  }
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "pass": 5,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1602,
+  "tiles": {
+   "ball_heatmap.3000.pt": 13,
+   "coco": 13
+  }
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "pass": 6,
+  "q": 1,
+  "s": 0.417,
+  "frame": 2003,
+  "tiles": {
+   "ball_heatmap.3000.pt": 28,
+   "coco": 30
+  }
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "pass": 8,
+  "q": 1,
+  "s": 0.417,
+  "frame": 2346,
+  "tiles": {
+   "ball_heatmap.3000.pt": 16,
+   "coco": 31
+  }
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "pass": 11,
+  "q": 1,
+  "s": 0.417,
+  "frame": 2623,
+  "tiles": {
+   "ball_heatmap.3000.pt": 26,
+   "coco": 19
+  }
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "pass": 7,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1107,
+  "tiles": {
+   "ball_heatmap.3000.pt": 1,
+   "coco": 1
+  }
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "pass": 8,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1150,
+  "tiles": {
+   "ball_heatmap.3000.pt": 21,
+   "coco": 21
+  }
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "pass": 12,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1686,
+  "tiles": {
+   "ball_heatmap.3000.pt": 15,
+   "coco": null
+  }
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "pass": 13,
+  "q": 1,
+  "s": 0.417,
+  "frame": 1920,
+  "tiles": {
+   "ball_heatmap.3000.pt": 2,
+   "coco": null
+  }
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "pass": 14,
+  "q": 1,
+  "s": 0.417,
+  "frame": 2147,
+  "tiles": {
+   "ball_heatmap.3000.pt": 4,
+   "coco": 4
+  }
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "pass": 18,
+  "q": 1,
+  "s": 0.417,
+  "frame": 4261,
+  "tiles": {
+   "ball_heatmap.3000.pt": 25,
+   "coco": 25
+  }
+ }
+]

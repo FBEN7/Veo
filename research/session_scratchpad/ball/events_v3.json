@@ -1,0 +1,1149 @@
+{
+ "protocol": "events v3 (SOCCERTRACK_V2.md; design_v2 events_protocol E2-E4, critique: G-E pooled with leave-one-window-out)",
+ "windows": [
+  "st2_118578_1st_f030000",
+  "st2_118578_2nd_f015000"
+ ],
+ "source_run": "events_v1",
+ "stages": [
+  "A",
+  "A2",
+  "B",
+  "C",
+  "D",
+  "A'"
+ ],
+ "tau": 0.25,
+ "calib": ".cache/ball_v2.4000.pt.calib.json",
+ "calibration": {
+  "path": ".cache/ball_v2.4000.pt.calib.json",
+  "sha256": "77799641091fcca587e9be1abed99629b4ba0e1d0f4c2019ff7e5caf49ab331c",
+  "a": 0.895072,
+  "b": -0.927959,
+  "tau": 0.25,
+  "ckpt sha256": "31f9a5eb567bfc26ed71967b993503159fabc8577257efcbc09782133d86c965"
+ },
+ "balls": {
+  "st2_118578_1st_f030000": {
+   "path": ".cache/v2_balls_st2_118578_1st_f030000.parquet",
+   "sha256": "fe7e2cb165fd331faa161050ebc13888ac0206c16c04a93dc82d2a1c09b5cae4",
+   "ckpt sha256": "31f9a5eb567bfc26ed71967b993503159fabc8577257efcbc09782133d86c965",
+   "calib": {
+    "path": ".cache/ball_v2.4000.pt.calib.json",
+    "sha256": "77799641091fcca587e9be1abed99629b4ba0e1d0f4c2019ff7e5caf49ab331c",
+    "a": 0.895072,
+    "b": -0.927959,
+    "tau": 0.25
+   },
+   "frames": 1500
+  },
+  "st2_118578_2nd_f015000": {
+   "path": ".cache/v2_balls_st2_118578_2nd_f015000.parquet",
+   "sha256": "71965c379b47ae8d93aaed060956a6b515404faf2fb8f2433ce2899b2fa4c39c",
+   "ckpt sha256": "31f9a5eb567bfc26ed71967b993503159fabc8577257efcbc09782133d86c965",
+   "calib": {
+    "path": ".cache/ball_v2.4000.pt.calib.json",
+    "sha256": "77799641091fcca587e9be1abed99629b4ba0e1d0f4c2019ff7e5caf49ab331c",
+    "a": 0.895072,
+    "b": -0.927959,
+    "tau": 0.25
+   },
+   "frames": 2250
+  }
+ },
+ "v1": {
+  "top_k": 4,
+  "select": "v1",
+  "c_null": 1.0,
+  "c_static": 2.0,
+  "POSSESSION_RADIUS_M": 8.0,
+  "MIN_POSSESSION_HOLD_S": 0.2,
+  "CARRY_MIN_TIME_S": 0.8,
+  "MIN_PASS_DISTANCE_M": 0.3,
+  "SHOT_MIN_KMH": 10.0,
+  "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+  "SHOT_MOUTH_MARGIN_M": null
+ },
+ "frozen": {
+  "top_k": 4,
+  "select": "link",
+  "c_null": 1.0,
+  "c_static": 2.0,
+  "POSSESSION_RADIUS_M": 2.0,
+  "MIN_POSSESSION_HOLD_S": 0.2,
+  "CARRY_MIN_TIME_S": 0.8,
+  "MIN_PASS_DISTANCE_M": 3.0,
+  "SHOT_MIN_KMH": 50.0,
+  "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+  "SHOT_MOUTH_MARGIN_M": null
+ },
+ "frozen_changes": {
+  "select": "link",
+  "POSSESSION_RADIUS_M": 2.0,
+  "MIN_PASS_DISTANCE_M": 3.0,
+  "SHOT_MIN_KMH": 50.0
+ },
+ "swept_choice": {
+  "select": "link",
+  "POSSESSION_RADIUS_M": 2.0,
+  "MIN_PASS_DISTANCE_M": 3.0,
+  "SHOT_MIN_KMH": 50.0
+ },
+ "c2": {
+  "top_k": 4,
+  "select": "v1",
+  "c_null": 1.0,
+  "c_static": 2.0,
+  "POSSESSION_RADIUS_M": 8.0,
+  "MIN_POSSESSION_HOLD_S": 0.2,
+  "CARRY_MIN_TIME_S": 0.8,
+  "MIN_PASS_DISTANCE_M": 0.3,
+  "SHOT_MIN_KMH": 10.0,
+  "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+  "SHOT_MOUTH_MARGIN_M": null
+ },
+ "gate": {
+  "frozen": 0.1902,
+  "c2": 0.0804,
+  "per_window": {
+   "st2_118578_1st_f030000": {
+    "frozen": 0.1276,
+    "c2": 0.0097
+   },
+   "st2_118578_2nd_f015000": {
+    "frozen": 0.2298,
+    "c2": 0.1278
+   }
+  },
+  "passed": true
+ },
+ "leave_one_window_out": [
+  {
+   "chosen_on": [
+    "st2_118578_2nd_f015000"
+   ],
+   "scored_on": "st2_118578_1st_f030000",
+   "config": {
+    "select": "link",
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 30.0,
+    "SHOT_MOUTH_MARGIN_M": 5.0
+   },
+   "objective": 0.1233,
+   "c2": 0.0097
+  },
+  {
+   "chosen_on": [
+    "st2_118578_1st_f030000"
+   ],
+   "scored_on": "st2_118578_2nd_f015000",
+   "config": {
+    "select": "link",
+    "POSSESSION_RADIUS_M": 2.0,
+    "SHOT_MIN_KMH": 30.0,
+    "SHOT_MOUTH_MARGIN_M": 5.0
+   },
+   "objective": 0.186,
+   "c2": 0.1332
+  }
+ ],
+ "score_frozen": {
+  "0.5s": {
+   "st2_118578_1st_f030000": {
+    "TP": 9,
+    "events": 34,
+    "labels": 33,
+    "F1": 0.2687,
+    "chance": 0.1297,
+    "p": 0.015
+   },
+   "st2_118578_2nd_f015000": {
+    "TP": 15,
+    "events": 53,
+    "labels": 53,
+    "F1": 0.283,
+    "chance": 0.1351,
+    "p": 0.0
+   },
+   "pooled": {
+    "TP": 24,
+    "events": 87,
+    "labels": 86,
+    "F1": 0.2775,
+    "chance": 0.133,
+    "p": 0.0
+   }
+  },
+  "1s": {
+   "st2_118578_1st_f030000": {
+    "TP": 12,
+    "events": 34,
+    "labels": 33,
+    "F1": 0.3582,
+    "chance": 0.2306,
+    "p": 0.05
+   },
+   "st2_118578_2nd_f015000": {
+    "TP": 25,
+    "events": 53,
+    "labels": 53,
+    "F1": 0.4717,
+    "chance": 0.2419,
+    "p": 0.0
+   },
+   "pooled": {
+    "TP": 37,
+    "events": 87,
+    "labels": 86,
+    "F1": 0.4277,
+    "chance": 0.2375,
+    "p": 0.0
+   }
+  },
+  "2s": {
+   "st2_118578_1st_f030000": {
+    "TP": 14,
+    "events": 34,
+    "labels": 33,
+    "F1": 0.4179,
+    "chance": 0.366,
+    "p": 0.315
+   },
+   "st2_118578_2nd_f015000": {
+    "TP": 33,
+    "events": 53,
+    "labels": 53,
+    "F1": 0.6226,
+    "chance": 0.3872,
+    "p": 0.0
+   },
+   "pooled": {
+    "TP": 47,
+    "events": 87,
+    "labels": 86,
+    "F1": 0.5434,
+    "chance": 0.379,
+    "p": 0.0
+   }
+  },
+  "objective": {
+   "st2_118578_1st_f030000": 0.1276,
+   "st2_118578_2nd_f015000": 0.2298,
+   "pooled": 0.1902
+  },
+  "meets": true,
+  "pass_carry_events": {
+   "st2_118578_1st_f030000": 34,
+   "st2_118578_2nd_f015000": 53
+  },
+  "shots": {
+   "st2_118578_1st_f030000": 1,
+   "st2_118578_2nd_f015000": 0
+  }
+ },
+ "score_c2": {
+  "0.5s": {
+   "st2_118578_1st_f030000": {
+    "TP": 9,
+    "events": 79,
+    "labels": 33,
+    "F1": 0.1607,
+    "chance": 0.164,
+    "p": 0.605
+   },
+   "st2_118578_2nd_f015000": {
+    "TP": 25,
+    "events": 114,
+    "labels": 53,
+    "F1": 0.2994,
+    "chance": 0.1728,
+    "p": 0.0
+   },
+   "pooled": {
+    "TP": 34,
+    "events": 193,
+    "labels": 86,
+    "F1": 0.2437,
+    "chance": 0.1692,
+    "p": 0.0
+   }
+  },
+  "1s": {
+   "st2_118578_1st_f030000": {
+    "TP": 16,
+    "events": 79,
+    "labels": 33,
+    "F1": 0.2857,
+    "chance": 0.276,
+    "p": 0.5
+   },
+   "st2_118578_2nd_f015000": {
+    "TP": 35,
+    "events": 114,
+    "labels": 53,
+    "F1": 0.4192,
+    "chance": 0.2914,
+    "p": 0.0
+   },
+   "pooled": {
+    "TP": 51,
+    "events": 193,
+    "labels": 86,
+    "F1": 0.3656,
+    "chance": 0.2852,
+    "p": 0.005
+   }
+  },
+  "2s": {
+   "st2_118578_1st_f030000": {
+    "TP": 23,
+    "events": 79,
+    "labels": 33,
+    "F1": 0.4107,
+    "chance": 0.4004,
+    "p": 0.485
+   },
+   "st2_118578_2nd_f015000": {
+    "TP": 45,
+    "events": 114,
+    "labels": 53,
+    "F1": 0.5389,
+    "chance": 0.4178,
+    "p": 0.0
+   },
+   "pooled": {
+    "TP": 68,
+    "events": 193,
+    "labels": 86,
+    "F1": 0.4875,
+    "chance": 0.4108,
+    "p": 0.005
+   }
+  },
+  "objective": {
+   "st2_118578_1st_f030000": 0.0097,
+   "st2_118578_2nd_f015000": 0.1278,
+   "pooled": 0.0804
+  },
+  "meets": false,
+  "pass_carry_events": {
+   "st2_118578_1st_f030000": 79,
+   "st2_118578_2nd_f015000": 114
+  },
+  "shots": {
+   "st2_118578_1st_f030000": 37,
+   "st2_118578_2nd_f015000": 59
+  }
+ },
+ "log": [
+  {
+   "stage": "A",
+   "scope": [
+    "st2_118578_1st_f030000",
+    "st2_118578_2nd_f015000"
+   ],
+   "rows": [
+    {
+     "config": {
+      "top_k": 1
+     },
+     "objective": 0.1125,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0765,
+      "st2_118578_2nd_f015000": 0.1375
+     },
+     "events": {
+      "st2_118578_1st_f030000": 76,
+      "st2_118578_2nd_f015000": 104
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 35,
+      "st2_118578_2nd_f015000": 60
+     }
+    },
+    {
+     "config": {
+      "top_k": 1,
+      "select": "link"
+     },
+     "objective": 0.0826,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0471,
+      "st2_118578_2nd_f015000": 0.1033
+     },
+     "events": {
+      "st2_118578_1st_f030000": 72,
+      "st2_118578_2nd_f015000": 127
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 32,
+      "st2_118578_2nd_f015000": 45
+     }
+    },
+    {
+     "config": {},
+     "objective": 0.0804,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0097,
+      "st2_118578_2nd_f015000": 0.1278
+     },
+     "events": {
+      "st2_118578_1st_f030000": 79,
+      "st2_118578_2nd_f015000": 114
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 37,
+      "st2_118578_2nd_f015000": 59
+     }
+    },
+    {
+     "config": {
+      "select": "link"
+     },
+     "objective": 0.133,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0994,
+      "st2_118578_2nd_f015000": 0.1527
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 129
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 46
+     }
+    }
+   ],
+   "chosen": {
+    "select": "link"
+   },
+   "note": "no configuration meets the event-count constraint"
+  },
+  {
+   "stage": "A2",
+   "scope": [
+    "st2_118578_1st_f030000",
+    "st2_118578_2nd_f015000"
+   ],
+   "rows": [
+    {
+     "config": {
+      "select": "link"
+     },
+     "objective": 0.133,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0994,
+      "st2_118578_2nd_f015000": 0.1527
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 129
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 46
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "c_static": 6.0
+     },
+     "objective": 0.133,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0994,
+      "st2_118578_2nd_f015000": 0.1527
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 129
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 46
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "c_null": 3.0
+     },
+     "objective": 0.1373,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.097,
+      "st2_118578_2nd_f015000": 0.1605
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 133
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 35,
+      "st2_118578_2nd_f015000": 47
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "c_null": 3.0,
+      "c_static": 6.0
+     },
+     "objective": 0.1373,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.097,
+      "st2_118578_2nd_f015000": 0.1605
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 133
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 35,
+      "st2_118578_2nd_f015000": 47
+     }
+    }
+   ],
+   "chosen": {
+    "select": "link"
+   },
+   "note": "no configuration meets the event-count constraint"
+  },
+  {
+   "stage": "B",
+   "scope": [
+    "st2_118578_1st_f030000",
+    "st2_118578_2nd_f015000"
+   ],
+   "rows": [
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0
+     },
+     "objective": 0.1667,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1305,
+      "st2_118578_2nd_f015000": 0.1894
+     },
+     "events": {
+      "st2_118578_1st_f030000": 44,
+      "st2_118578_2nd_f015000": 70
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 24,
+      "st2_118578_2nd_f015000": 42
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_POSSESSION_HOLD_S": 0.4
+     },
+     "objective": 0.1531,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.099,
+      "st2_118578_2nd_f015000": 0.1868
+     },
+     "events": {
+      "st2_118578_1st_f030000": 42,
+      "st2_118578_2nd_f015000": 67
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 23,
+      "st2_118578_2nd_f015000": 42
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 3.0
+     },
+     "objective": 0.1627,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1225,
+      "st2_118578_2nd_f015000": 0.1899
+     },
+     "events": {
+      "st2_118578_1st_f030000": 64,
+      "st2_118578_2nd_f015000": 91
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 45
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 3.0,
+      "MIN_POSSESSION_HOLD_S": 0.4
+     },
+     "objective": 0.1383,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.104,
+      "st2_118578_2nd_f015000": 0.1606
+     },
+     "events": {
+      "st2_118578_1st_f030000": 57,
+      "st2_118578_2nd_f015000": 85
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 31,
+      "st2_118578_2nd_f015000": 45
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 4.0
+     },
+     "objective": 0.1746,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1543,
+      "st2_118578_2nd_f015000": 0.1878
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 110
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 47
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 4.0,
+      "MIN_POSSESSION_HOLD_S": 0.4
+     },
+     "objective": 0.1728,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1441,
+      "st2_118578_2nd_f015000": 0.1916
+     },
+     "events": {
+      "st2_118578_1st_f030000": 66,
+      "st2_118578_2nd_f015000": 98
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 32,
+      "st2_118578_2nd_f015000": 46
+     }
+    },
+    {
+     "config": {
+      "select": "link"
+     },
+     "objective": 0.133,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0994,
+      "st2_118578_2nd_f015000": 0.1527
+     },
+     "events": {
+      "st2_118578_1st_f030000": 74,
+      "st2_118578_2nd_f015000": 129
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 46
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "MIN_POSSESSION_HOLD_S": 0.4
+     },
+     "objective": 0.1473,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1003,
+      "st2_118578_2nd_f015000": 0.1762
+     },
+     "events": {
+      "st2_118578_1st_f030000": 68,
+      "st2_118578_2nd_f015000": 111
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": false,
+     "shots": {
+      "st2_118578_1st_f030000": 32,
+      "st2_118578_2nd_f015000": 43
+     }
+    }
+   ],
+   "chosen": {
+    "select": "link",
+    "POSSESSION_RADIUS_M": 2.0
+   },
+   "note": ""
+  },
+  {
+   "stage": "C",
+   "scope": [
+    "st2_118578_1st_f030000",
+    "st2_118578_2nd_f015000"
+   ],
+   "rows": [
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0
+     },
+     "objective": 0.1667,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1305,
+      "st2_118578_2nd_f015000": 0.1894
+     },
+     "events": {
+      "st2_118578_1st_f030000": 44,
+      "st2_118578_2nd_f015000": 70
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 24,
+      "st2_118578_2nd_f015000": 42
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0
+     },
+     "objective": 0.1902,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1276,
+      "st2_118578_2nd_f015000": 0.2298
+     },
+     "events": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 53
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 24,
+      "st2_118578_2nd_f015000": 42
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "CARRY_MIN_TIME_S": 1.2
+     },
+     "objective": 0.1789,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1375,
+      "st2_118578_2nd_f015000": 0.2045
+     },
+     "events": {
+      "st2_118578_1st_f030000": 41,
+      "st2_118578_2nd_f015000": 67
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 24,
+      "st2_118578_2nd_f015000": 42
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "CARRY_MIN_TIME_S": 1.2,
+      "MIN_PASS_DISTANCE_M": 3.0
+     },
+     "objective": 0.1968,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1215,
+      "st2_118578_2nd_f015000": 0.2437
+     },
+     "events": {
+      "st2_118578_1st_f030000": 31,
+      "st2_118578_2nd_f015000": 50
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 24,
+      "st2_118578_2nd_f015000": 42
+     }
+    }
+   ],
+   "chosen": {
+    "select": "link",
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_PASS_DISTANCE_M": 3.0
+   },
+   "note": ""
+  },
+  {
+   "stage": "D",
+   "scope": [
+    "st2_118578_1st_f030000",
+    "st2_118578_2nd_f015000"
+   ],
+   "rows": [
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0
+     },
+     "shots": 66
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MOUTH_MARGIN_M": 5.0
+     },
+     "shots": 21
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MAX_DIST_FROM_GOAL_M": 30.0
+     },
+     "shots": 16
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MAX_DIST_FROM_GOAL_M": 30.0,
+      "SHOT_MOUTH_MARGIN_M": 5.0
+     },
+     "shots": 6
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 30.0
+     },
+     "shots": 22
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 30.0,
+      "SHOT_MOUTH_MARGIN_M": 5.0
+     },
+     "shots": 5
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 30.0,
+      "SHOT_MAX_DIST_FROM_GOAL_M": 30.0
+     },
+     "shots": 5
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 30.0,
+      "SHOT_MAX_DIST_FROM_GOAL_M": 30.0,
+      "SHOT_MOUTH_MARGIN_M": 5.0
+     },
+     "shots": 1
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0
+     },
+     "shots": 1
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0,
+      "SHOT_MOUTH_MARGIN_M": 5.0
+     },
+     "shots": 0
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0,
+      "SHOT_MAX_DIST_FROM_GOAL_M": 30.0
+     },
+     "shots": 1
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0,
+      "SHOT_MAX_DIST_FROM_GOAL_M": 30.0,
+      "SHOT_MOUTH_MARGIN_M": 5.0
+     },
+     "shots": 0
+    }
+   ],
+   "chosen": {
+    "select": "link",
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0
+   },
+   "note": ""
+  },
+  {
+   "stage": "A'",
+   "scope": [
+    "st2_118578_1st_f030000",
+    "st2_118578_2nd_f015000"
+   ],
+   "rows": [
+    {
+     "config": {
+      "top_k": 1,
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0
+     },
+     "objective": 0.1276,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0639,
+      "st2_118578_2nd_f015000": 0.1634
+     },
+     "events": {
+      "st2_118578_1st_f030000": 31,
+      "st2_118578_2nd_f015000": 61
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 12,
+      "st2_118578_2nd_f015000": 16
+     }
+    },
+    {
+     "config": {
+      "top_k": 1,
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0
+     },
+     "objective": 0.1828,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1261,
+      "st2_118578_2nd_f015000": 0.2209
+     },
+     "events": {
+      "st2_118578_1st_f030000": 38,
+      "st2_118578_2nd_f015000": 53
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 0,
+      "st2_118578_2nd_f015000": 0
+     }
+    },
+    {
+     "config": {
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0
+     },
+     "objective": 0.0933,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.0119,
+      "st2_118578_2nd_f015000": 0.1381
+     },
+     "events": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 67
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 13,
+      "st2_118578_2nd_f015000": 22
+     }
+    },
+    {
+     "config": {
+      "select": "link",
+      "POSSESSION_RADIUS_M": 2.0,
+      "MIN_PASS_DISTANCE_M": 3.0,
+      "SHOT_MIN_KMH": 50.0
+     },
+     "objective": 0.1902,
+     "per_window": {
+      "st2_118578_1st_f030000": 0.1276,
+      "st2_118578_2nd_f015000": 0.2298
+     },
+     "events": {
+      "st2_118578_1st_f030000": 34,
+      "st2_118578_2nd_f015000": 53
+     },
+     "labels": {
+      "st2_118578_1st_f030000": 33,
+      "st2_118578_2nd_f015000": 53
+     },
+     "meets": true,
+     "shots": {
+      "st2_118578_1st_f030000": 1,
+      "st2_118578_2nd_f015000": 0
+     }
+    }
+   ],
+   "chosen": {
+    "select": "link",
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0
+   },
+   "note": ""
+  }
+ ],
+ "player_hash": {
+  "st2_118578_1st_f030000": [
+   "907898871eda3bae"
+  ],
+  "st2_118578_2nd_f015000": [
+   "cd6e2dd4a4148b71"
+  ]
+ },
+ "source_player_hash": {
+  "st2_118578_1st_f030000": "907898871eda3bae",
+  "st2_118578_2nd_f015000": "cd6e2dd4a4148b71"
+ },
+ "code_sha256": {
+  "sweep_events_v2.py": "1426547899d5812d801713f7b4dbd8c6b2933533a48f98034f3a5178c3ac129e",
+  "score_events_paired.py": "05cf306a0df133c74ff13c072c45e8f5e4a0a7ba94be85e3a55a07ea14cd0e4f",
+  "score_soccernet.py": "e0cf52dd43ae4af4d7ff7560699e9c8140b0c56e913a6fd049b0db42e0016337",
+  "src/events.py": "1956c8915b3c31ec27240fbf313cbf3062a5161e73de0b346f43f05f101b5e8a",
+  "src/ball_link.py": "4250c6c2c54f601427a1e5dbcfdfa577eb5293c7d398a0708178a40c5eb09e37"
+ },
+ "elapsed_s": 276
+}

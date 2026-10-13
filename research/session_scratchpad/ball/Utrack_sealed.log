@@ -1,0 +1,9 @@
+  st2_118578_1st_f052500: 218 frames to measure (from saved candidates: coco, ball_heatmap.3000.pt, ball_v2.2500.pt, ball_v2.3250.pt, ball_v2.4000.pt, T)
+  st2_118578_2nd_f037500: 235 frames to measure (from saved candidates: coco, ball_heatmap.3000.pt, ball_v2.2500.pt, ball_v2.3250.pt, ball_v2.4000.pt, T)
+  st2_118578_1st_f052500: 19 passes, 24 + 17 placebo frames, frames measured of 218: coco 218, ball_heatmap.3000.pt 218, ball_v2.2500.pt 218, ball_v2.3250.pt 218, ball_v2.4000.pt 218, T 218
+  st2_118578_2nd_f037500: 20 passes, 26 + 18 placebo frames, frames measured of 235: coco 235, ball_heatmap.3000.pt 235, ball_v2.2500.pt 235, ball_v2.3250.pt 235, ball_v2.4000.pt 235, T 235
+  st2_118578_1st_f052500: T: measured frames by source detected 61, interpolated 95, fallback 24, none 38 (0 past the last processed frame, 0 not covered); fills 1125 of 1152 pairs within the gap (27 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_118578_1st_f052500: T: dense top-1 = ball_v2.4000.pt's top-1 at 106 of 106 shared frames
+  st2_118578_2nd_f037500: T: measured frames by source detected 81, interpolated 107, fallback 21, none 26 (0 past the last processed frame, 0 not covered); fills 1244 of 1272 pairs within the gap (28 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_118578_2nd_f037500: T: dense top-1 = ball_v2.4000.pt's top-1 at 122 of 122 shared frames
+  sealed: 2 windows, 6 detectors -> /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/Utrack_sealed.json [8 s]

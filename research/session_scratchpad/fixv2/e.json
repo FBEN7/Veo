@@ -1,0 +1,171 @@
+{
+ "calib": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/fixv2/c.json",
+ "detector": "smoke_v2.20.pt",
+ "scores": [
+  {
+   "path": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/e2e/e2e_pass.json",
+   "sha256": "ce1724384dd8a292aab365a3a60fb9d24bb94f960405ad9552fceb7464b88b6b"
+  },
+  {
+   "path": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/e2e/e2e_act.json",
+   "sha256": "ebe1f1252808eb59fc8c0cd0cbd4ffa914b56a8f713cac13ba9a9e974f471728"
+  }
+ ],
+ "windows": [
+  "st2_118577_1st_f030000"
+ ],
+ "a": 0.574117,
+ "b": -3.655233,
+ "tau": 0.1,
+ "candidates": 128,
+ "positives": 5,
+ "by kind": {
+  "pass": {
+   "candidates": 80,
+   "positives": 3,
+   "ece": 0.017
+  },
+  "action": {
+   "candidates": 48,
+   "positives": 2,
+   "ece": 0.0198
+  }
+ },
+ "frames": {
+  "pass": 10,
+  "action": 6,
+  "pass without people": 0,
+  "pass not measured": 38,
+  "action not measured": 61
+ },
+ "reliability": [
+  {
+   "bin": [
+    0.0,
+    0.1
+   ],
+   "n": 122,
+   "p_cal": 0.0319,
+   "positive": 0.0328
+  },
+  {
+   "bin": [
+    0.1,
+    0.2
+   ],
+   "n": 4,
+   "p_cal": 0.1433,
+   "positive": 0.25
+  },
+  {
+   "bin": [
+    0.2,
+    0.3
+   ],
+   "n": 1,
+   "p_cal": 0.2224,
+   "positive": 0.0
+  },
+  {
+   "bin": [
+    0.3,
+    0.4
+   ],
+   "n": 1,
+   "p_cal": 0.3098,
+   "positive": 0.0
+  },
+  {
+   "bin": [
+    0.4,
+    0.5
+   ],
+   "n": 0,
+   "p_cal": null,
+   "positive": null
+  },
+  {
+   "bin": [
+    0.5,
+    0.6
+   ],
+   "n": 0,
+   "p_cal": null,
+   "positive": null
+  },
+  {
+   "bin": [
+    0.6,
+    0.7
+   ],
+   "n": 0,
+   "p_cal": null,
+   "positive": null
+  },
+  {
+   "bin": [
+    0.7,
+    0.8
+   ],
+   "n": 0,
+   "p_cal": null,
+   "positive": null
+  },
+  {
+   "bin": [
+    0.8,
+    0.9
+   ],
+   "n": 0,
+   "p_cal": null,
+   "positive": null
+  },
+  {
+   "bin": [
+    0.9,
+    1.0
+   ],
+   "n": 0,
+   "p_cal": null,
+   "positive": null
+  }
+ ],
+ "ece": 0.0083,
+ "random frames": 12,
+ "at tau": {
+  "tau": 0.1,
+  "candidates per frame": 0.5833,
+  "exact": true
+ },
+ "rules": {
+  "FF_W": 4.0,
+  "FF_DT": 0.3,
+  "FF_R": 1.0,
+  "ACTOR_R": 1.5,
+  "TOP_K": 8,
+  "V2_TAU": 0.05,
+  "BINS": 10,
+  "TAU_GRID": [
+   0.05,
+   0.1,
+   0.15,
+   0.2,
+   0.25,
+   0.3,
+   0.35,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7,
+   0.75,
+   0.8,
+   0.85,
+   0.9,
+   0.95
+  ],
+  "MAX_PER_FRAME": 1.0
+ }
+}
