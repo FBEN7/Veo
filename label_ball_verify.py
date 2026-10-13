@@ -19,7 +19,11 @@ label (ties: N). Per frame (a sheet row), the verified ball:
 
 `--results`: the judging workflow's result (a list of {chunk, j1, j2,
 adj}: {tile: label}); several files merge (each its own chunk set, keyed
-by its key dir: --key and --results in the same order).
+by its key dir: --key and --results in the same order). In the
+single-judge scheme j2 holds only the rechecked tiles (those j1 judged B
+or was unsure of, and a random share listed in "random"): the others
+keep j1's label, and the agreement on the random share estimates the
+single judge's error rate.
 Writes `tiles.parquet` (every tile: window, match, half, local and
 absolute frame, u, v, size, sources, kind, the frame's kinds, each
 judge's label, final label, ball flag, how it was decided), `frames.parquet`
@@ -59,9 +63,12 @@ def final_label(labels: list[str]) -> str:
 
 
 def decide(j1, j2, adj) -> tuple[str, str]:
-    """The final label of a tile and how: "unanimous" (both judges agree on
-    B / not B), "adjudicated" (the third judge broke the tie) or
-    "unresolved" (a disagreement without a third label: N)."""
+    """The final label of a tile and how: "single" (judged once: the
+    single-judge scheme, its first judge's label), "unanimous" (both
+    judges agree on B / not B), "adjudicated" (the third judge broke the
+    tie) or "unresolved" (a disagreement without a third label: N)."""
+    if j1 is not None and j2 is None and adj is None:
+        return j1, "single"
     if j1 is not None and j2 is not None and (j1 == "B") == (j2 == "B"):
         return final_label([j1, j2, j1 if j1 == j2 else None]), "unanimous"
     if adj is None:
@@ -76,6 +83,15 @@ def kappa(a: list[bool], b: list[bool]) -> float | None:
     po = float(np.mean(a == b))
     pe = float(a.mean() * b.mean() + (1 - a.mean()) * (1 - b.mean()))
     return None if pe == 1 else round((po - pe) / (1 - pe), 3)
+
+
+def _agree(d: pd.DataFrame) -> dict:
+    """Agreement of the two judges on B / not B over the tiles of d."""
+    a, b = (d.j1 == "B").tolist(), (d.j2 == "B").tolist()
+    return {"tiles": len(a), "agree": int(sum(x == y for x, y in zip(a, b))),
+            "j1 B j2 not": int(sum(x and not y for x, y in zip(a, b))),
+            "j1 not j2 B": int(sum(y and not x for x, y in zip(a, b))),
+            "kappa": kappa(a, b)}
 
 
 def frame_status(g: pd.DataFrame) -> dict:
@@ -106,6 +122,7 @@ def merge(keys: list[Path], results: list[list[dict]]) -> tuple[pd.DataFrame, pd
                 raise SystemExit(f"{kdir.name}/{kf.name}: no judgements")
             j1, j2, adj = ({int(k): v for k, v in (r.get(x) or {}).items()}
                            for x in ("j1", "j2", "adj"))
+            rand = {int(t) for t in (r.get("random") or [])}
             for t in json.loads(kf.read_text()):
                 w = t["window"]
                 if w not in infos:
@@ -121,7 +138,7 @@ def merge(keys: list[Path], results: list[list[dict]]) -> tuple[pd.DataFrame, pd
                              "frame_kinds": "+".join(sorted({k["kind"] for k in t["kinds"]})),
                              "j1": j1.get(t["tile"]), "j2": j2.get(t["tile"]),
                              "adj": adj.get(t["tile"]), "label": lab, "ball": lab == "B",
-                             "decided": how})
+                             "decided": how, "random_recheck": t["tile"] in rand})
     tiles = pd.DataFrame(recs)
     frames = []
     for (b, c, row), g in tiles.groupby(["batch", "chunk", "row"], sort=False):
@@ -154,6 +171,7 @@ def summarise(tiles: pd.DataFrame, frames: pd.DataFrame) -> dict:
             "judges agree on B / not B": round(float(np.mean(np.array(a) == np.array(b))), 4)
             if a else None,
             "kappa B / not B": kappa(a, b),
+            "random recheck": _agree(real[real.random_recheck].dropna(subset=["j1", "j2"])),
             "decoys": {"rows": int(len(dec)), "j1 B": int((dec.j1 == "B").sum()),
                        "j2 B": int((dec.j2 == "B").sum()), "final B": int(dec.ball.sum())},
             "per source": per_source,
@@ -205,6 +223,7 @@ def _check():
     assert decide("B", "N", None) == ("N", "unresolved")
     assert decide("B", "N", "B") == ("B", "adjudicated")
     assert decide("B", "S", "S") == ("S", "adjudicated")
+    assert decide("S", None, None) == ("S", "single")
     assert kappa([True, False, True, False], [True, False, True, False]) == 1.0
     g = pd.DataFrame({"u": [0.0, 5.0, 40.0], "v": [0.0, 0.0, 0.0], "size": [6.0, 6.0, 6.0],
                       "ball": [True, True, False], "sources": ["v2", "coco", "v1"],
