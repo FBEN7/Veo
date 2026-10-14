@@ -39,7 +39,8 @@ from src.paths import DATA_DIR
 HALF = 32
 OFFSETS = (-50, -2, 0, 2, 50)
 SOURCES = ("v2", "v1", "coco", "T", "line")
-HI, LO = 0.9, 0.1
+HI, LO = 0.95, 0.1
+ONE_BALL_PX = 24       # tiles within this of a frame's top tile (both axes) may be its ball
 EPOCHS, BATCH, LR, SEED = 25, 64, 1e-3, 0
 
 
@@ -212,6 +213,24 @@ def scores(y, p, hi=HI, lo=LO) -> dict:
 
 # ---- Commands ------------------------------------------------------------------------
 
+def auto_labels(t: pd.DataFrame, hi=HI, lo=LO) -> np.ndarray:
+    """"B" where p >= hi and the tile is its frame's top tile (or within
+    ONE_BALL_PX of it on both axes: one ball can sit in both boxes);
+    "not" where p <= lo, or p < hi away from the top tile; else "judge".
+    On M6's leave-one-window-out predictions: ball precision 0.96, 93% of
+    tiles decided, agreement with the judges 0.963."""
+    key = [t.window.to_numpy(), t.frame.to_numpy()]
+    top = t.loc[t.groupby(["window", "frame"]).p.idxmax(), ["window", "frame", "u", "v"]]
+    top = top.set_index(["window", "frame"])
+    tu = top.u.reindex(pd.MultiIndex.from_arrays(key)).to_numpy()
+    tv = top.v.reindex(pd.MultiIndex.from_arrays(key)).to_numpy()
+    near = (np.abs(t.u.to_numpy() - tu) <= ONE_BALL_PX) & (np.abs(t.v.to_numpy() - tv) <= ONE_BALL_PX)
+    p = t.p.to_numpy()
+    pos = (p >= hi) & near
+    neg = ~pos & ((p <= lo) | ((p < hi) & ~near))
+    return np.where(pos, "B", np.where(neg, "not", "judge"))
+
+
 def cmd_crops(args):
     tiles = pd.read_parquet(args.tiles)
     tiles = tiles[tiles.kind != "decoy"] if "kind" in tiles else tiles
@@ -265,7 +284,8 @@ def cmd_apply(args):
     net.load_state_dict(ck["state"])
     X, M, t = _load(args.crops)
     p = predict(net, X, M)
-    t = t.assign(p=p, auto=np.where(p >= ck["hi"], "B", np.where(p <= ck["lo"], "not", "judge")))
+    t = t.assign(p=p)
+    t["auto"] = auto_labels(t, ck["hi"], ck["lo"])
     t.to_parquet(args.out)
     print(f"  {len(t)} tiles: {t.auto.value_counts().to_dict()} -> {args.out}")
 

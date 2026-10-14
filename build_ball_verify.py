@@ -234,8 +234,19 @@ def write_chunk(rows: list[dict], paths: dict, out: Path):
                                    interpolation=cv2.INTER_CUBIC))
 
 
+def candidate_table(rows: list[dict]) -> "pd.DataFrame":
+    """Every candidate tile of `rows` as a table (no sheets, no decoys): for
+    `train_tile_classifier.py crops` / `apply`."""
+    import pandas as pd
+
+    return pd.DataFrame([{"window": r["window"], "frame": r["frame"], "u": t["u"], "v": t["v"],
+                          "size": t["size"], "sources": "+".join(t["sources"]), "kind": t["kind"],
+                          "frame_kinds": "+".join(sorted({k["kind"] for k in r["kinds"]}))}
+                         for r in rows for t in r["tiles"]])
+
+
 def build(scores, out: Path, key_out: Path, rows_per_chunk: int, decoy_rows: int,
-          seed: int, windows=None, log=print) -> dict:
+          seed: int, windows=None, log=print, tiles_out=None) -> dict:
     from ball_tiles import Windows
     from eval_ball_detector import load_scores
 
@@ -249,6 +260,11 @@ def build(scores, out: Path, key_out: Path, rows_per_chunk: int, decoy_rows: int
     rows = []
     for w in ws:
         rows += window_rows(w, merged[w], wins, rng)
+    if tiles_out:
+        tab = candidate_table(rows)
+        tab.to_parquet(tiles_out)
+        log(f"  {len(rows)} frames, {len(tab)} candidate tiles -> {tiles_out}")
+        return {"rows": len(rows), "tiles": len(tab)}
     order = rng.permutation(len(rows))
     rows = [rows[i] for i in order]
     n_chunks = max(1, int(np.ceil(len(rows) / rows_per_chunk)))
@@ -296,17 +312,21 @@ def build(scores, out: Path, key_out: Path, rows_per_chunk: int, decoy_rows: int
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scores", nargs="+", required=True)
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out")
     ap.add_argument("--key-out")
+    ap.add_argument("--tiles-out", help="write the candidate tiles as a parquet and stop "
+                                        "(no sheets): the tile classifier's input")
     ap.add_argument("--rows-per-chunk", type=int, default=120)
     ap.add_argument("--decoy-rows", type=int, default=4)
     ap.add_argument("--seed", type=int, default=5)
     ap.add_argument("--windows", nargs="*")
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
-    out = Path(args.out)
+    if not args.out and not args.tiles_out:
+        ap.error("--out or --tiles-out")
+    out = Path(args.out or ".")
     build(args.scores, out, Path(args.key_out or f"{out}_key"), args.rows_per_chunk,
-          args.decoy_rows, args.seed, args.windows)
+          args.decoy_rows, args.seed, args.windows, tiles_out=args.tiles_out)
 
 
 def _check():
