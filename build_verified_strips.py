@@ -316,7 +316,8 @@ def cmd_combine(args):
     codes = np.lib.format.open_memmap(V3 / "labels_codes.tmp.npy", "w+", np.int8,
                                       (len(table), CELLS, CELLS))
     for a in range(0, len(keep), 2000):
-        codes[a:a + 2000] = v2c[keep[a:a + 2000]]
+        part = keep[a:a + 2000]
+        codes[a:a + len(part)] = v2c[part]
     codes[len(keep):] = verc
     codes.flush()
     del codes
