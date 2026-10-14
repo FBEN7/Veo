@@ -7,7 +7,8 @@ anything else) and, where they disagree on B / not B, a third judge's;
 the final label is B when two judges say B, else the most common other
 label (ties: N). Per frame (a sheet row), the verified ball:
 
-- "ball": one B tile (or B tiles within 12 px of each other: their mean);
+- "ball": one B tile (or B tiles within 24 px of each other on both
+  axes, one ball inside both boxes: their mean);
 - "conflict": B tiles further apart (two balls judged in play): unused;
 - "unknown": no candidate is the ball -- the ball was not proposed, is
   hidden or out of play. Not a negative: the frame says nothing of where
@@ -47,7 +48,7 @@ import pandas as pd
 
 from src.paths import DATA_DIR
 
-SAME_BALL_PX = 12.0
+SAME_BALL_PX = 24.0     # two boxes holding one ball centre: within a box size per axis
 
 
 def final_label(labels: list[str]) -> str:
@@ -102,7 +103,7 @@ def frame_status(g: pd.DataFrame) -> dict:
     if hit.empty:
         return {"status": "unknown"}
     uv = hit[["u", "v"]].to_numpy(float)
-    if len(hit) > 1 and np.hypot(*(uv[:, None] - uv[None]).transpose(2, 0, 1)).max() > SAME_BALL_PX:
+    if len(hit) > 1 and np.abs(uv[:, None] - uv[None]).max() > SAME_BALL_PX:
         return {"status": "conflict"}
     src = sorted({s for ss in hit.sources for s in ss.split("+")})
     return {"status": "ball", "u": float(uv[:, 0].mean()), "v": float(uv[:, 1].mean()),
