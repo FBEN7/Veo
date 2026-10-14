@@ -115,10 +115,10 @@ def paired(a: pd.DataFrame, b: pd.DataFrame) -> dict:
             "frames": int(len(m)), "blocks": int(len(blocks))}
 
 
-def placebos(paths, names) -> dict:
+def placebos(paths, names, windows=None) -> dict:
     import eval_ball_detector as ev
 
-    results, _ = ev.reuse(paths, log=lambda *a: None)
+    results, _ = ev.reuse(paths, windows, log=lambda *a: None)
     return {n: {k: v for k, v in ev.placebo_summary(results, n).items() if k != "windows"}
             for n in names}
 
@@ -134,17 +134,20 @@ def main():
     ap.add_argument("--scores", nargs="+", required=True)
     ap.add_argument("--detectors", nargs="+", required=True)
     ap.add_argument("--reference", default="ball_v2.4000.pt")
+    ap.add_argument("--windows", nargs="+", help="score these M6 windows only")
     ap.add_argument("--no-placebo", action="store_true")
     ap.add_argument("--out")
     args = ap.parse_args()
     frames = pd.read_parquet(A / "frames.parquet")
     tiles = pd.read_parquet(A / "tiles.parquet")
+    if args.windows:
+        frames = frames[frames.window.isin(args.windows)]
     if set(frames.match.astype(str)) & SEALED:
         raise SystemExit("sealed match in the labels")
     merged, meta = ev.load_scores(args.scores)
     if {str(r.get("match")) for r in merged.values()} & SEALED:
         raise SystemExit("sealed match in the scores")
-    out, per = {"labels sha256": {f: sha256(A / f) for f in ("frames.parquet", "tiles.parquet")},
+    out, per = {"windows": sorted(set(frames.window)), "labels sha256": {f: sha256(A / f) for f in ("frames.parquet", "tiles.parquet")},
                 "scorer sha256": sha256(__file__), "scores": [str(p) for p in args.scores],
                 "constants": {"HIT_PX": HIT_PX, "MERGE_PX": MERGE_PX, "TOP_K_TRACK": TOP_K_TRACK,
                               "BLOCK": BLOCK, "DRAWS": DRAWS, "SEED": SEED},
@@ -154,7 +157,7 @@ def main():
         per[n] = s["frames"]
         out["detectors"][n] = s["summary"] | {"ckpt": meta.get(n, {}).get("ckpt sha256")}
     if not args.no_placebo:
-        for n, p in placebos(args.scores, args.detectors).items():
+        for n, p in placebos(args.scores, args.detectors, args.windows).items():
             out["detectors"][n]["placebo"] = p
     if args.reference in per:
         out["paired against " + args.reference] = {

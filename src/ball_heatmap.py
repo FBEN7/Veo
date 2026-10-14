@@ -65,6 +65,12 @@ V2_TRAIN = {"118575": (1, 2), "118576": (1, 2), "118577": (1, 2),
             "128058": (1, 2)}
 V2_EXCLUDE = {("118576", 2): (13500, 20999), ("128058", 2): (13500, 20999)}
 NEVER = {"118578", "117093", "132877", "117092", "128057", "132831"}
+# v3 (protocol v5): trained on the verified labels of the seen windows and v2's
+# strips; never on M1 (another camera) or the test matches, and -- for the run
+# fine-tuned from v2 -- not on M6, the selection match (the run from v1 inherits
+# v1's training on M6's first half: `NEVER_V3_FROM_V1`).
+NEVER_V3 = {"118578", "117092", "128057", "132831"}
+NEVER_V3_FROM_V1 = {"117092", "128057", "132831"}
 
 
 def build(motion: bool = False):
@@ -394,15 +400,16 @@ def _jsonable(x):
     return x
 
 
-def write_provenance(ckpt, info: dict) -> Path:
+def write_provenance(ckpt, info: dict, never=None) -> Path:
     """Write `<ckpt>.provenance.json`. `info["train"]` is required, as
     {match: halves} (`V2_TRAIN`); `info["exclude"]` may be `V2_EXCLUDE`
     ({(match, half): (first, last)}) and is stored as [match, half, first,
-    last] rows. Refuses a training set that includes a `NEVER` match."""
+    last] rows. Refuses a training set that includes a `never` match
+    (default `NEVER`; v3 passes `NEVER_V3`)."""
     if "train" not in info:
         raise ValueError("provenance without 'train' {match: halves}")
     train = {str(m): sorted(int(h) for h in hs) for m, hs in info["train"].items()}
-    bad = sorted(set(train) & NEVER)
+    bad = sorted(set(train) & (NEVER if never is None else set(never)))
     if bad:
         raise ValueError(f"trained on never-train matches {bad}")
     out = dict(info, train=train)
