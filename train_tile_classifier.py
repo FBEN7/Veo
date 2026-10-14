@@ -11,8 +11,10 @@ final label B (the match ball in play centred in the 24 px box) against
 anything else.
 
     python train_tile_classifier.py crops --tiles TILES.parquet --out CROPS.npz
-    python train_tile_classifier.py cv --crops CROPS.npz            # leave one window out
-    python train_tile_classifier.py fit --crops CROPS.npz --out MODEL.pt
+    python train_tile_classifier.py label --crops NEW.npz --judged J.parquet ... --out NEWJ.npz
+    python train_tile_classifier.py cv --crops CROPS.npz [MORE.npz ...] --out CV.json \\
+        [--by window|match] [--groups G ...]                    # leave one group out
+    python train_tile_classifier.py fit --crops CROPS.npz [MORE.npz ...] --out MODEL.pt
     python train_tile_classifier.py apply --model MODEL.pt --crops NEW.npz --out PRED.parquet
 
 `crops` decodes each window once (its frames needed for every tile: t-50,
@@ -174,7 +176,7 @@ def train(X, M, y, epochs=EPOCHS, seed=SEED, log=None):
             opt.zero_grad()
             loss.backward()
             opt.step()
-            tot += float(loss) * len(b)
+            tot += loss.item() * len(b)
         sched.step()
         if log:
             log(f"    epoch {ep + 1}: loss {tot / len(y):.4f}")
@@ -242,28 +244,71 @@ def cmd_crops(args):
     print(f"  {len(tiles)} tiles -> {args.out}")
 
 
-def _load(path):
-    z = np.load(path, allow_pickle=False)
+def _load(paths):
+    """Inputs, meta and table of one or several crop files, concatenated."""
+    Xs, Ms, ts = [], [], []
+    for path in [paths] if isinstance(paths, (str, Path)) else paths:
+        z = np.load(path, allow_pickle=False)
+        ts.append(pd.DataFrame(json.loads(str(z["table"]))).assign(crops=Path(path).name))
+        Xs.append(inputs(z["rgb"], z["grey"]))
+        Ms.append(z["meta"].astype(np.float32))
+    t = pd.concat(ts, ignore_index=True)
+    t["match"] = t.window.str.split("_").str[1]
+    return np.concatenate(Xs), np.concatenate(Ms), t
+
+
+def _uid(d: pd.DataFrame) -> pd.Series:
+    return (d.window.astype(str) + "/" + d.frame.astype(int).astype(str) + "/"
+            + d.u.astype(float).round(1).astype(str) + "/" + d.v.astype(float).round(1).astype(str))
+
+
+def cmd_label(args):
+    """The crops of judged tiles (from `spot_check_tiles.py collect`) with
+    their labels, out of a crop file of unlabelled candidates."""
+    z = np.load(args.crops, allow_pickle=False)
     table = pd.DataFrame(json.loads(str(z["table"])))
-    return inputs(z["rgb"], z["grey"]), z["meta"].astype(np.float32), table
+    j = pd.concat([pd.read_parquet(p) for p in args.judged], ignore_index=True)
+    j = j.assign(uid=_uid(j)).drop_duplicates("uid", keep="last").set_index("uid")
+    uid = _uid(table)
+    keep = uid.isin(j.index).to_numpy()
+    if keep.sum() < len(j):
+        raise SystemExit(f"{len(j) - keep.sum()} judged tiles not among the crops")
+    t = table[keep].reset_index(drop=True)
+    jj = j.loc[uid[keep].to_numpy()]
+    t["label"], t["ball"] = jj.label.to_numpy(), jj.ball.to_numpy(bool)
+    t["stratum"] = jj.stratum.fillna("spot").to_numpy() if "stratum" in jj else "spot"
+    np.savez_compressed(args.out, rgb=z["rgb"][keep], grey=z["grey"][keep], meta=z["meta"][keep],
+                        table=t.to_json(orient="records"))
+    print(f"  {len(t)} judged tiles ({int(t.ball.sum())} ball) -> {args.out}")
 
 
 def cmd_cv(args):
+    """Leave one group (window or match) out; each fold's predictions go to
+    FOLDS/<group>.parquet and are reused when present (a restart loses at
+    most the fold in progress); `--groups` runs only those folds."""
     X, M, t = _load(args.crops)
     y = t.ball.to_numpy(bool)
-    allp = np.zeros(len(y))
-    per = {}
-    for w in sorted(t.window.unique()):
-        te = (t.window == w).to_numpy()
+    folds = Path(args.folds or Path(args.out).with_suffix(".folds"))
+    folds.mkdir(parents=True, exist_ok=True)
+    groups = sorted(t[args.by].unique())
+    for g in args.groups or groups:
+        f = folds / f"{g}.parquet"
+        if f.exists():
+            continue
+        te = (t[args.by] == g).to_numpy()
         net = train(X[~te], M[~te], y[~te], epochs=args.epochs)
-        allp[te] = predict(net, X[te], M[te])
-        per[w] = scores(y[te], allp[te])
-        print(f"  held out {w}: {per[w]}", flush=True)
-    out = {"per window": per, "pooled": scores(y, allp)}
+        t[te].assign(p=predict(net, X[te], M[te])).to_parquet(f.with_suffix(".part"))
+        f.with_suffix(".part").rename(f)
+        print(f"  held out {g}: {scores(y[te], pd.read_parquet(f).p.to_numpy())}", flush=True)
+    if args.groups or not all((folds / f"{g}.parquet").exists() for g in groups):
+        return
+    p = pd.concat([pd.read_parquet(folds / f"{g}.parquet") for g in groups])
+    per = {g: scores(d.ball.to_numpy(bool), d.p.to_numpy()) for g, d in p.groupby(args.by)}
+    out = {"held out by": args.by, f"per {args.by}": per,
+           "pooled": scores(p.ball.to_numpy(bool), p.p.to_numpy())}
     print(json.dumps(out["pooled"], indent=1))
-    if args.out:
-        Path(args.out).write_text(json.dumps(out, indent=1))
-        t.assign(p=allp).to_parquet(Path(args.out).with_suffix(".parquet"))
+    Path(args.out).write_text(json.dumps(out, indent=1))
+    p.to_parquet(Path(args.out).with_suffix(".parquet"))
 
 
 def cmd_fit(args):
@@ -296,12 +341,19 @@ def main():
     c = sub.add_parser("crops")
     c.add_argument("--tiles", required=True)
     c.add_argument("--out", required=True)
+    c = sub.add_parser("label")
+    c.add_argument("--crops", required=True)
+    c.add_argument("--judged", nargs="+", required=True)
+    c.add_argument("--out", required=True)
     c = sub.add_parser("cv")
-    c.add_argument("--crops", required=True)
+    c.add_argument("--crops", nargs="+", required=True)
     c.add_argument("--epochs", type=int, default=EPOCHS)
-    c.add_argument("--out")
+    c.add_argument("--by", choices=("window", "match"), default="window")
+    c.add_argument("--groups", nargs="*")
+    c.add_argument("--folds")
+    c.add_argument("--out", required=True)
     c = sub.add_parser("fit")
-    c.add_argument("--crops", required=True)
+    c.add_argument("--crops", nargs="+", required=True)
     c.add_argument("--epochs", type=int, default=EPOCHS)
     c.add_argument("--out", required=True)
     c = sub.add_parser("apply")
@@ -309,7 +361,8 @@ def main():
     c.add_argument("--crops", required=True)
     c.add_argument("--out", required=True)
     args = ap.parse_args()
-    {"crops": cmd_crops, "cv": cmd_cv, "fit": cmd_fit, "apply": cmd_apply}[args.cmd](args)
+    {"crops": cmd_crops, "label": cmd_label, "cv": cmd_cv, "fit": cmd_fit,
+     "apply": cmd_apply}[args.cmd](args)
 
 
 if __name__ == "__main__":
