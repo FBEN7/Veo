@@ -1,0 +1,164 @@
+  st2_128058_1st_f030000: background pass, 2951 frames, 60 samples [26 s]
+  st2_128058_1st_f030000: 50 frames measured, 2881 decoded [323 s; coco 127 s, ball_heatmap.3000.pt 71 s, ball_v2.4000.pt 68 s]
+{
+ "windows": [
+  {
+   "window": "st2_128058_1st_f030000",
+   "passes": 7,
+   "actions": 21,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.0,
+    "feet share": null,
+    "action hit": 0.0,
+    "candidates per frame": {
+     "0.02": 1.1,
+     "0.05": 0.4,
+     "0.1": 0.26,
+     "0.15": 0.22,
+     "0.2": 0.22,
+     "0.3": 0.18,
+     "0.5": 0.16,
+     "0.7": 0.12
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.0,
+    "feet share": null,
+    "action hit": 0.0,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.98,
+     "0.15": 6.8,
+     "0.2": 4.92,
+     "0.3": 2.96,
+     "0.5": 1.6,
+     "0.7": 0.82
+    }
+   },
+   "ball_v2.4000.pt": {
+    "free-flight hit": 0.0,
+    "feet share": null,
+    "action hit": 0.0,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.5,
+     "0.15": 4.02,
+     "0.2": 2.68,
+     "0.3": 1.56,
+     "0.5": 0.82,
+     "0.7": 0.5
+    }
+   }
+  }
+ ],
+ "paired": {
+  "ball_heatmap.3000.pt": {
+   "passes": 7,
+   "ball_heatmap.3000.pt": 0.0,
+   "coco": 0.0,
+   "difference": 0.0,
+   "95% interval": [
+    0.0,
+    0.0
+   ]
+  },
+  "ball_v2.4000.pt": {
+   "passes": 7,
+   "ball_v2.4000.pt": 0.0,
+   "coco": 0.0,
+   "difference": 0.0,
+   "95% interval": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "ff-auto": {
+  "coco": {
+   "pooled": null,
+   "passes": 0,
+   "incomplete passes": 7,
+   "windows": {
+    "st2_128058_1st_f030000": null
+   },
+   "matches": {
+    "128058": null
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "pooled": null,
+   "passes": 0,
+   "incomplete passes": 7,
+   "windows": {
+    "st2_128058_1st_f030000": null
+   },
+   "matches": {
+    "128058": null
+   }
+  },
+  "ball_v2.4000.pt": {
+   "pooled": null,
+   "passes": 0,
+   "incomplete passes": 7,
+   "windows": {
+    "st2_128058_1st_f030000": null
+   },
+   "matches": {
+    "128058": null
+   }
+  }
+ },
+ "ff-auto paired": {
+  "ball_heatmap.3000.pt vs coco": null,
+  "ball_v2.4000.pt vs coco": null,
+  "ball_v2.4000.pt vs ball_heatmap.3000.pt": null,
+  "ball_v2.4000.pt vs coco (full background)": null
+ },
+ "placebo": {
+  "coco": {
+   "pre": null,
+   "pre frames": 0,
+   "pre not measured": 2,
+   "post": null,
+   "post frames": 0,
+   "post not measured": 7,
+   "windows": {
+    "st2_128058_1st_f030000": {
+     "pre": null,
+     "post": null
+    }
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "pre": null,
+   "pre frames": 0,
+   "pre not measured": 2,
+   "post": null,
+   "post frames": 0,
+   "post not measured": 7,
+   "windows": {
+    "st2_128058_1st_f030000": {
+     "pre": null,
+     "post": null
+    }
+   }
+  },
+  "ball_v2.4000.pt": {
+   "pre": null,
+   "pre frames": 0,
+   "pre not measured": 2,
+   "post": null,
+   "post frames": 0,
+   "post not measured": 7,
+   "windows": {
+    "st2_128058_1st_f030000": {
+     "pre": null,
+     "post": null
+    }
+   }
+  }
+ }
+}

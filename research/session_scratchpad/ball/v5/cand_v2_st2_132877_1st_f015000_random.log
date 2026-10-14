@@ -1,0 +1,57 @@
+  st2_132877_1st_f015000: background pass, 4451 frames, 90 samples [34 s]
+  st2_132877_1st_f015000: 50 frames measured, 4488 decoded [154 s; ball_v2.4000.pt 75 s]
+{
+ "windows": [
+  {
+   "window": "st2_132877_1st_f015000",
+   "passes": 19,
+   "actions": 54,
+   "random point action hit": 0.0,
+   "ball_v2.4000.pt": {
+    "free-flight hit": 0.0,
+    "feet share": null,
+    "action hit": 0.0,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.46,
+     "0.15": 4.56,
+     "0.2": 3.28,
+     "0.3": 1.98,
+     "0.5": 1.06,
+     "0.7": 0.66
+    }
+   }
+  }
+ ],
+ "ff-auto": {
+  "ball_v2.4000.pt": {
+   "pooled": null,
+   "passes": 0,
+   "incomplete passes": 19,
+   "windows": {
+    "st2_132877_1st_f015000": null
+   },
+   "matches": {
+    "132877": null
+   }
+  }
+ },
+ "ff-auto paired": {},
+ "placebo": {
+  "ball_v2.4000.pt": {
+   "pre": null,
+   "pre frames": 0,
+   "pre not measured": 18,
+   "post": 0.0,
+   "post frames": 1,
+   "post not measured": 17,
+   "windows": {
+    "st2_132877_1st_f015000": {
+     "pre": null,
+     "post": 0.0
+    }
+   }
+  }
+ }
+}
