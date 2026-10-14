@@ -1040,6 +1040,59 @@ of M2 and M10 hold 139 passes.
 - **V-new is spent.** A further test needs the test matches (M7, M9) or
   clicked labels.
 
+## Verified ball labels (step 1 of the ball plan)
+
+The aim is labels of where the ball is, judged rather than derived from the
+actions, to train a v3 detector and to test on M7 / M9. Files are in
+`.cache/soccertrack_v2/ball_verified/` (`A`: M6, `B`: the 14 other seen
+windows, `clf`: the tile classifier).
+
+- **Candidates** (`build_ball_verify.py`): at the measured frames of each
+  seen window, the positions proposed by v2 (top 2), v1, COCO, the tracker
+  and the pass line, merged within 6 px. Each is a tile with a 24 px box.
+- **Judging** (`label_ball_verify.py`, `spot_check_tiles.py`): blind judges
+  label each tile B (the match ball in play, centre in the box), B* (a ball
+  in or by a goal), S (a ball off the pitch or not in play) or N.
+  - **M6:** 2,403 tiles, two judges and a third on disagreements. The judges
+    agree on 97.4% (kappa 0.935), and judged no decoy the ball (0 of 56).
+    546 of 762 frames have a verified ball.
+- **A classifier in place of the judges** (`train_tile_classifier.py`): a
+  small CNN on the 64 px crop, its motion against t±2 and t±50, which
+  sources proposed it and where it is on the pitch. A tile is labelled
+  "B" at p ≥ 0.95 when it is its frame's top tile, "not" at p ≤ 0.1 or when
+  it is away from the top tile, and is left to a judge otherwise.
+- **Trained on M6 alone, it did not transfer.**
+  - **Spot check (100 tiles):** 46 / 50 of its "B" were the ball, and 4 / 50
+    of its "not".
+  - **300 random tiles of the 6 other matches, judged:** 39% were the ball.
+    Its "B" caught 26% of them, and 22% of its "not" were the ball
+    (weighted by window). The 50-tile spot check had underestimated this.
+  - **Why:** the tracker was not run for 4 of those matches, and on M6 most
+    balls carried its flag. 3 matches are also darker than M6.
+- **Retrained** on M6 plus 500 judged tiles of the 6 other matches.
+  - **The 500 tiles:** the spot check, plus 300 random and 100 the classifier
+    was unsure of. One judge labelled each tile; a second rechecked every
+    tile not labelled N, the unsure ones and 10% of the rest (250 of 255
+    agree), and a third decided the 5 disagreements.
+  - **Settings:** the tracker flag is dropped (it depends on which steps ran
+    on a window), and brightness augmentation is widened to 0.6-1.4.
+  - **One match held out at a time, on the random tiles:** agreement 0.89.
+    At p ≥ 0.95, 95% are the ball; at p ≤ 0.1, 6% are; 81% of tiles fall
+    in one of the two. Keeping the old settings gives the same within noise.
+  - **With M6 held out** (trained on the 500 tiles alone): precision 0.55.
+    Little data from other matches does not transfer.
+- **Auto-labels of the 14 windows** (`B/auto_labels_AB.parquet`): of 8,068
+  tiles, 2,525 are "B", 4,905 "not" and 638 left to a judge. 63% of
+  frames have an auto ball (M6, judged: 72%).
+- **Spot check of 100 fresh tiles** (two judges, a third on 3
+  disagreements): 50 / 50 of "B" are the ball, and 3 / 50 of "not".
+  - These windows are now training matches, so this measures label
+    quality, not transfer.
+  - 50 tiles of "not" are too few: the held-out figure (6%) is the better
+    estimate.
+- **Cost:** about 2M agent tokens for the judging of the 600 tiles of
+  the other matches.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
