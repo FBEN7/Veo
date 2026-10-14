@@ -44,6 +44,7 @@ SOURCES = ("v2", "v1", "coco", "T", "line")
 HI, LO = 0.95, 0.1
 ONE_BALL_PX = 24       # tiles within this of a frame's top tile (both axes) may be its ball
 EPOCHS, BATCH, LR, SEED = 25, 64, 1e-3, 0
+BRIGHT = (0.8, 1.2)    # brightness augmentation range
 
 
 # ---- Crops ---------------------------------------------------------------------------
@@ -141,7 +142,7 @@ def build(n_meta: int):
     return Net()
 
 
-def augment(x, rng):
+def augment(x, rng, bright=BRIGHT):
     """Flips (left-right; the pitch is not symmetric top-bottom in view,
     so no vertical flip), shifts of up to 3 px, brightness."""
     if rng.random() < 0.5:
@@ -149,15 +150,15 @@ def augment(x, rng):
     dx, dy = rng.integers(-3, 4, 2)
     x = np.roll(x, (dy, dx), (1, 2))
     x = x.copy()
-    x[:3] = np.clip(x[:3] * rng.uniform(0.8, 1.2), 0, 1)
+    x[:3] = np.clip(x[:3] * rng.uniform(*bright), 0, 1)
     return x
 
 
-def train(X, M, y, epochs=EPOCHS, seed=SEED, log=None):
+def train(X, M, y, epochs=EPOCHS, seed=SEED, log=None, bright=BRIGHT, threads=2):
     import torch
 
     torch.manual_seed(seed)
-    torch.set_num_threads(2)
+    torch.set_num_threads(threads)
     rng = np.random.default_rng(seed)
     net = build(M.shape[1])
     opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=1e-4)
@@ -170,7 +171,7 @@ def train(X, M, y, epochs=EPOCHS, seed=SEED, log=None):
         tot = 0.0
         for s in range(0, len(order), BATCH):
             b = order[s:s + BATCH]
-            xb = torch.from_numpy(np.stack([augment(X[i], rng) for i in b]))
+            xb = torch.from_numpy(np.stack([augment(X[i], rng, bright) for i in b]))
             mb, yb = torch.from_numpy(M[b]), torch.from_numpy(y[b].astype(np.float32))
             loss = lossf(net(xb, mb), yb)
             opt.zero_grad()
@@ -244,8 +245,10 @@ def cmd_crops(args):
     print(f"  {len(tiles)} tiles -> {args.out}")
 
 
-def _load(paths):
-    """Inputs, meta and table of one or several crop files, concatenated."""
+def _load(paths, drop=()):
+    """Inputs, meta and table of one or several crop files, concatenated;
+    the source flags in `drop` set to 0 (sources not run for every window,
+    e.g. the tracker, must not decide the label)."""
     Xs, Ms, ts = [], [], []
     for path in [paths] if isinstance(paths, (str, Path)) else paths:
         z = np.load(path, allow_pickle=False)
@@ -254,7 +257,10 @@ def _load(paths):
         Ms.append(z["meta"].astype(np.float32))
     t = pd.concat(ts, ignore_index=True)
     t["match"] = t.window.str.split("_").str[1]
-    return np.concatenate(Xs), np.concatenate(Ms), t
+    M = np.concatenate(Ms)
+    for s in drop:
+        M[:, SOURCES.index(s)] = 0.0
+    return np.concatenate(Xs), M, t
 
 
 def _uid(d: pd.DataFrame) -> pd.Series:
@@ -286,7 +292,7 @@ def cmd_cv(args):
     """Leave one group (window or match) out; each fold's predictions go to
     FOLDS/<group>.parquet and are reused when present (a restart loses at
     most the fold in progress); `--groups` runs only those folds."""
-    X, M, t = _load(args.crops)
+    X, M, t = _load(args.crops, args.drop_meta)
     y = t.ball.to_numpy(bool)
     folds = Path(args.folds or Path(args.out).with_suffix(".folds"))
     folds.mkdir(parents=True, exist_ok=True)
@@ -296,7 +302,8 @@ def cmd_cv(args):
         if f.exists():
             continue
         te = (t[args.by] == g).to_numpy()
-        net = train(X[~te], M[~te], y[~te], epochs=args.epochs)
+        net = train(X[~te], M[~te], y[~te], epochs=args.epochs, bright=args.bright,
+                    threads=args.threads)
         t[te].assign(p=predict(net, X[te], M[te])).to_parquet(f.with_suffix(".part"))
         f.with_suffix(".part").rename(f)
         print(f"  held out {g}: {scores(y[te], pd.read_parquet(f).p.to_numpy())}", flush=True)
@@ -304,7 +311,8 @@ def cmd_cv(args):
         return
     p = pd.concat([pd.read_parquet(folds / f"{g}.parquet") for g in groups])
     per = {g: scores(d.ball.to_numpy(bool), d.p.to_numpy()) for g, d in p.groupby(args.by)}
-    out = {"held out by": args.by, f"per {args.by}": per,
+    out = {"held out by": args.by, "drop meta": args.drop_meta, "bright": args.bright,
+           f"per {args.by}": per,
            "pooled": scores(p.ball.to_numpy(bool), p.p.to_numpy())}
     print(json.dumps(out["pooled"], indent=1))
     Path(args.out).write_text(json.dumps(out, indent=1))
@@ -314,9 +322,11 @@ def cmd_cv(args):
 def cmd_fit(args):
     import torch
 
-    X, M, t = _load(args.crops)
-    net = train(X, M, t.ball.to_numpy(bool), epochs=args.epochs)
+    X, M, t = _load(args.crops, args.drop_meta)
+    net = train(X, M, t.ball.to_numpy(bool), epochs=args.epochs, bright=args.bright,
+                threads=args.threads)
     torch.save({"state": net.state_dict(), "n_meta": M.shape[1], "hi": HI, "lo": LO,
+                "drop meta": list(args.drop_meta), "bright": list(args.bright),
                 "trained on": sorted(t.window.unique())}, args.out)
     print(f"  model -> {args.out}")
 
@@ -327,7 +337,7 @@ def cmd_apply(args):
     ck = torch.load(args.model, map_location="cpu")
     net = build(ck["n_meta"])
     net.load_state_dict(ck["state"])
-    X, M, t = _load(args.crops)
+    X, M, t = _load(args.crops, ck.get("drop meta", ()))
     p = predict(net, X, M)
     t = t.assign(p=p)
     t["auto"] = auto_labels(t, ck["hi"], ck["lo"])
@@ -348,6 +358,9 @@ def main():
     c = sub.add_parser("cv")
     c.add_argument("--crops", nargs="+", required=True)
     c.add_argument("--epochs", type=int, default=EPOCHS)
+    c.add_argument("--drop-meta", nargs="*", choices=SOURCES, default=[])
+    c.add_argument("--bright", nargs=2, type=float, default=list(BRIGHT))
+    c.add_argument("--threads", type=int, default=2)
     c.add_argument("--by", choices=("window", "match"), default="window")
     c.add_argument("--groups", nargs="*")
     c.add_argument("--folds")
@@ -355,6 +368,9 @@ def main():
     c = sub.add_parser("fit")
     c.add_argument("--crops", nargs="+", required=True)
     c.add_argument("--epochs", type=int, default=EPOCHS)
+    c.add_argument("--drop-meta", nargs="*", choices=SOURCES, default=[])
+    c.add_argument("--bright", nargs=2, type=float, default=list(BRIGHT))
+    c.add_argument("--threads", type=int, default=2)
     c.add_argument("--out", required=True)
     c = sub.add_parser("apply")
     c.add_argument("--model", required=True)
