@@ -219,10 +219,13 @@ def main_v2(args):
 
     from src import ball_heatmap as bh
 
-    if any(f"_{m}_" in f"_{args.window}_" for m in TEST_MATCHES):
+    from src.unseal import unsealed
+
+    if any(f"_{m}_" in f"_{args.window}_" and not unsealed(m, f"detect {args.window}")
+           for m in TEST_MATCHES):
         raise SystemExit(f"{args.window}: a test match is never opened")
     info = json.loads((DATA_DIR / "soccertrack_v2" / f"{args.window}.json").read_text())
-    if str(info["match"]) in TEST_MATCHES:
+    if str(info["match"]) in TEST_MATCHES and not unsealed(info["match"], "detect"):
         raise SystemExit(f"{args.window}: test match {info['match']} is never opened")
     try:
         bh.check_unseen(args.weights, info["match"], args.allow_seen)

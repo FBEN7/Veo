@@ -1230,6 +1230,35 @@ top-1 hit stays within 0.01 and the placebos pass.
   the rest unverified. Whether a frame should get no position when
   nothing is credible is a separate design question.
 
+## Protocol v5 part 2: the test on M7 / M9 (registered)
+
+Registered in `ball_verified/v5p2_registration.json` before any content of
+M7 or M9 was read. So far only their release files' sizes have been read.
+The registration holds the sha256 of every file used. `src/unseal.py` opens
+a test match only when given the registration's sha256 and while every
+frozen file is unchanged, and it logs each opening.
+
+- **Windows:** M7's first half and M9's second half, 3 minutes from
+  minute 20 of each, about 300 ball frames (the budget chosen).
+- **Compared:**
+  - v3P: v3 at every frame, painted-spot marks dropped, tracked at tau
+    0.10.
+  - Against v2's raw top-1 (H1) and, only if H1 holds, v1's (H2).
+  - v3 raw and COCO are described only.
+- **Ground truth:** fresh blind tiles from the five detectors' top-1,
+  merged with the tile at the mean of its sources, so no detector's peak
+  is the reference.
+  - One judge reads every tile. A second reads every tile not labelled N,
+    the unsure ones and 1 in 7 of the rest. A third decides
+    disagreements.
+  - The tile classifier is never used on test tiles.
+- **Test:** the top-1 within 12 px of the verified ball, on ball frames.
+  - A one-sided sign-flip test over 10-second blocks, at p < 0.025.
+  - The frame-level McNemar is reported alongside.
+  - A null result is reported as such.
+- **Power:** a gain of about 8 points would be detected; one of 4 points
+  only about half the time.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),

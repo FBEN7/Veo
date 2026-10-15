@@ -227,6 +227,7 @@ DRAWS = 4000
 FULL_BG = 15                # background samples with nothing clipped
 V2_TAU, TOP_K = 0.05, 8     # as detect_ball_heatmap.py --v2
 TEST_MATCHES = {"128057", "132831"}     # M7, M9: never opened
+from src.unseal import unsealed  # noqa: E402  (protocol v5 part 2 only)
 LEGACY = ("free-flight hit", "feet share", "action hit", "candidates per frame")
 
 
@@ -384,7 +385,7 @@ def ball_track(info: dict) -> pd.DataFrame:
 def window_data(window: str, seed: int = 0) -> dict:
     """Everything measuring a window needs besides the candidates."""
     info = json.loads((DATA_DIR / "soccertrack_v2" / f"{window}.json").read_text())
-    if str(info["match"]) in TEST_MATCHES:
+    if str(info["match"]) in TEST_MATCHES and not unsealed(info["match"], f"eval {window}"):
         raise ValueError(f"{window}: test match {info['match']} is never opened")
     gt = pd.read_parquet(DATA_DIR / "soccertrack_v2" / f"{window}_gt.parquet")
     return {"window": window, "info": info, "cal": st.calibration(info["match"]),
@@ -954,7 +955,7 @@ def track_source(path: str, params: dict | None = None, allow_partial: bool = Fa
             raise ValueError(f"{path}: one parquet for several windows; "
                              "put {window} in the path")
         info = json.loads((DATA_DIR / "soccertrack_v2" / f"{window}.json").read_text())
-        if str(info["match"]) in TEST_MATCHES:
+        if str(info["match"]) in TEST_MATCHES and not unsealed(info["match"], f"track {window}"):
             raise ValueError(f"{window}: test match {info['match']} is never opened")
         rows, side, per = track_parquet(path.replace("{window}", window), wanted,
                                         st.calibration(str(info["match"])), params,

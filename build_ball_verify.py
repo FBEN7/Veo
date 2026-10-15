@@ -44,6 +44,11 @@ from src.paths import DATA_DIR
 
 SOURCES = {"v2": "ball_v2.4000.pt", "v1": "ball_heatmap.3000.pt", "coco": "coco", "T": "T"}
 TOP = {"v2": 2, "v1": 1, "coco": 1, "T": 1}
+# Protocol v5 part 2 (M7 / M9): each detector's top-1 only, no pass-line
+# points, merged positions as the mean of their sources.
+SOURCES_V5 = {"P": "v3P", "C1": "ball_v2.4000.pt", "C2": "ball_heatmap.3000.pt",
+              "v3": "ball_v3b.1500.pt", "coco": "coco"}
+TOP_V5 = {k: 1 for k in SOURCES_V5}
 MERGE_PX = 6.0
 LINE_M = 3.0                 # a candidate this near the pass segment: no line point
 DECOY_PX, DECOY_PEOPLE = 30.0, 1.0
@@ -65,16 +70,23 @@ def seg_dist(g, a, b) -> float:
     return float(np.hypot(*(a + t * ab - g)))
 
 
-def merge(cands: list[dict], px: float = MERGE_PX) -> list[dict]:
+def merge(cands: list[dict], px: float = MERGE_PX, mean: bool = False) -> list[dict]:
     """Candidates of one frame within `px` of an earlier one become one
-    tile credited to each source (first one's position)."""
+    tile credited to each source (first one's position; with `mean`, the
+    mean of its sources' positions: protocol v5 part 2, so that no
+    detector's peak is the reference)."""
     out = []
     for c in cands:
         j = next((o for o in out if np.hypot(o["u"] - c["u"], o["v"] - c["v"]) <= px), None)
         if j is None:
-            out.append(dict(c, sources=list(c["sources"])))
+            out.append(dict(c, sources=list(c["sources"]), _pts=[(c["u"], c["v"])]))
         else:
             j["sources"] += [s for s in c["sources"] if s not in j["sources"]]
+            j["_pts"].append((c["u"], c["v"]))
+    for o in out:
+        pts = o.pop("_pts")
+        if mean:
+            o["u"], o["v"] = float(np.mean([p[0] for p in pts])), float(np.mean([p[1] for p in pts]))
     return out
 
 
@@ -103,7 +115,8 @@ def ground(u, v, size, cal):
     return st.image_to_pitch([[u, v + size / 2]], cal)[0]
 
 
-def window_rows(w: str, res: dict, wins, rng) -> list[dict]:
+def window_rows(w: str, res: dict, wins, rng, sources=None, top=None, line=True,
+                mean=False) -> list[dict]:
     """One row per measured frame of window w: its merged candidates."""
     from src.ball_heatmap import BALL_M, local_scale, pitch_to_image
 
@@ -111,18 +124,19 @@ def window_rows(w: str, res: dict, wins, rng) -> list[dict]:
     cal = d["cal"]
     kinds = frame_kinds(res["frames"])
     passes = {p["i"]: p for p in res["frames"]["passes"]}
-    have = {k: res[name]["candidates"] for k, name in SOURCES.items() if name in res}
+    sources, top = sources or SOURCES, top or TOP
+    have = {k: res[name]["candidates"] for k, name in sources.items() if name in res}
     frames = sorted(set().union(*[set(map(int, c)) for c in have.values()])) if have else []
     rows = []
     for f in frames:
         cands = []
         for k, c in have.items():
-            for r in (c.get(str(f)) or [])[:TOP[k]]:
+            for r in (c.get(str(f)) or [])[:top[k]]:
                 cands.append({"u": float(r[0]), "v": float(r[1]),
                               "size": float(r[3]) if len(r) > 3 else float("nan"),
                               "sources": [k], "kind": "candidate"})
         for kd in kinds.get(f, []):
-            if kd["kind"] != "pass":
+            if kd["kind"] != "pass" or not line:
                 continue
             p = passes[kd["pass"]]
             near = [c for c in cands
@@ -137,7 +151,7 @@ def window_rows(w: str, res: dict, wins, rng) -> list[dict]:
             if np.isfinite([ug, vg, size]).all():
                 cands.append({"u": float(ug), "v": float(vg - size / 2), "size": float(size),
                               "sources": ["line"], "kind": "line"})
-        cands = merge(cands)
+        cands = merge(cands, mean=mean)
         rng.shuffle(cands)
         if cands:
             rows.append({"window": w, "frame": f, "kinds": kinds.get(f, []),
@@ -246,20 +260,23 @@ def candidate_table(rows: list[dict]) -> "pd.DataFrame":
 
 
 def build(scores, out: Path, key_out: Path, rows_per_chunk: int, decoy_rows: int,
-          seed: int, windows=None, log=print, tiles_out=None) -> dict:
+          seed: int, windows=None, log=print, tiles_out=None, v5=False) -> dict:
     from ball_tiles import Windows
     from eval_ball_detector import load_scores
 
     merged, _ = load_scores(scores)
     ws = [w for w in sorted(merged) if windows is None or w in windows]
     for w in ws:
-        if any(f"_{m}_" in f"_{w}_" for m in TEST_MATCHES):
+        from src.unseal import unsealed
+
+        if any(f"_{m}_" in f"_{w}_" and not (v5 and unsealed(m, f"tiles {w}")) for m in TEST_MATCHES):
             raise SystemExit(f"{w}: a test match is never opened")
     rng = np.random.default_rng(seed)
     wins = Windows(merged)
     rows = []
     for w in ws:
-        rows += window_rows(w, merged[w], wins, rng)
+        rows += (window_rows(w, merged[w], wins, rng, SOURCES_V5, TOP_V5, line=False, mean=True)
+                 if v5 else window_rows(w, merged[w], wins, rng))
     if tiles_out:
         tab = candidate_table(rows)
         tab.to_parquet(tiles_out)
@@ -320,13 +337,15 @@ def main():
     ap.add_argument("--decoy-rows", type=int, default=4)
     ap.add_argument("--seed", type=int, default=5)
     ap.add_argument("--windows", nargs="*")
+    ap.add_argument("--v5", action="store_true",
+                    help="protocol v5 part 2's sources (SOURCES_V5, top-1, mean positions)")
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()
     if not args.out and not args.tiles_out:
         ap.error("--out or --tiles-out")
     out = Path(args.out or ".")
     build(args.scores, out, Path(args.key_out or f"{out}_key"), args.rows_per_chunk,
-          args.decoy_rows, args.seed, args.windows, tiles_out=args.tiles_out)
+          args.decoy_rows, args.seed, args.windows, tiles_out=args.tiles_out, v5=args.v5)
 
 
 def _check():

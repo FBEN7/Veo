@@ -51,7 +51,8 @@ def hit(rows, u: float, v: float, k: int = 1) -> bool:
     return any(abs(r[0] - u) <= HIT_PX and abs(r[1] - v) <= HIT_PX for r in rows[:k])
 
 
-def score(merged: dict, name: str, frames: pd.DataFrame, tiles: pd.DataFrame) -> dict:
+def score(merged: dict, name: str, frames: pd.DataFrame, tiles: pd.DataFrame,
+          split: str = "v2") -> dict:
     """Per-frame outcomes of one detector, and their summary."""
     recs = []
     judged = tiles[tiles.kind != "decoy"]
@@ -65,7 +66,7 @@ def score(merged: dict, name: str, frames: pd.DataFrame, tiles: pd.DataFrame) ->
         rec = {"window": f.window, "frame": int(f.frame), "status": f.status}
         if f.status == "ball":
             rec |= {"hit": hit(rows, f.u, f.v), "hit@4": hit(rows, f.u, f.v, TOP_K_TRACK),
-                    "v2 proposed": "v2" in str(f.sources_hit).split("+"), "no candidates": not rows}
+                    "v2 proposed": split in str(f.sources_hit).split("+"), "no candidates": not rows}
         else:
             if not rows:
                 rec["unknown"] = "none"
@@ -115,6 +116,30 @@ def paired(a: pd.DataFrame, b: pd.DataFrame) -> dict:
             "frames": int(len(m)), "blocks": int(len(blocks))}
 
 
+def cluster_test(a: pd.DataFrame, b: pd.DataFrame, block: int = 250, draws: int = 100_000,
+                 seed: int = SEED) -> dict:
+    """Protocol v5 part 2's primary test: a minus b on the ball frames, one-
+    sided, by sign-flipping the per-block sums of hit differences (10-second
+    blocks of a window: frames of one pass or action stay together). Also
+    the frame-level exact McNemar (one-sided) for information."""
+    from scipy.stats import binomtest
+
+    m = a[a.status == "ball"].merge(b[b.status == "ball"], on=["window", "frame"],
+                                    suffixes=("_a", "_b"))
+    d = m.hit_a.astype(int) - m.hit_b.astype(int)
+    sums = d.groupby(m.window + ":" + (m.frame // block).astype(str)).sum().to_numpy(float)
+    obs = float(sums.sum())
+    rng = np.random.default_rng(seed)
+    flips = rng.choice([-1.0, 1.0], size=(draws, len(sums))) @ sums
+    p = float((np.sum(flips >= obs) + 1) / (draws + 1))
+    ao, bo = int((m.hit_a & ~m.hit_b).sum()), int((~m.hit_a & m.hit_b).sum())
+    return {"frames": int(len(m)), "blocks": int(len(sums)), "a hit": round(float(m.hit_a.mean()), 4),
+            "b hit": round(float(m.hit_b.mean()), 4), "difference": round(obs / max(len(m), 1), 4),
+            "a only": ao, "b only": bo, "sign-flip p (one-sided)": round(p, 5),
+            "McNemar exact p (one-sided)": round(float(binomtest(ao, ao + bo, 0.5, "greater").pvalue), 5)
+            if ao + bo else None}
+
+
 def placebos(paths, names, windows=None) -> dict:
     import eval_ball_detector as ev
 
@@ -134,26 +159,33 @@ def main():
     ap.add_argument("--scores", nargs="+", required=True)
     ap.add_argument("--detectors", nargs="+", required=True)
     ap.add_argument("--reference", default="ball_v2.4000.pt")
-    ap.add_argument("--windows", nargs="+", help="score these M6 windows only")
+    ap.add_argument("--windows", nargs="+", help="score these windows only")
+    ap.add_argument("--labels", default=str(A), help="label_ball_verify.py's output dir")
+    ap.add_argument("--split-source", default="v2", help="split the hit by this source")
+    ap.add_argument("--test", nargs=2, metavar=("A", "B"), help="the cluster test of A > B")
     ap.add_argument("--no-placebo", action="store_true")
     ap.add_argument("--out")
     args = ap.parse_args()
-    frames = pd.read_parquet(A / "frames.parquet")
-    tiles = pd.read_parquet(A / "tiles.parquet")
+    labels = Path(args.labels)
+    frames = pd.read_parquet(labels / "frames.parquet")
+    tiles = pd.read_parquet(labels / "tiles.parquet")
     if args.windows:
         frames = frames[frames.window.isin(args.windows)]
-    if set(frames.match.astype(str)) & SEALED:
+    from src.unseal import unsealed
+
+    if any(not unsealed(m, "score") for m in set(frames.match.astype(str)) & SEALED):
         raise SystemExit("sealed match in the labels")
     merged, meta = ev.load_scores(args.scores)
-    if {str(r.get("match")) for r in merged.values()} & SEALED:
+    if any(not unsealed(m, "score") for m in {str(r.get("match")) for r in merged.values()} & SEALED):
         raise SystemExit("sealed match in the scores")
-    out, per = {"windows": sorted(set(frames.window)), "labels sha256": {f: sha256(A / f) for f in ("frames.parquet", "tiles.parquet")},
+    out, per = {"windows": sorted(set(frames.window)), "labels": str(labels),
+                "labels sha256": {f: sha256(labels / f) for f in ("frames.parquet", "tiles.parquet")},
                 "scorer sha256": sha256(__file__), "scores": [str(p) for p in args.scores],
                 "constants": {"HIT_PX": HIT_PX, "MERGE_PX": MERGE_PX, "TOP_K_TRACK": TOP_K_TRACK,
                               "BLOCK": BLOCK, "DRAWS": DRAWS, "SEED": SEED},
                 "detectors": {}}, {}
     for n in args.detectors:
-        s = score(merged, n, frames, tiles)
+        s = score(merged, n, frames, tiles, args.split_source)
         per[n] = s["frames"]
         out["detectors"][n] = s["summary"] | {"ckpt": meta.get(n, {}).get("ckpt sha256")}
     if not args.no_placebo:
@@ -162,6 +194,9 @@ def main():
     if args.reference in per:
         out["paired against " + args.reference] = {
             n: paired(per[n], per[args.reference]) for n in args.detectors if n != args.reference}
+    if args.test:
+        a, b = args.test
+        out["registered test"] = {"a": a, "b": b, **cluster_test(per[a], per[b])}
     print(json.dumps(out, indent=1))
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=1))
