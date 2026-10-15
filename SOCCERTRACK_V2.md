@@ -1157,6 +1157,41 @@ to M7 / M9 (part 2).
   negative (v2's landmark codes) is a candidate fix, but it would need a
   new, logged run.
 
+### Step 3: calibration and tracking with v3
+
+Registered before any dense v3 run (`v3_track_selection.json`).
+
+- **Calibration:** `calibrate_ball_heatmap.py` as for v2, on M6's second
+  half: a 0.905, b -2.068, ECE 0.024. Tau is 0.10 by the registered rule
+  (at most one candidate a frame on random frames; v2's is 0.25).
+- **Dense v3:** every frame of M6's two second-half windows (9,000
+  frames, about 2 hours on CPU in 750-frame chunks).
+- **Tracker:** the v4-r1 tracker as frozen (`src/ball_track.py`: top 4,
+  c_null 1, c_static 2, gap 6, fill speed 35 m/s, fallback), with v3's
+  tau, at stride 1. The gap of 6 frames stays valid there (< 7).
+- **Rule:** keep tracked v3 for M7 / M9 if its top-1 hit is within 0.01
+  of raw v3's and the placebos pass the guard.
+
+| M6 second half, 320 ball frames | top-1 is the ball | balls v2 did not propose (32) | placebo pre / post |
+|---|---|---|---|
+| **v3 tracked, stride 1** | **0.975** | 0.91 | 0.10 / 0.03 |
+| v3 tracked, stride 2 | 0.956 | 0.91 | 0.10 / 0.03 |
+| v3 raw | 0.947 | 0.72 | 0.10 / 0.03 |
+| v2 tracked, stride 2 (v4-r1) | 0.847 | 0.41 | 0.08 / 0.06 |
+| v2 raw | 0.819 | 0 | 0.10 / 0.06 |
+
+- **Chosen for protocol v5 part 2:** v3 tracked at stride 1
+  (`v3_track_decision.json`).
+- **Against raw v3:** +0.028 [+0.013, +0.048]. Tracking fixes 9 frames and
+  breaks none.
+- **Stride 1 against stride 2:** at stride 2 the odd frames are
+  interpolated or missed (47 misses on the measured frames).
+- **What tracking does not fix:** 9 of raw v3's 10 penalty-spot picks
+  on frames with no visible ball are still there. With no linked pick,
+  the fallback takes the raw top-1. It keeps the 3 balls only v3 found.
+- **Same caveats as step 2:** all of this is on M6, which was used for
+  every choice, so it is a diagnostic. The claim is for M7 / M9.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
