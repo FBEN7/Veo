@@ -1192,6 +1192,44 @@ Registered before any dense v3 run (`v3_track_selection.json`).
 - **Same caveats as step 2:** all of this is on M6, which was used for
   every choice, so it is a diagnostic. The claim is for M7 / M9.
 
+### Step 3b: the painted spots (`src/ball_spots.py`)
+
+The view is fixed, so the centre spot and the two penalty spots never
+move in the image. Each attempt was registered before it touched M6
+(`v3_spot_selection.json`). The rule: keep the filter if the tracked
+top-1 hit stays within 0.01 and the placebos pass.
+
+- **First attempt (registered, failed):** drop candidates within 0.75 m
+  of a spot as the calibration places it.
+  - The radius came from the 14 training windows: all 212 candidates
+    within 0.5 m of a spot are static, and none was judged the ball.
+  - On M6 it changed nothing. M6's calibration puts the far penalty spot
+    about 25 px (some 7 m on the far side) from the painted one, where
+    v3 fires. This was found by looking at M6's spot picks.
+- **Amendment 1 (kept):** find the painted spot from the window's own
+  candidates, with no labels, so it works the same at test time.
+  - Search within 60 px of each projected spot.
+  - A point is a mark when it holds a candidate on at least 5% of the
+    frames (9 s of 3 minutes; a ball in play never rests that long).
+  - Drop the candidates within 4 px of a mark.
+  - The constants come from the setting, not from M6's numbers.
+  - On M6 it finds the far penalty spot at (3099, 293) and the near one
+    (plus a second persistent mark near it).
+
+| M6 second half | tracked v3 | tracked v3, marks dropped |
+|---|---|---|
+| top-1 is the ball (320 ball frames) | 0.975 | 0.975 (no frame lost) |
+| picks on the penalty spot (the blind check's 10) | 9 | **0** |
+| balls only v3 found (3) | kept | kept |
+| placebo pre / post | 0.10 / 0.03 | 0.10 / 0.03 |
+
+- **Kept for protocol v5 part 2** (`v3_spot_decision.json`): v3b.1500,
+  dense at stride 1, marks dropped, tracked (v4-r1, tau 0.10).
+- **Still open:** the tracker's fallback always gives a position. On the
+  10 spot frames the pick moves elsewhere: 2 more on judged non-balls,
+  the rest unverified. Whether a frame should get no position when
+  nothing is credible is a separate design question.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),

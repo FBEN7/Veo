@@ -1,0 +1,1330 @@
+  st2_118578_2nd_f015000: 192 frames to measure (from saved candidates: coco, ball_heatmap.3000.pt, ball_v2.2500.pt, ball_v2.3250.pt, ball_v2.4000.pt, ball_v3b.1000.pt, ball_v3b.1500.pt, ball_v3b.2000.pt, v3Rm, v3T1, v3T1m)
+  st2_118578_2nd_f037500: 235 frames to measure (from saved candidates: coco, ball_heatmap.3000.pt, ball_v2.2500.pt, ball_v2.3250.pt, ball_v2.4000.pt, ball_v3b.1000.pt, ball_v3b.1500.pt, ball_v3b.2000.pt, v3Rm, v3T1, v3T1m)
+  st2_118578_2nd_f015000: v3T1: measured frames by source detected 134, interpolated 12, fallback 46, none 0 (0 past the last processed frame, 0 not covered); fills 146 of 163 pairs within the gap (17 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_118578_2nd_f015000: v3T1: dense top-1 = ball_v3b.1500.pt's top-1 at 192 of 192 shared frames
+  st2_118578_2nd_f015000: v3T1: dense top-1 = v3Rm's top-1 at 184 of 192 shared frames
+  st2_118578_2nd_f037500: v3T1: measured frames by source detected 188, interpolated 21, fallback 26, none 0 (0 past the last processed frame, 0 not covered); fills 190 of 222 pairs within the gap (32 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_118578_2nd_f037500: v3T1: dense top-1 = ball_v3b.1500.pt's top-1 at 235 of 235 shared frames
+  st2_118578_2nd_f037500: v3T1: dense top-1 = v3Rm's top-1 at 230 of 235 shared frames
+  st2_118578_2nd_f015000: v3T1m: measured frames by source detected 134, interpolated 12, fallback 46, none 0 (0 past the last processed frame, 0 not covered); fills 146 of 163 pairs within the gap (17 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_118578_2nd_f015000: v3T1m: dense top-1 = ball_v3b.1500.pt's top-1 at 184 of 192 shared frames
+  st2_118578_2nd_f015000: v3T1m: dense top-1 = v3Rm's top-1 at 192 of 192 shared frames
+  st2_118578_2nd_f037500: v3T1m: measured frames by source detected 188, interpolated 21, fallback 26, none 0 (0 past the last processed frame, 0 not covered); fills 190 of 222 pairs within the gap (32 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_118578_2nd_f037500: v3T1m: dense top-1 = ball_v3b.1500.pt's top-1 at 230 of 235 shared frames
+  st2_118578_2nd_f037500: v3T1m: dense top-1 = v3Rm's top-1 at 235 of 235 shared frames
+{
+ "windows": [
+  {
+   "window": "st2_118578_2nd_f015000",
+   "passes": 17,
+   "actions": 48,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.191,
+    "feet share": 0.029,
+    "action hit": 0.146,
+    "candidates per frame": {
+     "0.02": 5.38,
+     "0.05": 3.3,
+     "0.1": 1.84,
+     "0.15": 1.0,
+     "0.2": 0.64,
+     "0.3": 0.18,
+     "0.5": 0.08,
+     "0.7": 0.04
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.309,
+    "feet share": 0.147,
+    "action hit": 0.438,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 8.0,
+     "0.15": 7.58,
+     "0.2": 6.2,
+     "0.3": 3.76,
+     "0.5": 1.66,
+     "0.7": 0.92
+    }
+   },
+   "ball_v2.2500.pt": {
+    "free-flight hit": 0.221,
+    "feet share": 0.118,
+    "action hit": 0.333,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.24,
+     "0.15": 4.38,
+     "0.2": 2.62,
+     "0.3": 1.16,
+     "0.5": 0.32,
+     "0.7": 0.22
+    }
+   },
+   "ball_v2.3250.pt": {
+    "free-flight hit": 0.294,
+    "feet share": 0.074,
+    "action hit": 0.312,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.62,
+     "0.15": 4.68,
+     "0.2": 2.88,
+     "0.3": 1.08,
+     "0.5": 0.36,
+     "0.7": 0.26
+    }
+   },
+   "ball_v2.4000.pt": {
+    "free-flight hit": 0.294,
+    "feet share": 0.059,
+    "action hit": 0.333,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.8,
+     "0.15": 5.6,
+     "0.2": 3.2,
+     "0.3": 1.46,
+     "0.5": 0.52,
+     "0.7": 0.26
+    }
+   },
+   "ball_v3b.1000.pt": {
+    "free-flight hit": 0.324,
+    "feet share": 0.015,
+    "action hit": 0.417,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.62,
+     "0.15": 3.84,
+     "0.2": 2.26,
+     "0.3": 1.24,
+     "0.5": 0.5,
+     "0.7": 0.4
+    }
+   },
+   "ball_v3b.1500.pt": {
+    "free-flight hit": 0.338,
+    "feet share": 0.0,
+    "action hit": 0.417,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.82,
+     "0.15": 3.92,
+     "0.2": 2.56,
+     "0.3": 1.36,
+     "0.5": 0.62,
+     "0.7": 0.42
+    }
+   },
+   "ball_v3b.2000.pt": {
+    "free-flight hit": 0.324,
+    "feet share": 0.0,
+    "action hit": 0.396,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 5.74,
+     "0.15": 2.9,
+     "0.2": 1.88,
+     "0.3": 1.02,
+     "0.5": 0.52,
+     "0.7": 0.36
+    }
+   },
+   "v3Rm": {
+    "free-flight hit": 0.338,
+    "feet share": 0.0,
+    "action hit": 0.417,
+    "candidates per frame": {
+     "0.02": 7.04,
+     "0.05": 7.04,
+     "0.1": 5.9,
+     "0.15": 3.3,
+     "0.2": 2.16,
+     "0.3": 1.24,
+     "0.5": 0.62,
+     "0.7": 0.42
+    }
+   },
+   "v3T1": {
+    "free-flight hit": 0.338,
+    "feet share": 0.0,
+    "action hit": 0.458,
+    "candidates per frame": {
+     "0.02": 1.0,
+     "0.05": 1.0,
+     "0.1": 1.0,
+     "0.15": 1.0,
+     "0.2": 0.96,
+     "0.3": 0.82,
+     "0.5": 0.6,
+     "0.7": 0.42
+    }
+   },
+   "v3T1m": {
+    "free-flight hit": 0.338,
+    "feet share": 0.0,
+    "action hit": 0.458,
+    "candidates per frame": {
+     "0.02": 1.0,
+     "0.05": 1.0,
+     "0.1": 1.0,
+     "0.15": 0.96,
+     "0.2": 0.9,
+     "0.3": 0.8,
+     "0.5": 0.6,
+     "0.7": 0.42
+    }
+   }
+  },
+  {
+   "window": "st2_118578_2nd_f037500",
+   "passes": 20,
+   "actions": 65,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.287,
+    "feet share": 0.026,
+    "action hit": 0.138,
+    "candidates per frame": {
+     "0.02": 1.86,
+     "0.05": 0.94,
+     "0.1": 0.56,
+     "0.15": 0.4,
+     "0.2": 0.4,
+     "0.3": 0.28,
+     "0.5": 0.14,
+     "0.7": 0.02
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.275,
+    "feet share": 0.163,
+    "action hit": 0.508,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 8.0,
+     "0.15": 7.7,
+     "0.2": 6.62,
+     "0.3": 4.56,
+     "0.5": 2.68,
+     "0.7": 1.52
+    }
+   },
+   "ball_v2.2500.pt": {
+    "free-flight hit": 0.35,
+    "feet share": 0.087,
+    "action hit": 0.4,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.36,
+     "0.15": 5.3,
+     "0.2": 3.44,
+     "0.3": 1.76,
+     "0.5": 0.52,
+     "0.7": 0.28
+    }
+   },
+   "ball_v2.3250.pt": {
+    "free-flight hit": 0.325,
+    "feet share": 0.075,
+    "action hit": 0.462,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.34,
+     "0.15": 5.14,
+     "0.2": 3.38,
+     "0.3": 1.74,
+     "0.5": 0.7,
+     "0.7": 0.36
+    }
+   },
+   "ball_v2.4000.pt": {
+    "free-flight hit": 0.338,
+    "feet share": 0.075,
+    "action hit": 0.415,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.72,
+     "0.15": 5.82,
+     "0.2": 3.84,
+     "0.3": 2.16,
+     "0.5": 0.78,
+     "0.7": 0.42
+    }
+   },
+   "ball_v3b.1000.pt": {
+    "free-flight hit": 0.4,
+    "feet share": 0.037,
+    "action hit": 0.477,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.88,
+     "0.15": 4.32,
+     "0.2": 2.76,
+     "0.3": 1.68,
+     "0.5": 0.88,
+     "0.7": 0.7
+    }
+   },
+   "ball_v3b.1500.pt": {
+    "free-flight hit": 0.375,
+    "feet share": 0.025,
+    "action hit": 0.492,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.28,
+     "0.15": 4.76,
+     "0.2": 3.3,
+     "0.3": 1.82,
+     "0.5": 0.94,
+     "0.7": 0.74
+    }
+   },
+   "ball_v3b.2000.pt": {
+    "free-flight hit": 0.362,
+    "feet share": 0.037,
+    "action hit": 0.462,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.12,
+     "0.15": 3.68,
+     "0.2": 2.52,
+     "0.3": 1.42,
+     "0.5": 0.8,
+     "0.7": 0.68
+    }
+   },
+   "v3Rm": {
+    "free-flight hit": 0.388,
+    "feet share": 0.025,
+    "action hit": 0.492,
+    "candidates per frame": {
+     "0.02": 7.1,
+     "0.05": 7.1,
+     "0.1": 6.4,
+     "0.15": 4.12,
+     "0.2": 2.9,
+     "0.3": 1.78,
+     "0.5": 0.94,
+     "0.7": 0.74
+    }
+   },
+   "v3T1": {
+    "free-flight hit": 0.425,
+    "feet share": 0.025,
+    "action hit": 0.508,
+    "candidates per frame": {
+     "0.02": 1.0,
+     "0.05": 1.0,
+     "0.1": 1.0,
+     "0.15": 1.0,
+     "0.2": 0.96,
+     "0.3": 0.94,
+     "0.5": 0.86,
+     "0.7": 0.72
+    }
+   },
+   "v3T1m": {
+    "free-flight hit": 0.438,
+    "feet share": 0.025,
+    "action hit": 0.508,
+    "candidates per frame": {
+     "0.02": 1.0,
+     "0.05": 1.0,
+     "0.1": 1.0,
+     "0.15": 0.98,
+     "0.2": 0.96,
+     "0.3": 0.94,
+     "0.5": 0.86,
+     "0.7": 0.72
+    }
+   }
+  }
+ ],
+ "paired": {
+  "ball_heatmap.3000.pt": {
+   "passes": 37,
+   "ball_heatmap.3000.pt": 0.291,
+   "coco": 0.243,
+   "difference": 0.047,
+   "95% interval": [
+    -0.054,
+    0.149
+   ]
+  },
+  "ball_v2.2500.pt": {
+   "passes": 37,
+   "ball_v2.2500.pt": 0.291,
+   "coco": 0.243,
+   "difference": 0.047,
+   "95% interval": [
+    -0.047,
+    0.149
+   ]
+  },
+  "ball_v2.3250.pt": {
+   "passes": 37,
+   "ball_v2.3250.pt": 0.311,
+   "coco": 0.243,
+   "difference": 0.068,
+   "95% interval": [
+    -0.027,
+    0.162
+   ]
+  },
+  "ball_v2.4000.pt": {
+   "passes": 37,
+   "ball_v2.4000.pt": 0.318,
+   "coco": 0.243,
+   "difference": 0.074,
+   "95% interval": [
+    -0.02,
+    0.176
+   ]
+  },
+  "ball_v3b.1000.pt": {
+   "passes": 37,
+   "ball_v3b.1000.pt": 0.365,
+   "coco": 0.243,
+   "difference": 0.122,
+   "95% interval": [
+    0.034,
+    0.223
+   ]
+  },
+  "ball_v3b.1500.pt": {
+   "passes": 37,
+   "ball_v3b.1500.pt": 0.358,
+   "coco": 0.243,
+   "difference": 0.115,
+   "95% interval": [
+    0.02,
+    0.216
+   ]
+  },
+  "ball_v3b.2000.pt": {
+   "passes": 37,
+   "ball_v3b.2000.pt": 0.345,
+   "coco": 0.243,
+   "difference": 0.101,
+   "95% interval": [
+    0.007,
+    0.209
+   ]
+  },
+  "v3Rm": {
+   "passes": 37,
+   "v3Rm": 0.365,
+   "coco": 0.243,
+   "difference": 0.122,
+   "95% interval": [
+    0.034,
+    0.23
+   ]
+  },
+  "v3T1": {
+   "passes": 37,
+   "v3T1": 0.385,
+   "coco": 0.243,
+   "difference": 0.142,
+   "95% interval": [
+    0.054,
+    0.236
+   ]
+  },
+  "v3T1m": {
+   "passes": 37,
+   "v3T1m": 0.392,
+   "coco": 0.243,
+   "difference": 0.149,
+   "95% interval": [
+    0.068,
+    0.243
+   ]
+  }
+ },
+ "ff-auto": {
+  "coco": {
+   "pooled": 0.5,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.382,
+    "st2_118578_2nd_f037500": 0.6
+   },
+   "matches": {
+    "118578": 0.5
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "pooled": 0.622,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.588,
+    "st2_118578_2nd_f037500": 0.65
+   },
+   "matches": {
+    "118578": 0.622
+   }
+  },
+  "ball_v2.2500.pt": {
+   "pooled": 0.635,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.529,
+    "st2_118578_2nd_f037500": 0.725
+   },
+   "matches": {
+    "118578": 0.635
+   }
+  },
+  "ball_v2.3250.pt": {
+   "pooled": 0.622,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.559,
+    "st2_118578_2nd_f037500": 0.675
+   },
+   "matches": {
+    "118578": 0.622
+   }
+  },
+  "ball_v2.4000.pt": {
+   "pooled": 0.642,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.588,
+    "st2_118578_2nd_f037500": 0.688
+   },
+   "matches": {
+    "118578": 0.642
+   }
+  },
+  "ball_v3b.1000.pt": {
+   "pooled": 0.743,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.662,
+    "st2_118578_2nd_f037500": 0.812
+   },
+   "matches": {
+    "118578": 0.743
+   }
+  },
+  "ball_v3b.1500.pt": {
+   "pooled": 0.75,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.691,
+    "st2_118578_2nd_f037500": 0.8
+   },
+   "matches": {
+    "118578": 0.75
+   }
+  },
+  "ball_v3b.2000.pt": {
+   "pooled": 0.736,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.676,
+    "st2_118578_2nd_f037500": 0.787
+   },
+   "matches": {
+    "118578": 0.736
+   }
+  },
+  "v3Rm": {
+   "pooled": 0.757,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.691,
+    "st2_118578_2nd_f037500": 0.812
+   },
+   "matches": {
+    "118578": 0.757
+   }
+  },
+  "v3T1": {
+   "pooled": 0.818,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.75,
+    "st2_118578_2nd_f037500": 0.875
+   },
+   "matches": {
+    "118578": 0.818
+   }
+  },
+  "v3T1m": {
+   "pooled": 0.824,
+   "passes": 37,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": 0.75,
+    "st2_118578_2nd_f037500": 0.887
+   },
+   "matches": {
+    "118578": 0.824
+   }
+  }
+ },
+ "ff-auto paired": {
+  "ball_heatmap.3000.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_heatmap.3000.pt": 0.622,
+   "coco": 0.5,
+   "difference": 0.122,
+   "2.5%": 0.049,
+   "97.5%": 0.209,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_heatmap.3000.pt": 0.622,
+     "coco": 0.5,
+     "difference": 0.122
+    }
+   }
+  },
+  "ball_v2.2500.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v2.2500.pt": 0.635,
+   "coco": 0.5,
+   "difference": 0.135,
+   "2.5%": -0.007,
+   "97.5%": 0.244,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v2.2500.pt": 0.635,
+     "coco": 0.5,
+     "difference": 0.135
+    }
+   }
+  },
+  "ball_v2.3250.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v2.3250.pt": 0.622,
+   "coco": 0.5,
+   "difference": 0.122,
+   "2.5%": -0.023,
+   "97.5%": 0.245,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v2.3250.pt": 0.622,
+     "coco": 0.5,
+     "difference": 0.122
+    }
+   }
+  },
+  "ball_v2.4000.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v2.4000.pt": 0.642,
+   "coco": 0.5,
+   "difference": 0.142,
+   "2.5%": 0.008,
+   "97.5%": 0.272,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v2.4000.pt": 0.642,
+     "coco": 0.5,
+     "difference": 0.142
+    }
+   }
+  },
+  "ball_v3b.1000.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v3b.1000.pt": 0.743,
+   "coco": 0.5,
+   "difference": 0.243,
+   "2.5%": 0.16,
+   "97.5%": 0.323,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v3b.1000.pt": 0.743,
+     "coco": 0.5,
+     "difference": 0.243
+    }
+   }
+  },
+  "ball_v3b.1500.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v3b.1500.pt": 0.75,
+   "coco": 0.5,
+   "difference": 0.25,
+   "2.5%": 0.158,
+   "97.5%": 0.345,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v3b.1500.pt": 0.75,
+     "coco": 0.5,
+     "difference": 0.25
+    }
+   }
+  },
+  "ball_v3b.2000.pt vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v3b.2000.pt": 0.736,
+   "coco": 0.5,
+   "difference": 0.236,
+   "2.5%": 0.157,
+   "97.5%": 0.323,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v3b.2000.pt": 0.736,
+     "coco": 0.5,
+     "difference": 0.236
+    }
+   }
+  },
+  "v3Rm vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "v3Rm": 0.757,
+   "coco": 0.5,
+   "difference": 0.257,
+   "2.5%": 0.164,
+   "97.5%": 0.348,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3Rm": 0.757,
+     "coco": 0.5,
+     "difference": 0.257
+    }
+   }
+  },
+  "v3T1 vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "v3T1": 0.818,
+   "coco": 0.5,
+   "difference": 0.318,
+   "2.5%": 0.207,
+   "97.5%": 0.424,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3T1": 0.818,
+     "coco": 0.5,
+     "difference": 0.318
+    }
+   }
+  },
+  "v3T1m vs coco": {
+   "passes": 37,
+   "blocks": 6,
+   "v3T1m": 0.824,
+   "coco": 0.5,
+   "difference": 0.324,
+   "2.5%": 0.214,
+   "97.5%": 0.431,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3T1m": 0.824,
+     "coco": 0.5,
+     "difference": 0.324
+    }
+   }
+  },
+  "ball_v2.2500.pt vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v2.2500.pt": 0.635,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.014,
+   "2.5%": -0.092,
+   "97.5%": 0.103,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v2.2500.pt": 0.635,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.014
+    }
+   }
+  },
+  "ball_v2.3250.pt vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v2.3250.pt": 0.622,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.0,
+   "2.5%": -0.094,
+   "97.5%": 0.077,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v2.3250.pt": 0.622,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.0
+    }
+   }
+  },
+  "ball_v2.4000.pt vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v2.4000.pt": 0.642,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.02,
+   "2.5%": -0.061,
+   "97.5%": 0.087,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v2.4000.pt": 0.642,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.02
+    }
+   }
+  },
+  "ball_v3b.1000.pt vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v3b.1000.pt": 0.743,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.122,
+   "2.5%": 0.062,
+   "97.5%": 0.194,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v3b.1000.pt": 0.743,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.122
+    }
+   }
+  },
+  "ball_v3b.1500.pt vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v3b.1500.pt": 0.75,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.128,
+   "2.5%": 0.073,
+   "97.5%": 0.183,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v3b.1500.pt": 0.75,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.128
+    }
+   }
+  },
+  "ball_v3b.2000.pt vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "ball_v3b.2000.pt": 0.736,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.115,
+   "2.5%": 0.069,
+   "97.5%": 0.162,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "ball_v3b.2000.pt": 0.736,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.115
+    }
+   }
+  },
+  "v3Rm vs ball_heatmap.3000.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "v3Rm": 0.757,
+   "ball_heatmap.3000.pt": 0.622,
+   "difference": 0.135,
+   "2.5%": 0.074,
+   "97.5%": 0.194,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3Rm": 0.757,
+     "ball_heatmap.3000.pt": 0.622,
+     "difference": 0.135
+    }
+   }
+  },
+  "v3T1 vs ball_v3b.1500.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "v3T1": 0.818,
+   "ball_v3b.1500.pt": 0.75,
+   "difference": 0.068,
+   "2.5%": 0.029,
+   "97.5%": 0.125,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3T1": 0.818,
+     "ball_v3b.1500.pt": 0.75,
+     "difference": 0.068
+    }
+   }
+  },
+  "v3T1 vs v3Rm": {
+   "passes": 37,
+   "blocks": 6,
+   "v3T1": 0.818,
+   "v3Rm": 0.757,
+   "difference": 0.061,
+   "2.5%": 0.024,
+   "97.5%": 0.121,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3T1": 0.818,
+     "v3Rm": 0.757,
+     "difference": 0.061
+    }
+   }
+  },
+  "v3T1m vs ball_v3b.1500.pt": {
+   "passes": 37,
+   "blocks": 6,
+   "v3T1m": 0.824,
+   "ball_v3b.1500.pt": 0.75,
+   "difference": 0.074,
+   "2.5%": 0.033,
+   "97.5%": 0.136,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3T1m": 0.824,
+     "ball_v3b.1500.pt": 0.75,
+     "difference": 0.074
+    }
+   }
+  },
+  "v3T1m vs v3Rm": {
+   "passes": 37,
+   "blocks": 6,
+   "v3T1m": 0.824,
+   "v3Rm": 0.757,
+   "difference": 0.068,
+   "2.5%": 0.029,
+   "97.5%": 0.125,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 37,
+     "v3T1m": 0.824,
+     "v3Rm": 0.757,
+     "difference": 0.068
+    }
+   }
+  },
+  "ball_v2.2500.pt vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "ball_v2.2500.pt": 0.625,
+   "coco": 0.461,
+   "difference": 0.164,
+   "2.5%": -0.01,
+   "97.5%": 0.308,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "ball_v2.2500.pt": 0.625,
+     "coco": 0.461,
+     "difference": 0.164
+    }
+   }
+  },
+  "ball_v2.3250.pt vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "ball_v2.3250.pt": 0.609,
+   "coco": 0.461,
+   "difference": 0.148,
+   "2.5%": -0.034,
+   "97.5%": 0.298,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "ball_v2.3250.pt": 0.609,
+     "coco": 0.461,
+     "difference": 0.148
+    }
+   }
+  },
+  "ball_v2.4000.pt vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "ball_v2.4000.pt": 0.633,
+   "coco": 0.461,
+   "difference": 0.172,
+   "2.5%": 0.0,
+   "97.5%": 0.314,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "ball_v2.4000.pt": 0.633,
+     "coco": 0.461,
+     "difference": 0.172
+    }
+   }
+  },
+  "ball_v3b.1000.pt vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "ball_v3b.1000.pt": 0.727,
+   "coco": 0.461,
+   "difference": 0.266,
+   "2.5%": 0.174,
+   "97.5%": 0.347,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "ball_v3b.1000.pt": 0.727,
+     "coco": 0.461,
+     "difference": 0.266
+    }
+   }
+  },
+  "ball_v3b.1500.pt vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "ball_v3b.1500.pt": 0.75,
+   "coco": 0.461,
+   "difference": 0.289,
+   "2.5%": 0.174,
+   "97.5%": 0.391,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "ball_v3b.1500.pt": 0.75,
+     "coco": 0.461,
+     "difference": 0.289
+    }
+   }
+  },
+  "ball_v3b.2000.pt vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "ball_v3b.2000.pt": 0.734,
+   "coco": 0.461,
+   "difference": 0.273,
+   "2.5%": 0.181,
+   "97.5%": 0.351,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "ball_v3b.2000.pt": 0.734,
+     "coco": 0.461,
+     "difference": 0.273
+    }
+   }
+  },
+  "v3Rm vs coco (full background)": {
+   "passes": 32,
+   "blocks": 6,
+   "v3Rm": 0.758,
+   "coco": 0.461,
+   "difference": 0.297,
+   "2.5%": 0.181,
+   "97.5%": 0.393,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "118578": {
+     "passes": 32,
+     "v3Rm": 0.758,
+     "coco": 0.461,
+     "difference": 0.297
+    }
+   }
+  }
+ },
+ "placebo": {
+  "coco": {
+   "pre": 0.025,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.0
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.038,
+     "post": 0.056
+    }
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.0,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.0
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  },
+  "ball_v2.2500.pt": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.094,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.111
+    }
+   }
+  },
+  "ball_v2.3250.pt": {
+   "pre": 0.125,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.062,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.071,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.056
+    }
+   }
+  },
+  "ball_v2.4000.pt": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.062,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.056
+    }
+   }
+  },
+  "ball_v3b.1000.pt": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  },
+  "ball_v3b.1500.pt": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  },
+  "ball_v3b.2000.pt": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  },
+  "v3Rm": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  },
+  "v3T1": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  },
+  "v3T1m": {
+   "pre": 0.1,
+   "pre frames": 40,
+   "pre not measured": 0,
+   "post": 0.031,
+   "post frames": 32,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f015000": {
+     "pre": 0.0,
+     "post": 0.071
+    },
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.0
+    }
+   }
+  }
+ }
+}
