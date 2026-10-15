@@ -1,0 +1,177 @@
+  st2_118578_2nd_f037500: background pass, 4451 frames, 90 samples [38 s]
+  st2_118578_2nd_f037500: 235 frames measured, 4493 decoded [845 s; ball_v3a.1000.pt 195 s, ball_v3a.1500.pt 193 s, ball_v3a.2000.pt 192 s, ball_v2.4000.pt 191 s]
+{
+ "windows": [
+  {
+   "window": "st2_118578_2nd_f037500",
+   "passes": 20,
+   "actions": 65,
+   "random point action hit": 0.0,
+   "ball_v3a.1000.pt": {
+    "free-flight hit": 0.375,
+    "feet share": 0.037,
+    "action hit": 0.431,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 6.1,
+     "0.15": 4.12,
+     "0.2": 2.72,
+     "0.3": 1.72,
+     "0.5": 1.06,
+     "0.7": 0.6
+    }
+   },
+   "ball_v3a.1500.pt": {
+    "free-flight hit": 0.4,
+    "feet share": 0.025,
+    "action hit": 0.4,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 5.6,
+     "0.15": 3.56,
+     "0.2": 2.68,
+     "0.3": 1.68,
+     "0.5": 1.06,
+     "0.7": 0.6
+    }
+   },
+   "ball_v3a.2000.pt": {
+    "free-flight hit": 0.412,
+    "feet share": 0.025,
+    "action hit": 0.415,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 5.2,
+     "0.15": 3.04,
+     "0.2": 2.2,
+     "0.3": 1.44,
+     "0.5": 0.88,
+     "0.7": 0.54
+    }
+   },
+   "ball_v2.4000.pt": {
+    "free-flight hit": 0.338,
+    "feet share": 0.075,
+    "action hit": 0.415,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 7.72,
+     "0.15": 5.82,
+     "0.2": 3.84,
+     "0.3": 2.16,
+     "0.5": 0.78,
+     "0.7": 0.42
+    }
+   }
+  }
+ ],
+ "ff-auto": {
+  "ball_v3a.1000.pt": {
+   "pooled": 0.8,
+   "passes": 20,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": 0.8
+   },
+   "matches": {
+    "118578": 0.8
+   }
+  },
+  "ball_v3a.1500.pt": {
+   "pooled": 0.8,
+   "passes": 20,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": 0.8
+   },
+   "matches": {
+    "118578": 0.8
+   }
+  },
+  "ball_v3a.2000.pt": {
+   "pooled": 0.8,
+   "passes": 20,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": 0.8
+   },
+   "matches": {
+    "118578": 0.8
+   }
+  },
+  "ball_v2.4000.pt": {
+   "pooled": 0.688,
+   "passes": 20,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": 0.688
+   },
+   "matches": {
+    "118578": 0.688
+   }
+  }
+ },
+ "ff-auto paired": {},
+ "placebo": {
+  "ball_v3a.1000.pt": {
+   "pre": 0.154,
+   "pre frames": 26,
+   "pre not measured": 0,
+   "post": 0.056,
+   "post frames": 18,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.056
+    }
+   }
+  },
+  "ball_v3a.1500.pt": {
+   "pre": 0.154,
+   "pre frames": 26,
+   "pre not measured": 0,
+   "post": 0.056,
+   "post frames": 18,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.056
+    }
+   }
+  },
+  "ball_v3a.2000.pt": {
+   "pre": 0.154,
+   "pre frames": 26,
+   "pre not measured": 0,
+   "post": 0.111,
+   "post frames": 18,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.111
+    }
+   }
+  },
+  "ball_v2.4000.pt": {
+   "pre": 0.154,
+   "pre frames": 26,
+   "pre not measured": 0,
+   "post": 0.056,
+   "post frames": 18,
+   "post not measured": 0,
+   "windows": {
+    "st2_118578_2nd_f037500": {
+     "pre": 0.154,
+     "post": 0.056
+    }
+   }
+  }
+ }
+}

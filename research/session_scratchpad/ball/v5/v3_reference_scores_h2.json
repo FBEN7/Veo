@@ -1,0 +1,128 @@
+{
+ "windows": [
+  "st2_118578_2nd_f015000",
+  "st2_118578_2nd_f037500"
+ ],
+ "labels sha256": {
+  "frames.parquet": "f72764d9cead65bdcf26e5f0922a31cd7aebbd805e6bc405a539c678b5bbd52e",
+  "tiles.parquet": "b4eaf8df8a55c3ff4c4ae5d1e5965e596e11a3607641c51a00f5fc36917a1881"
+ },
+ "scorer sha256": "66069c1b36ef6ae28e93d2c373891fe513a5b729b1e17c772722f285d526ea7e",
+ "scores": [
+  "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/U_a.json",
+  "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/U_b.json"
+ ],
+ "constants": {
+  "HIT_PX": 12.0,
+  "MERGE_PX": 6.0,
+  "TOP_K_TRACK": 4,
+  "BLOCK": 1500,
+  "DRAWS": 4000,
+  "SEED": 0
+ },
+ "detectors": {
+  "ball_v2.4000.pt": {
+   "ball frames": 320,
+   "primary (top-1 hit)": 0.8187,
+   "hit@4": 0.95,
+   "empty top-1 on ball frames": 0,
+   "primary, ball proposed by v2": 0.9097,
+   "primary, ball not proposed by v2": 0.0,
+   "ball frames not proposed by v2": 32,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.8346,
+    "st2_118578_2nd_f037500": 0.8075
+   },
+   "unknown frames": 105,
+   "unknown: top-1": {
+    "confirmed false": 105
+   },
+   "ckpt": "31f9a5eb567bfc26ed71967b993503159fabc8577257efcbc09782133d86c965",
+   "placebo": {
+    "pre": 0.1,
+    "pre frames": 40,
+    "pre not measured": 0,
+    "post": 0.062,
+    "post frames": 32,
+    "post not measured": 0
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "ball frames": 320,
+   "primary (top-1 hit)": 0.8562,
+   "hit@4": 0.9656,
+   "empty top-1 on ball frames": 0,
+   "primary, ball proposed by v2": 0.8854,
+   "primary, ball not proposed by v2": 0.5938,
+   "ball frames not proposed by v2": 32,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.8872,
+    "st2_118578_2nd_f037500": 0.8342
+   },
+   "unknown frames": 105,
+   "unknown: top-1": {
+    "confirmed false": 105
+   },
+   "ckpt": null,
+   "placebo": {
+    "pre": 0.1,
+    "pre frames": 40,
+    "pre not measured": 0,
+    "post": 0.0,
+    "post frames": 32,
+    "post not measured": 0
+   }
+  },
+  "coco": {
+   "ball frames": 320,
+   "primary (top-1 hit)": 0.5125,
+   "hit@4": 0.6438,
+   "empty top-1 on ball frames": 11,
+   "primary, ball proposed by v2": 0.5278,
+   "primary, ball not proposed by v2": 0.375,
+   "ball frames not proposed by v2": 32,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.4135,
+    "st2_118578_2nd_f037500": 0.5829
+   },
+   "unknown frames": 105,
+   "unknown: top-1": {
+    "confirmed false": 98,
+    "none": 7
+   },
+   "ckpt": null,
+   "placebo": {
+    "pre": 0.025,
+    "pre frames": 40,
+    "pre not measured": 0,
+    "post": 0.031,
+    "post frames": 32,
+    "post not measured": 0
+   }
+  }
+ },
+ "paired against ball_v2.4000.pt": {
+  "ball_heatmap.3000.pt": {
+   "difference": 0.0375,
+   "interval 95%": [
+    -0.0153,
+    0.0817
+   ],
+   "a only": 33,
+   "b only": 21,
+   "frames": 320,
+   "blocks": 6
+  },
+  "coco": {
+   "difference": -0.3063,
+   "interval 95%": [
+    -0.4167,
+    -0.2125
+   ],
+   "a only": 25,
+   "b only": 123,
+   "frames": 320,
+   "blocks": 6
+  }
+ }
+}
