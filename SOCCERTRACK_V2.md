@@ -1093,6 +1093,70 @@ windows, `clf`: the tile classifier).
 - **Cost:** about 2M agent tokens for the judging of the 600 tiles of
   the other matches.
 
+## Ball detector v3 (protocol v5, part 1)
+
+v2's architecture fine-tuned on the verified labels. How the checkpoint
+would be chosen was committed before any training
+(`ball_verified/v3_selection.json`, with amendment 1). The claim is left
+to M7 / M9 (part 2).
+
+- **Data** (`build_verified_strips.py`): the 14 B windows of M2, M3, M4,
+  M5, M8 and M10, cut from the window videos.
+  - **Ball strips:** 3 crops per frame with a located ball, 5,815 in all.
+    The ball's 24 px box is a footprint bag with a 0 ring to 40 px.
+  - **Negative strips:** 861 crops on judged N tiles, or on confident
+    "not" tiles when the frame's ball is elsewhere.
+  - **Codes:** -3 on judged N boxes, 0 near spare, static, COCO-proposed
+    or unsure tiles, and -1 elsewhere only when the ball is located.
+  - **v2's stream strips:** 20,738, less the 602 inside B windows.
+  - **Refused:** M6, M1, M7 and M9.
+- **Training** (`train_ball_v3.py`):
+  - **Two runs:** v3a is fine-tuned from v2.4000; v3b from v1 (motion
+    stem at zero).
+  - **Schedule:** 2,000 steps on CPU (about 42 minutes each).
+  - **Batches:** 8 ball, 3 negative and 5 of v2's strips.
+  - **Weights:** an average of the weights is saved at 1,000, 1,500 and
+    2,000 steps, with the early batch norms frozen.
+- **Selection set:** M6's second half (2 windows, 320 ball frames).
+  - v1 was trained on M6's first half, so amendment 1 dropped those
+    windows before any training.
+  - Measure: the top-1 within 12 px of the verified ball.
+  - Guard: the FF-auto placebos at most v2's + 0.03.
+  - Rule: the highest score, or a later step of the same run within 0.02.
+
+| checkpoint | top-1 is the ball | ball in top 4 | placebo guard |
+|---|---|---|---|
+| v3a.1000 / 1500 / 2000 | 0.919 / 0.906 / 0.903 | 0.978 / 0.978 / 0.975 | pass / pass / **fail** (3 / 32 after reception) |
+| v3b.1000 / **1500** / 2000 | 0.931 / **0.947** / 0.925 | 0.991 / 0.994 / 0.994 | pass |
+| v2.4000 | 0.819 | 0.950 | reference |
+| v1 | 0.856 | 0.966 | |
+
+- **Chosen: `ball_v3b.1500.pt`** (`v3_decision.json`).
+  - **Against v2.4000:** +0.128 [+0.095, +0.172]. It is right on 43 frames
+    where v2 is wrong, and wrong on 2 where v2 is right.
+  - **Balls v2 did not propose** (32 frames): v3 finds 0.72, v2 0.
+  - **v2.4000 re-run in the same jobs** reproduces its saved picks on all
+    427 frames, so the evaluation itself did not change.
+- **Frames with no verified ball** (105):
+  - v3's top-1 lands on a judged non-ball 62 times and elsewhere 43 times.
+  - Those 43 were judged blind, mixed with 40 controls. The judges agree
+    with the controls on 39 of 40.
+  - Only 3 of the 43 are a ball nobody had proposed. 10 are the penalty
+    spot, a new failure: when no ball is visible, v3 picks the spot.
+  - v2's top-1 is wrong on all 105 of these frames, v3's on 102.
+- **Why this is a diagnostic, not a claim:**
+  - v3 is the best of 6 checkpoints on this very measure.
+  - The B labels come from a classifier that learned mostly from M6
+    judgements.
+  - The verified positions are v2's peaks where v2 proposed the ball,
+    which favours v2.
+  - v2's checkpoint and calibration were also chosen on M6.
+- **Next:** v3's calibration and tau on M6, as registered. Then stride-1
+  tracking with v3, protocol v5 part 2 registered, and the test on
+  M7 / M9 with fresh blind tiles that have v3 as a source. A penalty-spot
+  negative (v2's landmark codes) is a candidate fix, but it would need a
+  new, logged run.
+
 ## Next
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
