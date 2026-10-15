@@ -26,7 +26,7 @@ for W in $W1 $W2; do
         && mv $out.part $out || exit 1
     done
   done
-  [ -f .cache/v3_balls_$W.parquet.meta.json ] || python $R/dense_v5p2.py $W > $O/dense_$W.log 2>&1 || exit 1
+  [ -f .cache/v3_balls_$W.parquet.meta.json ] || python $R/dense_a2.py $W > $O/dense_$W.log 2>&1 || exit 1
   [ -f .cache/v3m_balls_$W.parquet.meta.json ] || python $R/marks.py $W > $O/marks_$W.log 2>&1 || exit 1
 done
 echo detectors-done
