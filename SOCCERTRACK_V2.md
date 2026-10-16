@@ -1259,7 +1259,57 @@ frozen file is unchanged, and it logs each opening.
 - **Power:** a gain of about 8 points would be detected; one of 4 points
   only about half the time.
 
+### Result: H1 not rejected (v3 not shown better than v2 on M7 / M9)
+
+Run once, as registered, with amendments 1-2 (the CPU part in
+restart-sized jobs; dense v3 in 250-frame chunks, rows unchanged).
+Judging ran before the user's weekly usage reset, at the user's request
+(amendment 3: timing only).
+
+- **Labels** (`v5p2/labels`): 801 judged tiles, 357 measured frames.
+  - 188 frames have a verified ball (M7 76, M9 112), 168 are unknown and
+    1 is a conflict. That is fewer ball frames than the ~300 planned.
+  - The judges agree on B / not B on 0.99 of tiles (kappa 0.98). No
+    decoy was judged B. On the random recheck, 52 of 53 agree.
+- **H1** (`v5p2/scores_H1.json`): v3P is right on 0.734 of the ball
+  frames, v2 on 0.585 (+14.9 points).
+  - v3P alone is right on 54 frames, v2 alone on 26.
+  - Sign-flip p = 0.062 over 25 blocks, so H1 is not rejected at 0.025.
+    The frame-level McNemar (p = 0.001) is reported only; it ignores the
+    blocks.
+  - H2 (v1) is therefore not tested.
+
+| Top-1 is the ball | all (188) | M7 (76) | M9 (112) | hit@4 |
+|---|---|---|---|---|
+| v3P | 0.734 | 0.934 | 0.598 | -- |
+| v3 raw | 0.702 | 0.882 | 0.580 | 0.947 |
+| v2 raw (C1) | 0.585 | 0.658 | 0.536 | 0.910 |
+| v1 raw | 0.325 | 0.368 | 0.295 | 0.681 |
+| COCO | 0.426 | 0.382 | 0.455 | 0.431 |
+
+- **Placebos:** no detector picks the ball before the kick or after the
+  reception, except v1 after the reception (0.04).
+- **What went wrong on M9:**
+  - Its view has balls resting in or by a goal: 168 tiles were labelled
+    B*, against none on M7.
+  - On 92 of M9's 99 unknown frames, the only ball among the tiles is one
+    of those. Every detector's top-1 was on a judged tile there, never on
+    the match ball.
+  - On M9's ball frames all detectors are at 0.54-0.60. The
+    tracker's static-candidate cost did not keep v3P off these balls.
+  - The gain is concentrated on M7 (+28 points), which is why the
+    block test, with 25 blocks, does not reach 0.025.
+- **What it means:** v3P is the best pick measured on both matches,
+  with a large gain on M7. But the registered test does not show it
+  better than v2. M7 and M9 have now been used, so any change made
+  after seeing these results needs a new test set.
+
 ## Next
+
+0. **Balls at rest by the goals** (seen on M9, judged B*). Find them
+   from the window's own candidates, like the painted spots, and drop
+   them before tracking. This has to be tested on footage not yet seen,
+   or on clicked balls; M7 / M9 are spent.
 
 1. **The ball in flight.** In this attempt (one seed, 63 tuning passes),
    weak labels from the actions did not beat v1.
