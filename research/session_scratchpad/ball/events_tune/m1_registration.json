@@ -1,0 +1,86 @@
+{
+ "protocol": "events, M1 test (registered before any event, ball or player output of M1 is read; the M1 runs so far are its players / ball rows, not looked at)",
+ "windows": [
+  "st2_117092_1st_f001500",
+  "st2_117092_1st_f024000",
+  "st2_117092_2nd_f000000",
+  "st2_117092_2nd_f027000"
+ ],
+ "window choice": "the 4 non-overlapping 3-minute windows of M1 with the most PASS / HIGH PASS / CROSS / DRIVE labels (label counts only)",
+ "configurations": {
+  "test_E0": {
+   "what": "current pipeline: v2 rows (tau 0.25), linker top 4, frozen events_v3 rules",
+   "ball": "v2_link",
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   }
+  },
+  "test_E1": {
+   "what": "v3 tracked (v4-r1, no fallback), rules retuned (tune_rules.py)",
+   "ball": "v3_track",
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   }
+  },
+  "test_E2": {
+   "what": "v3, static points dropped, linker top 4 (tau 0.10), rules retuned (tune_static_link.py)",
+   "ball": "v3s_link",
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   }
+  }
+ },
+ "primary": "E2 vs E0: paired difference of pooled pass + carry F1 at 1 s over the 4 windows (score_events_paired.paired: 10 s blocks, 4000 draws, seed 0); shown when its 2.5th percentile is above 0",
+ "secondary": [
+  "E1 vs E0, same test (reported, no claim if the primary fails)",
+  "each configuration's F1 above chance at 1 s, per window and pooled",
+  "shots: counts of shot events against SHOT / GOAL labels (too few to score)"
+ ],
+ "how E2 was chosen": "after tune_rules.py's staged choice (E1) failed on M9 by its per-window scores, the static-filter linker input (the only one holding on M9) was tuned the same way (tune_static_link.py); both are tested, E2 is primary",
+ "dev": {
+  "windows": [
+   "st2_118578_2nd_f015000",
+   "st2_128057_1st_f030000",
+   "st2_132831_2nd_f030000"
+  ],
+  "E0 pooled objective": 0.1627,
+  "E1": 0.2033,
+  "E2": 0.2225
+ },
+ "frozen sha256": {
+  "research/session_scratchpad/ball/events_tune/tune_rules.py": "4b0d76f496ea6058fb51a3750acea76074c19ede39691f49511ee2945c21050b",
+  "research/session_scratchpad/ball/events_tune/apply_m1.py": "d15db83b2524991ccd4ab59149ef72acaaa4f7809292adaa0983a7fda56b6e08",
+  "score_events_paired.py": "05cf306a0df133c74ff13c072c45e8f5e4a0a7ba94be85e3a55a07ea14cd0e4f",
+  "score_soccernet.py": "3862d8f28b2726049c7c271ed9a08e63709033eda73cadbb2b59d4d9781c46e5",
+  "src/events.py": "1956c8915b3c31ec27240fbf313cbf3062a5161e73de0b346f43f05f101b5e8a",
+  "src/ball_link.py": "4250c6c2c54f601427a1e5dbcfdfa577eb5293c7d398a0708178a40c5eb09e37",
+  "src/ball_track.py": "68e287a422977fc23983637bda4b575163221b4528375c678d2143e865d6b9b1",
+  "src/pixel_scale.py": "cd212677e27a809bb69fed4ad7fe36575fec5eb01a56916c56ae6f3b60a95250",
+  "research/session_scratchpad/ball/events_m1/driver.sh": "01af2bd7f2ee86e73e1568df4847a40c057ab3110ae6da73746f2bc6cb07d19a",
+  "research/session_scratchpad/ball/v5p2/dense_a2.py": "f90642c0035f568e5b4bd9acc0c79af544b3fcfe01ee943ef4942d37cb14a4fd",
+  "research/session_scratchpad/ball/v5p2/marks.py": "1504a66b9d6f5ba40569ecadea8487a81a7108e8d6f78b973e574dc17aa36718",
+  "research/session_scratchpad/ball/events_m7m9/dense_v2.py": "6e4a5de084a691bca931a598ba1d3fd70880122ab6df2c817615fd284116d99d",
+  "research/session_scratchpad/events_run.py": "b8c2ea5934aa128acb83118b4dd652f2472046c32e506a3b10868800a3f10a81",
+  ".cache/ball_v3b.1500.pt": "3013808cc2e2c4df4f48963ba29ee583cfdb7798a5bacb1a5ad64a7a594d0e1d",
+  ".cache/ball_v2.4000.pt": "31f9a5eb567bfc26ed71967b993503159fabc8577257efcbc09782133d86c965",
+  "src/ball_spots.py": "b79137d565b09b0e27c3c0dd80beb8ac6de71c1c3d10b9d53afe8a2118bc069a"
+ }
+}
