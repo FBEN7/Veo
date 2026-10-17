@@ -1304,6 +1304,36 @@ Judging ran before the user's weekly usage reset, at the user's request
   better than v2. M7 and M9 have now been used, so any change made
   after seeing these results needs a new test set.
 
+### Events on M7 / M9 with the v3 ball (descriptive, after the test)
+
+Not registered; run after H1 was scored (`research/session_scratchpad/ball/events_m7m9/`).
+- **Setup:** players and teams as for the old windows (`eval_soccertrack_v2.py
+  --run`, stride 2, then `events_run.py`). The events_v3 rules are frozen,
+  with each ball's own calibrated tau (v2 0.25 as frozen; v3 0.10). The
+  rules' linker takes the top 4, not v3P's tracker.
+- **Scored:** pass + carry against the 107 labels of the two windows,
+  F1 at 1 s pooled.
+
+| ball + rules | events | F1 | chance | above chance | M7 above | M9 above |
+|---|---|---|---|---|---|---|
+| COCO + v1 rules (events_v1) | 55 | 0.321 | 0.180 | +0.141 | +0.180 | +0.115 |
+| v2 + frozen rules | 80 | 0.310 | 0.195 | +0.116 | +0.148 | +0.070 |
+| v3 + frozen rules | 85 | 0.323 | 0.202 | +0.121 | +0.182 | +0.044 |
+| v3 without the spot marks + frozen rules | 86 | 0.321 | 0.203 | +0.118 | +0.174 | +0.047 |
+
+- **Paired:** v3 minus v2 is +0.013, 95% [-0.092, +0.126], over 33 blocks.
+  The events do not improve measurably.
+- **Why so little, probably:**
+  - The events linker reads the top 4, where v2 already holds the ball
+    0.91 of the time (v3 0.95). v3's large top-1 gain mostly does not
+    reach the events.
+  - On M9 every ball does poorly: balls are at rest by the goals, and
+    the camera is different (3840 x 1504).
+  - 107 labels give wide intervals.
+- **So:** a better top-1 ball is not what limits the events now. The
+  next lever is on the events side (possession, the linker on a stride-1
+  ball), measured on unseen footage.
+
 ## Next
 
 0. **Balls at rest by the goals** (seen on M9, judged B*). Find them
