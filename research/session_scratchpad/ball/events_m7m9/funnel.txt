@@ -1,0 +1,28 @@
+share of labels with a ball within 3.0 m of the action (within 2 frames):
+              events_v1  ev_v2  ev_v3m  v3 top-1  v3 top-4   n
+window group                                                  
+128057 carry       0.00   0.18    0.14      0.23      0.36  22
+       pass        0.21   0.48    0.45      0.59      0.66  29
+       shot        0.00   0.00    0.00      0.00      0.00   2
+132831 carry       0.27   0.23    0.23      0.36      0.55  22
+       pass        0.12   0.15    0.15      0.29      0.53  34
+       shot        0.00   0.00    0.00      0.00      0.00   1
+       events_v1  ev_v2  ev_v3m  v3 top-1  v3 top-4
+group                                              
+carry       0.14    0.2    0.18      0.30      0.45
+pass        0.16    0.3    0.29      0.43      0.59
+shot        0.00    0.0    0.00      0.00      0.00
+v3 score column: confidence | v3 columns: ['frame', 'time_s', 'track_id', 'cls', 'px', 'py', 'crop_h', 'crop_w', 'detection_method', 'confidence', 'logit', 'p_raw', 'n_bg', 'x_m']
+
+funnel (ev_v3m), share of labels:
+group                         carry  pass  shot   all
+actor detected                 0.77  0.67  0.33  0.70
+selected ball near             0.18  0.29  0.00  0.24
+selected ball near (0.5 s)     0.30  0.40  0.00  0.35
+v3 top-4 near                  0.45  0.59  0.00  0.52
+v3 top-4 near (0.5 s)          0.55  0.73  0.33  0.65
+event of its type within 1 s   0.45  0.19  0.00  0.29
+actor + selected ball          0.16  0.24  0.00  0.20
+
+event found within 1 s | actor + ball there: 0.09 (22 labels)
+event found within 1 s | not both: 0.34 (88 labels)
