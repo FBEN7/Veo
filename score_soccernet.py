@@ -463,7 +463,7 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
 # per frame, can be compared with the players and teams held identical.
 
 RUN_FILES = ("clip.json", "profile.json", "pitch.json", "team_features.json")
-SELECTIONS = ("v1", "link")
+SELECTIONS = ("v1", "link", "given")
 LINK_PARAMS = ("c_null", "c_static")
 
 
@@ -489,7 +489,9 @@ def select_ball(capped: pd.DataFrame, scale: float, fps: float,
       ``scale`` (px/m) for the whole picture;
     - "link": `ball_link.link`, a skip-Viterbi in pitch metres through the
       camera ``cal``, with ``link_params`` (c_null, c_static) and ``tau``
-      (0.5 when None) in its candidate cost.
+      (0.5 when None) in its candidate cost;
+    - "given": the ball rows as they are, at most one a frame (a ball
+      already tracked, e.g. `ball_track.track`'s picks).
 
     `track_reid.merge_fragments` then relabels the player tracks in both
     cases. It reads only the player rows, so the players and teams are the
@@ -517,6 +519,10 @@ def select_ball(capped: pd.DataFrame, scale: float, fps: float,
     if select == "v1":
         selected = ball_selection.select_single_ball(
             capped, scale, fps=fps, verbose=verbose)
+    elif select == "given":
+        if capped[is_ball].frame.duplicated().any():
+            raise ValueError("select='given' needs at most one ball row a frame")
+        selected = capped
     else:
         if cal is None:
             raise ValueError("select='link' needs the camera calibration")
