@@ -1,0 +1,42 @@
+  judged.txt sha256 48219b6059c626f4d1501d770661dee15261c1dde8b6f54ba9742fd32e0e1404: as recorded
+Pair sitting: T (tracked) against ball_v2.4000.pt (raw), 139 passes, 203 pair frames, 332 tiles; labels B 147, B* 4, N 156, S 25 (only B is the ball)
+  H5: passes with d > 0 18, d < 0 9, d = 0 112; exact sign test, one-sided p = 0.0610 (< 0.025, more d > 0: does not hold)
+  pair frames: only tracked 20, only raw 10, both 105, neither 68
+  q1 McNemar, tracked vs raw: 139 passes, T only 7, ball_v2.4000.pt only 2, one-sided p = 0.0898
+  H6, tracked vs coco at q1: 139 passes, T only 37, coco only 2, one-sided p = 0.0000 (H5 does not hold: H6 does not count)
+  by source:
+    detected: only tracked 3, only raw 0, both 54, neither 4
+    fallback: only tracked 0, only raw 0, both 0, neither 7
+    interpolated: only tracked 17, only raw 1, both 51, neither 25
+    none: only tracked 0, only raw 9, both 0, neither 32
+  by source x parity:
+    detected even: only tracked 3, only raw 0, both 54, neither 4
+    fallback even: only tracked 0, only raw 0, both 0, neither 7
+    interpolated even: only tracked 11, only raw 0, both 0, neither 12
+    interpolated odd: only tracked 6, only raw 1, both 51, neither 13
+    none odd: only tracked 0, only raw 9, both 0, neither 32
+  by parity:
+    even: only tracked 14, only raw 0, both 54, neither 23
+    odd: only tracked 6, only raw 10, both 51, neither 45
+  by match:
+    117093: only tracked 10, only raw 3, both 60, neither 37
+    132877: only tracked 10, only raw 7, both 45, neither 31
+  by px/m tercile (cuts [21.41, 27.73]):
+    far: only tracked 7, only raw 2, both 24, neither 35
+    mid: only tracked 7, only raw 2, both 36, neither 22
+    near: only tracked 6, only raw 6, both 45, neither 11
+  decoys judged the ball: decoy 0 of 12, corridor-decoy 0 of 12, offset-decoy 0 of 12
+  re-judged old tiles agree: 12 of 12 (>= 0.917 of them: yes)
+  tracked picks at pass frames by source: detected 247, fallback 32, interpolated 236, none 41; interpolated or fallback 0.52
+Gate (U-test):
+  G-a: d > 0 in 18 passes, d < 0 in 9: PASS
+  G-b: pre tracked 9 vs raw 10 + 1 on 136 frames: PASS; post tracked 8 vs raw 9 + 1 on 128 frames: PASS => PASS
+  G-c: random + corridor judged the ball 0 of 24 (<= 2 of 20): FAIL; offset judged the ball 0 of 12 (<= 1 of 6): FAIL => FAIL
+  G-a..G-c: FAIL
+  G-d (eval's code check, its metadata): st2_117093_1st_f045000 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; st2_117093_2nd_f015000 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; st2_117093_2nd_f045000 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; st2_132877_1st_f045000 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; st2_132877_2nd_f015000 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; st2_132877_2nd_f045000 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; detected or fallback at odd pass frames 0: PASS
+  gate G-a..G-d: FAIL
+Recorded, not gated:
+  b frames (only tracked) 20, c frames (only raw) 10, b passes (d > 0) 18, c passes (d < 0) 9, informative share 0.194, split 0.667, V-new informative passes 21, V-new power 0.249, V-new power at 70% 0.363, FF-auto paired counts as a measure False
+  FF-auto on interpolated tracked tiles: tp 47, fp 18, fn 21, tn 8, kappa -0.001, ppv 0.723, recall 0.691, tiles 94
+  confirmed false FF-auto hits: T 0, ball_v2.4000.pt 1
+  FF-auto paired (eval): passes 139, T 0.633, ball_v2.4000.pt 0.603, difference 0.031, 2.5% 0.005, 97.5% 0.053, blocks 18

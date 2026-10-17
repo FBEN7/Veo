@@ -1,0 +1,22 @@
+clip: 4096x1084 @ 25 fps, 4500 frames (179.8 MB)
+cached profile:
+  resolution     4096x1084 @ 25 fps
+  imgsz          4096
+  conf_player    0.25  -> 36.0 players/frame
+  conf_ball      0.30  -> 1.17 ball/frame
+  scale          27.6 px/m (player 48 px, ball ~6.1 px)
+  min height     17 px
+  camera         static (0.00 px/frame)
+  [pitch] 78767 -> 59140 player rows inside the outline (+10 px)
+annotating grass fraction...
+  [pitch] 2941 ball candidates, grass fraction median 0.96, 99.8% on pitch
+  [pitch] dropping 7 of 2941 ball candidates below 0.40 grass
+camera: static, not compensated
+  [roster] 59140 -> 58904 player rows (cap 11/team/frame)
+  [pitch] 2934 -> 569 ball candidates inside the outline
+  [ball] 569 candidates over 568 frames -> 568 selected
+  [re-id] 107 fragments -> 86 tracks
+[Events] Detected: {'carry': 26, 'pass': 29, 'recovery': 5, 'shot': 29, 'tackle': 2}
+
+ball coverage 25.2%, 91 events, scale 26.8 px/m
+EVENTS st2_132877_1st_f015000 coco 91 {'carry': 26, 'pass': 29, 'recovery': 5, 'shot': 29, 'tackle': 2}

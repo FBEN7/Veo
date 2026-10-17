@@ -1,0 +1,30 @@
+  training on ['.cache/soccertrack_v2/reid_train/st2_117092_1st_f030000.pkl', '.cache/soccertrack_v2/reid_train/st2_118576_1st_f030000.pkl', '.cache/soccertrack_v2/reid_train/st2_118576_2nd_f015000.pkl', '.cache/soccertrack_v2/reid_train/st2_118577_1st_f030000.pkl', '.cache/soccertrack_v2/reid_train/st2_118578_1st_f030000.pkl', '.cache/soccertrack_v2/reid_train/st2_118578_2nd_f015000.pkl', '.cache/soccertrack_v2/reid_train/st2_128058_1st_f030000.pkl', '.cache/soccertrack_v2/reid_train/st2_128058_2nd_f015000.pkl']
+  held out ['.cache/soccertrack_v2/reid_val/st2_118575_1st_f015000.pkl']
+  excluding 67 people from ['.cache/soccertrack_v2/gsr/117093_1st.parquet', '.cache/soccertrack_v2/gsr/118575_1st.parquet', '.cache/soccertrack_v2/gsr/132877_1st.parquet', 'data/soccertrack_v2/st2_117093_1st_f015000_gt.parquet', 'data/soccertrack_v2/st2_118575_1st_f015000_gt.parquet', 'data/soccertrack_v2/st2_132877_1st_f015000_gt.parquet']
+    117092: 13 people, 331 crops
+    118576: 9 people, 504 crops
+    118577: 14 people, 420 crops
+    118578: 17 people, 1020 crops
+    128058: 18 people, 771 crops
+    st2_118575_1st_f015000: 20 people, 600 crops
+  60 distinct people trained on
+  6 clips, 91 people, loaded in 3 s
+  held out, ImageNet features only: rank-1 among team-mates 39.7%, mAP 22.4%
+  step 250: loss 0.314, 146 s
+  step 500: loss 0.300, 226 s
+  step 750: loss 0.300, 303 s
+  step 1000: loss 0.313, 378 s
+  held out: rank-1 among team-mates 43.8%, mAP 25.8%
+  saved .cache/player_reid_st2.pt
+  step 1250: loss 0.306, 462 s
+  step 1500: loss 0.301, 545 s
+  step 1750: loss 0.226, 622 s
+  step 2000: loss 0.302, 701 s
+  held out: rank-1 among team-mates 51.7%, mAP 33.5%
+  saved .cache/player_reid_st2.pt
+  step 2250: loss 0.289, 779 s
+  step 2500: loss 0.226, 857 s
+  step 2750: loss 0.220, 937 s
+  step 3000: loss 0.304, 1017 s
+  held out: rank-1 among team-mates 43.5%, mAP 31.2%
+  saved .cache/player_reid_st2.pt

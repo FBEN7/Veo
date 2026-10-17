@@ -1,0 +1,4 @@
+  held out 117093: {'tiles': 99, 'judged ball': 43, 'agree at 0.5': 0.8788, 'precision': 0.8039, 'recall': 0.9535, 'confident share': 0.8485, 'agree when confident': 0.9286, 'confident ball precision': 0.8667, 'confident not-ball NPV': 1.0}
+  held out 118575: {'tiles': 75, 'judged ball': 40, 'agree at 0.5': 0.88, 'precision': 0.8974, 'recall': 0.875, 'confident share': 0.84, 'agree when confident': 0.9683, 'confident ball precision': 1.0, 'confident not-ball NPV': 0.9355}
+  held out 118576: {'tiles': 83, 'judged ball': 42, 'agree at 0.5': 0.8554, 'precision': 0.8947, 'recall': 0.8095, 'confident share': 0.7711, 'agree when confident': 0.9531, 'confident ball precision': 1.0, 'confident not-ball NPV': 0.9189}
+  held out 118578: {'tiles': 2403, 'judged ball': 683, 'agree at 0.5': 0.7595, 'precision': 0.5504, 'recall': 0.8389, 'confident share': 0.6742, 'agree when confident': 0.8284, 'confident ball precision': 0.655, 'confident not-ball NPV': 0.9461}

@@ -1,0 +1,68 @@
+{
+ "windows": [
+  {
+   "window": "st2_118576_2nd_f015000",
+   "passes": 10,
+   "actions": 44,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.15,
+    "feet share": 0.1,
+    "action hit": 0.091,
+    "candidates per frame": {
+     "0.02": 1.24,
+     "0.05": 0.52,
+     "0.1": 0.26,
+     "0.15": 0.18,
+     "0.2": 0.16,
+     "0.3": 0.12,
+     "0.5": 0.12,
+     "0.7": 0.02
+    }
+   }
+  },
+  {
+   "window": "st2_118578_2nd_f015000",
+   "passes": 17,
+   "actions": 48,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.191,
+    "feet share": 0.029,
+    "action hit": 0.146,
+    "candidates per frame": {
+     "0.02": 5.38,
+     "0.05": 3.3,
+     "0.1": 1.84,
+     "0.15": 1.0,
+     "0.2": 0.64,
+     "0.3": 0.18,
+     "0.5": 0.08,
+     "0.7": 0.04
+    }
+   }
+  },
+  {
+   "window": "st2_128058_2nd_f015000",
+   "passes": 21,
+   "actions": 70,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.345,
+    "feet share": 0.033,
+    "action hit": 0.229,
+    "candidates per frame": {
+     "0.02": 0.72,
+     "0.05": 0.42,
+     "0.1": 0.34,
+     "0.15": 0.32,
+     "0.2": 0.3,
+     "0.3": 0.24,
+     "0.5": 0.18,
+     "0.7": 0.12
+    }
+   }
+  }
+ ],
+ "paired": {}
+}

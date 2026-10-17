@@ -1,0 +1,52 @@
+{
+ "gt boxes": 49500,
+ "gt people": 22,
+ "iou0.5": {
+  "fragments": {
+   "identities": 264,
+   "people seen": 21,
+   "split": 6.3,
+   "purity": 0.831,
+   "IDF1": 0.018,
+   "detections matched": "2179/87502",
+   "recall": 0.044,
+   "precision": 0.025
+  },
+  "re-joined": {
+   "identities": 98,
+   "people seen": 21,
+   "split": 2.49,
+   "purity": 0.815,
+   "IDF1": 0.018,
+   "detections matched": "1287/53530",
+   "recall": 0.026,
+   "precision": 0.024,
+   "team accuracy": 0.507,
+   "team matched": 1283
+  }
+ },
+ "feet": {
+  "fragments": {
+   "identities": 264,
+   "people seen": 22,
+   "split": 19.26,
+   "purity": 0.753,
+   "IDF1": 0.299,
+   "detections matched": "46555/87502",
+   "recall": 0.941,
+   "precision": 0.532
+  },
+  "re-joined": {
+   "identities": 98,
+   "people seen": 22,
+   "split": 8.14,
+   "purity": 0.706,
+   "IDF1": 0.325,
+   "detections matched": "26553/53530",
+   "recall": 0.536,
+   "precision": 0.496,
+   "team accuracy": 0.501,
+   "team matched": 25678
+  }
+ }
+}

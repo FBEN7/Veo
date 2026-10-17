@@ -1,0 +1,40 @@
+  judged.txt sha256 228cd536cdb3ec4adda733b0b99c41c626c5816271a7358f0bb6d9e889200b7d: as recorded
+Pair sitting: T (tracked) against ball_v2.4000.pt (raw), 39 passes, 66 pair frames, 122 tiles; labels B 60, B* 1, N 58, S 3 (only B is the ball)
+  H5: passes with d > 0 11, d < 0 3, d = 0 25; exact sign test, one-sided p = 0.0287 (< 0.025, more d > 0: does not hold)
+  pair frames: only tracked 13, only raw 3, both 35, neither 15
+  q1 McNemar, tracked vs raw: 39 passes, T only 1, ball_v2.4000.pt only 1, one-sided p = 0.7500
+  by source:
+    detected: only tracked 0, only raw 0, both 14, neither 1
+    fallback: only tracked 0, only raw 0, both 0, neither 2
+    interpolated: only tracked 13, only raw 0, both 21, neither 5
+    none: only tracked 0, only raw 3, both 0, neither 7
+  by source x parity:
+    detected even: only tracked 0, only raw 0, both 14, neither 1
+    fallback even: only tracked 0, only raw 0, both 0, neither 2
+    interpolated even: only tracked 6, only raw 0, both 4, neither 3
+    interpolated odd: only tracked 7, only raw 0, both 17, neither 2
+    none odd: only tracked 0, only raw 3, both 0, neither 7
+  by parity:
+    even: only tracked 6, only raw 0, both 18, neither 6
+    odd: only tracked 7, only raw 3, both 17, neither 9
+  by match:
+    118578: only tracked 13, only raw 3, both 35, neither 15
+  by px/m tercile (cuts [23.59, 31.74]):
+    far: only tracked 3, only raw 1, both 10, neither 8
+    mid: only tracked 2, only raw 2, both 13, neither 5
+    near: only tracked 8, only raw 0, both 12, neither 2
+  decoys judged the ball: decoy 0 of 10, corridor-decoy 0 of 10, offset-decoy 0 of 6
+  re-judged old tiles agree: 6 of 6 (>= 0.917 of them: yes)
+  tracked picks at pass frames by source: detected 59, fallback 14, interpolated 73, none 10; interpolated or fallback 0.596
+Gate (U-test):
+  G-a: d > 0 in 11 passes, d < 0 in 3: PASS
+  G-b: pre tracked 3 vs raw 4 + 1 on 50 frames: PASS; post tracked 1 vs raw 1 + 1 on 35 frames: PASS => PASS
+  G-c: random + corridor judged the ball 0 of 20 (<= 2 of 20): PASS; offset judged the ball 0 of 6 (<= 1 of 6): PASS => PASS
+  G-a..G-c: PASS
+  G-d (eval's code check, its metadata): st2_118578_1st_f052500 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; st2_118578_2nd_f037500 stride 2, extra frames 0, registered ckpt True, registered calib True, longest fill 6, detected or fallback off the stride 0; detected or fallback at odd pass frames 0: PASS
+  gate G-a..G-d: PASS
+Recorded, not gated:
+  b frames (only tracked) 13, c frames (only raw) 3, b passes (d > 0) 11, c passes (d < 0) 3, informative share 0.359, split 0.786, V-new informative passes 39, V-new power 0.942, V-new power at 70% 0.618, FF-auto paired counts as a measure False
+  FF-auto on interpolated tracked tiles: tp 32, fp 4, fn 2, tn 1, kappa 0.17, ppv 0.889, recall 0.941, tiles 39
+  confirmed false FF-auto hits: T 2, ball_v2.4000.pt 3
+  FF-auto paired (eval): passes 39, T 0.75, ball_v2.4000.pt 0.679, difference 0.071, 2.5% 0.028, 97.5% 0.142, blocks 6

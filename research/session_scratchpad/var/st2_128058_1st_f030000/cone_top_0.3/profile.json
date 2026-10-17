@@ -1,0 +1,21 @@
+{
+  "video": "data/soccertrack_v2/st2_128058_1st_f030000.mp4",
+  "width": 4096,
+  "height": 1080,
+  "fps": 25.0,
+  "n_frames": 3000,
+  "imgsz": 4096,
+  "conf_player": 0.5,
+  "conf_ball": 0.5,
+  "px_per_m": 22.341413225446427,
+  "player_height_px": 39.09747314453125,
+  "ball_size_px": 4.915110909598214,
+  "min_detection_height_px": 13.684115600585937,
+  "compensate_camera": false,
+  "camera_motion_px": 0.0,
+  "players_per_frame": 23.0,
+  "ball_per_frame": 3.25,
+  "notes": [
+    "ball is only ~4.9 px across; detection will be unreliable regardless of threshold"
+  ]
+}

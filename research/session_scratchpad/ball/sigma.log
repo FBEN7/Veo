@@ -1,0 +1,6 @@
+  motion channels on 1000 strips' pitch pixels (units of 255):
+    D (t-2, t+2): robust std 0.0000, std 0.0535, mean |x| 0.0122, |x| 99% 0.306 / 99.9% 0.573, exactly 0 73% (8192000 px)
+    F (background): robust std 0.0174, std 0.0539, mean |x| 0.0246, |x| 99% 0.282 / 99.9% 0.529, exactly 0 9% (4096000 px)
+  for src/ball_heatmap.py (edit by hand):
+SIGMA_D = 0.0535    # std: 73% exact zeros, robust std 0.0000
+SIGMA_F = 0.0174    # robust std (1.4826 MAD); std 0.0539

@@ -1,0 +1,16 @@
+  118575 half 1 (stream), frames 0-end: 2958 samples of 2958
+    frame 5000: 179 strips, 2779 queued, 14 background samples, 82 frames/s
+    frame 10000: 386 strips, 2572 queued, 13 background samples, 90 frames/s
+    frame 15000: 618 strips, 2340 queued, 11 background samples, 87 frames/s
+    frame 20000: 854 strips, 2104 queued, 14 background samples, 86 frames/s
+    frame 25000: 1009 strips, 1949 queued, 14 background samples, 85 frames/s
+    frame 30000: 1202 strips, 1756 queued, 14 background samples, 87 frames/s
+    frame 35000: 1430 strips, 1528 queued, 14 background samples, 86 frames/s
+    frame 40000: 1583 strips, 1375 queued, 14 background samples, 86 frames/s
+    frame 45000: 1819 strips, 1139 queued, 10 background samples, 86 frames/s
+    frame 50000: 1940 strips, 1018 queued, 8 background samples, 86 frames/s
+    frame 55000: 2174 strips, 784 queued, 14 background samples, 86 frames/s
+    frame 60000: 2425 strips, 533 queued, 14 background samples, 86 frames/s
+    frame 65000: 2675 strips, 283 queued, 14 background samples, 86 frames/s
+    frame 70000: 2840 strips, 118 queued, 13 background samples, 86 frames/s
+  2958 strips in 833 s: {'flight': 1077, 'action': 920, 'free': 640, 'dribble': 213, 'lofted': 108}; background < 8 samples on 0.0%, no t-2 / t+2 on 0.0%; at most 14 background samples held

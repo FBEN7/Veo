@@ -1,0 +1,12 @@
+{
+ "frozen": true,
+ "params": {
+  "tau": 0.25,
+  "top_k": 4,
+  "c_null": 1.0,
+  "c_static": 2.0,
+  "gap": 6,
+  "max_fill_speed": 35.0,
+  "fallback": true
+ }
+}

@@ -1,0 +1,2166 @@
+[
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 0,
+  "frames": [
+   409,
+   419,
+   430,
+   440
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 419,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 15.69,
+    "tiles": {
+     "ball_heatmap.3000.pt": 77,
+     "ball_heatmap.2250.pt": 77,
+     "coco": 66
+    }
+   },
+   {
+    "q": 3,
+    "frame": 440,
+    "parity": "even",
+    "why": "apart",
+    "pair": true,
+    "track source": null,
+    "px/m": 14.31,
+    "tiles": {
+     "ball_heatmap.3000.pt": 80,
+     "ball_heatmap.2250.pt": 3
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 1,
+  "frames": [
+   791,
+   797,
+   802,
+   808
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 0,
+    "frame": 791,
+    "parity": "odd",
+    "why": "apart",
+    "pair": true,
+    "track source": null,
+    "px/m": 16.14,
+    "tiles": {
+     "ball_heatmap.3000.pt": 76,
+     "ball_heatmap.2250.pt": 47
+    }
+   },
+   {
+    "q": 1,
+    "frame": 797,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 16.14,
+    "tiles": {
+     "ball_heatmap.3000.pt": 27,
+     "ball_heatmap.2250.pt": 27,
+     "coco": 13
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 2,
+  "frames": [
+   848,
+   854,
+   860,
+   866
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 854,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 16.98,
+    "tiles": {
+     "ball_heatmap.3000.pt": 22,
+     "ball_heatmap.2250.pt": 22,
+     "coco": 20
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 3,
+  "frames": [
+   1364,
+   1371,
+   1377,
+   1384
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1371,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 24.94,
+    "tiles": {
+     "ball_heatmap.3000.pt": 79,
+     "ball_heatmap.2250.pt": 79,
+     "coco": 79
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 4,
+  "frames": [
+   1408,
+   1417,
+   1426,
+   1435
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1417,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 33.3,
+    "tiles": {
+     "ball_heatmap.3000.pt": 49,
+     "ball_heatmap.2250.pt": 49,
+     "coco": 49
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 5,
+  "frames": [
+   1537,
+   1543,
+   1548,
+   1554
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1543,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 32.38,
+    "tiles": {
+     "ball_heatmap.3000.pt": 71,
+     "ball_heatmap.2250.pt": 71,
+     "coco": 71
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 6,
+  "frames": [
+   1600,
+   1604,
+   1609,
+   1613
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1604,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 24.21,
+    "tiles": {
+     "ball_heatmap.3000.pt": 7,
+     "ball_heatmap.2250.pt": 7,
+     "coco": 7
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 7,
+  "frames": [
+   1913,
+   1919,
+   1924,
+   1930
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1919,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 17.23,
+    "tiles": {
+     "ball_heatmap.3000.pt": 8,
+     "ball_heatmap.2250.pt": 8,
+     "coco": 16
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 8,
+  "frames": [
+   2091,
+   2095,
+   2099,
+   2103
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2095,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 19.15,
+    "tiles": {
+     "ball_heatmap.3000.pt": 30,
+     "ball_heatmap.2250.pt": 30,
+     "coco": 33
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118576_2nd_f015000",
+  "match": "118576",
+  "pass": 9,
+  "frames": [
+   3188,
+   3214,
+   3239,
+   3265
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 3214,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 21.05,
+    "tiles": {
+     "ball_heatmap.3000.pt": 9,
+     "ball_heatmap.2250.pt": 9,
+     "coco": 9
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 0,
+  "frames": [
+   764,
+   770,
+   778,
+   784
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 0,
+    "frame": 764,
+    "parity": "even",
+    "why": "apart",
+    "pair": true,
+    "track source": null,
+    "px/m": 15.12,
+    "tiles": {
+     "ball_heatmap.3000.pt": 70,
+     "ball_heatmap.2250.pt": 15
+    }
+   },
+   {
+    "q": 1,
+    "frame": 770,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 15.02,
+    "tiles": {
+     "ball_heatmap.3000.pt": 18,
+     "ball_heatmap.2250.pt": 18,
+     "coco": 82
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 1,
+  "frames": [
+   827,
+   834,
+   840,
+   847
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 834,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 15.18,
+    "tiles": {
+     "ball_heatmap.3000.pt": 37,
+     "ball_heatmap.2250.pt": 37,
+     "coco": 59
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 2,
+  "frames": [
+   892,
+   898,
+   903,
+   909
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 898,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 21.04,
+    "tiles": {
+     "ball_heatmap.3000.pt": 68,
+     "ball_heatmap.2250.pt": 68,
+     "coco": 44
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 3,
+  "frames": [
+   954,
+   965,
+   977,
+   988
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 965,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 26.41,
+    "tiles": {
+     "ball_heatmap.3000.pt": 17,
+     "ball_heatmap.2250.pt": 17,
+     "coco": 17
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 4,
+  "frames": [
+   1077,
+   1082,
+   1088,
+   1093
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1082,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 29.71,
+    "tiles": {
+     "ball_heatmap.3000.pt": 61,
+     "ball_heatmap.2250.pt": 61,
+     "coco": 61
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 5,
+  "frames": [
+   1586,
+   1602,
+   1618,
+   1634
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1602,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 42.64,
+    "tiles": {
+     "ball_heatmap.3000.pt": 48,
+     "ball_heatmap.2250.pt": 48,
+     "coco": 48
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 6,
+  "frames": [
+   1996,
+   2003,
+   2009,
+   2016
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2003,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 28.94,
+    "tiles": {
+     "ball_heatmap.3000.pt": 69,
+     "ball_heatmap.2250.pt": 69,
+     "coco": 45
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 7,
+  "frames": [
+   2267,
+   2275,
+   2282,
+   2290
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2275,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 18.26,
+    "tiles": {
+     "ball_heatmap.3000.pt": 58,
+     "ball_heatmap.2250.pt": 58,
+     "coco": 19
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 8,
+  "frames": [
+   2338,
+   2346,
+   2355,
+   2363
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2346,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 23.97,
+    "tiles": {
+     "ball_heatmap.3000.pt": 28,
+     "ball_heatmap.2250.pt": 28,
+     "coco": 31
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 9,
+  "frames": [
+   2399,
+   2407,
+   2416,
+   2424
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2407,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 35.28,
+    "tiles": {
+     "ball_heatmap.3000.pt": 62,
+     "ball_heatmap.2250.pt": 62,
+     "coco": 62
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 10,
+  "frames": [
+   2502,
+   2508,
+   2514,
+   2520
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2508,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 48.13,
+    "tiles": {
+     "ball_heatmap.3000.pt": 12,
+     "ball_heatmap.2250.pt": 12,
+     "coco": 83
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 11,
+  "frames": [
+   2614,
+   2623,
+   2631,
+   2640
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2623,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 29.73,
+    "tiles": {
+     "ball_heatmap.3000.pt": 74,
+     "ball_heatmap.2250.pt": 74,
+     "coco": 60
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 12,
+  "frames": [
+   2706,
+   2710,
+   2714,
+   2718
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2710,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 30.56,
+    "tiles": {
+     "ball_heatmap.3000.pt": 43,
+     "ball_heatmap.2250.pt": 43,
+     "coco": 63
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 13,
+  "frames": [
+   2749,
+   2753,
+   2756,
+   2760
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2753,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 38.03,
+    "tiles": {
+     "ball_heatmap.3000.pt": 73,
+     "ball_heatmap.2250.pt": 73,
+     "coco": 50
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 14,
+  "frames": [
+   3043,
+   3052,
+   3062,
+   3071
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 3052,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 17.55,
+    "tiles": {
+     "ball_heatmap.3000.pt": 46,
+     "ball_heatmap.2250.pt": 46,
+     "coco": 36
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 15,
+  "frames": [
+   4201,
+   4209,
+   4218,
+   4226
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 4209,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 28.33,
+    "tiles": {
+     "ball_heatmap.3000.pt": 41,
+     "ball_heatmap.2250.pt": 41,
+     "coco": 54
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_118578_2nd_f015000",
+  "match": "118578",
+  "pass": 16,
+  "frames": [
+   4322,
+   4326,
+   4329,
+   4333
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 4326,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 28.35,
+    "tiles": {
+     "ball_heatmap.3000.pt": 53,
+     "ball_heatmap.2250.pt": 53,
+     "coco": 84
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 0,
+  "frames": [
+   222,
+   227,
+   232,
+   237
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 227,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 28.39,
+    "tiles": {
+     "ball_heatmap.3000.pt": 39,
+     "ball_heatmap.2250.pt": 39,
+     "coco": 39
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 1,
+  "frames": [
+   292,
+   302,
+   312,
+   322
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 302,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 28.52,
+    "tiles": {
+     "ball_heatmap.3000.pt": 5,
+     "ball_heatmap.2250.pt": 5,
+     "coco": 5
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 2,
+  "frames": [
+   431,
+   439,
+   448,
+   456
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 439,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 25.1,
+    "tiles": {
+     "ball_heatmap.3000.pt": 72,
+     "ball_heatmap.2250.pt": 72,
+     "coco": 72
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 3,
+  "frames": [
+   577,
+   590,
+   603,
+   616
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 590,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 23.21,
+    "tiles": {
+     "ball_heatmap.3000.pt": 57,
+     "ball_heatmap.2250.pt": 57,
+     "coco": 57
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 4,
+  "frames": [
+   645,
+   651,
+   658,
+   664
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 651,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 20.91,
+    "tiles": {
+     "ball_heatmap.3000.pt": 64,
+     "ball_heatmap.2250.pt": 64,
+     "coco": 64
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 5,
+  "frames": [
+   810,
+   825,
+   839,
+   854
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 825,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 20.8,
+    "tiles": {
+     "ball_heatmap.3000.pt": 81,
+     "ball_heatmap.2250.pt": 81,
+     "coco": 81
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 6,
+  "frames": [
+   932,
+   940,
+   948,
+   956
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 940,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 20.63,
+    "tiles": {
+     "ball_heatmap.3000.pt": 25,
+     "ball_heatmap.2250.pt": 25,
+     "coco": 25
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 7,
+  "frames": [
+   1102,
+   1107,
+   1112,
+   1117
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1107,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 41.5,
+    "tiles": {
+     "ball_heatmap.3000.pt": 35,
+     "ball_heatmap.2250.pt": 35,
+     "coco": 35
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 8,
+  "frames": [
+   1146,
+   1150,
+   1155,
+   1159
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1150,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 47.29,
+    "tiles": {
+     "ball_heatmap.3000.pt": 75,
+     "ball_heatmap.2250.pt": 75,
+     "coco": 75
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 9,
+  "frames": [
+   1404,
+   1410,
+   1416,
+   1422
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1410,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 43.85,
+    "tiles": {
+     "ball_heatmap.3000.pt": 42,
+     "ball_heatmap.2250.pt": 42,
+     "coco": 42
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 10,
+  "frames": [
+   1552,
+   1560,
+   1567,
+   1575
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1560,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 18.26,
+    "tiles": {
+     "ball_heatmap.3000.pt": 56,
+     "ball_heatmap.2250.pt": 56,
+     "coco": 56
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 11,
+  "frames": [
+   1614,
+   1619,
+   1625,
+   1630
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1619,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 16.96,
+    "tiles": {
+     "ball_heatmap.3000.pt": 1,
+     "ball_heatmap.2250.pt": 1,
+     "coco": null
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 12,
+  "frames": [
+   1680,
+   1686,
+   1691,
+   1697
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1686,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 17.3,
+    "tiles": {
+     "ball_heatmap.3000.pt": 14,
+     "ball_heatmap.2250.pt": 14,
+     "coco": null
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 13,
+  "frames": [
+   1913,
+   1920,
+   1926,
+   1933
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 1920,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 23.84,
+    "tiles": {
+     "ball_heatmap.3000.pt": 10,
+     "ball_heatmap.2250.pt": 10,
+     "coco": null
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 14,
+  "frames": [
+   2137,
+   2147,
+   2156,
+   2166
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2147,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 21.27,
+    "tiles": {
+     "ball_heatmap.3000.pt": 52,
+     "ball_heatmap.2250.pt": 52,
+     "coco": 52
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 15,
+  "frames": [
+   2188,
+   2193,
+   2198,
+   2203
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2193,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 19.61,
+    "tiles": {
+     "ball_heatmap.3000.pt": 23,
+     "ball_heatmap.2250.pt": 23,
+     "coco": null
+    }
+   },
+   {
+    "q": 2,
+    "frame": 2198,
+    "parity": "even",
+    "why": "apart",
+    "pair": true,
+    "track source": null,
+    "px/m": 19.29,
+    "tiles": {
+     "ball_heatmap.3000.pt": 34,
+     "ball_heatmap.2250.pt": 32
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 16,
+  "frames": [
+   2893,
+   2900,
+   2907,
+   2914
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 2900,
+    "parity": "even",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 25.67,
+    "tiles": {
+     "ball_heatmap.3000.pt": 51,
+     "ball_heatmap.2250.pt": 51,
+     "coco": 51
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 17,
+  "frames": [
+   3158,
+   3163,
+   3168,
+   3173
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 3163,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 32.83,
+    "tiles": {
+     "ball_heatmap.3000.pt": 21,
+     "ball_heatmap.2250.pt": 21,
+     "coco": 21
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 18,
+  "frames": [
+   4254,
+   4261,
+   4269,
+   4276
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 4261,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 28.06,
+    "tiles": {
+     "ball_heatmap.3000.pt": 65,
+     "ball_heatmap.2250.pt": 65,
+     "coco": 65
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 19,
+  "frames": [
+   4360,
+   4367,
+   4375,
+   4382
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 4367,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 24.37,
+    "tiles": {
+     "ball_heatmap.3000.pt": 67,
+     "ball_heatmap.2250.pt": 67,
+     "coco": 67
+    }
+   }
+  ]
+ },
+ {
+  "window": "st2_128058_2nd_f015000",
+  "match": "128058",
+  "pass": 20,
+  "frames": [
+   4417,
+   4423,
+   4429,
+   4435
+  ],
+  "s": [
+   0.25,
+   0.417,
+   0.583,
+   0.75
+  ],
+  "tracked": "ball_heatmap.3000.pt",
+  "raw": "ball_heatmap.2250.pt",
+  "extra": {
+   "coco": 1
+  },
+  "track source": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "pair frames": [
+   {
+    "q": 1,
+    "frame": 4423,
+    "parity": "odd",
+    "why": "q1",
+    "pair": true,
+    "track source": null,
+    "px/m": 20.16,
+    "tiles": {
+     "ball_heatmap.3000.pt": 6,
+     "ball_heatmap.2250.pt": 6,
+     "coco": 6
+    }
+   }
+  ]
+ }
+]

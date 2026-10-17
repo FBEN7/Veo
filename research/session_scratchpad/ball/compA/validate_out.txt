@@ -1,0 +1,24 @@
+Agreement of FF-auto with the judge, detector tiles at pass frames
+  T: 112 tiles; auto hit & B 69, auto hit & not B 0, B missed 9, neither 34; kappa 0.82, PPV 1.00, recall 0.89  [recorded (69, 0, 9, 34), kappa 0.82: ok]
+    ball_heatmap.3000.pt: 58 tiles, auto rate 0.62, judged rate 0.74  [recorded 0.62 / 0.74: ok]
+    coco: 54 tiles, auto rate 0.61, judged rate 0.65  [recorded 0.61 / 0.65: ok]
+  V-old: 97 tiles; auto hit & B 55, auto hit & not B 3, B missed 6, neither 33; kappa 0.81, PPV 0.95, recall 0.90  [recorded (55, 3, 6, 33), kappa 0.81: ok]
+    ball_heatmap.3000.pt: 52 tiles, auto rate 0.58, judged rate 0.60  [recorded 0.58 / 0.60: ok]
+    coco: 45 tiles, auto rate 0.62, judged rate 0.67  [recorded 0.62 / 0.67: ok]
+Decoys: judged B 0 of 88; at pass frames, FF-auto hits 0 of 65  [recorded 0 of 65: ok]
+Chance (random pitch points, T windows, 14400 points): FF-auto 0.0120; the corridor without |t - s| 0.0185  [recorded 0.019: ok]
+FF-auto, v1 heatmap and COCO, from the saved candidates
+  T st2_118576_2nd_f015000: 10 passes, v1 0.575, COCO 0.425  [recorded 0.58 / 0.43: ok]
+  T st2_118578_2nd_f015000: 17 passes, v1 0.588, COCO 0.382  [recorded 0.59 / 0.38: ok]
+  T st2_128058_2nd_f015000: 21 passes, v1 0.738, COCO 0.631  [recorded 0.74 / 0.63: ok]
+  T pooled: 48 passes, v1 0.651, COCO 0.500, difference +0.151; 1-minute blocks (9) [+0.097, +0.219]; single passes [+0.089, +0.214]
+    [recorded 0.651 / 0.500, +0.151 [+0.089, +0.214] over single passes: ok]
+    match 118576: 10 passes, v1 0.575, COCO 0.425, difference +0.150
+    match 118578: 17 passes, v1 0.588, COCO 0.382, difference +0.206
+    match 128058: 21 passes, v1 0.738, COCO 0.631, difference +0.107
+  V-old st2_117093_1st_f015000: 19 passes, v1 0.447, COCO 0.355  [recorded 0.45 / 0.36: ok]
+  V-old st2_132877_1st_f015000: 19 passes, v1 0.618, COCO 0.645  [recorded 0.62 / 0.65: ok]
+  V-old pooled: 38 passes, v1 0.533, COCO 0.500, difference +0.033; 1-minute blocks (6) [-0.065, +0.202]; single passes [-0.072, +0.138]
+    [recorded 0.533 / 0.500, +0.033 [-0.072, +0.138] over single passes: ok]
+    match 117093: 19 passes, v1 0.447, COCO 0.355, difference +0.092
+    match 132877: 19 passes, v1 0.618, COCO 0.645, difference -0.026

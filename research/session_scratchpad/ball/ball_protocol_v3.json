@@ -1,0 +1,91 @@
+{
+ "written": "2026-10-10, after design and implementation, before any v2 training strip is cut, any v2 checkpoint exists, or any V-new window is cut",
+ "variant": "V detector variant 2 of 3 (v1 was 1)",
+ "splits": {
+  "train": "both halves of 118575 (M3), 118576 (M4), 118577 (M5), 128058 (M8); 2nd halves of 118576 and 128058 skip absolute frames 13500-20999 (old T windows +- 60 s)",
+  "U_tuning_all_choices": [
+   "st2_118578_1st_f030000",
+   "st2_118578_2nd_f015000",
+   "st2_118578_1st_f052500",
+   "st2_118578_2nd_f037500"
+  ],
+  "U_caveats": "v1 trained on M6's 1st half (comparisons with v1 on U are conservative for v2); M6 has resting balls by a goal that depress COCO (margin over COCO optimistic for v2), hence G1's absolute bar",
+  "T_diagnostic_only": [
+   "st2_118576_2nd_f015000",
+   "st2_128058_2nd_f015000"
+  ],
+  "V_old": [
+   "st2_117093_1st_f015000",
+   "st2_132877_1st_f015000"
+  ],
+  "V_new_cut_after_freeze": [
+   "st2_117093_1st_f045000",
+   "st2_117093_2nd_f015000",
+   "st2_117093_2nd_f045000",
+   "st2_132877_1st_f045000",
+   "st2_132877_2nd_f015000",
+   "st2_132877_2nd_f045000"
+  ],
+  "never": "117092 (M1, other camera) excluded; 128057 (M7) and 132831 (M9), the test matches, never opened"
+ },
+ "model": "v1 net (ResNet-18 to stride 8, stride-4 lateral, 1-channel head) + a zero-initialised 3-channel motion stem on grey: D- = g_t - g_{t-2}, D+ = g_t - g_{t+2}, F = g_t - B_t (B_t: median of the grey frames at multiples of 50 within +-350 of 50*round(t/50), inside the half (training) or the window (inference), >= 8 samples, else F = 0), each /255/SIGMA",
+ "sigma_rule": "SIGMA_D, SIGMA_F measured on the training strips by label_ball_strips.py --sigma (robust std, or the std when > 25% of values are exactly 0) and written into src/ball_heatmap.py before training; recorded in the provenance",
+ "mismatch_check": "before training: strips at the same frames and places from the source stream and from the local window st2_118577_1st_f030000 (M5, training); if the D std ratio (window / stream) is outside [0.67, 1.5], inference passes t-2, t, t+2 through the same JPEG q98 round trip as the strips (decided now, applied before any U run, disclosed)",
+ "labels": "label_ball_strips.LABEL_CONSTANTS as implemented (flight corridor 2.5 m / 20 px around the passer-receiver line in t_hat-0.22 .. t_hat+0.28, t_hat = s + 0.4 s(1-s); bodies outside the bag hard negative; ignore band 6 m / 48 px + 2 m curtain; lofted curtain; v1 action bags; dribble positive-only; free strips with landmark hard negatives and COCO-ball ignore disks). T-only statistics of 26 confirmed in-flight balls (recorded, constants not changed): perpendicular median 1.38 m, 90% 3.45 m; pixels median 8.3, 90% 21; t-s median +0.14, 5-95% [-0.01, +0.49] (the bag misses part of the upper tail); 96% >= 1 m from every player",
+ "training": "train_ball_heatmap.py --strips --motion, 4000 steps, batch 16 (flight 5, action 3, dribble 1, lofted 1, free 6), seed 0, checkpoints 2500/3250/4000 with provenance; monitor every 250 steps, abort if bag peakiness > 30 after step 1500",
+ "measures": {
+  "FF_auto_primary": "top-1 (any p; none = miss) ground point image_to_pitch(u, v + size/2) within 4.0 m of segment A->B (passer at the kick, receiver at reception), projection t in [0, 1], |t - s| <= 0.30, >= 1.0 m from every GSR person; pass score = mean of its 4 frames (s = 0.25, 0.417, 0.583, 0.75)",
+  "FF_auto_at_freeze": "agreement with the blind judge: T kappa 0.82 (PPV 1.00, recall 0.89; the rule was chosen on T), V-old kappa 0.81 (PPV 0.95; seen during design, not a clean check); decoys 0 of 88 judged ball, 0 of 65 FF-auto hits; chance (random pitch points) 0.012. Existing: T v1 0.651 vs COCO 0.500 (+0.151, 1-min blocks [+0.097, +0.219]); V-old v1 0.533 vs COCO 0.500 (+0.033, blocks [-0.065, +0.202]); per window v1/COCO: M4-2nd 0.575/0.425, M6-2nd 0.588/0.382, M8-2nd 0.738/0.631, M2 0.447/0.355, M10 0.618/0.645",
+  "placebo_pre": "kick-15 and kick-30 for passes whose previous event is >= 35 frames earlier and is a DRIVE by the passer or a completed pass to him: top-1 within 4 m of the upcoming segment, t in [0.2, 0.9], >= 1 m from persons",
+  "placebo_post": "reception+15 (inside the window, before the next event): top-1 within 4 m of the completed segment, t in [0.1, 0.7], >= 1 m from persons (a quick return pass makes a true ball count here: judged relative to v1 and COCO)",
+  "legacy": "1 m geometric hit, action hit, ball within 3 m of the actor, candidates per frame: reported unchanged",
+  "statistics": "paired per-pass differences; 1-minute block bootstrap (window x minute of the kick), 4000 draws, seed 0; one-sided alpha 0.025: reject when the 2.5th percentile is > 0. Paired SD (v1 - COCO, T + V-old, 86 passes) 0.28: MDE about 0.075 at 146 passes (design effect 1.3)"
+ },
+ "decisions_on_U_only": [
+  "checkpoint among 2500/3250/4000: highest U FF-auto, within 0.02 the later",
+  "Platt (a, b) on the top-8 logits at U pass frames (FF-auto geometry) and PASS/DRIVE frames (within 1.5 m of the actor)",
+  "tau: smallest p_cal on 0.05..0.95 giving <= 1.0 candidate per frame on U random frames",
+  "at most 2 trained variants: motion; RGB-only (--no-motion, same strips/labels/steps) only if the motion model fails G or aborts"
+ ],
+ "gate_G_on_U": {
+  "G1": "FF-auto(v2) >= 0.65 and v2 - COCO >= +0.10 with 2.5th percentile > 0",
+  "G2": "placebo_pre(v2) <= 0.05 and <= v1's + 0.03; placebo_post(v2) <= max(v1, COCO) + 0.03",
+  "G3": "blind sitting S1: v2 match ball in play >= 0.65 at one frame per U pass; FF-auto vs judge on v2's pass tiles kappa >= 0.6 and PPV >= 0.85; decoys judged ball <= 2 of 24; confident picks >= 9 of 12",
+  "on_failure": "the RGB-only fallback runs once; if no variant passes, no v2 run on V (variant not spent); events proceed with the variant of highest U FF-auto (or v1), disclosed"
+ },
+ "V_claims": {
+  "order": "detector frozen -> V-new cut -> sealed results -> blind sittings S2, S3 judged -> unseal",
+  "H1": "v2 better than COCO: paired FF-auto over V-old + V-new, block bootstrap, reject when the 2.5th percentile > 0. Validity on S2: kappa >= 0.6 for v2 and for COCO, differential bias (auto - judged, v2 minus COCO) <= +0.05, decoys judged ball <= 2 of 20; if any fails, the primary becomes the exact one-sided McNemar on the blind-judged passes (V-old 38 + S2 50), p < 0.025 with more v2-only hits",
+  "clearly_better": "H1 rejected AND FF-auto difference >= +0.10 AND blind difference >= +0.10 AND same sign on M2 and on M10 AND positive on V-new alone",
+  "H2": "v2 better than v1, same rule, tested only if H1 is rejected",
+  "secondary": "blind McNemar vs COCO and vs v1 (V-old), legacy 1 m hit, placebos, action hit vs random point, ball within 3 m of the actor, candidates per frame at tau, precision of 40 confident v2 picks (vs v1 32/40, COCO 21/40 from E4), ECE, per match, V-old vs V-new, T/U/V gap, motion-zeroed diagnostic on U"
+ },
+ "sittings": "S1 on U (~100: v2 top-1 at pass frame index 1 (ball_tiles.py --pass-frame 1, s = 0.417, as the registered v1 sittings and FF-auto's validation) per U pass, 12 confident picks, 12 random + 12 corridor decoys); S2 on V-new (50 passes, 25 per match, seed 3, v2 and COCO top-1 at pass frame index 1, deduped within 6 px, 10 + 10 decoys); S3 (v2 at V-old's 38 passes (pass frame index 1), 12 old tiles re-judged (>= 11 must agree, else all 76 old tiles re-judged), 40 confident v2 picks on V random frames, 10 + 10 decoys)",
+ "events": {
+  "order": "detector frozen and its V results recorded first; tuning on U-E only; events_v3.json + sha256 into SOCCERTRACK_V2.md; one run on V",
+  "U_E": [
+   "st2_118578_1st_f030000",
+   "st2_118578_2nd_f015000"
+  ],
+  "V_E": [
+   "st2_117093_1st_f015000",
+   "st2_132877_1st_f015000"
+  ],
+  "grid": "sweep_events_v2.py stages: ball input (top-k {1,4} x select_single_ball / ball_link), linker (c_null {1,3} x c_static {2,6}), possession (radius {2,3,4,8} x hold {0.2,0.4}), pass/carry (carry min time {0.8,1.2} x min pass distance {0.3,3}), shots (min speed {10,30,50} x max distance {50,30} x mouth margin {None,5}: most permissive with <= 3 shots pooled), then re-check ball input",
+  "objective": "pooled pass+carry F1 at 1 s minus pooled chance F1 (200 random-time draws per window); pass+carry events per window in [0.6, 1.5] x labels; within 0.02 of the best: fewest changes from v1, then fewest events; leave-one-window-out reported",
+  "G_E": "pooled over U-E: frozen config's objective >= v1 rules with the same v2 ball; otherwise C3 := C2 (v1 rules), disclosed",
+  "configs_on_V": "C0 COCO + v1 rules (cached), C1 v1 heatmap + v1 rules (cached), C2 v2 + v1 rules, C3 v2 + frozen rules, C0' COCO + frozen rules",
+  "claims": "H3: C3 > C0, pooled pass+carry F1 at 1 s, paired 10 s block bootstrap 4000 draws, reject when the 2.5th percentile > 0; H4: C3 > C1 only if H3 rejected; the rest descriptive",
+  "disclosed": "V-old's events (182 shots, 282 events against 130 labels) were seen when the grid's dimensions were chosen"
+ },
+ "budget_and_cuts": "about 10 h of CPU wall-clock; if over, cut in order: the T diagnostic, the motion-zeroed diagnostic, training 4000 -> 3500 steps (only before training); V-new windows are cut last",
+ "deviations_to_disclose": [
+  "FF-auto replaces the registered 1 m rule as the automatic measure (still reported)",
+  "V extended by V-new",
+  "T demoted to a diagnostic",
+  "M6 held out as U, its old judgements reused, U window st2_118578_1st_f015000 dropped (9 passes)",
+  "label constants chosen on T judgements pooled with V-old (T-only statistics recorded)",
+  "V-old kappas seen during design",
+  "V-old events seen when the events grid was designed"
+ ]
+}

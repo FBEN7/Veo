@@ -1,0 +1,129 @@
+[
+ {
+  "tile": 1,
+  "window": "st2_118577_1st_f030000",
+  "frame": 24,
+  "u": 2775.528,
+  "v": 236.392,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 4.303
+ },
+ {
+  "tile": 2,
+  "window": "st2_118577_1st_f030000",
+  "frame": 37,
+  "u": 2188.540092321104,
+  "v": 677.7704124735747,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 3,
+  "window": "st2_118577_1st_f030000",
+  "frame": 99,
+  "u": 2775.424,
+  "v": 236.585,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 4.308
+ },
+ {
+  "tile": 4,
+  "window": "st2_118577_1st_f030000",
+  "frame": 99,
+  "u": 2774.48,
+  "v": 236.854,
+  "source": "v2rand.pt",
+  "sources": [
+   "v2rand.pt"
+  ],
+  "kind": "random",
+  "size": 4.319
+ },
+ {
+  "tile": 5,
+  "window": "st2_118577_1st_f030000",
+  "frame": 99,
+  "u": 3412.1120936777156,
+  "v": 458.13536089899316,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 6,
+  "window": "st2_118577_1st_f030000",
+  "frame": 12,
+  "u": 2775.914,
+  "v": 236.697,
+  "source": "v2rand.pt",
+  "sources": [
+   "v2rand.pt"
+  ],
+  "kind": "random",
+  "size": 4.308
+ },
+ {
+  "tile": 7,
+  "window": "st2_118577_1st_f030000",
+  "frame": 12,
+  "u": 2775.685,
+  "v": 236.558,
+  "source": "ball_heatmap.3000.pt",
+  "sources": [
+   "ball_heatmap.3000.pt"
+  ],
+  "kind": "random",
+  "size": 4.306
+ },
+ {
+  "tile": 8,
+  "window": "st2_118577_1st_f030000",
+  "frame": 73,
+  "u": 2772.243,
+  "v": 237.791,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 7.625
+ },
+ {
+  "tile": 9,
+  "window": "st2_118577_1st_f030000",
+  "frame": 37,
+  "u": 2772.062,
+  "v": 237.718,
+  "source": "coco",
+  "sources": [
+   "coco"
+  ],
+  "kind": "random",
+  "size": 7.868
+ },
+ {
+  "tile": 10,
+  "window": "st2_118577_1st_f030000",
+  "frame": 73,
+  "u": 2900.850704380256,
+  "v": 254.01583629622792,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ }
+]

@@ -1,0 +1,129 @@
+<class 'list'> 12
+=====
+{
+ "n": 1,
+ "what": "Register protocol v3 and build the measurement tooling before anything is cut.\n\neval_ball_detector.py gets:\n- FF-auto (4.0 m, t in [0,1], |t-s|<=0.30, >=1 m from every GSR person; the pass score is the mean of its 4 frames);\n- placebo frames and the placebo measure;\n- 1-minute block bootstrap and per-match breakdown;\n- --reuse SCORES.json, --sealed OUT, --candidates PARQUET, saving of the top-8 raw logits;\n- a leakage guard that reads <ckpt>.provenance.json (--allow-seen only for T);\n- the registered 1 m measure kept unchanged.\n\nvalidate_ff_auto.py (new) reproduces from the scratchpad tiles_* keys and judged.txt plus score files:\n- T kappa 0.82;\n- V-old kappa 0.79-0.81;\n- 0/65 decoys counted as hits;\n- chance 1.9%;\n- the FF-auto table (T v1 0.65 vs COCO 0.50; V-old 0.53 vs 0.50; per window).\n\nRegression: --reuse V.json reproduces the registered 0.23/0.23 exactly.\n\nball_tiles.py gets: --pass-frame q, corridor decoys, --reuse DIR, --rejudge KEY:n, --confident TAU, multi-detector dedupe within 6 px credited to each source, and pass ids in the key.\n\nRegistration: write ball_protocol_v3.json in the scratchpad and a 'Protocol v3' section in SOCCERTRACK_V2.md. Commit code and doc only (this timestamps the registration).",
+ "files": [
+  "eval_ball_detector.py",
+  "validate_ff_auto.py (new)",
+  "ball_tiles.py",
+  "SOCCERTRACK_V2.md",
+  "scratchpad/ball/ball_protocol_v3.json (not committed)"
+ ],
+ "compute_min": 10
+}
+=====
+{
+ "n": 2,
+ "what": "Motion and model code.\n\nsrc/motion_bg.py (new):\n- BackgroundCache: pass 1 grabs every 50th frame and keeps pitch-bbox crops. B(t) is the median of 15 samples at 50-frame spacing centred on c = 125*round(t/125), clipped, with at least 8 samples.\n- motion_channels(prev, cur, nxt, bg) returns D-, D+ and F, normalised by sigma constants.\n- RingBuffer(5) for sequential decode.\n\nsrc/ball_heatmap.py:\n- build(motion=True|False);\n- to_tensor_v2;\n- detect_v2 returning (u, v, p_raw, size = 0.22*max(sx, sy), logit);\n- load_calibration(<ckpt>.calib.json);\n- write_provenance and check_provenance.\n\nSmoke test on st2_118577_1st_f030000 (M5, a training half):\n- the measured-frame path and the dense path give identical candidates at shared frames;\n- time per frame is within 1.1x of v1.",
+ "files": [
+  "src/motion_bg.py (new)",
+  "src/ball_heatmap.py"
+ ],
+ "compute_min": 10
+}
+=====
+{
+ "n": 3,
+ "what": "Fetch data. This is network-bound and runs alongside step 2.\n\n- Stream the GSR of 118575_2nd and 118577_2nd (training halves; cached as parquet).\n- Cut the U windows with fetch_soccertrack_v2.py, unchanged: st2_118578_1st_f015000, st2_118578_1st_f052500, st2_118578_2nd_f037500. The M6 GSR is already cached.",
+ "files": [
+  "fetch_soccertrack_v2.py (run, unchanged)"
+ ],
+ "compute_min": 15
+}
+=====
+{
+ "n": 4,
+ "what": "Build the strips and labels.\n\nbuild_ball_patches.py writes one 1280x320 JPEG q98 per sample: [t-2 | t | t+2 | B(t)].\n- Kinds: flight, lofted, action, dribble, free.\n- Slack-aware jitter up to \u00b1100 px.\n- Samples are queued until frame c+350 is decoded (a 15-frame deque of full frames, about 200 MB).\n- Options --exclude-frames, --kinds and --seed. It refuses 118578, 117093, 132877, 117092, 128057 and 132831.\n- Every strip's metadata goes to strips.parquet.\n\nRun 8 halves, two at a time: 118575 1+2, 118576 1+2, 118577 1+2, 128058 1+2. The 2nd halves of 118576 and 128058 skip frames 13,500-20,999.\n\nbuild_ball_labels.py:\n- adds corridor(), curtain(), landmark_cells(), free_codes() and a COCO ignore pass (yolov8s, conf >= 0.25, t crop upsampled x2);\n- writes labels.parquet and labels_codes.npy (80x80 int8);\n- holds out 300 strips (1.5%, stratified) for the training monitor;\n- measures the motion sigma constants on 1,000 strips and writes them into src/ball_heatmap.py.\n\nAt the same time, run the player pipeline once on st2_118578_2nd_f015000 (as for events_v1: COCO ball, teams, calibrated). It becomes the second events tuning window.",
+ "files": [
+  "build_ball_patches.py",
+  "build_ball_labels.py",
+  "src/ball_heatmap.py",
+  "score_soccernet.py (run)",
+  "scratchpad/events_run.py (run)"
+ ],
+ "compute_min": 70
+}
+=====
+{
+ "n": 5,
+ "what": "U baselines.\n\n- COCO on all U measured frames (pass, placebo, PASS/DRIVE, random) of the 5 M6 windows.\n- v1 (ball_heatmap.3000.pt) on U pass and placebo frames.\n- Save as U_base.json in the scratchpad.",
+ "files": [
+  "eval_ball_detector.py (run)"
+ ],
+ "compute_min": 10
+}
+=====
+{
+ "n": 6,
+ "what": "Train v2 with the motion stem: train_ball_heatmap.py --motion.\n\n- Strip loader: one JPEG split into 4 crops.\n- MIX and loss as in training_spec. LR groups: conv1_motion trains from step 1; the RGB stem and layer1 are frozen to step 800.\n- 4,000 steps, checkpoints at 2500, 3250 and 4000, each with provenance JSON.\n- Monitor every 250 steps; abort when peakiness exceeds 30 after step 1,500.\n- --no-motion builds the RGB-only fallback. It is trained only if G fails or the monitor aborts.",
+ "files": [
+  "train_ball_heatmap.py"
+ ],
+ "compute_min": 100
+}
+=====
+{
+ "n": 7,
+ "what": "U selection and calibration.\n\nOne decode per U window runs all 3 checkpoints on pass and placebo frames.\n- Choose the checkpoint with the highest U FF-auto; within 0.02, the later one.\n- Run the chosen checkpoint on all U frames (top-8 with logits), plus the motion-zeroed diagnostic (motion channels set to 0) on pass and placebo frames.\n- T diagnostic (--allow-seen) on st2_118576_2nd_f015000 and st2_128058_2nd_f015000.\n\ncalibrate_ball_heatmap.py (new):\n- Platt (a, b) on U candidate logits. Positives: FF-auto geometry at pass frames; within 1.5 m of the actor at PASS/DRIVE frames.\n- Writes <ckpt>.calib.json with a, b, a reliability table, and tau = the smallest p_cal giving <= 1.0 candidates per frame on U random frames.\n\nCompute G1 and G2. The detector is now frozen: checkpoint, a, b, tau.",
+ "files": [
+  "eval_ball_detector.py (run)",
+  "calibrate_ball_heatmap.py (new)"
+ ],
+ "compute_min": 35
+}
+=====
+{
+ "n": 8,
+ "what": "Blind sitting S1 on U, then G3.\n\nS1 has about 110 tiles:\n- v2 top-1 at q=1 per U pass (about 74);\n- 12 confident v2 picks;\n- 12 random and 12 corridor decoys.\n\nThe sealed FF-auto is opened only after the sitting is judged. Decide G. If G fails, run the RGB-only fallback (step 6 --no-motion, then step 7) once.\n\nMeanwhile, network-bound: stream the GSR of 117093_2nd and 132877_2nd, and cut the 6 V-new windows: st2_117093_1st_f045000, st2_117093_2nd_f015000, st2_117093_2nd_f045000, st2_132877_1st_f045000, st2_132877_2nd_f015000, st2_132877_2nd_f045000.",
+ "files": [
+  "ball_tiles.py (run)",
+  "fetch_soccertrack_v2.py (run, unchanged)"
+ ],
+ "compute_min": 15
+}
+=====
+{
+ "n": 9,
+ "what": "V-new detector evaluation, sealed.\n\n- v2, v1 and COCO at the measured and placebo frames of the 6 V-new windows, all in one decode per window.\n- v1 and COCO at the V-old placebo frames.\n- Results are written with --sealed.\n- Build S2 tiles: 50 V-new passes (seed 3, 25 per match); v2 and COCO top-1 at q=1, deduped; 10 random and 10 corridor decoys.",
+ "files": [
+  "eval_ball_detector.py (run)",
+  "ball_tiles.py (run)"
+ ],
+ "compute_min": 35
+}
+=====
+{
+ "n": 10,
+ "what": "Dense v2 runs and the V detector result.\n\ndetect_ball_heatmap.py --v2 --stride 2:\n- rows carry confidence = p_cal, logit, crop_h and detection_method 'heatmap_v2', with p_raw >= 0.05 and at most 8 per frame;\n- --extra-frames adds the odd measured and placebo frames.\n\nRun first on the V-old pair (st2_117093_1st_f015000, st2_132877_1st_f015000), which also supplies the V-old detector scores through --candidates. Then run on the U-E pair (st2_118578_1st_f030000, st2_118578_2nd_f015000).\n\nDuring the runs, judge S2 and then S3. S3 holds:\n- v2 at V-old's 38 passes;\n- 12 old tiles re-judged;\n- 40 confident v2 picks on V random frames;\n- 10 random and 10 corridor decoys.\n\nThen unseal FF-auto, run validate_ff_auto.py for the validity conditions, decide H1 and H2, and write the secondary measures. Record the V detector results in SOCCERTRACK_V2.md before any events work.",
+ "files": [
+  "detect_ball_heatmap.py",
+  "eval_ball_detector.py (run)",
+  "validate_ff_auto.py (run)",
+  "ball_tiles.py (run)",
+  "SOCCERTRACK_V2.md"
+ ],
+ "compute_min": 140
+}
+=====
+{
+ "n": 11,
+ "what": "Events.\n\nCode:\n- src/ball_link.py (new): skip-Viterbi in pitch metres.\n- src/events.py: detect_events(..., params=None) temporarily overrides module constants; new SHOT_MOUTH_MARGIN_M (None = v1) in _toward_goal; a FIXED_VIEW_V3 profile, filled after the freeze.\n- score_soccernet.py: swap_ball_rows(cached_dir, rows), which moves the scratchpad e5.py logic into the repo; events_from_cached(cached_dir, ball_rows, cal, select='v1'|'link', link_params, event_params), which factors lines 419-440 so each config takes seconds; run_pipeline gets ball_rows, ball_link and event_params arguments, with the broadcast path unchanged.\n- sweep_events_v2.py (new): the staged grid on U-E; writes events_v3.json and its sha256.\n- score_events_paired.py (new; moves e5_score.py): pooled F1 at 0.5, 1 and 2 s; chance F1 from 200 random-time draws per window; paired 10 s block bootstrap with 4,000 draws at a given alpha.\n\nThen: run the sweep, decide gate G-E, freeze the settings, run C2, C3 and C0' once on V-old (C0 and C1 are cached), and score.",
+ "files": [
+  "src/ball_link.py (new)",
+  "src/events.py",
+  "score_soccernet.py",
+  "sweep_events_v2.py (new)",
+  "score_events_paired.py (new)"
+ ],
+ "compute_min": 40
+}
+=====
+{
+ "n": 12,
+ "what": "Write-up. SOCCERTRACK_V2.md gets a section 'Ball detector v2: the ball in flight, then events' with:\n- results;\n- every deviation (see protocol item 10);\n- cuts taken;\n- fallback use;\n- blind-judge drift.\n\nCommit code and doc only. Strips, windows, weights, candidates, tiles, keys and judgements stay in .cache/ and the scratchpad.",
+ "files": [
+  "SOCCERTRACK_V2.md"
+ ],
+ "compute_min": 0
+}

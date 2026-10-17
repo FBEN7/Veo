@@ -1,0 +1,25 @@
+cut st2_117093_1st_f045000 (match 117093 half 1 start 30 min)
+  GSR 117093 half 1: 1487709 records, 67625 frames  [1 s]
+  pitch y grows towards the camera: True
+  st2_117093_1st_f045000: 4500 frames 4096x1080, 23 people, 82 actions ({'DRIVE': 34, 'PASS': 34, 'HIGH PASS': 6, 'OUT': 3, 'THROW IN': 2, 'BALL PLAYER BLOCK': 1, 'SHOT': 1, 'PLAYER SUCCESSFUL TACKLE': 1})  [259 s]
+cut st2_117093_2nd_f015000 (match 117093 half 2 start 10 min)
+  GSR 117093 half 2: 1550381 records, 70475 frames  [199 s]
+  pitch y grows towards the camera: True
+  st2_117093_2nd_f015000: 4500 frames 4096x1080, 22 people, 85 actions ({'PASS': 37, 'DRIVE': 36, 'HIGH PASS': 6, 'CROSS': 2, 'BALL PLAYER BLOCK': 2, 'PLAYER SUCCESSFUL TACKLE': 2})  [256 s]
+cut st2_117093_2nd_f045000 (match 117093 half 2 start 30 min)
+  GSR 117093 half 2: 1550381 records, 70475 frames  [0 s]
+  pitch y grows towards the camera: True
+  st2_117093_2nd_f045000: 4500 frames 4096x1080, 22 people, 76 actions ({'PASS': 37, 'DRIVE': 30, 'HIGH PASS': 5, 'FREE KICK': 1, 'CROSS': 1, 'BALL PLAYER BLOCK': 1, 'GOAL': 1})  [253 s]
+cut st2_132877_1st_f045000 (match 132877 half 1 start 30 min)
+  GSR 132877 half 1: 1489136 records, 67688 frames  [1 s]
+  pitch y grows towards the camera: True
+  st2_132877_1st_f045000: 4500 frames 4096x1084, 22 people, 80 actions ({'PASS': 37, 'DRIVE': 31, 'PLAYER SUCCESSFUL TACKLE': 3, 'OUT': 3, 'SHOT': 2, 'CROSS': 1, 'BALL PLAYER BLOCK': 1, 'THROW IN': 1, 'FREE KICK': 1})  [219 s]
+cut st2_132877_2nd_f015000 (match 132877 half 2 start 10 min)
+  GSR 132877 half 2: 1525309 records, 69349 frames  [198 s]
+  pitch y grows towards the camera: True
+  st2_132877_2nd_f015000: 4500 frames 4096x1084, 22 people, 69 actions ({'PASS': 30, 'DRIVE': 25, 'HIGH PASS': 6, 'CROSS': 3, 'PLAYER SUCCESSFUL TACKLE': 2, 'BALL PLAYER BLOCK': 1, 'OUT': 1, 'SHOT': 1})  [217 s]
+cut st2_132877_2nd_f045000 (match 132877 half 2 start 30 min)
+  GSR 132877 half 2: 1525309 records, 69349 frames  [0 s]
+  pitch y grows towards the camera: True
+  st2_132877_2nd_f045000: 4500 frames 4096x1084, 22 people, 86 actions ({'PASS': 41, 'DRIVE': 35, 'HIGH PASS': 4, 'CROSS': 2, 'PLAYER SUCCESSFUL TACKLE': 2, 'HEADER': 1, 'BALL PLAYER BLOCK': 1})  [216 s]
+cut-done

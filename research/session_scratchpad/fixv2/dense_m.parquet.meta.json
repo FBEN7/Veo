@@ -1,0 +1,43 @@
+{
+ "parquet sha256": "2e77110eaf137b31fdeee33caa927ea3da66528bc2bd1440c09000c550bebb19",
+ "frames": [
+  656,
+  658,
+  660,
+  662,
+  664,
+  666,
+  668,
+  670,
+  672,
+  674
+ ],
+ "window": "st2_118577_1st_f030000",
+ "match": "118577",
+ "half": 1,
+ "start_frame": 30000,
+ "requested": 10,
+ "stride": 2,
+ "range": [
+  656,
+  676
+ ],
+ "extra_frames": [],
+ "ckpt": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/e2e/ckpt/smoke_v2.20.pt",
+ "ckpt sha256": "5cf70056cb1db74b7bfc51bcd7e4cf22b47cc9e007277ed9f9e424c279f2095e",
+ "rgb_only": false,
+ "sigma": {
+  "SIGMA_D": 0.02,
+  "SIGMA_F": 0.05
+ },
+ "calib": {
+  "path": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/e2e/ckpt/smoke_v2.20.pt.calib.json",
+  "sha256": "37fe792c19c0cfca1d44b2f2b7cc4c4f1be520498d04a5e3ffa94dae8c8758ee",
+  "a": 0.574117,
+  "b": -3.655233,
+  "tau": 0.1
+ },
+ "tau": 0.05,
+ "top_k": 8,
+ "detection_method": "heatmap_v2"
+}

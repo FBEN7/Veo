@@ -1,0 +1,264 @@
+{
+ "a": 0.830495,
+ "b": -0.770706,
+ "tau": 0.15,
+ "ckpt": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compE/v1rand_v2.pt",
+ "ckpt sha256": "b25916a9e923030a80d86b8b495ef7641024fa0eaa30e619811ffd08b4d05b0e",
+ "detector": "v1rand_v2.pt",
+ "scores": [
+  {
+   "path": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compE/fake_v2_scores.json",
+   "sha256": "f91d65e3616d26e51f2be313a3357d7775d0184f2e248ac4fb58e6ad5fd294e4"
+  }
+ ],
+ "windows": [
+  "st2_118577_1st_f030000"
+ ],
+ "candidates": 690,
+ "positives": 178,
+ "by kind": {
+  "pass": {
+   "candidates": 288,
+   "positives": 71,
+   "ece": 0.0594
+  },
+  "action": {
+   "candidates": 402,
+   "positives": 107,
+   "ece": 0.0371
+  }
+ },
+ "frames": {
+  "pass": 48,
+  "action": 67,
+  "pass without people": 0,
+  "pass not measured": 0,
+  "action not measured": 0
+ },
+ "fit": {
+  "iterations": 6,
+  "log loss": 0.421668
+ },
+ "reliability": [
+  {
+   "bin": [
+    0.0,
+    0.1
+   ],
+   "n": 231,
+   "p_cal": 0.0447,
+   "positive": 0.0519
+  },
+  {
+   "bin": [
+    0.1,
+    0.2
+   ],
+   "n": 140,
+   "p_cal": 0.1436,
+   "positive": 0.1286
+  },
+  {
+   "bin": [
+    0.2,
+    0.3
+   ],
+   "n": 82,
+   "p_cal": 0.2493,
+   "positive": 0.2805
+  },
+  {
+   "bin": [
+    0.3,
+    0.4
+   ],
+   "n": 71,
+   "p_cal": 0.351,
+   "positive": 0.2958
+  },
+  {
+   "bin": [
+    0.4,
+    0.5
+   ],
+   "n": 48,
+   "p_cal": 0.4413,
+   "positive": 0.4375
+  },
+  {
+   "bin": [
+    0.5,
+    0.6
+   ],
+   "n": 36,
+   "p_cal": 0.5538,
+   "positive": 0.6944
+  },
+  {
+   "bin": [
+    0.6,
+    0.7
+   ],
+   "n": 33,
+   "p_cal": 0.6497,
+   "positive": 0.6061
+  },
+  {
+   "bin": [
+    0.7,
+    0.8
+   ],
+   "n": 26,
+   "p_cal": 0.753,
+   "positive": 0.6923
+  },
+  {
+   "bin": [
+    0.8,
+    0.9
+   ],
+   "n": 18,
+   "p_cal": 0.8528,
+   "positive": 0.8889
+  },
+  {
+   "bin": [
+    0.9,
+    1.0
+   ],
+   "n": 5,
+   "p_cal": 0.945,
+   "positive": 0.8
+  }
+ ],
+ "ece": 0.0288,
+ "random frames": 50,
+ "tau grid": [
+  {
+   "tau": 0.05,
+   "candidates per frame": 2.96,
+   "exact": true
+  },
+  {
+   "tau": 0.1,
+   "candidates per frame": 1.04,
+   "exact": true
+  },
+  {
+   "tau": 0.15,
+   "candidates per frame": 0.5,
+   "exact": true
+  },
+  {
+   "tau": 0.2,
+   "candidates per frame": 0.26,
+   "exact": true
+  },
+  {
+   "tau": 0.25,
+   "candidates per frame": 0.1,
+   "exact": true
+  },
+  {
+   "tau": 0.3,
+   "candidates per frame": 0.04,
+   "exact": true
+  },
+  {
+   "tau": 0.35,
+   "candidates per frame": 0.02,
+   "exact": true
+  },
+  {
+   "tau": 0.4,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.45,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.5,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.55,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.6,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.65,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.7,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.75,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.8,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.85,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.9,
+   "candidates per frame": 0.0,
+   "exact": true
+  },
+  {
+   "tau": 0.95,
+   "candidates per frame": 0.0,
+   "exact": true
+  }
+ ],
+ "rules": {
+  "FF_W": 4.0,
+  "FF_DT": 0.3,
+  "FF_R": 1.0,
+  "ACTOR_R": 1.5,
+  "TOP_K": 8,
+  "V2_TAU": 0.05,
+  "BINS": 10,
+  "TAU_GRID": [
+   0.05,
+   0.1,
+   0.15,
+   0.2,
+   0.25,
+   0.3,
+   0.35,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7,
+   0.75,
+   0.8,
+   0.85,
+   0.9,
+   0.95
+  ],
+  "MAX_PER_FRAME": 1.0
+ }
+}

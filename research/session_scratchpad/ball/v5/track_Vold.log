@@ -1,0 +1,283 @@
+  st2_117093_1st_f015000: not every one of its 225 frames measured: coco 188, ball_heatmap.3000.pt 188
+  st2_117093_1st_f015000: 225 frames to measure (from saved candidates: coco, ball_heatmap.3000.pt, T)
+  st2_132877_1st_f015000: not every one of its 214 frames measured: coco 180, ball_heatmap.3000.pt 180
+  st2_132877_1st_f015000: 214 frames to measure (from saved candidates: coco, ball_heatmap.3000.pt, T)
+  st2_117093_1st_f015000: T: measured frames by source detected 90, interpolated 85, fallback 18, none 32 (0 past the last processed frame, 0 not covered); fills 1256 of 1333 pairs within the gap (77 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_132877_1st_f015000: T: measured frames by source detected 88, interpolated 86, fallback 16, none 24 (0 past the last processed frame, 0 not covered); fills 1190 of 1203 pairs within the gap (13 refused for speed), longest 6 frames; detected or fallback off the stride 0
+{
+ "windows": [
+  {
+   "window": "st2_117093_1st_f015000",
+   "passes": 19,
+   "actions": 65,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.158,
+    "feet share": 0.09,
+    "action hit": 0.154,
+    "candidates per frame": {
+     "0.02": 1.02,
+     "0.05": 0.52,
+     "0.1": 0.34,
+     "0.15": 0.26,
+     "0.2": 0.24,
+     "0.3": 0.16,
+     "0.5": 0.12,
+     "0.7": 0.04
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.184,
+    "feet share": 0.145,
+    "action hit": 0.415,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 8.0,
+     "0.15": 7.86,
+     "0.2": 7.1,
+     "0.3": 5.0,
+     "0.5": 2.72,
+     "0.7": 1.54
+    }
+   },
+   "T": {
+    "free-flight hit": 0.25,
+    "feet share": 0.056,
+    "action hit": 0.369,
+    "candidates per frame": {
+     "0.02": 0.7,
+     "0.05": 0.7,
+     "0.1": 0.7,
+     "0.15": 0.7,
+     "0.2": 0.68,
+     "0.3": 0.66,
+     "0.5": 0.54,
+     "0.7": 0.38
+    }
+   }
+  },
+  {
+   "window": "st2_132877_1st_f015000",
+   "passes": 19,
+   "actions": 54,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.303,
+    "feet share": 0.034,
+    "action hit": 0.352,
+    "candidates per frame": {
+     "0.02": 0.82,
+     "0.05": 0.58,
+     "0.1": 0.44,
+     "0.15": 0.34,
+     "0.2": 0.3,
+     "0.3": 0.3,
+     "0.5": 0.2,
+     "0.7": 0.1
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.276,
+    "feet share": 0.039,
+    "action hit": 0.426,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 8.0,
+     "0.15": 7.5,
+     "0.2": 5.38,
+     "0.3": 3.18,
+     "0.5": 1.58,
+     "0.7": 0.92
+    }
+   },
+   "T": {
+    "free-flight hit": 0.289,
+    "feet share": 0.042,
+    "action hit": 0.426,
+    "candidates per frame": {
+     "0.02": 0.74,
+     "0.05": 0.74,
+     "0.1": 0.74,
+     "0.15": 0.74,
+     "0.2": 0.68,
+     "0.3": 0.66,
+     "0.5": 0.56,
+     "0.7": 0.52
+    }
+   }
+  }
+ ],
+ "paired": {
+  "ball_heatmap.3000.pt": {
+   "passes": 38,
+   "ball_heatmap.3000.pt": 0.23,
+   "coco": 0.23,
+   "difference": 0.0,
+   "95% interval": [
+    -0.066,
+    0.066
+   ]
+  },
+  "T": {
+   "passes": 38,
+   "T": 0.27,
+   "coco": 0.23,
+   "difference": 0.039,
+   "95% interval": [
+    -0.033,
+    0.112
+   ]
+  }
+ },
+ "ff-auto": {
+  "coco": {
+   "pooled": 0.5,
+   "passes": 38,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_117093_1st_f015000": 0.355,
+    "st2_132877_1st_f015000": 0.645
+   },
+   "matches": {
+    "117093": 0.355,
+    "132877": 0.645
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "pooled": 0.533,
+   "passes": 38,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_117093_1st_f015000": 0.447,
+    "st2_132877_1st_f015000": 0.618
+   },
+   "matches": {
+    "117093": 0.447,
+    "132877": 0.618
+   }
+  },
+  "T": {
+   "pooled": 0.697,
+   "passes": 38,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_117093_1st_f015000": 0.658,
+    "st2_132877_1st_f015000": 0.737
+   },
+   "matches": {
+    "117093": 0.658,
+    "132877": 0.737
+   }
+  }
+ },
+ "ff-auto paired": {
+  "ball_heatmap.3000.pt vs coco": {
+   "passes": 38,
+   "blocks": 6,
+   "ball_heatmap.3000.pt": 0.533,
+   "coco": 0.5,
+   "difference": 0.033,
+   "2.5%": -0.065,
+   "97.5%": 0.202,
+   "lower bound above 0": false,
+   "passes not measured": 0,
+   "matches": {
+    "117093": {
+     "passes": 19,
+     "ball_heatmap.3000.pt": 0.447,
+     "coco": 0.355,
+     "difference": 0.092
+    },
+    "132877": {
+     "passes": 19,
+     "ball_heatmap.3000.pt": 0.618,
+     "coco": 0.645,
+     "difference": -0.026
+    }
+   }
+  },
+  "T vs coco": {
+   "passes": 38,
+   "blocks": 6,
+   "T": 0.697,
+   "coco": 0.5,
+   "difference": 0.197,
+   "2.5%": 0.07,
+   "97.5%": 0.398,
+   "lower bound above 0": true,
+   "passes not measured": 0,
+   "matches": {
+    "117093": {
+     "passes": 19,
+     "T": 0.658,
+     "coco": 0.355,
+     "difference": 0.303
+    },
+    "132877": {
+     "passes": 19,
+     "T": 0.737,
+     "coco": 0.645,
+     "difference": 0.092
+    }
+   }
+  }
+ },
+ "placebo": {
+  "coco": {
+   "pre": 0.0,
+   "pre frames": 1,
+   "pre not measured": 37,
+   "post": 0.0,
+   "post frames": 2,
+   "post not measured": 34,
+   "windows": {
+    "st2_117093_1st_f015000": {
+     "pre": null,
+     "post": 0.0
+    },
+    "st2_132877_1st_f015000": {
+     "pre": 0.0,
+     "post": 0.0
+    }
+   }
+  },
+  "ball_heatmap.3000.pt": {
+   "pre": 0.0,
+   "pre frames": 1,
+   "pre not measured": 37,
+   "post": 0.0,
+   "post frames": 2,
+   "post not measured": 34,
+   "windows": {
+    "st2_117093_1st_f015000": {
+     "pre": null,
+     "post": 0.0
+    },
+    "st2_132877_1st_f015000": {
+     "pre": 0.0,
+     "post": 0.0
+    }
+   }
+  },
+  "T": {
+   "pre": 0.0,
+   "pre frames": 38,
+   "pre not measured": 0,
+   "post": 0.0,
+   "post frames": 36,
+   "post not measured": 0,
+   "windows": {
+    "st2_117093_1st_f015000": {
+     "pre": 0.0,
+     "post": 0.0
+    },
+    "st2_132877_1st_f015000": {
+     "pre": 0.0,
+     "post": 0.0
+    }
+   }
+  }
+ }
+}

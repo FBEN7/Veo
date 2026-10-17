@@ -1,0 +1,10 @@
+  ball_v2rgb.2500.pt: RGB-only, run with zero motion
+  ball_v2rgb.3250.pt: RGB-only, run with zero motion
+  ball_v2rgb.4000.pt: RGB-only, run with zero motion
+  st2_118578_2nd_f015000: background pass, 4451 frames, 90 samples [38 s]
+  st2_118578_2nd_f015000: 192 frames measured, 4488 decoded [1391 s; ball_v2rgb.2500.pt 260 s, ball_v2rgb.3250.pt 259 s, ball_v2rgb.4000.pt 261 s, ball_v2.4000.pt 263 s, ball_v2.4000.pt:motion-zero 262 s]
+  st2_118578_1st_f030000: background pass, 2951 frames, 60 samples [22 s]
+  st2_118578_1st_f030000: 117 frames measured, 2995 decoded [861 s; ball_v2rgb.2500.pt 162 s, ball_v2rgb.3250.pt 160 s, ball_v2rgb.4000.pt 163 s, ball_v2.4000.pt 160 s, ball_v2.4000.pt:motion-zero 162 s]
+  st2_118578_2nd_f015000: 17 passes, 14 + 14 placebo frames, frames measured of 192: ball_v2rgb.2500.pt 192, ball_v2rgb.3250.pt 192, ball_v2rgb.4000.pt 192, ball_v2.4000.pt 192, ball_v2.4000.pt:motion-zero 192
+  st2_118578_1st_f030000: 7 passes, 4 + 7 placebo frames, frames measured of 117: ball_v2rgb.2500.pt 117, ball_v2rgb.3250.pt 117, ball_v2rgb.4000.pt 117, ball_v2.4000.pt 117, ball_v2.4000.pt:motion-zero 117
+  sealed: 2 windows, 5 detectors -> /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/Urgb_a.json [2260 s]

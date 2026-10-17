@@ -1,0 +1,7 @@
+windows ['st2_118575_1st_f015000', 'st2_118576_1st_f030000'], tau None, labels {'st2_118575_1st_f015000': 63, 'st2_118576_1st_f030000': 37}
+[A] chosen {} no configuration meets the event-count constraint
+[D] chosen {'SHOT_MIN_KMH': 30.0} 
+gate G-E passed: frozen +0.156 vs C2 +0.156
+LOO: chosen on ['st2_118576_1st_f030000'] -> {'SHOT_MIN_KMH': 30.0}; on st2_118575_1st_f015000: +0.121 vs C2 +0.121
+LOO: chosen on ['st2_118575_1st_f015000'] -> {'SHOT_MOUTH_MARGIN_M': 5.0}; on st2_118576_1st_f030000: +0.202 vs C2 +0.202
+wrote /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/fix_e5/smoke_fix_v3.json (sha256 b3854c2c3ec3fea726cf9d8116ab89947a697be718c6e113769add94d505bb23) [54 s]

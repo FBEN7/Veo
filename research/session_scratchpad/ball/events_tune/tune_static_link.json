@@ -1,0 +1,2466 @@
+{
+ "ball": "v3s_link",
+ "chosen": {
+  "rules": {
+   "POSSESSION_RADIUS_M": 3.0,
+   "MIN_POSSESSION_HOLD_S": 0.4,
+   "CARRY_MIN_TIME_S": 1.2,
+   "MIN_PASS_DISTANCE_M": 3.0,
+   "SHOT_MIN_KMH": 50.0,
+   "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+   "SHOT_MOUTH_MARGIN_M": null
+  },
+  "objective": 0.2225,
+  "F1": 0.4709,
+  "events": 167,
+  "labels": 160,
+  "per window": {
+   "st2_118578_2nd_f015000": 0.242,
+   "st2_128057_1st_f030000": 0.234,
+   "st2_132831_2nd_f030000": 0.1904
+  }
+ },
+ "leave one window out": {
+  "st2_118578_2nd_f015000": {
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "on held": {
+    "objective": 0.2342,
+    "F1": 0.4915,
+    "events": 65,
+    "labels": 53,
+    "per window": {
+     "st2_118578_2nd_f015000": 0.2342
+    }
+   },
+   "frozen v2_link on held": {
+    "objective": 0.2243,
+    "F1": 0.4717,
+    "events": 53,
+    "labels": 53,
+    "per window": {
+     "st2_118578_2nd_f015000": 0.2243
+    }
+   }
+  },
+  "st2_128057_1st_f030000": {
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "on held": {
+    "objective": 0.2347,
+    "F1": 0.4727,
+    "events": 59,
+    "labels": 51,
+    "per window": {
+     "st2_128057_1st_f030000": 0.2347
+    }
+   },
+   "frozen v2_link on held": {
+    "objective": 0.1471,
+    "F1": 0.3818,
+    "events": 59,
+    "labels": 51,
+    "per window": {
+     "st2_128057_1st_f030000": 0.1471
+    }
+   }
+  },
+  "st2_132831_2nd_f030000": {
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "on held": {
+    "objective": 0.1783,
+    "F1": 0.4237,
+    "events": 62,
+    "labels": 56,
+    "per window": {
+     "st2_132831_2nd_f030000": 0.1783
+    }
+   },
+   "frozen v2_link on held": {
+    "objective": 0.0746,
+    "F1": 0.2078,
+    "events": 21,
+    "labels": 56,
+    "per window": {
+     "st2_132831_2nd_f030000": 0.0746
+    }
+   }
+  }
+ },
+ "log": [
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1393,
+   "F1": 0.3463,
+   "events": 123,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1492,
+    "st2_128057_1st_f030000": 0.1538,
+    "st2_132831_2nd_f030000": 0.1121
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1357,
+   "F1": 0.3451,
+   "events": 124,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1408,
+    "st2_128057_1st_f030000": 0.1462,
+    "st2_132831_2nd_f030000": 0.118
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1263,
+   "F1": 0.3368,
+   "events": 125,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1187,
+    "st2_128057_1st_f030000": 0.145,
+    "st2_132831_2nd_f030000": 0.1139
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.158,
+   "F1": 0.3844,
+   "events": 147,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1638,
+    "st2_128057_1st_f030000": 0.1722,
+    "st2_132831_2nd_f030000": 0.1351
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1576,
+   "F1": 0.3831,
+   "events": 148,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1559,
+    "st2_128057_1st_f030000": 0.1714,
+    "st2_132831_2nd_f030000": 0.1435
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1572,
+   "F1": 0.3819,
+   "events": 149,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1638,
+    "st2_128057_1st_f030000": 0.1732,
+    "st2_132831_2nd_f030000": 0.1318
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2181,
+   "F1": 0.4676,
+   "events": 195,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.235,
+    "st2_128057_1st_f030000": 0.2383,
+    "st2_132831_2nd_f030000": 0.1779
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2189,
+   "F1": 0.4703,
+   "events": 193,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2256,
+    "st2_128057_1st_f030000": 0.2498,
+    "st2_132831_2nd_f030000": 0.1779
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2205,
+   "F1": 0.4729,
+   "events": 191,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2305,
+    "st2_128057_1st_f030000": 0.2538,
+    "st2_132831_2nd_f030000": 0.1741
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1426,
+   "F1": 0.4063,
+   "events": 219,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1705,
+    "st2_128057_1st_f030000": 0.1429,
+    "st2_132831_2nd_f030000": 0.1156
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1387,
+   "F1": 0.4053,
+   "events": 220,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1758,
+    "st2_128057_1st_f030000": 0.1345,
+    "st2_132831_2nd_f030000": 0.1062
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1501,
+   "F1": 0.4149,
+   "events": 216,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1923,
+    "st2_128057_1st_f030000": 0.128,
+    "st2_132831_2nd_f030000": 0.1315
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1127,
+   "F1": 0.376,
+   "events": 223,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1721,
+    "st2_128057_1st_f030000": 0.1146,
+    "st2_132831_2nd_f030000": 0.0508
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1199,
+   "F1": 0.3876,
+   "events": 227,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1638,
+    "st2_128057_1st_f030000": 0.1425,
+    "st2_132831_2nd_f030000": 0.051
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1342,
+   "F1": 0.3979,
+   "events": 222,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1756,
+    "st2_128057_1st_f030000": 0.1517,
+    "st2_132831_2nd_f030000": 0.0755
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2138,
+   "F1": 0.4816,
+   "events": 247,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2407,
+    "st2_128057_1st_f030000": 0.2271,
+    "st2_132831_2nd_f030000": 0.1683
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2198,
+   "F1": 0.4775,
+   "events": 217,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2513,
+    "st2_128057_1st_f030000": 0.2346,
+    "st2_132831_2nd_f030000": 0.1688
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2053,
+   "F1": 0.4482,
+   "events": 197,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2238,
+    "st2_128057_1st_f030000": 0.2217,
+    "st2_132831_2nd_f030000": 0.1672
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2153,
+   "F1": 0.4777,
+   "events": 221,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.222,
+    "st2_128057_1st_f030000": 0.2457,
+    "st2_132831_2nd_f030000": 0.174
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2205,
+   "F1": 0.4729,
+   "events": 191,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2305,
+    "st2_128057_1st_f030000": 0.2538,
+    "st2_132831_2nd_f030000": 0.1741
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2029,
+   "F1": 0.4411,
+   "events": 171,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2093,
+    "st2_128057_1st_f030000": 0.2319,
+    "st2_132831_2nd_f030000": 0.1653
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2079,
+   "F1": 0.4762,
+   "events": 197,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2256,
+    "st2_128057_1st_f030000": 0.2159,
+    "st2_132831_2nd_f030000": 0.18
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2225,
+   "F1": 0.4709,
+   "events": 167,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.242,
+    "st2_128057_1st_f030000": 0.234,
+    "st2_132831_2nd_f030000": 0.1904
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.208,
+   "F1": 0.4365,
+   "events": 147,
+   "labels": 160,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2349,
+    "st2_128057_1st_f030000": 0.2085,
+    "st2_132831_2nd_f030000": 0.1792
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1373,
+   "F1": 0.3333,
+   "events": 79,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1573,
+    "st2_132831_2nd_f030000": 0.115
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1345,
+   "F1": 0.3316,
+   "events": 80,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1515,
+    "st2_132831_2nd_f030000": 0.1153
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1345,
+   "F1": 0.3316,
+   "events": 80,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1515,
+    "st2_132831_2nd_f030000": 0.1153
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1559,
+   "F1": 0.3744,
+   "events": 96,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1807,
+    "st2_132831_2nd_f030000": 0.1275
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1572,
+   "F1": 0.3725,
+   "events": 97,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1721,
+    "st2_132831_2nd_f030000": 0.1402
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1431,
+   "F1": 0.3707,
+   "events": 98,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1631,
+    "st2_132831_2nd_f030000": 0.1204
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.212,
+   "F1": 0.4576,
+   "events": 129,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2386,
+    "st2_132831_2nd_f030000": 0.1827
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2146,
+   "F1": 0.4615,
+   "events": 127,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2451,
+    "st2_132831_2nd_f030000": 0.1815
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2212,
+   "F1": 0.4635,
+   "events": 126,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2607,
+    "st2_132831_2nd_f030000": 0.1786
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1219,
+   "F1": 0.3891,
+   "events": 150,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1259,
+    "st2_132831_2nd_f030000": 0.1179
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1283,
+   "F1": 0.3858,
+   "events": 147,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.135,
+    "st2_132831_2nd_f030000": 0.1219
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1362,
+   "F1": 0.3937,
+   "events": 147,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.135,
+    "st2_132831_2nd_f030000": 0.1375
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.085,
+   "F1": 0.3438,
+   "events": 149,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1112,
+    "st2_132831_2nd_f030000": 0.0578
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1006,
+   "F1": 0.3594,
+   "events": 149,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.142,
+    "st2_132831_2nd_f030000": 0.0578
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1144,
+   "F1": 0.3701,
+   "events": 147,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.1508,
+    "st2_132831_2nd_f030000": 0.0786
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1947,
+   "F1": 0.4604,
+   "events": 158,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2241,
+    "st2_132831_2nd_f030000": 0.1616
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2111,
+   "F1": 0.4553,
+   "events": 139,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.243,
+    "st2_132831_2nd_f030000": 0.1764
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1902,
+   "F1": 0.4224,
+   "events": 125,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2213,
+    "st2_132831_2nd_f030000": 0.1568
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2036,
+   "F1": 0.4683,
+   "events": 145,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2321,
+    "st2_132831_2nd_f030000": 0.1716
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2212,
+   "F1": 0.4635,
+   "events": 126,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2607,
+    "st2_132831_2nd_f030000": 0.1786
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2005,
+   "F1": 0.4292,
+   "events": 112,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2349,
+    "st2_132831_2nd_f030000": 0.1639
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1982,
+   "F1": 0.4596,
+   "events": 128,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2147,
+    "st2_132831_2nd_f030000": 0.1802
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2138,
+   "F1": 0.4537,
+   "events": 109,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2372,
+    "st2_132831_2nd_f030000": 0.1895
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_128057_1st_f030000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1941,
+   "F1": 0.4158,
+   "events": 95,
+   "labels": 107,
+   "per window": {
+    "st2_128057_1st_f030000": 0.2106,
+    "st2_132831_2nd_f030000": 0.1774
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1297,
+   "F1": 0.3351,
+   "events": 76,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1424,
+    "st2_132831_2nd_f030000": 0.1157
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1297,
+   "F1": 0.3351,
+   "events": 76,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1424,
+    "st2_132831_2nd_f030000": 0.1157
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1121,
+   "F1": 0.3226,
+   "events": 77,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1059,
+    "st2_132831_2nd_f030000": 0.1189
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1515,
+   "F1": 0.3719,
+   "events": 90,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1642,
+    "st2_132831_2nd_f030000": 0.1374
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1515,
+   "F1": 0.3719,
+   "events": 90,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1642,
+    "st2_132831_2nd_f030000": 0.1374
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1535,
+   "F1": 0.37,
+   "events": 91,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1675,
+    "st2_132831_2nd_f030000": 0.1383
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2021,
+   "F1": 0.4589,
+   "events": 122,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2247,
+    "st2_132831_2nd_f030000": 0.1781
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2021,
+   "F1": 0.4589,
+   "events": 122,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2247,
+    "st2_132831_2nd_f030000": 0.1781
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2044,
+   "F1": 0.4609,
+   "events": 121,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2252,
+    "st2_132831_2nd_f030000": 0.1824
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1507,
+   "F1": 0.416,
+   "events": 141,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1836,
+    "st2_132831_2nd_f030000": 0.1194
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1487,
+   "F1": 0.4173,
+   "events": 145,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1811,
+    "st2_132831_2nd_f030000": 0.1169
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1667,
+   "F1": 0.432,
+   "events": 141,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2,
+    "st2_132831_2nd_f030000": 0.135
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1071,
+   "F1": 0.3794,
+   "events": 144,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1652,
+    "st2_132831_2nd_f030000": 0.0488
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1081,
+   "F1": 0.3813,
+   "events": 148,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1621,
+    "st2_132831_2nd_f030000": 0.0521
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1332,
+   "F1": 0.3984,
+   "events": 147,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1878,
+    "st2_132831_2nd_f030000": 0.0786
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2026,
+   "F1": 0.4794,
+   "events": 158,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2387,
+    "st2_132831_2nd_f030000": 0.1616
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2085,
+   "F1": 0.4739,
+   "events": 140,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2437,
+    "st2_132831_2nd_f030000": 0.1695
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2031,
+   "F1": 0.4473,
+   "events": 128,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2402,
+    "st2_132831_2nd_f030000": 0.1617
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1977,
+   "F1": 0.4677,
+   "events": 139,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2223,
+    "st2_132831_2nd_f030000": 0.1711
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2044,
+   "F1": 0.4609,
+   "events": 121,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2252,
+    "st2_132831_2nd_f030000": 0.1824
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1862,
+   "F1": 0.4312,
+   "events": 109,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2034,
+    "st2_132831_2nd_f030000": 0.1681
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2123,
+   "F1": 0.4766,
+   "events": 126,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2416,
+    "st2_132831_2nd_f030000": 0.1807
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2203,
+   "F1": 0.47,
+   "events": 108,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2521,
+    "st2_132831_2nd_f030000": 0.1872
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_132831_2nd_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2027,
+   "F1": 0.439,
+   "events": 96,
+   "labels": 109,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2358,
+    "st2_132831_2nd_f030000": 0.168
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1497,
+   "F1": 0.3692,
+   "events": 91,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1484,
+    "st2_128057_1st_f030000": 0.151
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1396,
+   "F1": 0.3673,
+   "events": 92,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.142,
+    "st2_128057_1st_f030000": 0.1373
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 1.5,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1359,
+   "F1": 0.3553,
+   "events": 93,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1214,
+    "st2_128057_1st_f030000": 0.1503
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1678,
+   "F1": 0.4057,
+   "events": 108,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1594,
+    "st2_128057_1st_f030000": 0.1757
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1646,
+   "F1": 0.4038,
+   "events": 109,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1567,
+    "st2_128057_1st_f030000": 0.172
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 2.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1646,
+   "F1": 0.4038,
+   "events": 109,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1567,
+    "st2_128057_1st_f030000": 0.172
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2276,
+   "F1": 0.4856,
+   "events": 139,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2232,
+    "st2_128057_1st_f030000": 0.2318
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.24,
+   "F1": 0.4896,
+   "events": 137,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2335,
+    "st2_128057_1st_f030000": 0.2464
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2362,
+   "F1": 0.4937,
+   "events": 135,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2252,
+    "st2_128057_1st_f030000": 0.247
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1555,
+   "F1": 0.4143,
+   "events": 147,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1793,
+    "st2_128057_1st_f030000": 0.133
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1494,
+   "F1": 0.4127,
+   "events": 148,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1661,
+    "st2_128057_1st_f030000": 0.1326
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 4.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1595,
+   "F1": 0.4194,
+   "events": 144,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.189,
+    "st2_128057_1st_f030000": 0.1308
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.1,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1426,
+   "F1": 0.4047,
+   "events": 153,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1762,
+    "st2_128057_1st_f030000": 0.1097
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.16,
+   "F1": 0.4215,
+   "events": 157,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1694,
+    "st2_128057_1st_f030000": 0.1505
+   }
+  },
+  {
+   "stage": "B",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 6.0,
+    "MIN_POSSESSION_HOLD_S": 0.4,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.1681,
+   "F1": 0.4252,
+   "events": 150,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1845,
+    "st2_128057_1st_f030000": 0.1514
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2253,
+   "F1": 0.4965,
+   "events": 182,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2287,
+    "st2_128057_1st_f030000": 0.2219
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2426,
+   "F1": 0.4981,
+   "events": 157,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2469,
+    "st2_128057_1st_f030000": 0.2383
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.4,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2225,
+   "F1": 0.4653,
+   "events": 141,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2265,
+    "st2_128057_1st_f030000": 0.2185
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2248,
+   "F1": 0.4887,
+   "events": 162,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2144,
+    "st2_128057_1st_f030000": 0.2346
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.24,
+   "F1": 0.4896,
+   "events": 137,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2335,
+    "st2_128057_1st_f030000": 0.2464
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 0.8,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2127,
+   "F1": 0.4533,
+   "events": 121,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.1966,
+    "st2_128057_1st_f030000": 0.2284
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 1.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2123,
+   "F1": 0.4839,
+   "events": 144,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2179,
+    "st2_128057_1st_f030000": 0.2068
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 3.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2352,
+   "F1": 0.4843,
+   "events": 119,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2507,
+    "st2_128057_1st_f030000": 0.2197
+   }
+  },
+  {
+   "stage": "C",
+   "windows": [
+    "st2_118578_2nd_f015000",
+    "st2_128057_1st_f030000"
+   ],
+   "rules": {
+    "POSSESSION_RADIUS_M": 3.0,
+    "MIN_POSSESSION_HOLD_S": 0.2,
+    "CARRY_MIN_TIME_S": 1.2,
+    "MIN_PASS_DISTANCE_M": 5.0,
+    "SHOT_MIN_KMH": 50.0,
+    "SHOT_MAX_DIST_FROM_GOAL_M": 50.0,
+    "SHOT_MOUTH_MARGIN_M": null
+   },
+   "objective": 0.2106,
+   "F1": 0.4444,
+   "events": 103,
+   "labels": 104,
+   "per window": {
+    "st2_118578_2nd_f015000": 0.2163,
+    "st2_128057_1st_f030000": 0.2049
+   }
+  }
+ ]
+}

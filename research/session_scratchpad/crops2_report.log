@@ -1,0 +1,4 @@
+  st2_117093_1st_f015000: 17503 detections on 450 frames, 9309 matched, 4806 kept as labels
+  st2_117093_1st_f015000: 22 people, 660 crops (min 30 per person)  [51 s]
+  st2_132877_1st_f015000: 15767 detections on 450 frames, 9276 matched, 4549 kept as labels
+  st2_132877_1st_f015000: 22 people, 660 crops (min 30 per person)  [46 s]
