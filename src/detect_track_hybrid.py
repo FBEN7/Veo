@@ -301,6 +301,95 @@ def reidentify_tracks(video_path: str, tracks: pd.DataFrame) -> pd.DataFrame:
     return merged
 
 
+class _DetectionCache:
+    """The YOLO pass of `run`, kept in chunks beside ``out_path``
+    (``<out_path>.detcache/``) so that a killed run resumes where it stopped:
+    per detection frame, the boxes, confidences and classes, and whether
+    each box is near the pitch (`_near_pitch` on that frame's grass mask:
+    players at their feet within 12 px, balls at their centre within
+    max(12, height)) -- all `run` reads of the frame. The tracker and the
+    rows are rebuilt from them in frame order, so a resumed run writes the
+    same rows as an uninterrupted one. Keyed by the video, model, image
+    size, confidence and stride; deleted once `run` has written its rows."""
+
+    CHUNK = 100
+
+    def __init__(self, out_path, video_path, model_name, imgsz, conf_min, stride, ball_method):
+        import json
+        import os
+
+        self.dir = Path(f"{out_path}.detcache")
+        key = {"video": str(video_path), "size": os.path.getsize(video_path), "model": str(model_name),
+               "imgsz": int(imgsz), "conf": float(conf_min), "stride": int(stride),
+               "ball": str(ball_method), "version": 1}
+        meta = self.dir / "key.json"
+        if self.dir.exists() and (not meta.exists() or json.loads(meta.read_text()) != key):
+            import shutil
+            shutil.rmtree(self.dir)
+        self.dir.mkdir(parents=True, exist_ok=True)
+        meta.write_text(json.dumps(key))
+        self.frames = {}
+        for f in sorted(self.dir.glob("chunk_*.npz")):
+            try:
+                z = np.load(f, allow_pickle=False)
+            except Exception:
+                continue
+            off = np.r_[0, np.cumsum(z["n"])]
+            for i, fr in enumerate(z["frame"]):
+                a, b = off[i], off[i + 1]
+                self.frames[int(fr)] = (z["xyxy"][a:b], z["conf"][a:b], z["cls"][a:b], z["near"][a:b])
+        self.buf = []
+
+    def get(self, frame_idx):
+        v = self.frames.get(frame_idx)
+        if v is None:
+            return None
+        xyxy, conf, cls, near = v
+        det = sv.Detections(xyxy=xyxy.astype(np.float32).reshape(-1, 4), confidence=conf.astype(np.float32),
+                            class_id=cls.astype(int))
+        return det, near.astype(bool)
+
+    def put(self, frame_idx, det, pitch_mask):
+        near = np.zeros(len(det), bool)
+        for i, (box, c) in enumerate(zip(det.xyxy, det.class_id)):
+            x1, y1, x2, y2 = box
+            if c == PERSON_CLASS_ID:
+                near[i] = _near_pitch(pitch_mask, float((x1 + x2) / 2), float(y2), 12)
+            else:
+                near[i] = _near_pitch(pitch_mask, float((x1 + x2) / 2), float((y1 + y2) / 2),
+                                      max(12, int(y2 - y1)))
+        rec = (np.asarray(det.xyxy, np.float32).reshape(-1, 4), np.asarray(det.confidence, np.float32),
+               np.asarray(det.class_id, np.int16), near)
+        self.buf.append((frame_idx, rec))
+        if len(self.buf) >= self.CHUNK:
+            self._flush()
+        return self.get_from(rec)
+
+    @staticmethod
+    def get_from(rec):
+        xyxy, conf, cls, near = rec
+        return (sv.Detections(xyxy=xyxy.astype(np.float32).reshape(-1, 4), confidence=conf.astype(np.float32),
+                              class_id=cls.astype(int)), near)
+
+    def _flush(self):
+        if not self.buf:
+            return
+        fr = np.array([f for f, _ in self.buf])
+        n = np.array([len(r[0]) for _, r in self.buf])
+        cat = [np.concatenate([r[k] for _, r in self.buf]) if n.sum() else np.zeros((0, 4) if k == 0 else 0)
+               for k in range(4)]
+        tmp = self.dir / f"chunk_{fr[0]:07d}.tmp.npz"
+        np.savez(tmp, frame=fr, n=n, xyxy=cat[0].reshape(-1, 4), conf=cat[1], cls=cat[2], near=cat[3])
+        tmp.rename(self.dir / f"chunk_{fr[0]:07d}.npz")
+        self.buf = []
+
+    def close(self):
+        import shutil
+
+        self.buf = []
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+
 def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
     conf_player: float = 0.25, conf_ball: float = 0.12,
     out_path: str = "output/tracks.parquet",
@@ -347,22 +436,35 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
     rows = []
     frame_idx = 0
     pbar = tqdm(total=min(n_frames, max_frames), desc="Détection")
+    conf_min = min(conf_player, conf_ball)
+    cache = _DetectionCache(out_path, video_path, model_name, imgsz, conf_min,
+                            stride, ball_detection_method)
 
     while frame_idx < max_frames:
-        ok, frame = cap.read()
+        cached = cache.get(frame_idx) if frame_idx % stride == 0 else None
+        if cached is not None:
+            ok = cap.grab()          # no decode: the frame's detections are cached
+            frame = None
+        else:
+            ok, frame = cap.read()
         if not ok:
             break
         if frame_idx % stride == 0:
-            # Player detection (always YOLO)
-            conf_min = min(conf_player, conf_ball)
-            res = model(frame, verbose=False, conf=conf_min, imgsz=imgsz,
-                        classes=[PERSON_CLASS_ID, BALL_CLASS_ID])[0]
-            det = sv.Detections.from_ultralytics(res)
-            pitch_mask = _grass_mask(frame)
+            # Player detection (always YOLO), or its cached result
+            if cached is None:
+                res = model(frame, verbose=False, conf=conf_min, imgsz=imgsz,
+                            classes=[PERSON_CLASS_ID, BALL_CLASS_ID])[0]
+                det = sv.Detections.from_ultralytics(res)
+                pitch_mask = _grass_mask(frame)
+                cached = cache.put(frame_idx, det, pitch_mask)
+            det, near = cached
 
             players = det[det.class_id == PERSON_CLASS_ID]
+            near_players = near[det.class_id == PERSON_CLASS_ID]
             if len(players) > 0:
-                players = players[players.confidence >= conf_player]
+                keep = players.confidence >= conf_player
+                players, near_players = players[keep], near_players[keep]
+            boxes_near = {tuple(b): n for b, n in zip(players.xyxy.tolist(), near_players)}
             players = tracker.update_with_detections(players)
             for xyxy, tid in zip(players.xyxy, players.tracker_id):
                 x1, y1, x2, y2 = xyxy
@@ -371,7 +473,7 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 h_px = float(y2 - y1)
                 if h_px < MIN_DETECTION_HEIGHT_PX:
                     continue
-                if not _near_pitch(pitch_mask, px, py, 12):
+                if not boxes_near[tuple(xyxy.tolist())]:
                     continue
                 rows.append(dict(frame=frame_idx, time_s=frame_idx / fps,
                                  track_id=int(tid), cls="player",
@@ -390,8 +492,10 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                                      detection_method="hsv_v2"))
             else:  # YOLO
                 balls = det[det.class_id == BALL_CLASS_ID]
+                near_balls = near[det.class_id == BALL_CLASS_ID]
                 if len(balls) > 0:
-                    balls = balls[balls.confidence >= conf_ball]
+                    keep = balls.confidence >= conf_ball
+                    balls, near_balls = balls[keep], near_balls[keep]
                 # Every on-pitch candidate, not just the most confident one.
                 # Taking the argmax here decides which detection is the ball
                 # from a single frame, where confidence is a poor guide: a
@@ -399,12 +503,11 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 # to break the track. Emitting all of them lets the selection
                 # step choose the sequence that moves like a ball, which is
                 # information no single frame contains.
-                for box, cf in zip(balls.xyxy, balls.confidence):
+                for box, cf, nb in zip(balls.xyxy, balls.confidence, near_balls):
                     x1, y1, x2, y2 = box
                     bx = float((x1 + x2) / 2)
                     by = float((y1 + y2) / 2)
-                    if not _near_pitch(pitch_mask, bx, by,
-                                       max(12, int(y2 - y1))):
+                    if not nb:
                         continue
                     rows.append(dict(frame=frame_idx, time_s=frame_idx / fps,
                                      track_id=-1, cls="ball",
@@ -420,6 +523,7 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
     df = pd.DataFrame(rows)
     Path(out_path).parent.mkdir(exist_ok=True)
     df.to_parquet(out_path)
+    cache.close()
 
     ball_count = len(df[df.cls == "ball"]) if not df.empty else 0
     total_frames = len(set(df.frame)) if not df.empty else 0

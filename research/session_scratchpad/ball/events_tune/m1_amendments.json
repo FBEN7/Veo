@@ -1,0 +1,11 @@
+[
+ {
+  "amendment": 1,
+  "when": "2026-10-18T12:10Z",
+  "what": "src/detect_track_hybrid.py caches its YOLO pass in chunks (<out>.detcache/) so a killed player detection resumes; events_m1/launch.sh starts each relaunch with the next window's detection",
+  "why": "container restarts and the 2-hour task cap killed M1's second-window detection twice (at 94% and 57%), about 1.5 h each",
+  "how": "the tracker and the rows are rebuilt from the cached boxes, confidences, classes and near-pitch flags in frame order; checked on a training window: a run killed after 2 chunks and resumed writes the same rows as the committed code, players and balls (644 rows at 1280 px; 93 balls at 4096 px), DataFrame.equals",
+  "before any output": "no M1 event has been computed; the M1 runs so far are players and ball rows of one window, not looked at",
+  "detect_track_hybrid sha256": "2e3261c627966c7c3c388dcc22c6fe021d10fffe57dfca96b21bd2a54088fc13"
+ }
+]
