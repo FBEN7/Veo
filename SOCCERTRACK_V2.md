@@ -1449,6 +1449,59 @@ The registered primary stays the release run: **not shown**.
 - The positions were worth about +0.01-0.02 in F1 on every setup. They are
   not what holds events back.
 
+### Learned events: shown better than the rules on M1 (`events_learn/`)
+
+**The model (`learn.py`):** per detection frame, features of the ball and
+of the players around it, with offsets of up to ±12 frames. One
+gradient-boosted classifier per class answers "a pass / a carry starts
+within 0.24 s". Events are the peaks of its smoothed probability, at least
+0.6 s apart.
+- The threshold per class is set by event rate: it is chosen so that the
+  training matches' own out-of-fold events number as many as their labels.
+- An earlier choice maximised F1 on the scored folds themselves. It was
+  optimistic (+0.240 against +0.205 on three windows), so it was dropped.
+
+**Training:** 9 windows of M2, M3, M4, M6 (both halves), M7, M8, M9 and M10,
+450 pass + carry labels. The ball input is v3, static points dropped, linked.
+
+**Cross-validation:** nested, leaving one match out. Pooled F1 at 1 s is
+0.673 against a chance of 0.269, or **+0.405** above chance.
+- On the windows whose ball v3 never trained on: M7 +0.43, M9 +0.20.
+- On M6 2nd, which was in v3's selection set: +0.48.
+- The other windows come from matches v3 trained on, so their ball is
+  better than on new footage.
+
+**The M1 test** (`m1_learned_registration.json`, registered before any M1
+feature was computed):
+- This is a second use of M1, on the owner's choice; it is weaker
+  evidence than fresh footage.
+- It runs under M1's refit, like the E0 rerun it is compared with.
+- It was scored once.
+
+| setup | events | F1 at 1 s | chance | above chance |
+|---|---|---|---|---|
+| E0 rules (current) | 288 | 0.441 | 0.330 | +0.111 |
+| E2 rules (retuned) | 314 | 0.474 | 0.363 | +0.111 |
+| **L1 learned** | 432 | **0.660** | 0.407 | **+0.253** |
+
+- **Primary: L1 minus E0 is +0.219 in F1, 95% [+0.166, +0.271] over 72
+  blocks. Shown.** L1 minus E2 is +0.186 [+0.131, +0.238].
+- L1 is above chance by +0.23 to +0.28 on each of the four windows,
+  2nd f027000 included, where the rules fell to chance.
+- Per class (`m1_learned_per_class.json`):
+
+  | class | precision, E0 → L1 | recall, E0 → L1 | F1, E0 → L1 |
+  |---|---|---|---|
+  | passes | 0.67 → 0.63 | 0.29 → 0.77 | 0.40 → 0.70 |
+  | carries | 0.42 → 0.57 | 0.54 → 0.65 | 0.47 → 0.61 |
+
+- **What this does not show:**
+  - who made the action: the player is not scored;
+  - whether a pass succeeded, or how far it went;
+  - anything on footage of another camera or club.
+
+  Per-player counts still need identities.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
