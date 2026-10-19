@@ -7,5 +7,70 @@
   "how": "the tracker and the rows are rebuilt from the cached boxes, confidences, classes and near-pitch flags in frame order; checked on a training window: a run killed after 2 chunks and resumed writes the same rows as the committed code, players and balls (644 rows at 1280 px; 93 balls at 4096 px), DataFrame.equals",
   "before any output": "no M1 event has been computed; the M1 runs so far are players and ball rows of one window, not looked at",
   "detect_track_hybrid sha256": "2e3261c627966c7c3c388dcc22c6fe021d10fffe57dfca96b21bd2a54088fc13"
+ },
+ {
+  "amendment": 2,
+  "when": "2026-10-19T13:34Z",
+  "what": "M1's camera model refitted (calib_fix/fit_players.py) and used for every M1 pitch computation through calib_fix/calib_override.py; the M1 test (E0, E1, E2) rerun under it, the first run kept as the release-calibration result",
+  "why": "the release's M1 calibration is wrong: drawn on the frame, its near touchline falls in mid-pitch (the other matches' fit their lines); M1's ground-truth boxes, projected through it, sit beside the players",
+  "how": "homography and K's vertical focal length / principal point refitted from our detections' feet against the ground truth's pitch positions on 2 windows (1st f001500, 2nd f000000); on the other 2, detections within 3 m of a player 0.32 -> 0.73 and 0.24 -> 0.62, median error 1.83 -> 0.64 m and 1.90 -> 0.67 m; the pitch lines drawn with it fall on the painted ones",
+  "caveat": "the refit uses M1's player positions (not its ball actions); the product needs a calibration of its own cameras",
+  "fit": {
+   "match": "117092",
+   "fit windows": [
+    "st2_117092_1st_f001500",
+    "st2_117092_2nd_f000000"
+   ],
+   "check windows": [
+    "st2_117092_1st_f024000",
+    "st2_117092_2nd_f027000"
+   ],
+   "before": {
+    "fit": {
+     "pairs": 3009,
+     "median m": 1.878,
+     "share of detections matched within 3 m": 0.299
+    },
+    "st2_117092_1st_f024000": {
+     "pairs": 1724,
+     "median m": 1.832,
+     "share of detections matched within 3 m": 0.32
+    },
+    "st2_117092_2nd_f027000": {
+     "pairs": 1259,
+     "median m": 1.902,
+     "share of detections matched within 3 m": 0.24
+    }
+   },
+   "after": {
+    "fit": {
+     "pairs": 7033,
+     "median m": 0.642,
+     "share of detections matched within 3 m": 0.699
+    },
+    "st2_117092_1st_f024000": {
+     "pairs": 3928,
+     "median m": 0.638,
+     "share of detections matched within 3 m": 0.728
+    },
+    "st2_117092_2nd_f027000": {
+     "pairs": 3236,
+     "median m": 0.668,
+     "share of detections matched within 3 m": 0.618
+    }
+   },
+   "v": [
+    -0.988249435008404,
+    -0.0678128822003318,
+    -0.3370480904389758,
+    -0.9302400733684949,
+    -0.1766004624494465,
+    -0.1344198494778601,
+    -0.9664224882675103,
+    -0.06258542675250921,
+    73.03533469058908,
+    1.3720905211509193
+   ]
+  }
  }
 ]
