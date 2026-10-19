@@ -1,0 +1,8 @@
+  GSR 118578 half 1: 1547700 records, 70350 frames  [1 s]
+  pitch y grows towards the camera: True
+  st2_118578_1st_f052500: 4500 frames 4096x1080, 22 people, 64 actions ({'DRIVE': 28, 'PASS': 24, 'HIGH PASS': 6, 'FREE KICK': 2, 'OUT': 2, 'BALL PLAYER BLOCK': 1, 'THROW IN': 1})  [252 s]
+  GSR 118578 half 2: 1561375 records, 70975 frames  [1 s]
+  pitch y grows towards the camera: True
+  st2_118578_2nd_f037500: 4500 frames 4096x1080, 22 people, 77 actions ({'DRIVE': 36, 'PASS': 29, 'HIGH PASS': 5, 'PLAYER SUCCESSFUL TACKLE': 3, 'CROSS': 2, 'BALL PLAYER BLOCK': 2})  [268 s]
+118575 2 1606795
+118577 2 1593824

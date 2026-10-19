@@ -1,0 +1,88 @@
+chunk 0-250: done alreadychunk 250-500: done already
+
+chunk 750-1000: done already
+chunk 500-750: done already
+chunk 1000-1250: done already
+chunk 1250-1500: done already
+chunk 1500-1750: done already
+chunk 1750-2000: done already
+chunk 2000-2250: done already
+chunk 2250-2500: done already
+chunk 2750-3000: done alreadychunk 2500-2750: done already
+
+chunk 3250-3500: running
+chunk 3000-3250: running
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  background pass: 3601 frames grabbed, 20 samples [77 s]
+  background pass: 3851 frames grabbed, 20 samples [83 s]
+  frame 500: 0 of 250 frames detected [89 s]
+  frame 500: 0 of 250 frames detected [95 s]
+  frame 1000: 0 of 250 frames detected [101 s]
+  frame 1000: 0 of 250 frames detected [107 s]
+  frame 1500: 0 of 250 frames detected [113 s]
+  frame 1500: 0 of 250 frames detected [120 s]
+  frame 2000: 0 of 250 frames detected [125 s]
+  frame 2000: 0 of 250 frames detected [132 s]
+  frame 2500: 0 of 250 frames detected [138 s]
+  frame 2500: 0 of 250 frames detected [144 s]
+  frame 3000: 0 of 250 frames detected [150 s]
+  frame 3000: 0 of 250 frames detected [154 s]
+  250 of 250 frames detected -> /home/user/Veo/.cache/v3_chunks_st2_117092_2nd_f027000/03000_03250.parquet, 03000_03250.parquet.meta.json [800 s]
+chunk 3000-3250: done
+chunk 3500-3750: running
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  frame 3500: 248 of 250 frames detected [817 s]
+  250 of 250 frames detected -> /home/user/Veo/.cache/v3_chunks_st2_117092_2nd_f027000/03250_03500.parquet, 03250_03500.parquet.meta.json [824 s]
+chunk 3250-3500: done
+chunk 3750-4000: running
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  background pass: 4101 frames grabbed, 20 samples [78 s]
+  frame 500: 0 of 250 frames detected [90 s]
+  frame 1000: 0 of 250 frames detected [100 s]
+  background pass: 4351 frames grabbed, 20 samples [84 s]
+  frame 1500: 0 of 250 frames detected [111 s]
+  frame 500: 0 of 250 frames detected [96 s]
+  frame 2000: 0 of 250 frames detected [122 s]
+  frame 1000: 0 of 250 frames detected [108 s]
+  frame 2500: 0 of 250 frames detected [134 s]
+  frame 1500: 0 of 250 frames detected [120 s]
+  frame 3000: 0 of 250 frames detected [146 s]
+  frame 2000: 0 of 250 frames detected [132 s]
+  frame 3500: 0 of 250 frames detected [158 s]
+  frame 2500: 0 of 250 frames detected [142 s]
+  frame 3000: 0 of 250 frames detected [151 s]
+  frame 3500: 0 of 250 frames detected [161 s]
+  250 of 250 frames detected -> /home/user/Veo/.cache/v3_chunks_st2_117092_2nd_f027000/03500_03750.parquet, 03500_03750.parquet.meta.json [813 s]
+chunk 3500-3750: done
+chunk 4000-4250: running
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  frame 4000: 248 of 250 frames detected [806 s]
+  250 of 250 frames detected -> /home/user/Veo/.cache/v3_chunks_st2_117092_2nd_f027000/03750_04000.parquet, 03750_04000.parquet.meta.json [813 s]
+chunk 3750-4000: done
+chunk 4250-4500: running
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  background pass: 4451 frames grabbed, 17 samples [83 s]
+  frame 500: 0 of 250 frames detected [95 s]
+  frame 1000: 0 of 250 frames detected [106 s]
+  background pass: 4451 frames grabbed, 12 samples [85 s]
+  frame 1500: 0 of 250 frames detected [118 s]
+  frame 500: 0 of 250 frames detected [98 s]
+  frame 2000: 0 of 250 frames detected [130 s]
+  frame 1000: 0 of 250 frames detected [111 s]
+  frame 2500: 0 of 250 frames detected [143 s]
+  frame 1500: 0 of 250 frames detected [123 s]
+  frame 3000: 0 of 250 frames detected [155 s]
+  frame 2000: 0 of 250 frames detected [134 s]
+  frame 3500: 0 of 250 frames detected [167 s]
+  frame 2500: 0 of 250 frames detected [148 s]
+  frame 4000: 0 of 250 frames detected [180 s]
+  frame 3000: 0 of 250 frames detected [159 s]
+  frame 3500: 0 of 250 frames detected [170 s]
+  frame 4000: 0 of 250 frames detected [180 s]
+  250 of 250 frames detected -> /home/user/Veo/.cache/v3_chunks_st2_117092_2nd_f027000/04000_04250.parquet, 04000_04250.parquet.meta.json [848 s]
+chunk 4000-4250: done
+  frame 4500: 248 of 250 frames detected [831 s]
+  250 of 250 frames detected -> /home/user/Veo/.cache/v3_chunks_st2_117092_2nd_f027000/04250_04500.parquet, 04250_04500.parquet.meta.json [836 s]
+chunk 4250-4500: done
+merged 4500 frames, 36000 rows -> /home/user/Veo/.cache/v3_balls_st2_117092_2nd_f027000.parquet

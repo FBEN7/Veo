@@ -1,0 +1,32 @@
+{
+ "parquet sha256": "f51633535ec29d1ab5ce362c67ba3f4710e73d5afec107384a9d6330a61a69ec",
+ "frames": [
+  656,
+  658,
+  660,
+  662,
+  664
+ ],
+ "window": "st2_118577_1st_f030000",
+ "match": "118577",
+ "half": 1,
+ "start_frame": 30000,
+ "requested": 5,
+ "stride": 2,
+ "range": [
+  656,
+  666
+ ],
+ "extra_frames": [],
+ "ckpt": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/e2e/ckpt/rgb_v2.2.pt",
+ "ckpt sha256": "e6789ec9161f2b0f6afdfadc78b0306ac074ff452f16e38bf1d495fcfbdda701",
+ "rgb_only": true,
+ "sigma": {
+  "SIGMA_D": 0.02,
+  "SIGMA_F": 0.05
+ },
+ "calib": null,
+ "tau": 0.05,
+ "top_k": 8,
+ "detection_method": "heatmap_v2"
+}

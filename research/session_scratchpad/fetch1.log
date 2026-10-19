@@ -1,0 +1,7 @@
+  GSR 117093 half 1: 1487709 records, 67625 frames  [161 s]
+  pitch y grows towards the camera: False
+  st2_117093_1st_f015000: 4500 frames 4096x1080, 22 people, 86 actions ({'PASS': 35, 'DRIVE': 30, 'HIGH PASS': 7, 'OUT': 5, 'PLAYER SUCCESSFUL TACKLE': 2, 'CROSS': 2, 'THROW IN': 2, 'SHOT': 1, 'FREE KICK': 1, 'BALL PLAYER BLOCK': 1})  [221 s]
+
+real	6m22.522s
+user	7m13.582s
+sys	0m16.586s

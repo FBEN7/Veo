@@ -1,0 +1,7 @@
+    st2_118575_1st_f015000: 20 people, 600 crops
+    st2_118577_1st_f030000: 20 people, 600 crops
+  M3 .cache/player_reid_st2.pt: rank-1 among team-mates 43.5%, mAP 31.2%, median cosine of different people 0.95
+  M3 .cache/player_reid_imagenet_s0.pt: rank-1 among team-mates 39.7%, mAP 22.4%, median cosine of different people 0.62
+  M5 .cache/player_reid_imagenet_s0.pt: rank-1 among team-mates 29.3%, mAP 18.3%, median cosine of different people 0.64
+  M3 /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/verify/untrained_repro.pt: rank-1 among team-mates 39.7%, mAP 22.4%, median cosine of different people 0.62
+  M5 /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/verify/untrained_repro.pt: rank-1 among team-mates 29.3%, mAP 18.3%, median cosine of different people 0.64

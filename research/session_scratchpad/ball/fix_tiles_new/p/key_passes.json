@@ -1,0 +1,32 @@
+[
+ {
+  "window": "st2_118577_1st_f030000",
+  "pass": 6,
+  "q": 1,
+  "s": 0.417,
+  "frame": 3402,
+  "tiles": {
+   "dense": null
+  }
+ },
+ {
+  "window": "st2_118577_1st_f030000",
+  "pass": 7,
+  "q": 1,
+  "s": 0.417,
+  "frame": 3571,
+  "tiles": {
+   "dense": null
+  }
+ },
+ {
+  "window": "st2_118577_1st_f030000",
+  "pass": 8,
+  "q": 1,
+  "s": 0.417,
+  "frame": 3710,
+  "tiles": {
+   "dense": null
+  }
+ }
+]

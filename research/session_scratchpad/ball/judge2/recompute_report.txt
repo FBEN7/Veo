@@ -1,0 +1,45 @@
+I recomputed everything with my own script, and every requested number in `SV_score.log` and `SU_score.log` matches. I found no defect in the tiles, judgements or key. The one thing to note is the gate printout at the bottom of `SV_score.log` (point 3 below). It comes from a hard-coded count in the scorer, not from any tile being judged the ball.
+
+Script: `/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/recompute/recompute.py` (it does not reuse any code from `score_ball_track.py` or `ball_tiles.py`).
+
+**S-V (V-new, 139 passes, 203 pair frames, 332 tiles)**
+| Item | Recomputed | Log |
+|---|---|---|
+| Labels B / B* / N / S | 147 / 4 / 156 / 25 | same |
+| Passes d>0 / d<0 / d=0 | 18 / 9 / 112 | same |
+| Sign test p, P(X≥18 \| n=27) | 0.0610 | 0.0610 (H5 not met) |
+| Frames only T / only raw / both / neither | 20 / 10 / 105 / 68 | same |
+| q1 McNemar T vs raw | 7 vs 2, p = 0.0898 | same |
+| q1 McNemar T vs coco | 37 vs 2, p = 0.0000 (coco has no tile at 33 q1 frames; counted as not-ball) | same |
+| Decoys judged B: decoy / corridor-decoy / offset-decoy | 0 of 12 / 0 of 12 / 0 of 12 | same |
+
+**S-U (M6, 39 passes, 66 pair frames, 122 tiles)**
+| Item | Recomputed | Log |
+|---|---|---|
+| Labels B / B* / N / S | 60 / 1 / 58 / 3 | same |
+| Passes d>0 / d<0 / d=0 | 11 / 3 / 25 | same |
+| Sign test p, P(X≥11 \| n=14) | 0.0287 | 0.0287 |
+| Frames only T / only raw / both / neither | 13 / 3 / 35 / 15 | same |
+| q1 McNemar T vs raw | 1 vs 1, p = 0.7500 | same |
+| q1 McNemar T vs coco | none: this sitting has no coco tiles, and the log has no such line | — |
+| Decoys judged B: decoy / corridor-decoy / offset-decoy | 0 of 10 / 0 of 10 / 0 of 6 | same |
+
+**Other log numbers I also checked, all matching in both sittings:**
+- the breakdowns by source, by source and parity, by parity and by match;
+- the px/m tercile cuts ([21.41, 27.73] and [23.59, 31.74]) and the counts in each tercile, which match when a value on a cut goes in the lower tercile;
+- the tracked picks by source (detected 247, fallback 32, interpolated 236, none 41 in S-V; 59, 14, 73, 10 in S-U);
+- the re-judged old tiles: 12 of 12 and 6 of 6 agree with their old judgements in `tiles_ffV/judged.txt`.
+
+**Integrity checks**
+1. **Tiles judged twice or missing:** none. Both judgement files have exactly one label per tile (1–332 and 1–122), with no extras, no malformed lines and no unknown labels. Their sha256 values match the recorded ones.
+2. **q1 pair frame:** every pass has exactly one. In every pair frame, the frame, track source and parity agree with the pass record. No frame appears twice.
+3. **Deduplicated tiles:** credited consistently. For all 284 (S-V) and 90 (S-U) pair tiles:
+   - the detectors named in the key's `source` are exactly the detectors whose entries in `key_passes.json` point to that tile;
+   - window, pass, frame and q agree;
+   - no tile is used in more than one place, and none is unreferenced.
+
+   S-V has 165 tiles credited to one detector, 51 to two and 68 to three; S-U has 58 to one and 32 to two. Where two detectors at the same frame got separate tiles, the tiles are at least 6.0 px apart in S-V and 6.95 px in S-U, so no merge was missed. A detector with no tile occurs only where expected: T at the "one empty" frames (41 in S-V, 10 in S-U) and coco at 33 frames in S-V. The rule "no tile counts as not-ball" was applied.
+
+**Points to note (not miscounts)**
+1. **S-V gate printout:** `SV_score.log` prints "G-c: random + corridor judged the ball 0 of 24 (<= 2 of 20): FAIL" and "offset 0 of 12: FAIL", which ends in "gate G-a..G-d: FAIL". The cause is the hard-coded `G_C` setting at line 78 of `score_ball_track.py`, which fails any decoy count other than the registered 20 and 6. S-V was built with 12/12/12 decoys. No decoy was judged the ball in either sitting. The protocol in `SOCCERTRACK_V2.md` defines the gate for U-test (S-U) only, so this FAIL means nothing on V-new. It should not be quoted as a G-c failure, or the scorer should not print the gate for V-new.
+2. **S-V coverage:** only 27 of 139 passes have d ≠ 0, against the registered expectation of about 63 informative passes. The log's own power estimate is 0.249, so H5 was underpowered on this sitting. This is a property of the data, not a calculation error.

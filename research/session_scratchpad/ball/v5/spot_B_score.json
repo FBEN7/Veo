@@ -1,0 +1,80 @@
+{
+ "tiles": 100,
+ "auto B judged ball (precision)": [
+  46,
+  50
+ ],
+ "auto not judged ball (misses)": [
+  4,
+  50
+ ],
+ "agree": 0.92,
+ "per match": {
+  "117093": {
+   "B prec": [
+    14,
+    16
+   ],
+   "not misses": [
+    2,
+    16
+   ]
+  },
+  "118575": {
+   "B prec": [
+    4,
+    4
+   ],
+   "not misses": [
+    1,
+    4
+   ]
+  },
+  "118576": {
+   "B prec": [
+    7,
+    8
+   ],
+   "not misses": [
+    0,
+    8
+   ]
+  },
+  "118577": {
+   "B prec": [
+    4,
+    4
+   ],
+   "not misses": [
+    0,
+    4
+   ]
+  },
+  "128058": {
+   "B prec": [
+    5,
+    6
+   ],
+   "not misses": [
+    0,
+    6
+   ]
+  },
+  "132877": {
+   "B prec": [
+    12,
+    12
+   ],
+   "not misses": [
+    1,
+    12
+   ]
+  }
+ },
+ "judge labels": {
+  "B": 50,
+  "N": 43,
+  "S": 4,
+  "B*": 3
+ }
+}

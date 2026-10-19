@@ -1,0 +1,7 @@
+  st2_118578_2nd_f015000: background pass, 4451 frames, 90 samples [47 s]
+  st2_118578_2nd_f015000: 192 frames measured, 4488 decoded [1903 s; coco 541 s, ball_heatmap.3000.pt 315 s, ball_v2.2500.pt 316 s, ball_v2.3250.pt 316 s, ball_v2.4000.pt 317 s]
+  st2_118578_1st_f030000: background pass, 2951 frames, 60 samples [29 s]
+  st2_118578_1st_f030000: 117 frames measured, 2995 decoded [1136 s; coco 317 s, ball_heatmap.3000.pt 188 s, ball_v2.2500.pt 191 s, ball_v2.3250.pt 189 s, ball_v2.4000.pt 189 s]
+  st2_118578_2nd_f015000: 17 passes, 14 + 14 placebo frames, frames measured of 192: coco 192, ball_heatmap.3000.pt 192, ball_v2.2500.pt 192, ball_v2.3250.pt 192, ball_v2.4000.pt 192
+  st2_118578_1st_f030000: 7 passes, 4 + 7 placebo frames, frames measured of 117: coco 117, ball_heatmap.3000.pt 117, ball_v2.2500.pt 117, ball_v2.3250.pt 117, ball_v2.4000.pt 117
+  sealed: 2 windows, 5 detectors -> /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/U_a.json [3047 s]

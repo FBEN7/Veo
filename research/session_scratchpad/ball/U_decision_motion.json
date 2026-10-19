@@ -1,0 +1,5 @@
+{"model": "motion v2", "checkpoints_U_ff_auto": {"2500": 0.603, "3250": 0.599, "4000": 0.627}, "chosen": "ball_v2.4000.pt",
+ "G1": {"ff_auto": 0.627, "bar": 0.65, "minus_coco": 0.242, "2.5%": 0.122, "pass": false},
+ "G2": {"placebo_pre": 0.074, "bar": 0.05, "v1_pre": 0.074, "placebo_post": 0.036, "post_bar": 0.048, "pass": false},
+ "reference": {"v1 ff_auto": 0.623, "coco ff_auto": 0.385, "coco pre": 0.015, "coco post": 0.018, "v1 post": 0.018},
+ "decision": "G fails (G1 absolute bar, G2 pre-kick placebo); S1 not needed; the registered RGB-only fallback trains once"}

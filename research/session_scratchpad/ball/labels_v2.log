@@ -1,0 +1,14 @@
+  118575 half 1 (stream): 2958 strips, 149 s
+  118575 half 2 (stream): 2905 strips, 288 s
+  118576 half 1 (stream): 3035 strips, 438 s
+  118576 half 2 (stream): 2398 strips, 561 s
+  118577 half 1 (stream): 2304 strips, 676 s
+  118577 half 2 (stream): 2628 strips, 802 s
+  128058 half 1 (stream): 3090 strips, 950 s
+  128058 half 2 (stream): 2258 strips, 1058 s
+  flight: 7004 of 7236 kept, 300 on the narrower stretch; bag cells median 438, -3 cells median 498
+  lofted: 800 of 800 kept; -3 cells median 114
+  action: 7089 of 7093 kept; bag cells median 321, -3 cells median 438
+  dribble: 1432 of 1432 kept; bag cells median 255, -3 cells median 0
+  free: 5015 of 5015 kept, 374 COCO ignore disks; -3 cells median 157
+  21340 strips labelled, 300 held out ({'action': 100, 'flight': 98, 'free': 71, 'dribble': 20, 'lofted': 11})

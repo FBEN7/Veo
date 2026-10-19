@@ -1,0 +1,26 @@
+
+controls
+  PASS  pitch orientation           11.2s
+  PASS  ball leaving the pitch       2.3s
+  PASS  set-piece naming             1.2s
+  PASS  shot geometry                1.4s
+  PASS  possession scoring           1.2s
+  PASS  crossings from grass         1.1s
+  PASS  stoppages from players       1.3s
+  PASS  per-player ball metrics      0.8s
+  PASS  the ball's path              1.4s
+  PASS  pose from goal corners       3.6s
+  PASS  poses between grid frames    0.9s
+  PASS  camera from goal and circle   7.1s
+  PASS  broadcast replays            0.3s
+  PASS  shots at the goal plane     26.4s
+  PASS  SoccerTrack v2 reading       1.2s
+  PASS  teams on a fixed view        4.0s
+  PASS  ball height from its flight  15.5s
+
+  all 17 passed
+
+  Note that none of this measures accuracy. Every number in EVENT_ACCURACY.md
+  comes from footage under an NDA that is not in this repository, so the
+  controls check that the code does what it claims on cases with known
+  answers -- not that it works on football.

@@ -1,0 +1,314 @@
+"""Advanced ball tracking with Kalman filtering and trajectory prediction.
+
+Handles occlusion, noisy detections, and fills gaps when ball is hidden.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+from typing import Optional, Tuple
+
+
+class SimpleKalmanFilter:
+    """1D Kalman filter for smooth state estimation."""
+
+    def __init__(self, process_variance: float = 0.01, measurement_variance: float = 1.0,
+                 start_at_first: bool = False):
+        self.process_variance = process_variance
+        self.measurement_variance = measurement_variance
+        self.value = 0.0
+        self.estimate_error = 1.0
+        # Without it the estimate starts at 0 and takes ~20 samples to reach
+        # a ball 50 m away -- harmless in pixels near the origin, not on a
+        # pitch measured in metres from a corner.
+        self.start_at_first = start_at_first
+        self.started = False
+
+    def update(self, measurement: Optional[float]) -> float:
+        """Update filter with new measurement, return smoothed estimate."""
+        if measurement is None:
+            return self.value
+        if self.start_at_first and not self.started:
+            self.started = True
+            self.value = measurement
+            return self.value
+
+        # Prediction step
+        self.estimate_error += self.process_variance
+
+        # Update step
+        kalman_gain = self.estimate_error / (self.estimate_error + self.measurement_variance)
+        self.value = self.value + kalman_gain * (measurement - self.value)
+        self.estimate_error = (1 - kalman_gain) * self.estimate_error
+
+        return self.value
+
+
+class BallKalmanTracker:
+    """2D Ball tracker with Kalman filtering for position and velocity."""
+
+    def __init__(self, process_var: float = 0.05, measurement_var: float = 2.0,
+                 start_at_first: bool = False):
+        """Initialize tracker with independent X/Y filters."""
+        self.kf_x = SimpleKalmanFilter(process_var, measurement_var, start_at_first)
+        self.kf_y = SimpleKalmanFilter(process_var, measurement_var, start_at_first)
+        self.kf_vx = SimpleKalmanFilter(process_var * 2, measurement_var * 2)
+        self.kf_vy = SimpleKalmanFilter(process_var * 2, measurement_var * 2)
+
+        self.last_x = None
+        self.last_y = None
+        self.dt = 1.0 / 25.0  # 25 FPS default
+
+    def update(
+        self,
+        x: Optional[float],
+        y: Optional[float],
+        dt: float = None,
+    ) -> Tuple[float, float, float, float]:
+        """Update with new measurement, return (x, y, vx, vy)."""
+        if dt is not None:
+            self.dt = dt
+
+        # Estimate velocities from detections
+        vx_meas = None
+        vy_meas = None
+        if x is not None and self.last_x is not None:
+            vx_meas = (x - self.last_x) / self.dt
+        if y is not None and self.last_y is not None:
+            vy_meas = (y - self.last_y) / self.dt
+
+        # Update position and velocity estimates
+        x_est = self.kf_x.update(x)
+        y_est = self.kf_y.update(y)
+        vx_est = self.kf_vx.update(vx_meas)
+        vy_est = self.kf_vy.update(vy_meas)
+
+        # Store for next iteration
+        if x is not None:
+            self.last_x = x
+        if y is not None:
+            self.last_y = y
+
+        return x_est, y_est, vx_est, vy_est
+
+    def predict(self, steps: int = 1) -> Tuple[float, float]:
+        """Predict ball position N steps ahead."""
+        x_pred = self.kf_x.value + self.kf_vx.value * self.dt * steps
+        y_pred = self.kf_y.value + self.kf_vy.value * self.dt * steps
+        return x_pred, y_pred
+
+
+def fill_ball_gaps(ball_df: pd.DataFrame, max_gap: int = 5) -> pd.DataFrame:
+    """Fill gaps in ball detections using Kalman prediction and interpolation.
+
+    Parameters
+    ----------
+    ball_df : pd.DataFrame
+        Ball tracking data with columns: frame, time_s, x, y, confidence
+    max_gap : int
+        Maximum gap size to fill (frames)
+
+    Returns
+    -------
+    pd.DataFrame
+        Ball data with filled gaps
+    """
+    if ball_df.empty:
+        return ball_df
+
+    ball_df = ball_df.sort_values("frame").reset_index(drop=True)
+    tracker = BallKalmanTracker()
+    filled_rows = []
+
+    for i, row in ball_df.iterrows():
+        x, y = row.get("x"), row.get("y")
+        x_est, y_est, vx_est, vy_est = tracker.update(x, y)
+
+        filled_rows.append(
+            {
+                "frame": int(row["frame"]),
+                "time_s": float(row["time_s"]),
+                "x": x_est,
+                "y": y_est,
+                "vx": vx_est,
+                "vy": vy_est,
+                "confidence": float(row.get("confidence", 1.0)),
+                "filled": False,
+            }
+        )
+
+        # Fill gaps forward
+        if i < len(ball_df) - 1:
+            next_frame = int(ball_df.iloc[i + 1]["frame"])
+            curr_frame = int(row["frame"])
+            gap = next_frame - curr_frame - 1
+
+            if 0 < gap <= max_gap:
+                for g in range(1, gap + 1):
+                    x_pred, y_pred = tracker.predict(steps=g)
+                    filled_rows.append(
+                        {
+                            "frame": curr_frame + g,
+                            "time_s": float(row["time_s"] + g * (1.0 / 25.0)),
+                            "x": x_pred,
+                            "y": y_pred,
+                            "vx": vx_est,
+                            "vy": vy_est,
+                            "confidence": 0.5,  # Lower confidence for predicted
+                            "filled": True,
+                        }
+                    )
+
+    return pd.DataFrame(filled_rows).sort_values("frame").reset_index(drop=True)
+
+
+def validate_ball_detection(
+    ball_detections: pd.DataFrame,
+    max_speed_kmh: float = 120.0,
+    max_pixel_jump: float = 300.0,
+) -> pd.DataFrame:
+    """Validate ball detections, reject spurious ones.
+
+    Criteria:
+    - Speed must be physically plausible
+    - Position change must be reasonable
+    - Confidence must be above minimum
+    """
+    if ball_detections.empty:
+        return ball_detections
+
+    ball_detections = ball_detections.sort_values("frame").reset_index(drop=True)
+    valid_rows = []
+
+    for i, row in ball_detections.iterrows():
+        is_valid = True
+
+        if i > 0:
+            prev_row = ball_detections.iloc[i - 1]
+            dx = row["x"] - prev_row["x"]
+            dy = row["y"] - prev_row["y"]
+            pixel_dist = np.hypot(dx, dy)
+
+            # Check pixel jump (unrealistic teleportation)
+            if pixel_dist > max_pixel_jump:
+                is_valid = False
+
+            # Check speed (convert to km/h for 1 frame at 25fps)
+            dt = 1.0 / 25.0
+            speed_kmh = pixel_dist / dt * 3.6 / 100  # Rough conversion
+            if speed_kmh > max_speed_kmh:
+                is_valid = False
+
+        if is_valid:
+            valid_rows.append(row)
+
+    return pd.DataFrame(valid_rows).reset_index(drop=True)
+
+
+def extract_ball_tracking(
+    tracks: pd.DataFrame, smooth_window: int = 3, fill_gaps: bool = True,
+    columns: tuple[str, str] | None = None, time_aware: bool = False
+) -> pd.DataFrame:
+    """Extract and clean ball tracking from detection tracks.
+
+    Returns ball DataFrame with improved tracking.
+
+    ``columns`` names the pair to read positions from. The default prefers
+    `px`/`py`, which is right for the metric tracks the event detector uses,
+    where `px`/`py` hold metres. It is wrong for the report's tracks, where
+    `to_pitch_coords` leaves `px`/`py` as pixels and puts metres in `x`/`y`
+    -- a caller that then compares the resulting speed against a threshold
+    in km/h is out by the pixels-per-metre scale. Callers who know which
+    columns carry metres should say so.
+
+    ``time_aware`` (without gap filling): velocities over the time between
+    samples, not one frame -- detecting every second frame otherwise
+    doubles every speed -- and the filter starts at the first sample.
+    """
+    # Handle both raw (x, y) and pitch-projected (px, py) coordinate systems
+    if columns is not None:
+        cols = ["frame", "time_s", columns[0], columns[1]]
+    elif "px" in tracks.columns and "py" in tracks.columns:
+        cols = ["frame", "time_s", "px", "py"]
+    else:
+        cols = ["frame", "time_s", "x", "y"]
+
+    ball = tracks[tracks.cls == "ball"][cols].copy()
+
+    # Normalize column names to x, y for consistency
+    ball = ball.rename(columns={cols[2]: "x", cols[3]: "y"})
+
+    if ball.empty:
+        return ball
+
+    # 1. Validate detections
+    ball = validate_ball_detection(ball)
+
+    if ball.empty:
+        return ball
+
+    # 2. Smooth detections
+    ball["x"] = ball["x"].rolling(smooth_window, min_periods=1, center=True).median()
+    ball["y"] = ball["y"].rolling(smooth_window, min_periods=1, center=True).median()
+
+    # 3. Fill gaps with prediction
+    if fill_gaps:
+        ball = fill_ball_gaps(ball, max_gap=5)
+    else:
+        # Even without gap-filling, compute velocities for event detection
+        ball = ball.sort_values("frame").reset_index(drop=True)
+        tracker = BallKalmanTracker(start_at_first=time_aware)
+        rows = []
+        last_t = None
+        for _, row in ball.iterrows():
+            x, y = row.get("x"), row.get("y")
+            dt = None
+            if time_aware and last_t is not None and row["time_s"] > last_t:
+                dt = float(row["time_s"] - last_t)
+            last_t = float(row["time_s"])
+            x_est, y_est, vx_est, vy_est = tracker.update(x, y, dt)
+            rows.append({
+                "frame": int(row["frame"]),
+                "time_s": float(row["time_s"]),
+                "x": x_est,
+                "y": y_est,
+                "vx": vx_est,
+                "vy": vy_est,
+            })
+        ball = pd.DataFrame(rows)
+
+    return ball.drop_duplicates("frame").reset_index(drop=True)
+
+
+# Speeds above this are not a football, they are a tracking error.
+MAX_BALL_SPEED_KMH = 120.0
+
+
+def kinematics(tracks: pd.DataFrame, smooth_window: int = 3,
+               columns: tuple[str, str] | None = None,
+               time_aware: bool = False) -> pd.DataFrame:
+    """Ball position and speed per frame: frame, time_s, bx, by, vel_x, vel_y, speed_kmh.
+
+    Kalman-smoothed and deliberately not gap-filled: filling creates frames
+    that do not exist in player tracking, which breaks possession detection.
+
+    This lives here rather than in either caller because both the event
+    detector and the possession share ask "is the ball travelling too fast
+    to be held", and they were answering it with different smoothing. The
+    two answers differed enough to matter -- one kept 645 frames of a clip
+    and the other 960, and the possession share measured 0.06 off truth
+    with one and 0.16 with the other.
+    """
+    ball = extract_ball_tracking(tracks, smooth_window=smooth_window,
+                                 fill_gaps=False, columns=columns,
+                                 time_aware=time_aware)
+    columns = ["frame", "time_s", "bx", "by", "vel_x", "vel_y", "speed_kmh"]
+    if ball.empty:
+        return pd.DataFrame(columns=columns)
+
+    ball = ball.rename(columns={"x": "bx", "y": "by",
+                                "vx": "vel_x", "vy": "vel_y"})
+    speed = np.sqrt(ball["vel_x"] ** 2 + ball["vel_y"] ** 2) * 3.6
+    ball["speed_kmh"] = speed.clip(upper=MAX_BALL_SPEED_KMH)
+    return ball[columns]

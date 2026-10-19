@@ -1,0 +1,14 @@
+{
+ "events_v3": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/F/smoke_v3.json",
+ "sha256": "3a43722230ea5d5c57235a494b73cf6521814a7a109a50ba55344b5591c7061a",
+ "window": "st2_118575_1st_f015000",
+ "balls": "source run's",
+ "select": "v1",
+ "link_params": null,
+ "top_k": null,
+ "tau": null,
+ "rules": {
+  "SHOT_MIN_KMH": 30.0
+ },
+ "player_hash": "209de049a206aeff"
+}

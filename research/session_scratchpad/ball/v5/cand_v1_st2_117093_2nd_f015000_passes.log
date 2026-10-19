@@ -1,0 +1,56 @@
+  st2_117093_2nd_f015000: 104 frames measured, 4401 decoded [240 s; ball_heatmap.3000.pt 192 s]
+{
+ "windows": [
+  {
+   "window": "st2_117093_2nd_f015000",
+   "passes": 26,
+   "actions": 73,
+   "random point action hit": 0.0,
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.365,
+    "feet share": 0.096,
+    "action hit": 0.0,
+    "candidates per frame": {
+     "0.02": 0.16,
+     "0.05": 0.16,
+     "0.1": 0.16,
+     "0.15": 0.16,
+     "0.2": 0.16,
+     "0.3": 0.16,
+     "0.5": 0.1,
+     "0.7": 0.06
+    }
+   }
+  }
+ ],
+ "ff-auto": {
+  "ball_heatmap.3000.pt": {
+   "pooled": 0.635,
+   "passes": 26,
+   "incomplete passes": 0,
+   "windows": {
+    "st2_117093_2nd_f015000": 0.635
+   },
+   "matches": {
+    "117093": 0.635
+   }
+  }
+ },
+ "ff-auto paired": {},
+ "placebo": {
+  "ball_heatmap.3000.pt": {
+   "pre": null,
+   "pre frames": 0,
+   "pre not measured": 24,
+   "post": null,
+   "post frames": 0,
+   "post not measured": 24,
+   "windows": {
+    "st2_117093_2nd_f015000": {
+     "pre": null,
+     "post": null
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,307 @@
+{
+ "tracked": "T",
+ "raw": "ball_v2.4000.pt",
+ "extra": {},
+ "passes": 39,
+ "pair frames": 66,
+ "tiles": 122,
+ "labels": {
+  "B": 60,
+  "B*": 1,
+  "N": 58,
+  "S": 3
+ },
+ "H5": {
+  "d > 0": 11,
+  "d < 0": 3,
+  "d = 0": 25,
+  "p (exact sign test, one-sided)": 0.02869,
+  "holds": false,
+  "d per pass": {
+   "st2_118578_1st_f052500:0": 0,
+   "st2_118578_1st_f052500:1": 0,
+   "st2_118578_1st_f052500:2": 0,
+   "st2_118578_1st_f052500:3": 1,
+   "st2_118578_1st_f052500:4": 0,
+   "st2_118578_1st_f052500:5": 0,
+   "st2_118578_1st_f052500:6": 0,
+   "st2_118578_1st_f052500:7": 1,
+   "st2_118578_1st_f052500:8": -1,
+   "st2_118578_1st_f052500:9": 0,
+   "st2_118578_1st_f052500:10": 0,
+   "st2_118578_1st_f052500:11": 0,
+   "st2_118578_1st_f052500:12": 1,
+   "st2_118578_1st_f052500:13": 0,
+   "st2_118578_1st_f052500:14": 0,
+   "st2_118578_1st_f052500:15": 1,
+   "st2_118578_1st_f052500:16": 1,
+   "st2_118578_1st_f052500:17": 1,
+   "st2_118578_1st_f052500:18": -1,
+   "st2_118578_2nd_f037500:0": 0,
+   "st2_118578_2nd_f037500:1": 0,
+   "st2_118578_2nd_f037500:2": 0,
+   "st2_118578_2nd_f037500:3": 0,
+   "st2_118578_2nd_f037500:4": 1,
+   "st2_118578_2nd_f037500:5": 0,
+   "st2_118578_2nd_f037500:6": 0,
+   "st2_118578_2nd_f037500:7": 0,
+   "st2_118578_2nd_f037500:8": 0,
+   "st2_118578_2nd_f037500:9": 0,
+   "st2_118578_2nd_f037500:10": 0,
+   "st2_118578_2nd_f037500:11": 1,
+   "st2_118578_2nd_f037500:12": 1,
+   "st2_118578_2nd_f037500:13": 2,
+   "st2_118578_2nd_f037500:14": 0,
+   "st2_118578_2nd_f037500:15": -1,
+   "st2_118578_2nd_f037500:16": 0,
+   "st2_118578_2nd_f037500:17": 0,
+   "st2_118578_2nd_f037500:18": 0,
+   "st2_118578_2nd_f037500:19": 2
+  }
+ },
+ "frames": {
+  "only tracked": 13,
+  "only raw": 3,
+  "both": 35,
+  "neither": 15
+ },
+ "q1 McNemar": {
+  "q": 1,
+  "passes": 39,
+  "T only": 1,
+  "ball_v2.4000.pt only": 1,
+  "p (exact McNemar, one-sided)": 0.75
+ },
+ "H6": {},
+ "by": {
+  "source": {
+   "detected": {
+    "only tracked": 0,
+    "only raw": 0,
+    "both": 14,
+    "neither": 1
+   },
+   "fallback": {
+    "only tracked": 0,
+    "only raw": 0,
+    "both": 0,
+    "neither": 2
+   },
+   "interpolated": {
+    "only tracked": 13,
+    "only raw": 0,
+    "both": 21,
+    "neither": 5
+   },
+   "none": {
+    "only tracked": 0,
+    "only raw": 3,
+    "both": 0,
+    "neither": 7
+   }
+  },
+  "source x parity": {
+   "detected even": {
+    "only tracked": 0,
+    "only raw": 0,
+    "both": 14,
+    "neither": 1
+   },
+   "fallback even": {
+    "only tracked": 0,
+    "only raw": 0,
+    "both": 0,
+    "neither": 2
+   },
+   "interpolated even": {
+    "only tracked": 6,
+    "only raw": 0,
+    "both": 4,
+    "neither": 3
+   },
+   "interpolated odd": {
+    "only tracked": 7,
+    "only raw": 0,
+    "both": 17,
+    "neither": 2
+   },
+   "none odd": {
+    "only tracked": 0,
+    "only raw": 3,
+    "both": 0,
+    "neither": 7
+   }
+  },
+  "parity": {
+   "even": {
+    "only tracked": 6,
+    "only raw": 0,
+    "both": 18,
+    "neither": 6
+   },
+   "odd": {
+    "only tracked": 7,
+    "only raw": 3,
+    "both": 17,
+    "neither": 9
+   }
+  },
+  "match": {
+   "118578": {
+    "only tracked": 13,
+    "only raw": 3,
+    "both": 35,
+    "neither": 15
+   }
+  },
+  "px/m tercile": {
+   "far": {
+    "only tracked": 3,
+    "only raw": 1,
+    "both": 10,
+    "neither": 8
+   },
+   "mid": {
+    "only tracked": 2,
+    "only raw": 2,
+    "both": 13,
+    "neither": 5
+   },
+   "near": {
+    "only tracked": 8,
+    "only raw": 0,
+    "both": 12,
+    "neither": 2
+   }
+  }
+ },
+ "px/m cuts": [
+  23.59,
+  31.74
+ ],
+ "decoys": {
+  "decoy": [
+   0,
+   10
+  ],
+  "corridor-decoy": [
+   0,
+   10
+  ],
+  "offset-decoy": [
+   0,
+   6
+  ]
+ },
+ "rejudged agree": [
+  6,
+  6,
+  true
+ ],
+ "track sources at pass frames": {
+  "detected": 59,
+  "fallback": 14,
+  "interpolated": 73,
+  "none": 10
+ },
+ "interpolated or fallback share": 0.596,
+ "gate": {
+  "G-a": {
+   "pass": true,
+   "d > 0": 11,
+   "d < 0": 3
+  },
+  "G-b": {
+   "pass": true,
+   "pre": {
+    "tracked hits": 3,
+    "raw hits": 4,
+    "frames": 50,
+    "pass": true
+   },
+   "post": {
+    "tracked hits": 1,
+    "raw hits": 1,
+    "frames": 35,
+    "pass": true
+   }
+  },
+  "G-c": {
+   "pass": true,
+   "random + corridor": {
+    "judged ball": 0,
+    "of": 20,
+    "max": 2,
+    "registered n": 20,
+    "pass": true
+   },
+   "offset": {
+    "judged ball": 0,
+    "of": 6,
+    "max": 1,
+    "registered n": 6,
+    "pass": true
+   }
+  },
+  "G-a..G-c": true,
+  "G-d": {
+   "detected or fallback at odd pass frames": 0,
+   "windows": {
+    "st2_118578_1st_f052500": {
+     "stride": 2,
+     "extra frames": 0,
+     "registered ckpt": true,
+     "registered calib": true,
+     "longest fill": 6,
+     "detected or fallback off the stride": 0
+    },
+    "st2_118578_2nd_f037500": {
+     "stride": 2,
+     "extra frames": 0,
+     "registered ckpt": true,
+     "registered calib": true,
+     "longest fill": 6,
+     "detected or fallback off the stride": 0
+    }
+   },
+   "pass": true
+  },
+  "all": true
+ },
+ "recorded": {
+  "b frames (only tracked)": 13,
+  "c frames (only raw)": 3,
+  "b passes (d > 0)": 11,
+  "c passes (d < 0)": 3,
+  "informative share": 0.359,
+  "split": 0.786,
+  "V-new informative passes": 39,
+  "V-new power": 0.942,
+  "V-new power at 70%": 0.618,
+  "FF-auto on interpolated tracked tiles": {
+   "tp": 32,
+   "fp": 4,
+   "fn": 2,
+   "tn": 1,
+   "kappa": 0.17,
+   "ppv": 0.889,
+   "recall": 0.941,
+   "tiles": 39
+  },
+  "confirmed false FF-auto hits": {
+   "T": 2,
+   "ball_v2.4000.pt": 3
+  },
+  "FF-auto paired counts as a measure": false,
+  "FF-auto paired (eval)": {
+   "passes": 39,
+   "T": 0.75,
+   "ball_v2.4000.pt": 0.679,
+   "difference": 0.071,
+   "2.5%": 0.028,
+   "97.5%": 0.142,
+   "blocks": 6
+  }
+ },
+ "judged sha256": "228cd536cdb3ec4adda733b0b99c41c626c5816271a7358f0bb6d9e889200b7d"
+}

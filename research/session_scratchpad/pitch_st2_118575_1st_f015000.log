@@ -1,0 +1,77 @@
+clip: 4096x1080 @ 25 fps, 4500 frames (178.3 MB)
+cached profile:
+  resolution     4096x1080 @ 25 fps
+  imgsz          4096
+  conf_player    0.30  -> 25.0 players/frame
+  conf_ball      0.50  -> 2.00 ball/frame
+  scale          27.8 px/m (player 49 px, ball ~6.1 px)
+  min height     17 px
+  camera         static (0.00 px/frame)
+  [pitch] 55238 -> 50786 player rows inside the outline (+10 px)
+assigning teams...
+  [teams] 5 tracks rejected as non-players (> 2.5x the kit spread from either kit)
+  [teams] 120 tracks clustered: {'other': np.int64(19), 'team_A': np.int64(56), 'team_B': np.int64(45)}
+annotating grass fraction...
+  [pitch] 4573 ball candidates, grass fraction median 0.98, 100.0% on pitch
+camera: static, not compensated
+  [roster] 50786 -> 48668 player rows (cap 11/team/frame)
+  [ball] 4573 candidates over 2250 frames -> 2250 selected
+  [re-id] 113 fragments -> 87 tracks
+  [plane] focal 2744 px, spread 0.80 over 10 pairs (30f:2078, 60f:3676, 120f:2390)
+  [plane] no ground plane: focal length disagrees with itself across baselines (spread 0.80 > 0.45)
+  [scale] homography no homography; using 27.8 px/m from player height. Pitch coordinates are relative: goals, shots and out-of-play stay disabled.
+[Events] Detected: {}
+
+ball coverage 100.0%, 0 events, scale 27.4 px/m
+{
+ "gt boxes": 49500,
+ "gt people": 22,
+ "iou0.5": {
+  "fragments": {
+   "identities": 152,
+   "people seen": 21,
+   "split": 5.48,
+   "purity": 0.874,
+   "IDF1": 0.026,
+   "detections matched": "2445/50786",
+   "recall": 0.049,
+   "precision": 0.048
+  },
+  "re-joined": {
+   "identities": 87,
+   "people seen": 21,
+   "split": 4.91,
+   "purity": 0.845,
+   "IDF1": 0.027,
+   "detections matched": "2381/48668",
+   "recall": 0.048,
+   "precision": 0.049,
+   "team accuracy": 0.773,
+   "team matched": 1932
+  }
+ },
+ "feet": {
+  "fragments": {
+   "identities": 152,
+   "people seen": 22,
+   "split": 15.89,
+   "purity": 0.811,
+   "IDF1": 0.437,
+   "detections matched": "46542/50786",
+   "recall": 0.94,
+   "precision": 0.916
+  },
+  "re-joined": {
+   "identities": 87,
+   "people seen": 22,
+   "split": 12.81,
+   "purity": 0.781,
+   "IDF1": 0.451,
+   "detections matched": "45339/48668",
+   "recall": 0.916,
+   "precision": 0.932,
+   "team accuracy": 0.767,
+   "team matched": 40156
+  }
+ }
+}

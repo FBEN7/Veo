@@ -1,0 +1,9 @@
+  calibration: a = 0.895072, b = -0.927959, tau = 0.25
+  background pass: 2951 frames grabbed, 60 samples [24 s]
+  frame 500: 249 of 1500 frames detected [418 s]
+  frame 1000: 499 of 1500 frames detected [803 s]
+  frame 1500: 749 of 1500 frames detected [1165 s]
+  frame 2000: 999 of 1500 frames detected [1505 s]
+  frame 2500: 1249 of 1500 frames detected [1843 s]
+  frame 3000: 1499 of 1500 frames detected [2164 s]
+  1500 of 1500 frames detected -> .cache/v2_balls_st2_118578_1st_f030000.parquet, v2_balls_st2_118578_1st_f030000.parquet.meta.json [2165 s]

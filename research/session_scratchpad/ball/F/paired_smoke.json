@@ -1,0 +1,137 @@
+{
+ "windows": [
+  "st2_118575_1st_f015000"
+ ],
+ "configs": {
+  "events_v1": {
+   "0.5s": {
+    "st2_118575_1st_f015000": {
+     "TP": 5,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1408,
+     "chance": 0.0358,
+     "p": 0.005
+    },
+    "pooled": {
+     "TP": 5,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1408,
+     "chance": 0.0358,
+     "p": 0.005
+    }
+   },
+   "1s": {
+    "st2_118575_1st_f015000": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.0717,
+     "p": 0.005
+    },
+    "pooled": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.0717,
+     "p": 0.005
+    }
+   },
+   "2s": {
+    "st2_118575_1st_f015000": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.1224,
+     "p": 0.045
+    },
+    "pooled": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.1224,
+     "p": 0.045
+    }
+   },
+   "objective": {
+    "st2_118575_1st_f015000": 0.1255,
+    "pooled": 0.1255
+   }
+  },
+  "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/F/apply_{w}": {
+   "0.5s": {
+    "st2_118575_1st_f015000": {
+     "TP": 5,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1408,
+     "chance": 0.0358,
+     "p": 0.005
+    },
+    "pooled": {
+     "TP": 5,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1408,
+     "chance": 0.0358,
+     "p": 0.005
+    }
+   },
+   "1s": {
+    "st2_118575_1st_f015000": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.0717,
+     "p": 0.005
+    },
+    "pooled": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.0717,
+     "p": 0.005
+    }
+   },
+   "2s": {
+    "st2_118575_1st_f015000": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.1224,
+     "p": 0.045
+    },
+    "pooled": {
+     "TP": 7,
+     "events": 8,
+     "labels": 63,
+     "F1": 0.1972,
+     "chance": 0.1224,
+     "p": 0.045
+    }
+   },
+   "objective": {
+    "st2_118575_1st_f015000": 0.1255,
+    "pooled": 0.1255
+   }
+  }
+ },
+ "paired": {
+  "a": "events_v1",
+  "b": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/F/apply_{w}",
+  "diff": 0.0,
+  "lower": 0.0,
+  "upper": 0.0,
+  "blocks": 18,
+  "draws": 4000,
+  "rejected": false
+ }
+}

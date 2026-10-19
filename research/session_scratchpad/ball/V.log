@@ -1,0 +1,88 @@
+{
+ "windows": [
+  {
+   "window": "st2_117093_1st_f015000",
+   "passes": 19,
+   "actions": 65,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.158,
+    "feet share": 0.09,
+    "action hit": 0.154,
+    "candidates per frame": {
+     "0.02": 1.02,
+     "0.05": 0.5,
+     "0.1": 0.34,
+     "0.15": 0.26,
+     "0.2": 0.24,
+     "0.3": 0.16,
+     "0.5": 0.12,
+     "0.7": 0.04
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.184,
+    "feet share": 0.145,
+    "action hit": 0.415,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 8.0,
+     "0.15": 7.86,
+     "0.2": 7.08,
+     "0.3": 4.98,
+     "0.5": 2.72,
+     "0.7": 1.54
+    }
+   }
+  },
+  {
+   "window": "st2_132877_1st_f015000",
+   "passes": 19,
+   "actions": 54,
+   "random point action hit": 0.0,
+   "coco": {
+    "free-flight hit": 0.303,
+    "feet share": 0.034,
+    "action hit": 0.352,
+    "candidates per frame": {
+     "0.02": 0.82,
+     "0.05": 0.58,
+     "0.1": 0.44,
+     "0.15": 0.34,
+     "0.2": 0.3,
+     "0.3": 0.3,
+     "0.5": 0.2,
+     "0.7": 0.08
+    }
+   },
+   "ball_heatmap.3000.pt": {
+    "free-flight hit": 0.276,
+    "feet share": 0.039,
+    "action hit": 0.426,
+    "candidates per frame": {
+     "0.02": 8.0,
+     "0.05": 8.0,
+     "0.1": 8.0,
+     "0.15": 7.5,
+     "0.2": 5.36,
+     "0.3": 3.16,
+     "0.5": 1.58,
+     "0.7": 0.92
+    }
+   }
+  }
+ ],
+ "paired": {
+  "ball_heatmap.3000.pt": {
+   "passes": 38,
+   "ball_heatmap.3000.pt": 0.23,
+   "coco": 0.23,
+   "difference": 0.0,
+   "95% interval": [
+    -0.066,
+    0.066
+   ]
+  }
+ }
+}

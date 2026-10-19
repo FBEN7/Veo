@@ -1,0 +1,19 @@
+{
+ "written": "2026-10-10, before any heatmap checkpoint exists or any detector runs on M2/M10",
+ "training": "first halves of 118575, 118576, 118577, 118578, 128058 (patches at actions and gap midpoints; ball-free patches from their first-half windows); 117092 (another camera) excluded; M2, M10, M7, M9 never used",
+ "tuning_windows_T": ["st2_118576_2nd_f015000", "st2_118578_2nd_f015000", "st2_128058_2nd_f015000"],
+ "report_windows_V": ["st2_117093_1st_f015000", "st2_132877_1st_f015000"],
+ "descriptive_X": ["st2_117092_1st_f030000"],
+ "primary_metric": "free-flight hit: top-1 candidate's ground point within 1.0 m of the passer-receiver segment (t in 0.1-0.9) and >= 2.0 m from every player, over 4 frames in the middle half of each completed ground PASS (>= 10 m, >= 0.8 s, team-mate receiver); unit = pass; paired against COCO yolov8s sports-ball at conf >= 0.02 inside the pitch outline (+10 px)",
+ "secondary": ["feet share (top-1 within 1 m of a player, free-flight frames)", "action hit (top-1 within 1.5 m of the actor or the ball-track point at PASS/DRIVE frames) vs a random pitch point", "candidates per frame on 50 random frames per window"],
+ "checkpoint_rule": "of steps 1500, 2250, 3000: the best free-flight hit on T; within 0.02 of the best, the later",
+ "tau_rule": "the smallest tau in (0.02,0.05,0.1,0.15,0.2,0.3,0.5,0.7) giving <= 1.0 candidates per frame on T's random frames",
+ "gate_G1_on_T": "free-flight hit >= 0.30 AND >= 2x COCO's AND feet share <= 0.5 AND >= 60% 'match ball' among 40 blind top-1 tiles; if it fails, no run on M2/M10",
+ "claims_on_V": {
+   "E3_detector": "heatmap minus COCO free-flight hit over V's passes, bootstrap 95% interval lower bound > 0",
+   "E4_visual": "blind check: 40 heatmap top-1 + 40 COCO top-1 + 20 decoys (random pitch points), shuffled with seed 0, judged before the key is read; categories ball / not ball / unsure (unsure = not ball)",
+   "E5_events": "pass + carry F1 at 1 s pooled over M2 + M10 with the heatmap's candidates replacing COCO's in the fixed-view pipeline (tau from T, at most 4 per frame); adopt if E3 holds; claim an events gain only if the F1 difference's bootstrap lower bound (10 s blocks) > 0"
+ },
+ "variant_cap": "at most 3 heatmap variants ever run on V, all reported",
+ "caveats": "one seed; same venues/rig as training (M2/M10 are other matches but the dataset's rigs are similar); evaluation passes are few (V: 38)"
+}

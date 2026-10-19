@@ -1,0 +1,18 @@
+  3048 frames, 8068 candidate tiles -> .cache/soccertrack_v2/ball_verified/B/candidates.parquet
+  st2_117093_1st_f015000: 639 tiles, decoded 4500 frames
+  st2_117093_1st_f045000: 764 tiles, decoded 4500 frames
+  st2_117093_2nd_f015000: 718 tiles, decoded 4500 frames
+  st2_117093_2nd_f045000: 765 tiles, decoded 4500 frames
+  st2_118575_1st_f015000: 611 tiles, decoded 4500 frames
+  st2_118576_1st_f030000: 388 tiles, decoded 3000 frames
+  st2_118576_2nd_f015000: 435 tiles, decoded 4500 frames
+  st2_118577_1st_f030000: 457 tiles, decoded 4500 frames
+  st2_128058_1st_f030000: 306 tiles, decoded 2929 frames
+  st2_128058_2nd_f015000: 547 tiles, decoded 4500 frames
+  st2_132877_1st_f015000: 492 tiles, decoded 4500 frames
+  st2_132877_1st_f045000: 602 tiles, decoded 4500 frames
+  st2_132877_2nd_f015000: 563 tiles, decoded 4500 frames
+  st2_132877_2nd_f045000: 781 tiles, decoded 4500 frames
+  8068 tiles -> .cache/soccertrack_v2/ball_verified/clf/crops_B.npz
+  8068 tiles: {'not': 6040, 'B': 1058, 'judge': 970} -> .cache/soccertrack_v2/ball_verified/B/auto_labels.parquet
+auto-B-done

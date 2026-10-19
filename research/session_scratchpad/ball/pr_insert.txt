@@ -1,0 +1,6 @@
+- **Ball detector v2 and events v3 (protocol v3, registered before any training data was cut):**
+  - **What was built:** a motion stem (frame differences and a running background) and weak labels along pass corridors, trained on both halves of four matches (21,340 strips). Choices were made on a held-out match, M6.
+  - **The gate on M6 failed for both variants**, so no detector claim is made on M2/M10. With motion, FF-auto is 0.627 against a 0.65 bar, and the pre-kick placebo is 0.074. The RGB-only fallback scores 0.54–0.56. v2 equals v1 (+0.004 [−0.05, +0.06]), v1 leads on the legacy measures, and the new labels alone do not help.
+  - **Events:** the rules were retuned on M6 and frozen (linker ball selection, 2 m possession, 3 m minimum pass, shots ≥ 50 km/h), then run once on M2/M10 with v2's ball. Pass+carry F1 at 1 s is 0.436, so the registered claims fail: against COCO's 0.353 the difference is +0.08 [−0.05, +0.23], and against v1's 0.442 it is −0.006.
+  - **What the new rules did change:** 136 events for 130 labels instead of about 270, and false shots down from about 180 to 13, with the same margin above chance as the old rules with the same ball (+0.156 against +0.157) and lower recall.
+  - **Disclosed deviations** are listed in `SOCCERTRACK_V2.md`, including v2's run on M2/M10 for the events.

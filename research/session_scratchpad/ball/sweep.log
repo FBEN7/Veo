@@ -1,0 +1,11 @@
+windows ['st2_118578_1st_f030000', 'st2_118578_2nd_f015000'], tau 0.25, labels {'st2_118578_1st_f030000': 33, 'st2_118578_2nd_f015000': 53}
+[A] chosen {'select': 'link'} no configuration meets the event-count constraint
+[A2] chosen {'select': 'link'} no configuration meets the event-count constraint
+[B] chosen {'select': 'link', 'POSSESSION_RADIUS_M': 2.0} 
+[C] chosen {'select': 'link', 'POSSESSION_RADIUS_M': 2.0, 'MIN_PASS_DISTANCE_M': 3.0} 
+[D] chosen {'select': 'link', 'POSSESSION_RADIUS_M': 2.0, 'MIN_PASS_DISTANCE_M': 3.0, 'SHOT_MIN_KMH': 50.0} 
+[A'] chosen {'select': 'link', 'POSSESSION_RADIUS_M': 2.0, 'MIN_PASS_DISTANCE_M': 3.0, 'SHOT_MIN_KMH': 50.0} 
+gate G-E passed: frozen +0.190 vs C2 +0.080
+LOO: chosen on ['st2_118578_2nd_f015000'] -> {'select': 'link', 'POSSESSION_RADIUS_M': 2.0, 'MIN_PASS_DISTANCE_M': 3.0, 'SHOT_MIN_KMH': 30.0, 'SHOT_MOUTH_MARGIN_M': 5.0}; on st2_118578_1st_f030000: +0.123 vs C2 +0.010
+LOO: chosen on ['st2_118578_1st_f030000'] -> {'select': 'link', 'POSSESSION_RADIUS_M': 2.0, 'SHOT_MIN_KMH': 30.0, 'SHOT_MOUTH_MARGIN_M': 5.0}; on st2_118578_2nd_f015000: +0.186 vs C2 +0.133
+wrote /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/events_v3.json (sha256 fd2600613cf3601296936de14ae884b03b4cb5d7cbd6580749e00eb8e77aa931) [276 s]

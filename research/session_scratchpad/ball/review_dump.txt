@@ -1,0 +1,205 @@
+=== result 0
+{
+ "id": "A1",
+ "file": "eval_ball_detector.py",
+ "line": 432,
+ "severity": "major",
+ "summary": "`--candidates` silently scores every measured frame the dense parquet does not cover as a measured miss. FF-auto also counts any unmeasured pass frame as 0, and nothing checks coverage.",
+ "scenario": "An operator runs `detect_ball_heatmap.py --v2 --window W --weights CKPT --out W.parquet` with the default `--stride 2` and forgets `--extra-frames measured`. This is the parquet the events pipeline needs anyway. Then `eval_ball_detector.py --windows W --candidates v2={window}.parquet --sealed S.json`. Every odd measured frame (89 of 187 on st2_118577_1st_f030000, per E's report) becomes an empty row list: an FF-auto miss for v2, while COCO is decoded at all frames. The H1 paired difference is biased against v2, and v2's placebo hits are counted 0 instead of None, which makes G2 look better than it is. The same happens for frames past the video end (detect only prints a WARNING) and for partially measured files merged by `--reuse` (e.g. `--limit-frames`). The sealed log prints the union over detectors (\"187 of 187 frames measured\" in my `--reuse` run with a 5-frame file plus a dense parquet), so nothing shows the gap.",
+ "evidence": "`parquet_candidates`: `for f in wanted: rows = cols[frames == f]; out[f] = ...`. Every wanted frame gets an entry, even with no rows (verified: frames 1 and 3 absent from the parquet come back as shape (0, 5)). `dense_v2` (detect_ball_heatmap.py:114-121) writes only candidate rows, so 'not processed' and 'no candidate' look the same. `measure` line 499: `int(f in c and ff_hit(...))` treats unmeasured as a miss. Sealed log line 883: `done = {f for n in names ... for f in r[n][\"candidates\"]}` takes the union over detectors.",
+ "fix": "In detect_ball_heatmap, write the processed local frames, e.g. in parquet metadata or `<out>.frames.json`. `parquet_candidates` should raise when a wanted frame is not covered and return only covered frames. In `measure`, mark FF frames not in `c` as None and refuse, or flag, passes with unmeasured frames instead of scoring 0. In the sealed log, print measured-frame counts per detector (a frame count, so allowed)."
+}
+{
+ "id": "A2",
+ "file": "eval_ball_detector.py",
+ "line": 853,
+ "severity": "major",
+ "summary": "The protocol's RGB-only fallback variant (`train_ball_heatmap.py --no-motion`, decision (d)) cannot be measured, calibrated or densely detected: `--v2` loads strictly into `build(motion=True)` and crashes, and the only other route (`--heatmap`) drops logits and provenance.",
+ "scenario": "G fails for the motion model, so the fallback `ball_v2_rgb.4000.pt` is trained. `eval_ball_detector.py --v2 ball_v2_rgb.4000.pt --windows U...` and `detect_ball_heatmap.py --v2 --weights ball_v2_rgb.4000.pt` stop with RuntimeError \"Missing key(s) in state_dict: conv1_motion.weight\". Measuring it with `--heatmap` instead runs v1 `detect()`: tau 0.01, 4-column rows without logits, size along the pitch only, and no `check_unseen`. `calibrate_ball_heatmap.py` then refuses (\"candidate rows without a logit\"), so the fallback gets no Platt fit, no tau, no confident picks and no dense rows for events or V.",
+ "evidence": "eval line 852-853 `m = build(motion=True); m.load_state_dict(torch.load(path))`; detect_ball_heatmap.py:186-187 does the same. I reproduced it with compD/smoke_rgb.10.pt, whose provenance has motion: false: RuntimeError, Missing key conv1_motion.weight. calibrate_ball_heatmap.py:96-97 raises on rows without a logit.",
+ "fix": "When the provenance says `\"motion\": false`, load with `strict=False` and assert that the only missing key is `conv1_motion.weight` and nothing is unexpected. The zero-initialised stem then gives the RGB net exactly, so `detect_v2` and its logits, provenance guard, calibration and dense path all work unchanged. Alternatively run `detect_v2(motion_zero=True)`. Record the kind (e.g. `v2-rgb`) in meta."
+}
+{
+ "id": "A3",
+ "file": "ball_tiles.py",
+ "line": 290,
+ "severity": "major",
+ "summary": "`--pass-frame Q` is 1-based (index Q-1), but the protocol says the sittings take the top-1 'at q=1'. The registered free-flight sittings all used 0-based index 1 (s = 0.417), so a literal `--pass-frame 1` puts the tiles at s = 0.25.",
+ "scenario": "Following protocol v3 \u00a77 ('v2 and COCO top-1 at q=1'), the operator runs `ball_tiles.py --pass-frame 1 ...` for S1, S2 or S3. The tiles land on the first pass frame (s = 0.25, ball near the passer), not the frame FF-auto's kappa/PPV was validated on. In S3, v2's V-old tiles would sit at s = 0.25 while the reused v1/COCO judgements (tiles_ffV) are at s = 0.417. The blind McNemar fallback on 'V-old 38 + S2 50' would then pair different frames, and the S1/S2 validity conditions would check FF-auto at an unvalidated frame. Nothing warns.",
+ "evidence": "ball_tiles.py:274-275 (`--pass-frame`, 'Q-th (1-4)') and line 290 `q = args.pass_frame - 1`. Mapping the old keys onto `frames_of` passes: tiles_ff has all 92 detector tiles at index 1, tiles_ffV all 70 at index 1. validate_ff_auto.chance also uses `p[\"frames\"][1]`.",
+ "fix": "Make `--pass-frame` 0-based like the key's `q` and the protocol, or default it to the registered frame (index 1) and state in the docstring and protocol command lines that the protocol's q=1 is `--pass-frame 2`. Have `validate_ff_auto.sealed_check` assert that the key_passes q equals the registered index."
+}
+{
+ "id": "A4",
+ "file": "eval_ball_detector.py",
+ "line": 163,
+ "severity": "minor",
+ "summary": "FF-auto and the placebos are defined on the 'top-1 at any p (none = miss)', but v2 rows are kept only at p_raw >= 0.05, while v1 keeps 0.01 and COCO 0.02. 'No candidate' therefore means different things per detector, and G2 is tilted toward v2.",
+ "scenario": "On a placebo frame where v2's best peak is p_raw 0.04 and v1's is 0.03, both lying on the grass ahead of the kick: v1 scores a placebo hit, v2 has no row and scores 0. G2 ('placebo(v2) <= v1's placebo + 0.03 on the same frames') becomes anti-conservative. On pass frames the same floor makes FF-auto conservative for v2 (H1/H2), so the comparisons are not on equal terms in either direction.",
+ "evidence": "Line 163 `V2_TAU, TOP_K = 0.05, 8` is used at line 859 for v2. v1 uses `tau=0.01` at line 846 and COCO `conf=0.02` at line 243. `top_ground` returns None for an empty row list, which is a miss.",
+ "fix": "Apply one common floor when measuring: filter v1/COCO rows to the v2 floor for the paired and placebo comparisons, or run v2 (eval and dense) with a 0.01 floor and keep calibrate's exactness rule at that floor. Record the floor in `protocol`."
+}
+{
+ "id": "A5",
+ "file": "detect_ball_heatmap.py",
+ "line": 186,
+ "severity": "minor",
+ "summary": "Nothing on the inference side checks the motion normalisation (SIGMA_D / SIGMA_F) against the values the checkpoint was trained with. The sigmas are read from module constants at call time, and the training values are only written to the provenance.",
+ "scenario": "The placeholders 0.02 / 0.05 are replaced by the measured values (C suggested std for D because the MAD is 0). Later the main agent re-measures on the full strip set, or changes the D rule, and edits the constants again. Or a checkpoint trained before the edit is evaluated after it. eval `--v2`, detect `--v2` and therefore calibrate all feed motion channels scaled differently from training, with no error, and U/V measures and p_cal are computed on a mismatched input.",
+ "evidence": "src/ball_heatmap.py:46-47 hold the module constants. `motion_bg.motion_planes` reads `bh.SIGMA_D` / `bh.SIGMA_F` at call time. `train_ball_heatmap.provenance_info` records `\"sigma\"`. eval_ball_detector.py:852-864 and detect_ball_heatmap.py:185-188 read the provenance (eval) or not at all (detect), and never compare sigma.",
+ "fix": "In eval `--v2`, detect `--v2` and calibrate, read `read_provenance(ckpt)[\"sigma\"]` and refuse when it differs from `bh.SIGMA_D` / `SIGMA_F`, or pass the provenance values to `detect_v2` / `motion_planes` explicitly."
+}
+{
+ "id": "A6",
+ "file": "calibrate_ball_heatmap.py",
+ "line": 388,
+ "severity": "minor",
+ "summary": "`--evaluate` on V's sealed file prints the total number of v2 candidates at V pass and action frames, a candidate-density figure for the sealed detector, not just frame counts.",
+ "scenario": "Before the sittings are judged, `calibrate_ball_heatmap.py --evaluate ckpt.calib.json --scores V_sealed.json --out e.json` prints 'N candidates on X pass + Y action frames'. N/(X+Y) is v2's candidates per frame at p_raw >= 0.05 on V, close to the registered 'candidates per frame' measure (TAUS includes 0.05). That is a measure reaching the screen before unsealing.",
+ "evidence": "Lines 388-390: `log(f\"  {name}: {blob['candidates']} candidates on {blob['frames']['pass']} pass + ...\")`.",
+ "fix": "Print only frame and window counts in `run_evaluate`. Leave the candidate totals in the output file."
+}
+=== result 1
+{
+ "id": "S1",
+ "file": "build_ball_strips.py",
+ "line": 738,
+ "severity": "major",
+ "summary": "Streaming a whole half rests on a single signed CDN URL that expires after 1 hour. RemoteFile never retries or re-signs, and strips.parquet is written only after the whole half has decoded. So a slow half, or one transient HTTP error, crashes the run and loses all of that half's rows.",
+ "scenario": "`st.open_video` calls `signed_url()` once, and `RemoteFile.fetch` (src/soccertrack_v2.py:168-172) reuses that address with `raise_for_status()` and no retry for every one of the roughly 900 sequential 4 MB range requests of a 3.55 GB half. On an idle machine I measured 73 fps (500 frames of 118575 h1, network included), so 71,850 frames is about 16 min of decode plus about 4 min of conversions, medians and JPEG writes: roughly 20 min per half. That leaves only a 3x margin. Two things push past it: the shared-CPU slowdowns the implementers saw (load 6-9 inflated their timings 3-4x), and running halves in parallel to fit the about-3 h budget (4 processes on 4 cores). Either way, one half passes 60 min, the CDN returns 403, PyAV re-raises it (I checked with a reader that fails mid-decode: RuntimeError from decode, not a silent EOF), and cut() aborts. merge() at line 738 never runs, so the 2,000+ JPEGs on disk have no rows in strips.parquet and the half must be streamed again from frame 0. A single connection reset or read timeout anywhere in the half does the same.",
+ "evidence": "Signed URL for videos/118575/..._1st_half.mp4 carries Expires = now + 3600 s (checked: 0.9995 h). Size 3.55 GB, h264 4096x1080, 71,850 frames. stream_frames throughput 73.2 fps on an idle machine. Local costs: bgr24 conversion 7.7 ms, median of 15 frames 0.09 s, q98 strip JPEG 8.4 ms. RemoteFile.fetch has no try/except and no re-sign. rows go to strips.parquet only in main() after cut() returns.",
+ "fix": "In RemoteFile (or a subclass used by open_video), catch HTTPError 403/5xx, ConnectionError and Timeout in fetch. On 403, re-sign with st.signed_url(path); retry with backoff 3-5 times. In build_ball_strips.cut, flush finished rows to strips.parquet every N strips (or a sidecar parquet per half), and on restart skip targets whose JPEG and row already exist, so a crash costs minutes rather than the half. Document that halves should not be run in parallel unless retry and re-sign are in place."
+}
+{
+ "id": "S2",
+ "file": "eval_ball_detector.py",
+ "line": 853,
+ "severity": "major",
+ "summary": "The training recipe's only fallback, a `--no-motion` checkpoint, cannot be loaded by the v2 inference paths. `--v2` does a strict `build(motion=True).load_state_dict` and crashes on the missing conv1_motion.weight. Loading it as `--heatmap` (v1) instead skips check_unseen and saves no logits, so calibrate_ball_heatmap.py cannot use it.",
+ "scenario": "The training spec says an abort (peakiness > 30, exit 3) or a gate failure triggers the single fallback: the same command with --no-motion. That writes `<out>.<step>.pt` with no conv1_motion.weight (train_ball_heatmap.py:701 build(motion=False)). Then `eval_ball_detector.py --v2 <ckpt>` (lines 852-853) and `detect_ball_heatmap.py --v2 --weights <ckpt>` (lines 186-187) raise RuntimeError: Missing key(s) \"conv1_motion.weight\". The only working route is `--heatmap`, which runs detect() with tau 0.01 and stores 4-column rows with no logit and no provenance guard (U/V refusal skipped). calibrate_ball_heatmap.py expects [u,v,p_raw,size,logit] rows, so the fallback cannot be calibrated or put through the sealed path.",
+ "evidence": "Checked: build(motion=True).load_state_dict(build(motion=False).state_dict()) raises `Missing key(s) in state_dict: \"conv1_motion.weight\"`. Component D's report lists this as an open issue for A/E, and neither eval nor detect handles it (grep: no strict=False, no provenance 'motion' check).",
+ "fix": "In eval_ball_detector.py (v2 loader) and detect_ball_heatmap.py main_v2, read the provenance (or the state-dict keys). If motion is false, use build(motion=True).load_state_dict(sd, strict=False) and assert that the only missing key is conv1_motion.weight; it stays zero, so the output is exactly the RGB net. Alternatively run detect_v2(..., motion_zero=True). Keep check_unseen and logits in both cases."
+}
+{
+ "id": "S3",
+ "file": "build_ball_strips.py",
+ "line": 651,
+ "severity": "minor",
+ "summary": "merge() replaces every earlier row of the half and frame range whatever its kind (or source). A rebuild with `--kinds` therefore silently deletes all other kinds' rows of that half from strips.parquet.",
+ "scenario": "Build 118575 h1 with all kinds into DIR. Then rerun `--match 118575 --half 1 --kinds free --out DIR`, for example after changing FREE_MIX or the 12 m rule. The keep-mask `~(match & half & frame.between(first,last))` with first=0, last=1e9 drops every action, flight, lofted and dribble row of the half, and only the free rows come back. label_ball_strips then labels free strips only for that half. The trainer's per-kind pools still fill from other halves, so nothing fails: the half quietly contributes only free strips.",
+ "evidence": "Reproduced in the scratchpad: merge() of rows {action 100, flight 200, free 300}, then merge() of [free 300] for the same half, leaves [{'frame': 300, 'kind': 'free'}].",
+ "fix": "Restrict the replacement to the kinds of this run (and to its source): keep = ~(match & half & frame.between(first,last) & kind.isin(args.kinds) & (source == this_source)). Pass kinds and source into merge()."
+}
+{
+ "id": "S4",
+ "file": "train_ball_heatmap.py",
+ "line": 266,
+ "severity": "minor",
+ "summary": "load_strips does not restrict training to `source == \"stream\"`. Component C asked D for exactly that restriction, and D did not add it. Window strips (x264 re-encode, background range = window) of training halves are accepted without a warning. Their filenames carry no source, so a window build into the training directory also overwrites the stream JPEGs of the same samples.",
+ "scenario": "Someone runs the mismatch recut, or a smoke test, into the training directory: `build_ball_strips.py --window st2_118577_1st_f030000 [--like A] --out .cache/soccertrack_v2/ball_strips`. merge() replaces the stream rows of frames 30000-34499 with window rows, and identical `<kind>_<match>_<half>_<frame>_<x0>_<y0>.jpg` names overwrite the stream JPEGs. Those strips carry x264 static-block zeros in D (58% exact zeros against JPEG noise elsewhere) and window-range backgrounds. load_strips accepts them, since 118577 h1 is in V2_TRAIN and nothing excludes them, and the run only records it under provenance 'sources'.",
+ "evidence": "load_strips on scratchpad/ball/v2_smoke/strips (all source = st2_118577_1st_f030000) returns 33 rows with no refusal or warning. strip_name() (build_ball_strips.py:566) has no source component. labels.parquet carries 'source', and C's report asks D to train only on source == 'stream'.",
+ "fix": "In load_strips, refuse (or drop with a logged count) rows whose source != 'stream' unless an explicit flag is given. In build_ball_strips, refuse to write a --window run into a directory whose strips.parquet holds stream rows, or include the source in the filename."
+}
+{
+ "id": "S5",
+ "file": "eval_ball_detector.py",
+ "line": 855,
+ "severity": "minor",
+ "summary": "The motion sigmas a checkpoint was trained with are recorded in its provenance but never checked at inference. detect_v2/motion_planes read the current ball_heatmap.SIGMA_D/SIGMA_F at call time. The provenance also leaves out whether the free-strip codes used COCO ignore disks.",
+ "scenario": "The workflow requires hand-editing SIGMA_D and SIGMA_F (placeholders 0.02/0.05) after `label_ball_strips.py --sigma`. Two orders go wrong. A checkpoint trained before the edit (smoke, bench, an early run) and then evaluated afterwards gets inputs scaled differently from training. Or, after training, someone re-measures and edits SIGMA, for example once `--compare-window` reports a D-scale ratio outside 1/1.5-1.5. In both cases eval_ball_detector, detect_ball_heatmap and calibrate run the checkpoint with D and F rescaled by the ratio of the old and new constants, without any error. eval reads prov (line 855) only for 'train'. In the same way, labels_meta.json's top-level 'coco' flag is not copied into the provenance (only meta['constants'] is), so whether resting balls on free strips were labelled -1 or 0 cannot be told from the checkpoint.",
+ "evidence": "grep finds no sigma or SIGMA use in eval_ball_detector.py, detect_ball_heatmap.py or calibrate_ball_heatmap.py. provenance_info stores 'sigma' and 'label_constants' (meta['constants']) but not meta['coco']; the smoke labels_meta.json has coco=True, and provenance_info on it has no coco key.",
+ "fix": "In the v2 loaders (eval, detect, calibrate), compare prov['sigma'] with bh.SIGMA_D/SIGMA_F and refuse a mismatch, or pass sigma_d/sigma_f from the provenance through detect_v2 into motion_planes. Add meta.get('coco') (and the label seed) to provenance_info."
+}
+=== result 2
+{
+ "id": "SEAM-1",
+ "file": "src/ball_heatmap.py",
+ "line": 46,
+ "severity": "major",
+ "summary": "The motion normalisation (SIGMA_D / SIGMA_F) is read from module constants at call time and is never tied to the checkpoint. Training records the values in <ckpt>.provenance.json, but detect_v2, eval_ball_detector --v2, detect_ball_heatmap --v2 and calibrate never read them back or compare them. The trainer also accepts the 0.02 / 0.05 placeholders without complaint.",
+ "scenario": "The contract has the main agent hand-edit SIGMA_D / SIGMA_F once C prints them. A checkpoint trained with one pair (the placeholders, a pilot run, or a first measurement) and evaluated after a later edit sees motion inputs at a different scale. Example: training at SIGMA_D = 0.02, then editing to the std-rule value of about 0.076 that C measured on window strips, makes inference D about 3.8x smaller than in training. Nothing errors. Candidates, the Platt fit on U and every FF-auto number shift, and the sealed scores file cannot show it, because eval_ball_detector's meta records prov['train'] but not the sigmas used at inference.",
+ "evidence": "grep -i sigma over detect_ball_heatmap.py, eval_ball_detector.py and calibrate_ball_heatmap.py finds nothing. _input_v2 (src/ball_heatmap.py:275) calls motion_planes() with no sigma, so it uses bh.SIGMA_D / SIGMA_F. eval_ball_detector.py:850-862 loads the ckpt and reads prov but only stores prov['train']. detect_ball_heatmap.py:173-187 has check_unseen and load_state_dict, with no sigma check. train_ball_heatmap.py:628 writes 'sigma': {SIGMA_D, SIGMA_F} into the provenance. A synthetic test that changed bh.SIGMA_D between two detect_v2 calls on the same model and frames gave different rows with no error.",
+ "fix": "Add sigma_d / sigma_f parameters to detect_v2 / _input_v2 and pass them on to motion_planes. In eval_ball_detector (v2 loader), detect_ball_heatmap.main_v2 and calibrate, read read_provenance(ckpt)['sigma'] and either pass those values through or refuse when they differ from bh.SIGMA_*. Record the sigmas used in the scores-file meta. In train_v2, refuse to start a real run (not --bench / --check) while SIGMA_D, SIGMA_F == (0.02, 0.05) unless an explicit flag is given."
+}
+{
+ "id": "SEAM-2",
+ "file": "label_ball_strips.py",
+ "line": 656,
+ "severity": "minor",
+ "summary": "The stream-vs-window mismatch check (--compare-window) compares stream strips with window strips, which went through JPEG q98. It does not compare them with the planes inference actually computes from raw OpenCV frames, so the check measures the wrong side of the seam on static pitch.",
+ "scenario": "The D-scale ratio and zero shares that compare_window prints are used to judge whether a model trained on stream strips transfers to window inference. On static content, JPEG re-encoding of the window crops changes the D scale by 15-30% and lowers the exact-zero share. The diagnostic can therefore report a gap, or no gap, that inference does not have.",
+ "evidence": "Measured on the training window st2_118577_1st_f030000, frame 30414, free crop (1250, 92), raw D in grey levels, read as stream strip / window strip / raw window as detect_v2 sees it. D-: std 0.770 / 0.837 / 0.731, exact zeros 0.96 / 0.88 / 0.95. D+: std 0.728 / 0.647 / 0.498, zeros 0.95 / 0.88 / 0.95. On a moving (action) crop the three agree within about 4% (D std 14.8 / 14.3 / 14.3, corr 0.99). Scripts: scratchpad/review_seam/stream_vs_window.py and compare_planes.py.",
+ "fix": "Compute side B of compare_window from the window video itself: RingBuffer and BackgroundCache over the window, then motion_planes on the raw OpenCV crops at (x0, y0), which is what detect_v2 builds. Keep the window-strip numbers only as a secondary line."
+}
+{
+ "id": "SEAM-3",
+ "file": "train_ball_heatmap.py",
+ "line": 266,
+ "severity": "minor",
+ "summary": "load_strips does not enforce source == 'stream'. In addition, build_ball_strips.merge() and the strip file names ignore the source, so a --window run into the training strips dir silently replaces that half's stream strips in the window's frame range with x264 window strips, whose backgrounds cover only the window range.",
+ "scenario": "Someone builds window strips into the training dir, for example C's mismatch-check recipe pointed at the same --out, or a smoke build of st2_118577_1st_f030000 into .cache/soccertrack_v2/ball_strips. merge() then drops the stream rows of 118577 half 1 for frames 30000-34499. Because names are kind_match_half_frame_x0_y0 and the sample draws are seeded identically, the same-named JPEGs are overwritten. label_ball_strips and the trainer then train on window-sourced strips with no error. Provenance only records a 'sources' count.",
+ "evidence": "train_ball_heatmap.py:266-271 filters only on NEVER, V2_TRAIN and V2_EXCLUDE; 'source' appears only in provenance (line 634). build_ball_strips.py:643-655 merge() uses the key (match, half, frame in [first, last]) with no source. strip_name() (line 566) has no source. C's report itself says 'Train only on rows with source == \"stream\"'.",
+ "fix": "In load_strips, refuse rows whose source is not 'stream' unless a flag is given. In build_ball_strips, refuse a --window run into a dir whose strips.parquet holds stream rows, or include source in both the file name and the merge key."
+}
+=== result 3
+{
+ "id": "F1",
+ "file": "sweep_events_v2.py",
+ "line": 407,
+ "severity": "minor",
+ "summary": "`--apply` writes the player hash into applied.json but never checks it against the source run. So the V configurations (C3, C2, C0') are never checked to have the same players and teams as the cached C0/C1 runs they are paired against in H3/H4. The contract asks for an assertion via the hash.",
+ "scenario": "After the freeze, something upstream of the ball changes the player rows in the replayed path: an edit to merge_fragments or filter_players, a dtype change in a re-cut dense parquet, or a re-run of events_v1. `--apply` on a V-old window then writes C3 events whose players differ from those in events_coco (C0) or events_heatmap (C1). score_events_paired.py compares them anyway, and the H3 difference silently mixes ball/rules effects with player/team effects. The sweep path does raise on a mismatch (Sweep.metric, line 160); the apply path that produces the claim runs has no such guard.",
+ "evidence": "apply() lines 396-408: events_from_cached(...) and then `applied = {..., \"player_hash\": merged.attrs[\"player_hash\"]}`, with no comparison. events_from_cached and merged_from_cached (score_soccernet.py 601-660) only store the hash in attrs. Nothing in score_events_paired.py reads applied.json. By contrast, sweep() computes src_hash from merged_from_cached(output_<w>/events_v1) and Sweep.metric raises RuntimeError when it differs.",
+ "fix": "In apply(), compute `ref = sc.merged_from_cached(src, st.calibration(m)).attrs[\"player_hash\"]`, which is cheap because the source's grass file is cached, and raise SystemExit if `merged.attrs[\"player_hash\"] != ref`. Store ref in applied.json. Optionally, have score_events_paired.py refuse a paired comparison when both run dirs carry an applied.json and their hashes differ."
+}
+=== result 4
+{
+ "id": "E2E-1",
+ "file": "eval_ball_detector.py",
+ "line": 852,
+ "severity": "major",
+ "summary": "The declared RGB-only fallback can't be measured, calibrated or run densely. A `--no-motion` checkpoint has no `conv1_motion.weight`, and both v2 paths load it strictly into `build(motion=True)`, so they crash. The only path that loads it (v1 `--heatmap`) saves no logits, so `calibrate_ball_heatmap.py` refuses its rows.",
+ "scenario": "Gate G fails at step 8, so the design runs the fallback: step 6 with `--no-motion`, then step 7 (eval on U with the `--v2` checkpoints, then Platt calibration). Run `eval_ball_detector.py --v2 rgb_v2.4000.pt --windows <U>` or `detect_ball_heatmap.py --v2 --weights rgb_v2.4000.pt`. Both raise `RuntimeError` before measuring anything. The workaround `--heatmap rgb_v2.4000.pt` writes [u, v, p, size] rows at tau 0.01 with no logit and skips `check_unseen`, and `calibrate_ball_heatmap._rows` then raises 'candidate rows without a logit: not a v2 detector'.",
+ "evidence": "Reproduced: `python train_ball_heatmap.py --strips e2e/strips --no-motion --steps 2 --out e2e/ckpt/rgb_v2` gave rgb_v2.2.pt with provenance motion=false. `eval_ball_detector.py --v2 e2e/ckpt/rgb_v2.2.pt --windows st2_118577_1st_f030000 --allow-seen --no-coco --limit-frames 2 --sealed e2e/rgb.json` failed with `RuntimeError: Error(s) in loading state_dict for BallNet: Missing key(s) in state_dict: \"conv1_motion.weight\"` (eval_ball_detector.py:852-853). `detect_ball_heatmap.py --v2 --weights e2e/ckpt/rgb_v2.2.pt --no-calib --range 656 658 --allow-seen` failed with the same error at detect_ball_heatmap.py:186-187. calibrate_ball_heatmap.py:96-97 refuses rows without a logit. The design step 8 says: 'If G fails, run the RGB-only fallback (step 6 --no-motion, then step 7) once.'",
+ "fix": "In eval (`--v2` loop) and in `detect_ball_heatmap.main_v2`, read the provenance or the state dict. When `motion` is false (`conv1_motion.weight` absent), call `load_state_dict(sd, strict=False)`, assert that the only missing key is `conv1_motion.weight`, and keep it at its zero init. Either run it with `motion_zero=True` (the exact RGB path, logits kept), or note that zero weights already give the RGB output. Optionally skip the background pass for such checkpoints. Add a `_check` case that loads a `--no-motion` checkpoint through both CLIs."
+}
+{
+ "id": "E2E-2",
+ "file": "eval_ball_detector.py",
+ "line": 432,
+ "severity": "major",
+ "summary": "`--candidates NAME=PARQUET` counts every wanted frame as measured, including frames the dense run never detected on. `detect_ball_heatmap.py` records no list of the frames it ran on, so an incomplete parquet silently produces FF-auto misses, placebo non-hits and too-low candidate counts on random frames. The sealed log still reports 'N of N frames measured'.",
+ "scenario": "Design step 10 takes the V-old v2 detector scores (part of the V primary) from the dense parquet through `--candidates`. Suppose a dense run lacks `--extra-frames measured` (stride 2 only: E counted 89 of 187 measured frames as odd), or is split with `--range` and one part is missing. Every uncovered pass frame then scores 0 in FF-auto. Placebo frames count as measured with no hit, which lowers the placebo rate. If such a file feeds `calibrate_ball_heatmap`, uncovered random frames count as 0 candidates and tau comes out too low. Under `--sealed` the operator sees only counts, and the count says everything was measured.",
+ "evidence": "Ran `detect_ball_heatmap.py --v2 --window st2_118577_1st_f030000 --weights e2e/ckpt/smoke_v2.20.pt --range 656 696 --allow-seen --out e2e/dense_118577.parquet` (20 frames detected). Then `eval_ball_detector.py --reuse e2e/e2e_pass.json e2e/e2e_act.json --candidates dense=e2e/dense_118577.parquet --sealed e2e/reuse.json` printed '187 frames measured ... 187 of 187 frames measured'. In reuse.json the `dense` detector has 187 candidate frames (3 non-empty), placebo pre frames=10 and post frames=11 (rate 0.0), although none of those frames was detected. Root cause: `parquet_candidates` sets `out[f] = rows[...]` (empty) for every wanted f (eval_ball_detector.py:432-434). dense_v2 writes only rows (detect_ball_heatmap.py:144-145, 197), so a frame with zero candidates and a frame never run look the same. The sealed log's `done` (eval_ball_detector.py:883) is a union over detectors.",
+ "fix": "Make `detect_ball_heatmap.py --v2` save the detected frame list (parquet schema metadata, or `<out>.frames.json` with the frames, stride, range and ckpt sha). `parquet_candidates` should return only frames in that list and refuse a parquet without it. Eval should then refuse, or under `--sealed` print per detector, when a detector lacks any measured frame. Also print per-detector measured counts in the sealed log."
+}
+{
+ "id": "E2E-3",
+ "file": "eval_ball_detector.py",
+ "line": 499,
+ "severity": "minor",
+ "summary": "`measure()` counts a pass frame missing from a detector's candidates as an FF-auto miss (`int(f in c and ...)`). Placebos treat a missing frame as None, the docstring says a missing frame 'was not measured', and `ball_tiles` refuses one. Partial or merged runs therefore give FF-auto values and paired differences diluted with zeros.",
+ "scenario": "`--reuse A.json B.json`, where a detector appears only in a run made with `--frames placebo` or `--limit-frames`. Its FF-auto is reported over all passes with every unmeasured frame scored 0, and `compare_ff` pairs those zeros against another detector's real hits, with no warning. The same happens in a `--limit-frames` smoke test: step 4 printed 'ff-auto pooled 0.0, passes 12' with only 2 of 48 pass frames measured.",
+ "evidence": "e2e/reuse.json: smoke_v2.20.pt measured 10 of the 48 pass frames, yet 'ff frames' lists all 12 passes, unmeasured frames as 0, and ff-auto = 0.021. Placebo pre/post for the same detector show frames=0 (None). Running `ball_tiles.py --scores e2e/e2e_pass.json e2e/e2e_act.json --pass-frame 1 ...` on the same detector raised `ValueError: smoke_v2.20.pt was not measured at st2_118577_1st_f030000 frame 1862`, so the two consumers of the scores file treat missing frames differently.",
+ "fix": "In `measure()`, use None for frames not in `c`. Report ff-auto over passes whose 4 frames were all measured, plus a count of incomplete passes. Make `compare_ff` and `ff_summary` refuse, or exclude and report, passes where either detector has an unmeasured frame."
+}
+{
+ "id": "E2E-4",
+ "file": "src/motion_bg.py",
+ "line": 190,
+ "severity": "minor",
+ "summary": "Motion channels are always scaled by the current `ball_heatmap.SIGMA_D` / `SIGMA_F`. The checkpoint's provenance records the sigmas it was trained with, but eval, detect and calibrate never compare them, so editing the constants after training silently rescales the motion input of every existing checkpoint.",
+ "scenario": "The contract makes the sigmas a hand edit, and C's report invites re-picking them ('pick one rule for both'; D uses the std rule, F the robust one). Suppose a checkpoint is trained, then SIGMA_D is changed from 0.0757 (e.g. to a robust value of about 0.02, or after the stream-vs-window check). `detect_v2` then feeds D about 3.8 times larger than in training. U selection, calibration and V measurement run on a mis-scaled model, and nothing is printed.",
+ "evidence": "motion_bg.py:190-191 reads `bh.SIGMA_D` / `bh.SIGMA_F` at call time. The e2e checkpoint's provenance has `sigma {SIGMA_D: 0.02, SIGMA_F: 0.05}` (train_ball_heatmap.py:628). A grep for `sigma` in eval_ball_detector.py, detect_ball_heatmap.py and calibrate_ball_heatmap.py finds no reader. `prov` in eval (line 855) is used only for 'train'. This run's `label_ball_strips.py --sigma` printed SIGMA_D = 0.0757 (std rule) and SIGMA_F = 0.0233 (robust rule), against placeholders of 0.02 / 0.05.",
+ "fix": "In eval `--v2`, `detect_ball_heatmap.main_v2` and `calibrate.run`, compare `read_provenance(ckpt)['sigma']` with `bh.SIGMA_D` / `bh.SIGMA_F` and refuse on a mismatch. Better still, pass the provenance sigmas into `detect_v2` / `motion_planes` (both already accept `sigma_d` / `sigma_f`)."
+}
+{
+ "id": "E2E-5",
+ "file": "sweep_events_v2.py",
+ "line": 282,
+ "severity": "minor",
+ "summary": "The dense parquet's `confidence` is p_cal from whichever calibration existed at detect time, but the parquet does not record (a, b) or the calibration's sha. `sweep_events_v2` takes tau from a separate `--calib` file and never checks that the two come from the same fit.",
+ "scenario": "U is recalibrated with `calibrate_ball_heatmap.py --force` (e.g. after adding U windows) after the U-E dense parquets were written. The sweep then filters confidences from the old (a, b) with the new tau and links with `logit(tau)` from the new fit. The events tuning runs on a tau/confidence pair that matches no calibration, and nothing reports it.",
+ "evidence": "detect_ball_heatmap.py:119-120 writes `float(p_cal(z, calib))` with no metadata. sweep_events_v2.py:282-287 reads `tau` from `--calib` independently. `select_ball` compares `confidence >= tau` and passes tau to `ball_link`. The `logit` column needed to recompute p_cal is in the parquet but unused.",
+ "fix": "Store a, b and the calibration file's sha256 in the parquet metadata (or a sidecar). In `sweep_events_v2.prepare`, either recompute `confidence = p_cal(logit, calib)` from `--calib`, or refuse when the stored sha differs from the `--calib` file."
+}

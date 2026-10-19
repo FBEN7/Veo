@@ -1,0 +1,10 @@
+  frame 0: 0 candidates [2 s]
+  frame 500: 226 candidates [510 s]
+  frame 1000: 681 candidates [931 s]
+  frame 1500: 1155 candidates [1350 s]
+  frame 2000: 1659 candidates [1760 s]
+  frame 2500: 2075 candidates [2166 s]
+  frame 3000: 2482 candidates [2572 s]
+  frame 3500: 2894 candidates [2976 s]
+  frame 4000: 3471 candidates [3381 s]
+  3822 candidates on 4500 frames -> .cache/heatmap_balls_st2_117093_1st_f015000.parquet

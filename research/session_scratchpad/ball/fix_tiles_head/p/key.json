@@ -1,0 +1,30 @@
+[
+ {
+  "tile": 1,
+  "window": "st2_118577_1st_f030000",
+  "frame": 24,
+  "u": 3601.9411053963963,
+  "v": 494.50276287808634,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 2,
+  "window": "st2_118577_1st_f030000",
+  "frame": 4154,
+  "u": 2663.466418943114,
+  "v": 541.4184452509486,
+  "source": "corridor-decoy",
+  "sources": [
+   "corridor-decoy"
+  ],
+  "kind": "corridor-decoy",
+  "pass": 11,
+  "q": 1,
+  "size": 12.16101366068687,
+  "t": 0.817
+ }
+]

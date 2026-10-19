@@ -1,0 +1,5 @@
+window,feature,D,split,purity,IDF1,recall,precision,team coverage,team accuracy,team recall,non-outfield in a team /frame,n_outfield
+M10,hsv4,,16.79,0.796,0.471,0.921,0.784,0.978,0.891,0.804,1.26,45000
+M10,hsv4,0.15,16.92,0.795,0.468,0.933,0.784,0.958,0.893,0.8,0.26,45000
+M10,chroma,,16.08,0.784,0.474,0.892,0.779,0.996,0.886,0.789,2.81,45000
+M10,chroma,0.15,16.92,0.795,0.468,0.933,0.784,0.958,0.893,0.8,0.26,45000

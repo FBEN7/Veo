@@ -5,3 +5,22 @@
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.parquet filter=lfs diff=lfs merge=lfs -text
+# Data and run artefacts committed on request (SoccerTrack v2, CC BY 4.0; see DATA_ATTRIBUTION.md)
+data/soccertrack_v2/** filter=lfs diff=lfs merge=lfs -text
+.cache/** filter=lfs diff=lfs merge=lfs -text
+output_st2_*/** filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.npz filter=lfs diff=lfs merge=lfs -text
+*.pth filter=lfs diff=lfs merge=lfs -text
+research/session_scratchpad/** filter=lfs diff=lfs merge=lfs -text
+research/session_scratchpad/**/*.py !filter !diff !merge text
+research/session_scratchpad/**/*.md !filter !diff !merge text
+research/session_scratchpad/**/*.txt !filter !diff !merge text
+research/session_scratchpad/**/*.log !filter !diff !merge text
+research/session_scratchpad/**/*.json !filter !diff !merge text
+research/session_scratchpad/**/*.jsonl !filter !diff !merge text
+research/session_scratchpad/**/*.csv !filter !diff !merge text
+research/session_scratchpad/**/*.sh !filter !diff !merge text
+research/session_scratchpad/**/*.js !filter !diff !merge text
+research/session_scratchpad/**/*.sha256 !filter !diff !merge text

@@ -1,0 +1,16 @@
+st2_117092_1st_f001500 test_E0: 96 events
+st2_117092_1st_f001500 test_E1: 107 events
+st2_117092_1st_f001500: 9 static points, 5592 of 36000 rows dropped
+st2_117092_1st_f001500 test_E2: 114 events
+st2_117092_1st_f024000 test_E0: 88 events
+st2_117092_1st_f024000 test_E1: 97 events
+st2_117092_1st_f024000: 3 static points, 499 of 36000 rows dropped
+st2_117092_1st_f024000 test_E2: 94 events
+st2_117092_2nd_f000000 test_E0: 81 events
+st2_117092_2nd_f000000 test_E1: 89 events
+st2_117092_2nd_f000000: 6 static points, 3646 of 36000 rows dropped
+st2_117092_2nd_f000000 test_E2: 88 events
+st2_117092_2nd_f027000 test_E0: 72 events
+st2_117092_2nd_f027000 test_E1: 74 events
+st2_117092_2nd_f027000: 11 static points, 7300 of 36000 rows dropped
+st2_117092_2nd_f027000 test_E2: 91 events

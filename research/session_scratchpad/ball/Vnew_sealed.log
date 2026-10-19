@@ -1,0 +1,25 @@
+  st2_117093_1st_f045000: 241 frames to measure (from saved candidates: coco, ball_v2.4000.pt, T)
+  st2_117093_2nd_f015000: 271 frames to measure (from saved candidates: coco, ball_v2.4000.pt, T)
+  st2_117093_2nd_f045000: 288 frames to measure (from saved candidates: coco, ball_v2.4000.pt, T)
+  st2_132877_1st_f045000: 244 frames to measure (from saved candidates: coco, ball_v2.4000.pt, T)
+  st2_132877_2nd_f015000: 205 frames to measure (from saved candidates: coco, ball_v2.4000.pt, T)
+  st2_132877_2nd_f045000: 261 frames to measure (from saved candidates: coco, ball_v2.4000.pt, T)
+  st2_117093_1st_f045000: 20 passes, 26 + 20 placebo frames, frames measured of 241: coco 241, ball_v2.4000.pt 241, T 241
+  st2_117093_2nd_f015000: 26 passes, 24 + 24 placebo frames, frames measured of 271: coco 271, ball_v2.4000.pt 271, T 271
+  st2_117093_2nd_f045000: 31 passes, 24 + 27 placebo frames, frames measured of 288: coco 288, ball_v2.4000.pt 288, T 288
+  st2_132877_1st_f045000: 22 passes, 20 + 20 placebo frames, frames measured of 244: coco 244, ball_v2.4000.pt 244, T 244
+  st2_132877_2nd_f015000: 17 passes, 18 + 16 placebo frames, frames measured of 205: coco 205, ball_v2.4000.pt 205, T 205
+  st2_132877_2nd_f045000: 23 passes, 24 + 21 placebo frames, frames measured of 261: coco 261, ball_v2.4000.pt 261, T 261
+  st2_117093_1st_f045000: T: measured frames by source detected 77, interpolated 98, fallback 30, none 36 (0 past the last processed frame, 0 not covered); fills 1049 of 1076 pairs within the gap (27 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_117093_1st_f045000: T: dense top-1 = ball_v2.4000.pt's top-1 at 118 of 118 shared frames
+  st2_117093_2nd_f015000: T: measured frames by source detected 109, interpolated 120, fallback 15, none 27 (0 past the last processed frame, 0 not covered); fills 1512 of 1563 pairs within the gap (51 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_117093_2nd_f015000: T: dense top-1 = ball_v2.4000.pt's top-1 at 137 of 137 shared frames
+  st2_117093_2nd_f045000: T: measured frames by source detected 106, interpolated 112, fallback 31, none 39 (0 past the last processed frame, 0 not covered); fills 1319 of 1376 pairs within the gap (57 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_117093_2nd_f045000: T: dense top-1 = ball_v2.4000.pt's top-1 at 150 of 150 shared frames
+  st2_132877_1st_f045000: T: measured frames by source detected 100, interpolated 99, fallback 21, none 24 (0 past the last processed frame, 0 not covered); fills 1403 of 1437 pairs within the gap (34 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_132877_1st_f045000: T: dense top-1 = ball_v2.4000.pt's top-1 at 131 of 131 shared frames
+  st2_132877_2nd_f015000: T: measured frames by source detected 73, interpolated 79, fallback 15, none 38 (0 past the last processed frame, 0 not covered); fills 1456 of 1537 pairs within the gap (81 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_132877_2nd_f015000: T: dense top-1 = ball_v2.4000.pt's top-1 at 94 of 94 shared frames
+  st2_132877_2nd_f045000: T: measured frames by source detected 98, interpolated 112, fallback 19, none 32 (0 past the last processed frame, 0 not covered); fills 1477 of 1500 pairs within the gap (23 refused for speed), longest 6 frames; detected or fallback off the stride 0
+  st2_132877_2nd_f045000: T: dense top-1 = ball_v2.4000.pt's top-1 at 124 of 124 shared frames
+  sealed: 6 windows, 3 detectors -> /tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/Vnew_sealed.json [22 s]

@@ -1,0 +1,255 @@
+[
+ {
+  "tile": 1,
+  "window": "st2_118577_1st_f030000",
+  "frame": 656,
+  "u": 3525.696,
+  "v": 606.923,
+  "source": "detA+detB",
+  "sources": [
+   "detA",
+   "detB"
+  ],
+  "kind": "pass",
+  "pass": 0,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 2,
+  "window": "st2_118577_1st_f030000",
+  "frame": 99,
+  "u": 2774.48,
+  "v": 236.854,
+  "source": "rejudge",
+  "sources": [
+   "rejudge"
+  ],
+  "kind": "rejudge",
+  "old_key": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compA/tiles_new/key.json",
+  "old_tile": 4,
+  "old_source": "v2rand.pt"
+ },
+ {
+  "tile": 3,
+  "window": "st2_118577_1st_f030000",
+  "frame": 3778,
+  "u": 2709.891,
+  "v": 370.503,
+  "source": "detB",
+  "sources": [
+   "detB"
+  ],
+  "kind": "pass",
+  "pass": 9,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 4,
+  "window": "st2_118577_1st_f030000",
+  "frame": 73,
+  "u": 2772.243,
+  "v": 237.791,
+  "source": "rejudge",
+  "sources": [
+   "rejudge"
+  ],
+  "kind": "rejudge",
+  "old_key": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/compA/tiles_new/key.json",
+  "old_tile": 8,
+  "old_source": "coco"
+ },
+ {
+  "tile": 5,
+  "window": "st2_118577_1st_f030000",
+  "frame": 767,
+  "u": 3565.911,
+  "v": 515.458,
+  "source": "detA",
+  "sources": [
+   "detA"
+  ],
+  "kind": "pass",
+  "pass": 1,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 6,
+  "window": "st2_118577_1st_f030000",
+  "frame": 1862,
+  "u": 595.1237494931586,
+  "v": 515.3357731420383,
+  "source": "corridor-decoy",
+  "sources": [
+   "corridor-decoy"
+  ],
+  "kind": "corridor-decoy",
+  "pass": 3,
+  "q": 0,
+  "size": 7.062820797957315,
+  "t": 0.65
+ },
+ {
+  "tile": 7,
+  "window": "st2_118577_1st_f030000",
+  "frame": 2457,
+  "u": 2412.916,
+  "v": 176.265,
+  "source": "detB",
+  "sources": [
+   "detB"
+  ],
+  "kind": "pass",
+  "pass": 5,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 8,
+  "window": "st2_118577_1st_f030000",
+  "frame": 3315,
+  "u": 718.6403041453739,
+  "v": 565.8940504863417,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy"
+ },
+ {
+  "tile": 9,
+  "window": "st2_118577_1st_f030000",
+  "frame": 2457,
+  "u": 2312.916,
+  "v": 176.265,
+  "source": "detA",
+  "sources": [
+   "detA"
+  ],
+  "kind": "pass",
+  "pass": 5,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 10,
+  "window": "st2_118577_1st_f030000",
+  "frame": 2835,
+  "u": 2035.0,
+  "v": 400.0,
+  "source": "detB",
+  "sources": [
+   "detB"
+  ],
+  "kind": "confident",
+  "size": 4.0
+ },
+ {
+  "tile": 11,
+  "window": "st2_118577_1st_f030000",
+  "frame": 2373,
+  "u": 2085.5981592572016,
+  "v": 396.2904353911112,
+  "source": "decoy",
+  "sources": [
+   "decoy"
+  ],
+  "kind": "decoy",
+  "pass": 4,
+  "q": 1
+ },
+ {
+  "tile": 12,
+  "window": "st2_118577_1st_f030000",
+  "frame": 3912,
+  "u": 2651.371,
+  "v": 384.791,
+  "source": "detA+detB",
+  "sources": [
+   "detA",
+   "detB"
+  ],
+  "kind": "pass",
+  "pass": 10,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 13,
+  "window": "st2_118577_1st_f030000",
+  "frame": 2708,
+  "u": 2008.0,
+  "v": 400.0,
+  "source": "detB",
+  "sources": [
+   "detB"
+  ],
+  "kind": "confident",
+  "size": 4.0
+ },
+ {
+  "tile": 14,
+  "window": "st2_118577_1st_f030000",
+  "frame": 1825,
+  "u": 435.276,
+  "v": 475.371,
+  "source": "detA+detB",
+  "sources": [
+   "detA",
+   "detB"
+  ],
+  "kind": "pass",
+  "pass": 2,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 15,
+  "window": "st2_118577_1st_f030000",
+  "frame": 3778,
+  "u": 2609.891,
+  "v": 370.503,
+  "source": "detA",
+  "sources": [
+   "detA"
+  ],
+  "kind": "pass",
+  "pass": 9,
+  "q": 0,
+  "size": 4.0
+ },
+ {
+  "tile": 16,
+  "window": "st2_118577_1st_f030000",
+  "frame": 3778,
+  "u": 2684.682574485496,
+  "v": 338.1073172927707,
+  "source": "corridor-decoy",
+  "sources": [
+   "corridor-decoy"
+  ],
+  "kind": "corridor-decoy",
+  "pass": 9,
+  "q": 0,
+  "size": 7.211470515527405,
+  "t": 0.65
+ },
+ {
+  "tile": 17,
+  "window": "st2_118577_1st_f030000",
+  "frame": 3702,
+  "u": 2256.707656105914,
+  "v": 424.1970999901676,
+  "source": "corridor-decoy",
+  "sources": [
+   "corridor-decoy"
+  ],
+  "kind": "corridor-decoy",
+  "pass": 8,
+  "q": 0,
+  "size": 11.36469851222067,
+  "t": 0.65
+ }
+]
