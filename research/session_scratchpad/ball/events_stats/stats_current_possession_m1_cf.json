@@ -1,0 +1,26 @@
+[
+ {
+  "window": "st2_117092_1st_f001500",
+  "current proxy left": 0.522,
+  "truth left": 0.6,
+  "abs error": 0.07799999999999996
+ },
+ {
+  "window": "st2_117092_1st_f024000",
+  "current proxy left": 0.435,
+  "truth left": 0.48529060033484805,
+  "abs error": 0.05029060033484806
+ },
+ {
+  "window": "st2_117092_2nd_f000000",
+  "current proxy left": 0.373,
+  "truth left": 0.3573981415296639,
+  "abs error": 0.015601858470336072
+ },
+ {
+  "window": "st2_117092_2nd_f027000",
+  "current proxy left": 0.117,
+  "truth left": 0.5520107840934622,
+  "abs error": 0.43501078409346217
+ }
+]

@@ -1382,6 +1382,91 @@ result-neutral):
 - Retuning a handful of hand rules is not the lever. Learned events, or
   a much larger tuning set, are what is left.
 
+### M1's camera refitted, the test rerun (amendment 2)
+
+**The fault:** M1's release calibration puts the near touchline in
+mid-pitch. Our detections' feet, projected, sit a median 1.8-1.9 m from
+the truth's positions; only 0.24-0.32 of them fall within 3 m. Player
+detection itself is fine there; the night lines are too faint for a line
+fit (`calib_fix/fit_lines.py`, not used).
+
+**The refit (`calib_fix/fit_players.py`):** the release model with the
+inverse homography (8 dof) and K's vertical focal length and principal point
+free. It is fitted on our detections' feet against the truth's pitch
+positions of 1st f001500 and 2nd f000000, by nearest-neighbour matching
+with a radius shrinking from 8 to 1.5 m, then robust least squares.
+`calib_fix/calib_override.py` loads it for M1 only.
+
+| window | median error, release → refit | within 3 m |
+|---|---|---|
+| 1st f024000 (held out) | 1.83 → 0.64 m | 0.32 → 0.73 |
+| 2nd f027000 (held out) | 1.90 → 0.67 m | 0.24 → 0.62 |
+
+**The other releases are imperfect too** (`.cache/calib_diag/`):
+- M6: 1.04 → 0.75 m on its 2nd half (fitted on the 1st).
+- M7: 1.38 → 0.67 m and M9: 1.08 → 0.63 m, in-sample only.
+- Position accuracy, and every metre-based statistic, rests on the
+  calibration more than on detection.
+- The product needs its own calibration step; ~0.65 m is what this one
+  reaches.
+
+**The M1 events test rerun** under the refit (same frozen code and rules,
+`m1_cf_*.json`):
+
+| setup | F1 at 1 s, release → refit | above chance, release → refit |
+|---|---|---|
+| E0 | 0.420 → 0.441 | +0.097 → +0.111 |
+| E1 | 0.450 → 0.460 | +0.108 → +0.120 |
+| E2 | 0.468 → 0.474 | +0.109 → +0.111 |
+
+- E2 minus E0 is +0.033, 95% [-0.024, +0.090]; E1 minus E0 is +0.019
+  [-0.038, +0.074]. **The conclusion stands: not shown.**
+- The camera was worth about +0.01-0.02 in F1 on every setup. It is not
+  what holds events back.
+- Caveat: two of the four test windows lent their player positions to
+  the refit. The labels scored are ball actions, which the refit never
+  read.
+
+### Distance and possession (`events_stats/`)
+
+**The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
+v3 ball, static filtered, linked):
+- Distance: ×2 the truth in total (7.7 / 6.5 / 7.0 km against
+  3.6 / 3.6 / 3.4). Position jitter at 25 fps adds up.
+- Possession (`possession_proxy`): the left side's share is wrong by
+  0.23-0.27.
+
+**Retuned on those three windows** (`stats_fix.py`, `stats_fix_tune.json`):
+- **Distance:** centred moving average of 1 s, then a sample every 1 s.
+  The per-person median error falls from 0.32 to 0.046, with a perfect
+  identity, on the frames where the person was detected.
+  - The truth's reference is the same 1 s / 1 s estimator on its own
+    positions, which lie on a 1.05 × 0.68 m grid. The tuning is therefore
+    partly circular.
+- **Possession:** the team of the nearest player within 4 m of the ball at
+  every frame with a ball, with no ball-speed gate. The error falls to
+  0.086.
+
+**Checked on M1 under the refit**, with detections matched to persons in
+pitch metres within 3 m (`--pitch`; M1's truth boxes are off):
+
+| window | distance error (1 s / 1 s) | distance error (every frame) | possession error, retuned | possession error, current proxy |
+|---|---|---|---|---|
+| 1st f001500 (*) | 0.035 | 0.62 | 0.008 | 0.078 |
+| 1st f024000 | 0.020 | 0.56 | 0.084 | 0.050 |
+| 2nd f000000 (*) | 0.033 | 0.80 | 0.028 | 0.016 |
+| 2nd f027000 | 0.035 | 0.89 | 0.299 | 0.435 |
+
+(*) used by the camera refit.
+
+- **Distance:** the 1 s estimator holds on M1. This is measured with a
+  perfect identity and on matched frames only, which cover 0.52-0.74 of
+  the truth's distance. Per-player km still need identities that last.
+- **Possession: not shown better.** The retuned rule wins on two windows
+  and loses on two. The mean error is 0.105 against 0.145, and that gap
+  is driven by 2nd f027000, where both rules are far off; that is the
+  window where E2 fell to chance. The cause there is not yet found.
+
 ## Next
 
 0. **Balls at rest by the goals** (seen on M9, judged B*). Find them
