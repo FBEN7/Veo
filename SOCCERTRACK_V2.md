@@ -1382,36 +1382,61 @@ result-neutral):
 - Retuning a handful of hand rules is not the lever. Learned events, or
   a much larger tuning set, are what is left.
 
-### M1's camera refitted, the test rerun (amendment 2)
+### M1's camera refitted, the test rerun (amendment 2; exploratory)
 
-**The fault:** M1's release calibration puts the near touchline in
-mid-pitch. Our detections' feet, projected, sit a median 1.8-1.9 m from
-the truth's positions; only 0.24-0.32 of them fall within 3 m. Player
-detection itself is fine there; the night lines are too faint for a line
-fit (`calib_fix/fit_lines.py`, not used).
+**Corrected after an adversarial review.** The first version of this section
+said that M1's calibration was broken and that the other releases were
+imperfect too. Both claims were wrong. The checks below are the corrected
+reading.
 
-**The refit (`calib_fix/fit_players.py`):** the release model with the
-inverse homography (8 dof) and K's vertical focal length and principal point
-free. It is fitted on our detections' feet against the truth's pitch
-positions of 1st f001500 and 2nd f000000, by nearest-neighbour matching
-with a radius shrinking from 8 to 1.5 m, then robust least squares.
-`calib_fix/calib_override.py` loads it for M1 only.
+**The fault is a frame mismatch, not a bad calibration.**
+- The release calibration agrees with the release's own labels. The truth's
+  box feet, projected, land a median 0.36-0.41 m from the truth's positions
+  on all four M1 windows, which is the same as on other matches.
+- M1's labels, boxes and homography alike, sit in a different pixel frame
+  from the video:
+  - 99% of the truth's box feet are at v <= 960-1040;
+  - our detections reach v ~1510-1670.
+- No vertical affine maps the one onto the other: the best still leaves a
+  median of 42-63 px.
+- Our detections' feet, projected with the release, sit a median 1.8-1.9 m
+  from the truth's positions; only 0.24-0.32 of them fall within 3 m.
 
-| window | median error, release → refit | within 3 m |
-|---|---|---|
-| 1st f024000 (held out) | 1.83 → 0.64 m | 0.32 → 0.73 |
-| 2nd f027000 (held out) | 1.90 → 0.67 m | 0.24 → 0.62 |
+**The refit (`calib_fix/fit_players.py`) is a warp, not a camera.**
+- What it fits: the inverse homography and K's vertical intrinsics, against
+  the truth's positions on 1st f001500 and 2nd f000000.
+- What it does: it brings our detections' feet to a median 0.64-0.67 m on
+  the two other windows. One-to-one matching gives the same median (about
+  0.9 m near the goals).
+- Why it is not a camera:
+  - its parameters are non-physical: fy goes from 946 to 70,026;
+  - the homography's u column shrinks to 1-7%;
+  - it maps our player boxes' bottoms, foot-point bias included, and
+    nothing else.
+- **Do not use it for ball, shot or goal geometry.**
+- A physical fix would fit the camera to the release's pitch-line outline,
+  which is in the video's frame (`src/soccertrack_v2.py`).
 
-**The other releases are imperfect too** (`.cache/calib_diag/`):
-- M6: 1.04 → 0.75 m on its 2nd half (fitted on the 1st).
-- M7: 1.38 → 0.67 m and M9: 1.08 → 0.63 m, in-sample only.
-- Position accuracy, and every metre-based statistic, rests on the
-  calibration more than on detection.
-- The product needs its own calibration step; ~0.65 m is what this one
-  reaches.
+**The other releases are fine; our foot point is not** (`.cache/calib_diag/`
+holds refits of M6/M7/M9, kept only as evidence; do not use them).
+- The release projects the truth's box feet to 0.30-0.50 m on M6, M7 and M9.
+- Our detections' feet sit 0.9-1.4 m off. The difference is our detector's
+  foot point:
+  - our boxes are taller (median crop_h 43-51 px against the truth's 40-45);
+  - they sit a median ~20 px from the truth's feet in the image, which is
+    metres at the panorama's ends.
+- The refits there make the truth's feet worse: 2.55 m on M6's 2nd half,
+  and 13.7 m near the goals.
+- **So position accuracy is limited by the detector's foot point.** The next
+  lever is a foot-point correction learned against the truth's boxes on the
+  training matches, then re-measured.
 
 **The M1 events test rerun** under the refit (same frozen code and rules,
-`m1_cf_*.json`):
+`m1_cf_*.json`). This is exploratory:
+- the amendment came about 5 h after the registered result had been read;
+- it was fitted on the player truth of two of the four test windows.
+
+The registered primary stays the release run: **not shown**.
 
 | setup | F1 at 1 s, release → refit | above chance, release → refit |
 |---|---|---|
@@ -1420,14 +1445,11 @@ with a radius shrinking from 8 to 1.5 m, then robust least squares.
 | E2 | 0.468 → 0.474 | +0.109 → +0.111 |
 
 - E2 minus E0 is +0.033, 95% [-0.024, +0.090]; E1 minus E0 is +0.019
-  [-0.038, +0.074]. **The conclusion stands: not shown.**
-- The camera was worth about +0.01-0.02 in F1 on every setup. It is not
-  what holds events back.
-- Caveat: two of the four test windows lent their player positions to
-  the refit. The labels scored are ball actions, which the refit never
-  read.
+  [-0.038, +0.074]. Same reading: not shown.
+- The positions were worth about +0.01-0.02 in F1 on every setup. They are
+  not what holds events back.
 
-### Distance and possession (`events_stats/`)
+### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
 v3 ball, static filtered, linked):
@@ -1437,35 +1459,44 @@ v3 ball, static filtered, linked):
   0.23-0.27.
 
 **Retuned on those three windows** (`stats_fix.py`, `stats_fix_tune.json`):
-- **Distance:** centred moving average of 1 s, then a sample every 1 s.
-  The per-person median error falls from 0.32 to 0.046, with a perfect
-  identity, on the frames where the person was detected.
-  - The truth's reference is the same 1 s / 1 s estimator on its own
-    positions, which lie on a 1.05 × 0.68 m grid. The tuning is therefore
-    partly circular.
-- **Possession:** the team of the nearest player within 4 m of the ball at
+- **Distance:** a centred moving average of 1 s, then a sample every 1 s.
+  The per-person median error falls from 0.32 to 0.046.
+  - **The comparison is circular.** The truth's reference is the same
+    1 s / 1 s estimator, because its positions sit on a 1.05 × 0.68 m grid
+    and jitter too. Path length depends on the sampling scale.
+  - What this shows is that our positions give the same path length as the
+    truth's at a 1 s scale. It does not show that this is the distance run,
+    which a 1 s path underestimates on turns.
+  - It is measured with a perfect identity, on the frames where a
+    detection was matched to the person.
+- **Possession:** the team of the nearest player within 4 m of the ball, at
   every frame with a ball, with no ball-speed gate. The error falls to
-  0.086.
+  0.086, in-sample. A constant 0.5 scores 0.148 there.
 
-**Checked on M1 under the refit**, with detections matched to persons in
-pitch metres within 3 m (`--pitch`; M1's truth boxes are off):
+**On M1 under the refit**, with detections matched to persons in pitch
+metres within 3 m (`--pitch`; M1's truth boxes are in another frame):
 
-| window | distance error (1 s / 1 s) | distance error (every frame) | possession error, retuned | possession error, current proxy |
-|---|---|---|---|---|
-| 1st f001500 (*) | 0.035 | 0.62 | 0.008 | 0.078 |
-| 1st f024000 | 0.020 | 0.56 | 0.084 | 0.050 |
-| 2nd f000000 (*) | 0.033 | 0.80 | 0.028 | 0.016 |
-| 2nd f027000 | 0.035 | 0.89 | 0.299 | 0.435 |
+| window | distance error (1 s / 1 s) | distance error (every frame) | possession error, retuned | possession error, current proxy | possession error, constant 0.5 |
+|---|---|---|---|---|---|
+| 1st f001500 (*) | 0.035 | 0.62 | 0.008 | 0.078 | 0.100 |
+| 1st f024000 | 0.020 | 0.56 | 0.084 | 0.050 | 0.015 |
+| 2nd f000000 (*) | 0.033 | 0.80 | 0.028 | 0.016 | 0.143 |
+| 2nd f027000 | 0.035 | 0.89 | 0.299 | 0.435 | 0.052 |
 
-(*) used by the camera refit.
+(*) used by the refit, so in-sample for the positions.
 
-- **Distance:** the 1 s estimator holds on M1. This is measured with a
-  perfect identity and on matched frames only, which cover 0.52-0.74 of
-  the truth's distance. Per-player km still need identities that last.
-- **Possession: not shown better.** The retuned rule wins on two windows
-  and loses on two. The mean error is 0.105 against 0.145, and that gap
-  is driven by 2nd f027000, where both rules are far off; that is the
-  window where E2 fell to chance. The cause there is not yet found.
+- **Distance:** the 1 s scale holds on M1, with the caveats above. The
+  matched frames cover 0.52-0.74 of the truth's distance.
+- **Per-player km over all frames, with our identities**, is the product's
+  number. It is not measured yet, and identities are the limit.
+- **Possession: not shown better than a constant 0.5.** The mean errors
+  are 0.105 (retuned), 0.145 (current) and 0.078 (constant 0.5).
+- The 2nd f027000 window is far off for both rules, and is also where E2
+  fell to chance. The cause is not yet found; team assignment is the first
+  suspect.
+- A fair possession test needs finer units (30 s bins, or frame-level
+  agreement with dead time excluded), a paired comparison with a constant,
+  and tuning leave-one-match-out.
 
 ## Next
 
