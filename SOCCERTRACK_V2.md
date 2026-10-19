@@ -1334,6 +1334,54 @@ Not registered; run after H1 was scored (`research/session_scratchpad/ball/event
   next lever is on the events side (possession, the linker on a stride-1
   ball), measured on unseen footage.
 
+### Events plan, steps 1-2: the ball for the rules, the rules retuned, tested on M1
+
+**Where labels were lost** (M7 + M9, `events_m7m9/funnel.py`, 110 pass / carry /
+shot labels):
+- the actor was detected for 0.70;
+- some v3 top-4 candidate was within 3 m of the action for 0.52;
+- the ball the rules kept was there for only 0.24;
+- with both the actor and the ball there, an event fired for 2 of 22.
+
+**Step 1 (the tracked v3 ball for the rules):** at most +0.01 above chance
+on M7 / M9. With the tracker's fallback, there were 80 false shots on M7.
+On M9 the tracker sat on a ball resting by the goal.
+
+**Step 2a (`events_tune/`):**
+- The ball input and the rules were retuned on M6's second half, M7 and M9
+  (160 pass + carry labels).
+- New ball input: static points dropped anywhere. A point holding a
+  candidate on 5% of frames goes, which removed none of the 188 verified
+  balls.
+- The best setup (E2) was v3 with static points dropped, the linker, a
+  possession radius of 3 m and a hold of 0.4 s. It scored +0.223 above
+  chance against +0.163 for the current pipeline (E0).
+- With each window held out in turn, E2 beat E0 on all three.
+
+**The M1 test** (registered in `events_tune/m1_registration.json` before any M1
+output was read; 4 windows of M1, never used by any ball model or rule;
+365 pass + carry labels; one amendment, resumable player detection,
+result-neutral):
+
+| setup | events | F1 at 1 s | chance | above chance |
+|---|---|---|---|---|
+| E0 current (v2, linker, frozen rules) | 264 | 0.420 | 0.323 | +0.097 |
+| E1 v3 tracked + retuned rules | 284 | 0.450 | 0.342 | +0.108 |
+| E2 v3 static-filtered + linker + retuned rules | 310 | 0.468 | 0.360 | +0.109 |
+
+- **Primary: E2 minus E0** is +0.048 in F1, 95% [-0.020, +0.114] over 72
+  blocks. Not shown. E1 minus E0 is +0.030 [-0.030, +0.091].
+- **Most of the F1 gain is more events:** chance rises with the event
+  count (0.323 to 0.360), and above chance E2 gains only +0.011.
+  - E2 is above E0 on three windows (+0.20 / +0.09 / +0.13 against
+    +0.13 / +0.05 / +0.09 above chance).
+  - E2 falls to chance on the fourth, 2nd f027000 (+0.01 against +0.11).
+- **So the dev gain did not carry over.** Three windows of tuning overfit;
+  the leave-one-window-out check could not catch that the windows share
+  one tuning set.
+- Retuning a handful of hand rules is not the lever. Learned events, or
+  a much larger tuning set, are what is left.
+
 ## Next
 
 0. **Balls at rest by the goals** (seen on M9, judged B*). Find them
