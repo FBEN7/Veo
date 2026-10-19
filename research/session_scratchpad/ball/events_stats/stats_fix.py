@@ -12,8 +12,12 @@ every frame with a ball (no ball-speed gate), carried forward over frames
 without one for up to `hold_s`; share of the time attributed. Truth as in
 stats_eval.py (ball actions, each interval up to 6 s to the side of the first).
 
+Detections are matched to persons in the image (the truth's boxes), or with
+--pitch in pitch metres (Hungarian per frame, within 3 m), for M1, whose
+truth's boxes are off: the pitch matching then rests on the refitted camera.
+
     python stats_fix.py tune W ...          # grid on these windows
-    python stats_fix.py score CONFIG.json W ...
+    python stats_fix.py score CONFIG.json [--pitch] W ...
 """
 from __future__ import annotations
 
@@ -24,6 +28,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import linear_sum_assignment
 
 ROOT = Path("/home/user/Veo")
 sys.path.insert(0, str(ROOT))
@@ -62,16 +67,38 @@ def path_km(df: pd.DataFrame, smooth_s: float, sample_s: float, max_gap_s: float
     return total
 
 
-def window_data(w: str, ball: str = "v3s_link"):
+def match_pitch(det: pd.DataFrame, gt: pd.DataFrame, limit_m: float = 3.0) -> pd.Series:
+    """Ground-truth person per detection by pitch distance (centre origin)."""
+    out = pd.Series(np.nan, index=det.index)
+    gt_by = {f: g for f, g in gt.groupby("frame")}
+    for f, d in det.groupby("frame"):
+        g = gt_by.get(f)
+        if g is None:
+            continue
+        a = np.c_[d.x - se.SHIFT[0], d.y - se.SHIFT[1]]
+        dist = np.linalg.norm(a[:, None] - g[["x", "y"]].to_numpy()[None], axis=2)
+        r, c = linear_sum_assignment(np.where(dist <= limit_m, dist, 1e6))
+        for i, j in zip(r, c):
+            if dist[i, j] <= limit_m:
+                out.loc[d.index[i]] = g.track_id.iloc[j]
+    return out
+
+
+def window_data(w: str, ball: str = "v3s_link", pitch: bool = False):
     metric = pd.read_parquet(ROOT / f"output_{w}/tune_{ball}/metric.parquet")
-    gt = pd.read_parquet(ROOT / f"data/soccertrack_v2/{w}_gt.parquet")
+    gt_all = pd.read_parquet(ROOT / f"data/soccertrack_v2/{w}_gt.parquet")
     stride = int(np.gcd.reduce(metric.frame.unique().astype(int))) or 1
-    gt = gt[(gt.frame % stride == 0) & (gt.role == "player")]
-    gtb = truth(ROOT / f"data/soccertrack_v2/{w}_gt.parquet")
-    gtb = gtb[gtb.frame % stride == 0]
+    gt_all = gt_all[gt_all.frame % stride == 0]
+    gt = gt_all[gt_all.role == "player"]
     det = boxes(metric)
     det = det[det.frame % stride == 0]
-    person = match_feet(det, gtb)
+    if pitch:
+        person = match_pitch(det, gt_all)
+        gtb = gt_all.rename(columns={"track_id": "person"})
+    else:
+        gtb = truth(ROOT / f"data/soccertrack_v2/{w}_gt.parquet")
+        gtb = gtb[gtb.frame % stride == 0]
+        person = match_feet(det, gtb)
     sides = side_of_team(det, person, gtb)
     p = metric.loc[det.index]
     pos = pd.DataFrame({"frame": p.frame, "x": p.x - se.SHIFT[0], "y": p.y - se.SHIFT[1], "person": person})
@@ -137,10 +164,10 @@ def tune(windows):
             "best possession": best_p, "grid": rows}
 
 
-def score(cfg, windows):
+def score(cfg, windows, pitch=False):
     out = []
     for w in windows:
-        d = window_data(w)
+        d = window_data(w, pitch=pitch)
         de = distance_errors(d, cfg["smooth_s"], cfg["sample_s"])
         pv, n = possession_left(d, cfg["radius_m"], cfg["hold_s"])
         out.append({"window": w, **de, "possession truth left": d["truth_left"], "possession ours left": pv,
@@ -155,4 +182,6 @@ if __name__ == "__main__":
         print(json.dumps({k: v for k, v in res.items() if k != "grid"}, indent=1, default=float))
     else:
         cfg = json.loads(Path(sys.argv[2]).read_text())
-        print(json.dumps(score(cfg, sys.argv[3:]), indent=1, default=float))
+        pitch = "--pitch" in sys.argv
+        windows = [a for a in sys.argv[3:] if a != "--pitch"]
+        print(json.dumps(score(cfg, windows, pitch), indent=1, default=float))

@@ -13,7 +13,10 @@ squares. Checked on other windows, and by the pitch lines drawn on a frame.
 This repairs the measuring instrument for a test match; the product still
 needs a calibration from the lines (or a calibration step) on its own cameras.
 
-    python fit_players.py MATCH --fit W1 [W2 ...] --check W3 [W4 ...]
+    python fit_players.py MATCH --fit W1 [W2 ...] --check W3 [W4 ...] [--out-dir DIR]
+
+(a diagnostic fit of another match goes to another --out-dir, or
+calib_override.py would use it)
 """
 from __future__ import annotations
 
@@ -101,6 +104,7 @@ def main():
     ap.add_argument("match")
     ap.add_argument("--fit", nargs="+", required=True)
     ap.add_argument("--check", nargs="*", default=[])
+    ap.add_argument("--out-dir", default=str(ROOT / ".cache/calib_fix"))
     args = ap.parse_args()
     cal = st.calibration(args.match)
     model = Model(cal)
@@ -118,10 +122,10 @@ def main():
     after = {"fit": error(model, v, fit_data), **{w: error(model, v, d) for w, d in check.items()}}
     print("after", after, flush=True)
     K, Hinv = model.unpack(v)
-    out = ROOT / f".cache/calib_fix/{args.match}.npz"
+    out = Path(args.out_dir) / f"{args.match}.npz"
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savez(out, K=K, D=model.D, Knew=model.Knew, Hinv=Hinv, v=v)
-    (ROOT / f".cache/calib_fix/{args.match}.json").write_text(json.dumps(
+    out.with_suffix(".json").write_text(json.dumps(
         {"match": args.match, "fit windows": args.fit, "check windows": args.check,
          "before": before, "after": after, "v": v.tolist()}, indent=1))
 
