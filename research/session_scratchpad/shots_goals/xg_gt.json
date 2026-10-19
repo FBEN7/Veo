@@ -1,0 +1,318 @@
+{
+ "protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
+ "model": "models/xg_xghub.json",
+ "model sha256": "9ec6048c3e451abb6662941c55b21cb117a0270e21119c205547bd4d1aed4a4f",
+ "penalties": "not told apart; every attempt scored by the fit",
+ "defended end": "the side with the lower GSR mean x over the half defends the left end",
+ "halves used": [
+  "117092_1st",
+  "117092_2nd",
+  "117093_1st",
+  "117093_2nd",
+  "118575_1st",
+  "118575_2nd",
+  "118576_1st",
+  "118576_2nd",
+  "118577_1st",
+  "118577_2nd",
+  "118578_1st",
+  "118578_2nd",
+  "128057_1st",
+  "128058_1st",
+  "128058_2nd",
+  "132831_2nd",
+  "132877_1st",
+  "132877_2nd"
+ ],
+ "halves skipped (no cached GSR)": [
+  {
+   "half": "128057_2nd",
+   "SHOT": 12,
+   "GOAL": 5
+  },
+  {
+   "half": "132831_1st",
+   "SHOT": 22,
+   "GOAL": 2
+  }
+ ],
+ "diagnostics (summed over used halves)": {
+  "bas attempts": 269,
+  "no actor position": 1,
+  "duplicate gsr records": 0,
+  "side bas != gsr": 0,
+  "goal after own shot": 0,
+  "beyond halfway": 5
+ },
+ "all": {
+  "n": 268,
+  "goals": 37,
+  "base rate": 0.13805970149253732,
+  "xg sum": 41.210516129875444,
+  "xg mean": 0.1537705825741621,
+  "auc": 0.6970866970866971,
+  "bootstrap over halves": {
+   "blocks": 18,
+   "draws": 1000,
+   "seed": 0,
+   "one-class draws skipped": 0,
+   "auc ci95": [
+    0.6012095170082975,
+    0.7931089772624332
+   ],
+   "brier skill ci95 (extra)": [
+    -0.03478904656651803,
+    0.22301790291194037
+   ]
+  },
+  "brier": 0.10745479494478014,
+  "brier base rate": 0.11899922031632881,
+  "brier skill": 0.09701261353528867,
+  "brier xghub base rate": 0.11944521368418377,
+  "median distance m": {
+   "SHOT": 17.288331324913926,
+   "GOAL": 10.5
+  },
+  "quintile calibration": [
+   {
+    "n": 54,
+    "predicted": 0.025435544017078676,
+    "observed": 0.05555555555555555
+   },
+   {
+    "n": 53,
+    "predicted": 0.0548346101127292,
+    "observed": 0.09433962264150944
+   },
+   {
+    "n": 54,
+    "predicted": 0.08815571326016414,
+    "observed": 0.1111111111111111
+   },
+   {
+    "n": 54,
+    "predicted": 0.16468127114022144,
+    "observed": 0.12962962962962962
+   },
+   {
+    "n": 53,
+    "predicted": 0.4391993445161837,
+    "observed": 0.3018867924528302
+   }
+  ]
+ },
+ "all but M1": {
+  "n": 239,
+  "goals": 33,
+  "base rate": 0.13807531380753138,
+  "xg sum": 36.96954504327766,
+  "xg mean": 0.15468428888400695,
+  "auc": 0.702633127390409,
+  "bootstrap over halves": {
+   "blocks": 16,
+   "draws": 1000,
+   "seed": 0,
+   "one-class draws skipped": 0,
+   "auc ci95": [
+    0.5963135263524493,
+    0.801368529197105
+   ],
+   "brier skill ci95 (extra)": [
+    -0.043838863604494634,
+    0.22506697206916104
+   ]
+  },
+  "brier": 0.10717725960621728,
+  "brier base rate": 0.11901052152448312,
+  "brier skill": 0.09943038452975328,
+  "brier xghub base rate": 0.11945717455515012,
+  "median distance m": {
+   "SHOT": 17.147921049803564,
+   "GOAL": 10.486796460311407
+  },
+  "quintile calibration": [
+   {
+    "n": 48,
+    "predicted": 0.025446321654546456,
+    "observed": 0.0625
+   },
+   {
+    "n": 48,
+    "predicted": 0.056714327287230894,
+    "observed": 0.08333333333333333
+   },
+   {
+    "n": 47,
+    "predicted": 0.09000740750083709,
+    "observed": 0.10638297872340426
+   },
+   {
+    "n": 48,
+    "predicted": 0.16569544051160948,
+    "observed": 0.125
+   },
+   {
+    "n": 48,
+    "predicted": 0.434210512436995,
+    "observed": 0.3125
+   }
+  ]
+ },
+ "M1 (117092)": {
+  "n": 29,
+  "goals": 4,
+  "base rate": 0.13793103448275862,
+  "xg sum": 4.240971086597781,
+  "xg mean": 0.14624038229647524,
+  "auc": 0.69,
+  "bootstrap over halves": {
+   "blocks": 2,
+   "draws": 1000,
+   "seed": 0,
+   "one-class draws skipped": 0,
+   "auc ci95": [
+    0.5641025641025641,
+    1.0
+   ],
+   "brier skill ci95 (extra)": [
+    -0.18931421374280388,
+    0.6928028464065106
+   ]
+  },
+  "brier": 0.10974206894190175,
+  "brier base rate": 0.11890606420927466,
+  "brier skill": 0.07706920019860619,
+  "brier xghub base rate": 0.11934663960966799,
+  "median distance m": {
+   "SHOT": 18.36629793943243,
+   "GOAL": 15.317284887197733
+  },
+  "quintile calibration": [
+   {
+    "n": 6,
+    "predicted": 0.02534932291733646,
+    "observed": 0.0
+   },
+   {
+    "n": 6,
+    "predicted": 0.04795082159166783,
+    "observed": 0.16666666666666666
+   },
+   {
+    "n": 5,
+    "predicted": 0.06698907247941574,
+    "observed": 0.2
+   },
+   {
+    "n": 6,
+    "predicted": 0.13717010302212249,
+    "observed": 0.0
+   },
+   {
+    "n": 6,
+    "predicted": 0.440534039835657,
+    "observed": 0.3333333333333333
+   }
+  ]
+ },
+ "per half (test halves left out; they are in the pooled numbers only)": [
+  {
+   "half": "117093_1st",
+   "n": 17,
+   "goals": 2,
+   "xg sum": 1.7472897352200998
+  },
+  {
+   "half": "117093_2nd",
+   "n": 11,
+   "goals": 3,
+   "xg sum": 2.0473311653059154
+  },
+  {
+   "half": "118575_1st",
+   "n": 13,
+   "goals": 3,
+   "xg sum": 1.8786236906311937
+  },
+  {
+   "half": "118575_2nd",
+   "n": 11,
+   "goals": 0,
+   "xg sum": 1.387216088128965
+  },
+  {
+   "half": "118576_1st",
+   "n": 26,
+   "goals": 2,
+   "xg sum": 5.235601189349543
+  },
+  {
+   "half": "118576_2nd",
+   "n": 17,
+   "goals": 3,
+   "xg sum": 4.654199879694487
+  },
+  {
+   "half": "118577_1st",
+   "n": 21,
+   "goals": 3,
+   "xg sum": 3.2346458870760406
+  },
+  {
+   "half": "118578_1st",
+   "n": 14,
+   "goals": 1,
+   "xg sum": 1.8966678191522355
+  },
+  {
+   "half": "118578_2nd",
+   "n": 15,
+   "goals": 3,
+   "xg sum": 2.438871915668726
+  },
+  {
+   "half": "128057_1st",
+   "n": 10,
+   "goals": 0,
+   "xg sum": 0.9641415184636549
+  },
+  {
+   "half": "128058_1st",
+   "n": 10,
+   "goals": 3,
+   "xg sum": 1.3118567951965165
+  },
+  {
+   "half": "128058_2nd",
+   "n": 19,
+   "goals": 2,
+   "xg sum": 3.6008074060196256
+  },
+  {
+   "half": "132877_1st",
+   "n": 12,
+   "goals": 2,
+   "xg sum": 1.361613229069829
+  },
+  {
+   "half": "132877_2nd",
+   "n": 15,
+   "goals": 1,
+   "xg sum": 1.3560298325731217
+  }
+ ],
+ "superseded: sign reading": {
+  "note": "first reading, superseded: each side's own mean x sign against halfway",
+  "halves with both sides on one end": 6,
+  "beyond halfway": 87,
+  "n": 268,
+  "goals": 37,
+  "auc": 0.554931554931555,
+  "auc ci95": [
+   0.4315534932121471,
+   0.665735442122313
+  ],
+  "brier": 0.12484405643167641,
+  "brier skill": -0.04911659168699267
+ }
+}

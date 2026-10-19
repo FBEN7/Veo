@@ -1,0 +1,1186 @@
+{
+ "protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
+ "script": "formation_gt.py (rule: formation.py)",
+ "formation.py sha256": "c8cde284f0c8617c93afa5898c7cb271de26762c956a8e74326905a982a591ea",
+ "dev halves": [
+  "117093_1st",
+  "117093_2nd",
+  "118575_1st",
+  "118575_2nd",
+  "118576_1st",
+  "118576_2nd",
+  "118577_1st",
+  "118578_1st",
+  "118578_2nd",
+  "128057_1st",
+  "128058_1st",
+  "128058_2nd",
+  "132877_1st",
+  "132877_2nd"
+ ],
+ "minutes": 656.08,
+ "ordering": "hits desc, false runs asc, T desc, N desc; team rule by team-right hits at the chosen (T, N), grid order on a tie",
+ "choice": {
+  "T": 0.85,
+  "N": 2,
+  "team rule": "kick_spot"
+ },
+ "chosen cell": {
+  "T": 0.85,
+  "N": 2,
+  "hits": 26,
+  "restartable_goals": 26,
+  "false_runs": 0,
+  "runs": 26,
+  "matched_non_restartable": 0,
+  "false_runs_per_90": 0.0,
+  "team_right_kick_spot": 25,
+  "team_right_attack_end": 25
+ },
+ "GSR left defends x < 0 (per half)": {
+  "117093_1st": true,
+  "117093_2nd": true,
+  "118575_1st": true,
+  "118575_2nd": true,
+  "118576_1st": true,
+  "118576_2nd": true,
+  "118577_1st": true,
+  "118578_1st": true,
+  "118578_2nd": true,
+  "128057_1st": true,
+  "128058_1st": true,
+  "128058_2nd": true,
+  "132877_1st": true,
+  "132877_2nd": true
+ },
+ "goal-time error (run start - 22 s - goal)": {
+  "n": 26,
+  "median_s": 1.28,
+  "mean_abs_s": 4.087692307692308,
+  "min_s": -5.32,
+  "max_s": 11.84
+ },
+ "random-time baseline (chosen cell)": {
+  "draws": 1000,
+  "seed": 0,
+  "mean_hits": 1.032,
+  "q025": 0.0,
+  "q975": 3.0,
+  "max": 5,
+  "p_ge_observed": 0.0
+ },
+ "grid": [
+  {
+   "T": 0.8,
+   "N": 2,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 9,
+   "runs": 34,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 1.235,
+   "team_right_kick_spot": 22,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.8,
+   "N": 3,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 8,
+   "runs": 33,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 1.097,
+   "team_right_kick_spot": 22,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.8,
+   "N": 4,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 4,
+   "runs": 29,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.549,
+   "team_right_kick_spot": 22,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.8,
+   "N": 5,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 4,
+   "runs": 28,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.549,
+   "team_right_kick_spot": 21,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.825,
+   "N": 2,
+   "hits": 26,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 26,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 25,
+   "team_right_attack_end": 25
+  },
+  {
+   "T": 0.825,
+   "N": 3,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 25,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 24,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.825,
+   "N": 4,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 25,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 24,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.825,
+   "N": 5,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 24,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 23,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.85,
+   "N": 2,
+   "hits": 26,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 26,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 25,
+   "team_right_attack_end": 25
+  },
+  {
+   "T": 0.85,
+   "N": 3,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 25,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 24,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.85,
+   "N": 4,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 25,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 24,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.85,
+   "N": 5,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 24,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 23,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.875,
+   "N": 2,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 25,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 24,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.875,
+   "N": 3,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 24,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 23,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.875,
+   "N": 4,
+   "hits": 23,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 23,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 22,
+   "team_right_attack_end": 22
+  },
+  {
+   "T": 0.875,
+   "N": 5,
+   "hits": 20,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 20,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 19,
+   "team_right_attack_end": 19
+  },
+  {
+   "T": 0.9,
+   "N": 2,
+   "hits": 25,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 25,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 24,
+   "team_right_attack_end": 24
+  },
+  {
+   "T": 0.9,
+   "N": 3,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 24,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 23,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.9,
+   "N": 4,
+   "hits": 23,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 23,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 22,
+   "team_right_attack_end": 22
+  },
+  {
+   "T": 0.9,
+   "N": 5,
+   "hits": 20,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 20,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 19,
+   "team_right_attack_end": 19
+  },
+  {
+   "T": 0.925,
+   "N": 2,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 24,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 23,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.925,
+   "N": 3,
+   "hits": 22,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 22,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 21,
+   "team_right_attack_end": 21
+  },
+  {
+   "T": 0.925,
+   "N": 4,
+   "hits": 17,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 17,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 16,
+   "team_right_attack_end": 16
+  },
+  {
+   "T": 0.925,
+   "N": 5,
+   "hits": 12,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 12,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 11,
+   "team_right_attack_end": 11
+  },
+  {
+   "T": 0.95,
+   "N": 2,
+   "hits": 24,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 24,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 23,
+   "team_right_attack_end": 23
+  },
+  {
+   "T": 0.95,
+   "N": 3,
+   "hits": 22,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 22,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 21,
+   "team_right_attack_end": 21
+  },
+  {
+   "T": 0.95,
+   "N": 4,
+   "hits": 17,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 17,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 16,
+   "team_right_attack_end": 16
+  },
+  {
+   "T": 0.95,
+   "N": 5,
+   "hits": 12,
+   "restartable_goals": 26,
+   "false_runs": 0,
+   "runs": 12,
+   "matched_non_restartable": 0,
+   "false_runs_per_90": 0.0,
+   "team_right_kick_spot": 11,
+   "team_right_attack_end": 11
+  }
+ ],
+ "per half (chosen cell)": [
+  {
+   "half": "117093_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -2.68,
+    "right": 9.57
+   },
+   "minutes": 45.08,
+   "runs_s": [
+    [
+     1435.0,
+     1440.0
+    ],
+    [
+     2406.0,
+     2407.0
+    ]
+   ],
+   "restartable_goals": [
+    35312,
+    59377
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 35312,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      35875,
+      36000
+     ],
+     "delay_s": 22.52,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 59377,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      60150,
+      60175
+     ],
+     "delay_s": 30.92,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "117093_2nd",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -4.8,
+    "right": 7.61
+   },
+   "minutes": 46.98,
+   "runs_s": [
+    [
+     1529.0,
+     1536.0
+    ],
+    [
+     1971.0,
+     1974.0
+    ]
+   ],
+   "restartable_goals": [
+    37808,
+    48711
+   ],
+   "missed_by_construction": [
+    70157
+   ],
+   "matches": [
+    {
+     "goal_frame": 37808,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      38225,
+      38400
+     ],
+     "delay_s": 16.68,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 48711,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      49275,
+      49350
+     ],
+     "delay_s": 22.56,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118575_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -7.29,
+    "right": 6.68
+   },
+   "minutes": 47.9,
+   "runs_s": [
+    [
+     437.0,
+     445.0
+    ],
+    [
+     1886.0,
+     1910.0
+    ],
+    [
+     2624.0,
+     2632.0
+    ]
+   ],
+   "restartable_goals": [
+    10347,
+    46640,
+    64913
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 10347,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      10925,
+      11125
+     ],
+     "delay_s": 23.12,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    },
+    {
+     "goal_frame": 46640,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      47150,
+      47750
+     ],
+     "delay_s": 20.4,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    },
+    {
+     "goal_frame": 64913,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      65600,
+      65800
+     ],
+     "delay_s": 27.48,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    }
+   ],
+   "hits": 3,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118575_2nd",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -6.05,
+    "right": 7.4
+   },
+   "minutes": 48.95,
+   "runs_s": [],
+   "restartable_goals": [],
+   "missed_by_construction": [],
+   "matches": [],
+   "hits": 0,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118576_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -24.14,
+    "right": -11.8
+   },
+   "minutes": 48.55,
+   "runs_s": [
+    [
+     387.0,
+     398.0
+    ],
+    [
+     2613.0,
+     2618.0
+    ]
+   ],
+   "restartable_goals": [
+    9157,
+    64745
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 9157,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      9675,
+      9950
+     ],
+     "delay_s": 20.72,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    },
+    {
+     "goal_frame": 64745,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      65325,
+      65450
+     ],
+     "delay_s": 23.2,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118576_2nd",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": 9.76,
+    "right": 22.15
+   },
+   "minutes": 48.52,
+   "runs_s": [
+    [
+     1290.0,
+     1299.0
+    ],
+    [
+     2226.0,
+     2233.0
+    ],
+    [
+     2360.0,
+     2366.0
+    ]
+   ],
+   "restartable_goals": [
+    31505,
+    54995,
+    58310
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 31505,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      32250,
+      32475
+     ],
+     "delay_s": 29.8,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 54995,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      55650,
+      55825
+     ],
+     "delay_s": 26.2,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 58310,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      59000,
+      59150
+     ],
+     "delay_s": 27.6,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 3,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118577_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -3.81,
+    "right": 9.66
+   },
+   "minutes": 48.28,
+   "runs_s": [
+    [
+     1479.0,
+     1487.0
+    ],
+    [
+     1947.0,
+     1957.0
+    ]
+   ],
+   "restartable_goals": [
+    36394,
+    48206
+   ],
+   "missed_by_construction": [
+    72086
+   ],
+   "matches": [
+    {
+     "goal_frame": 36394,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      36975,
+      37175
+     ],
+     "delay_s": 23.24,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 48206,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      48675,
+      48925
+     ],
+     "delay_s": 18.76,
+     "kick_spot": "right",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118578_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -12.27,
+    "right": 0.42
+   },
+   "minutes": 46.9,
+   "runs_s": [
+    [
+     1861.0,
+     1868.0
+    ]
+   ],
+   "restartable_goals": [
+    45891
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 45891,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      46525,
+      46700
+     ],
+     "delay_s": 25.36,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    }
+   ],
+   "hits": 1,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "118578_2nd",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": 5.46,
+    "right": 17.93
+   },
+   "minutes": 47.32,
+   "runs_s": [
+    [
+     235.0,
+     242.0
+    ],
+    [
+     757.0,
+     767.0
+    ],
+    [
+     1954.0,
+     1961.0
+    ]
+   ],
+   "restartable_goals": [
+    5194,
+    18095,
+    48329
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 5194,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      5875,
+      6050
+     ],
+     "delay_s": 27.24,
+     "kick_spot": "left",
+     "attack_end": "right",
+     "team_right": false
+    },
+    {
+     "goal_frame": 18095,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      18925,
+      19175
+     ],
+     "delay_s": 33.2,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    },
+    {
+     "goal_frame": 48329,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      48850,
+      49025
+     ],
+     "delay_s": 20.84,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 3,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "128057_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -1.47,
+    "right": 10.62
+   },
+   "minutes": 45.08,
+   "runs_s": [],
+   "restartable_goals": [],
+   "missed_by_construction": [],
+   "matches": [],
+   "hits": 0,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "128058_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -12.68,
+    "right": 0.51
+   },
+   "minutes": 45.98,
+   "runs_s": [
+    [
+     1995.0,
+     2004.0
+    ],
+    [
+     2058.0,
+     2064.0
+    ],
+    [
+     2687.0,
+     2697.0
+    ]
+   ],
+   "restartable_goals": [
+    49292,
+    50726,
+    66516
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 49292,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      49875,
+      50100
+     ],
+     "delay_s": 23.32,
+     "kick_spot": "right",
+     "attack_end": "right",
+     "team_right": true
+    },
+    {
+     "goal_frame": 50726,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      51450,
+      51600
+     ],
+     "delay_s": 28.96,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 66516,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      67175,
+      67425
+     ],
+     "delay_s": 26.36,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 3,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "128058_2nd",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -1.8,
+    "right": 11.21
+   },
+   "minutes": 45.17,
+   "runs_s": [
+    [
+     599.0,
+     609.0
+    ],
+    [
+     765.0,
+     770.0
+    ]
+   ],
+   "restartable_goals": [
+    14541,
+    18598
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 14541,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      14975,
+      15225
+     ],
+     "delay_s": 17.36,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 18598,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      19125,
+      19250
+     ],
+     "delay_s": 21.08,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "132877_1st",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": -13.34,
+    "right": 0.89
+   },
+   "minutes": 45.13,
+   "runs_s": [
+    [
+     1337.0,
+     1426.0
+    ],
+    [
+     2240.0,
+     2247.0
+    ]
+   ],
+   "restartable_goals": [
+    32579,
+    55349
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 32579,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      33425,
+      35650
+     ],
+     "delay_s": 33.84,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    },
+    {
+     "goal_frame": 55349,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      56000,
+      56175
+     ],
+     "delay_s": 26.04,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "false_runs_s": []
+  },
+  {
+   "half": "132877_2nd",
+   "ends": {
+    "left": -1,
+    "right": 1
+   },
+   "mean_x": {
+    "left": 2.33,
+    "right": 15.04
+   },
+   "minutes": 46.23,
+   "runs_s": [
+    [
+     595.0,
+     606.0
+    ]
+   ],
+   "restartable_goals": [
+    14404
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 14404,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      14875,
+      15150
+     ],
+     "delay_s": 18.84,
+     "kick_spot": "left",
+     "attack_end": "left",
+     "team_right": true
+    }
+   ],
+   "hits": 1,
+   "false_runs": 0,
+   "false_runs_s": []
+  }
+ ]
+}
