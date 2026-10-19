@@ -1,6 +1,12 @@
-"""Refit a match's camera model from the players (M1's release calibration puts
-the near touchline in mid-pitch, and its painted lines are too faint at night
+"""Refit a match's camera model from the players: for M1, whose labels (boxes
+and homography) sit in another pixel frame from the video, so the release
+calibration misplaces our detections (its painted lines are too faint at night
 for a line fit).
+
+Caution (after review): the result is a non-physical warp (fy x27-74, the
+homography's u column shrunk to 1-7%), fitted to our detector's box bottoms,
+foot-point bias included. It is fit for player feet in the fitted region, not
+for ball, shot or goal geometry, and not for matches whose release is right.
 
 Same model as the release (fisheye K, D, Knew, then the homography from
 undistorted pixels to pitch metres). Free: the inverse homography (8 dof) and

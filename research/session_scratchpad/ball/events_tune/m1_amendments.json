@@ -71,6 +71,7 @@
     73.03533469058908,
     1.3720905211509193
    ]
-  }
+  },
+  "correction (2026-10-19, after review)": "The diagnosis was wrong: the release calibration agrees with the release's labels (truth box feet project 0.36-0.41 m from the truth positions); M1's labels sit in another pixel frame from the video. The refit is a non-physical warp (fy 946 -> 70,026) for player-box bottoms only. The amendment was made after the registered result was read and fitted on the player truth of 2 of the 4 test windows, so the rerun is exploratory; the registered primary stays the release run (E2 - E0 +0.048 [-0.020, +0.114], not shown)."
  }
 ]
