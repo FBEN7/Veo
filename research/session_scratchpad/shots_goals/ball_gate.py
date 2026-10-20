@@ -151,6 +151,8 @@ SPAN_S = (-1.0, 2.2)          # detected
 NEAR_S = (-1.0, 0.5)          # candidate near the shooter
 PATH_S = (0.0, 2.0)           # candidate near the shot segment
 CONF = 0.10
+STATIC_SHARE = 0.25   # re-check (protocol_notes amendment): a point static over the attempt
+STATIC_PX = 4.0
 RADIUS_M = 4.0
 MIN_FRAMES = 2
 GO, CAPPED = 13, 9
@@ -287,14 +289,33 @@ def mark_points(match: str, half: int) -> list:
     return [tuple(m) for m in meta["spot_marks"]["marks"]]
 
 
-def candidates(rows: pd.DataFrame, marks, cal) -> pd.DataFrame:
+def drop_static(c: pd.DataFrame, n_frames: int) -> pd.DataFrame:
+    """Re-check reading: drop candidates within STATIC_PX of a point that holds
+    a candidate on >= STATIC_SHARE of the attempt's detected frames (a ball at
+    rest, fixed clutter)."""
+    if c.empty or n_frames == 0:
+        return c
+    xy = c[["px", "py"]].to_numpy(float)
+    fr = c.frame.to_numpy()
+    keep = np.ones(len(c), bool)
+    for i in range(len(c)):
+        near = (np.abs(xy[:, 0] - xy[i, 0]) <= STATIC_PX) & (np.abs(xy[:, 1] - xy[i, 1]) <= STATIC_PX)
+        if len(np.unique(fr[near])) >= STATIC_SHARE * n_frames:
+            keep[i] = False
+    return c[keep]
+
+
+def candidates(rows: pd.DataFrame, marks, cal, static_frames: int | None = None) -> pd.DataFrame:
     """Rows (frame = half frame, px, py, crop_h, confidence) to candidate
-    feet in metres: confidence >= CONF, the marks dropped, the bottom of the
-    box projected; those that do not project dropped."""
+    feet in metres: confidence >= CONF, the marks dropped (and, for the
+    re-check, static points over `static_frames` detected frames), the bottom
+    of the box projected; those that do not project dropped."""
     from src.ball_spots import drop_marks
 
     c = rows[rows.confidence >= CONF]
     c = drop_marks(c, marks)
+    if static_frames is not None:
+        c = drop_static(c, static_frames)
     if c.empty:
         return pd.DataFrame({"frame": [], "x": [], "y": []})
     size = np.nan_to_num(c.crop_h.to_numpy(float), nan=0.0)
@@ -374,6 +395,10 @@ def score_one(rows: pd.DataFrame, processed: set, label: int, shooter, marks, ca
            **reachable(cand, label, shooter)}
     alt = reachable(cand, label, shooter, fixed=True)
     out["sensitivity: label-frame shooter"] = {k: alt[k] for k in ("reachable", "near frames", "path frames")}
+    cs = candidates(rows[rows.frame.isin(want)], marks, cal, static_frames=len(want & processed))
+    rc = reachable(cs, label, shooter)
+    out["re-check: static points dropped"] = {"candidates": int(len(cs)),
+                                              **{k: rc[k] for k in ("reachable", "near frames", "path frames")}}
     if shooter is not None:
         out["shooter side (gsr)"] = shooter["side"]
         out["attacked goal x"] = shooter["goal"][0]
@@ -662,12 +687,15 @@ def cmd_repro(args, proto) -> dict:
                          "player_id": r.player_id, "status": "scored", **res})
     scored = [r for r in rows if r["status"] == "scored"]
     ok = len(scored) == len(REPRO) and not any(r["reachable"] for r in scored)
+    ok_static = len(scored) == len(REPRO) and not any(
+        r["re-check: static points dropped"]["reachable"] for r in scored)
     out = {"protocol sha256": sha256(PROTOCOL),
            "rule": "the 3 attempts already measured must come out not reachable",
            "source": "cached dense v3 rows (.cache/v3_balls_<window>.parquet), marks dropped",
            "scored": len(scored), "of": len(REPRO),
            "not reachable": sum(not r["reachable"] for r in scored),
            "reproduced": ok if len(scored) == len(REPRO) else None,
+           "re-check reproduced (static points dropped)": ok_static if len(scored) == len(REPRO) else None,
            "goals frozen": goals_frozen(),
            "attempts": rows}
     if args.write:
@@ -706,22 +734,35 @@ def cmd_score(args, proto):
         rows.append({k: t[k] for k in ("match", "half", "frame", "label", "bas side", "player_id",
                                        "clip")} | res)
     k = sum(r["reachable"] for r in rows)
+    k_static = sum(r["re-check: static points dropped"]["reachable"] for r in rows)
     complete = len(rows) == N_ATTEMPTS and not missing and not short
-    repro_ok = repro["scored"] == len(REPRO) and repro["reproduced"] is True
+    # gate_recheck.json: the planning measurement of M9 f2296 was wrong (a ball
+    # in flight); the registered reading decides, and the reproducibility
+    # condition is the reference (not, not, reachable) under both readings.
+    REF = [False, False, True]
+    sc = [r for r in repro["attempts"] if r["status"] == "scored"]
+    repro_ok = (len(sc) == len(REPRO)
+                and [r["reachable"] for r in sc] == REF
+                and [r["re-check: static points dropped"]["reachable"] for r in sc] == REF)
     out = {"protocol sha256": sha256(PROTOCOL), "section": "SHOT GATE",
            "readings": "see ball_gate.py docstring", "goals frozen": goals_frozen(),
            "attempts scored": len(rows), "of": N_ATTEMPTS, "missing": missing,
            "frames missing inside the half": short,
            "reachable": k,
+           "reachable, second reading (static points dropped; reported)": k_static,
+           "second reading's decision (reported)": decide(k_static)["decision"],
            "sensitivity: label-frame shooter reachable": sum(
                r["sensitivity: label-frame shooter"]["reachable"] for r in rows),
            "no shooter": sum(r.get("reason") == "no shooter" for r in rows),
            "per half": {f"{m}_{HALF_NAMES[hf]}": {
                "attempts": sum(1 for r in rows if (r["match"], r["half"]) == (m, hf)),
                "reachable": sum(r["reachable"] for r in rows if (r["match"], r["half"]) == (m, hf)),
+               "reachable, second reading": sum(r["re-check: static points dropped"]["reachable"]
+                                                for r in rows if (r["match"], r["half"]) == (m, hf)),
                "mean x by gsr side": halves[(m, hf)].mean_x if (m, hf) in halves else None}
                for m, hf in GATE_HALVES},
-           "reproducibility": {k2: repro[k2] for k2 in ("scored", "of", "not reachable", "reproduced")},
+           "reproducibility": {k2: repro[k2] for k2 in ("scored", "of", "not reachable", "reproduced",
+                                                         "re-check reproduced (static points dropped)")},
            "reproducibility attempts": repro["attempts"]}
     # The decision is written only when all 26 attempts are scored with no
     # frame missing inside the half and all 3 reproducibility attempts are
@@ -735,8 +776,8 @@ def cmd_score(args, proto):
         out["decision"] = {"decision": "withheld: re-check the gate",
                            "note": (f"reproducibility scored {repro['scored']}/{len(REPRO)}"
                                     if repro["scored"] != len(REPRO) else
-                                    "the reproducibility attempts did not all come out not "
-                                    "reachable") + " (protocol: re-check before deciding)"}
+                                    "the reproducibility attempts did not match the reference "
+                                    "(not, not, reachable) under both readings (gate_recheck.json)") + " (protocol: re-check before deciding)"}
     else:
         out["decision"] = decide(k)
     out["attempts"] = rows

@@ -6,6 +6,7 @@
  "of": 3,
  "not reachable": 2,
  "reproduced": false,
+ "re-check reproduced (static points dropped)": false,
  "goals frozen": true,
  "attempts": [
   {
@@ -38,6 +39,12 @@
     "near frames": 0,
     "path frames": 1
    },
+   "re-check: static points dropped": {
+    "candidates": 62,
+    "reachable": false,
+    "near frames": 1,
+    "path frames": 1
+   },
    "shooter side (gsr)": "left",
    "attacked goal x": 52.5
   },
@@ -63,6 +70,12 @@
    "min m to segment": 4.1533935042386245,
    "frames without a shooter record": 0,
    "sensitivity: label-frame shooter": {
+    "reachable": false,
+    "near frames": 0,
+    "path frames": 0
+   },
+   "re-check: static points dropped": {
+    "candidates": 38,
     "reachable": false,
     "near frames": 0,
     "path frames": 0
@@ -101,6 +114,12 @@
     "reachable": true,
     "near frames": 2,
     "path frames": 4
+   },
+   "re-check: static points dropped": {
+    "candidates": 98,
+    "reachable": true,
+    "near frames": 2,
+    "path frames": 2
    },
    "shooter side (gsr)": "right",
    "attacked goal x": -52.5
