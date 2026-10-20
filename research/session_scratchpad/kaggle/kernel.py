@@ -1,6 +1,7 @@
 # Kaggle kernel entry point (`kaggle kernels push -p .` from this folder): unpack the private dataset
-# (code tarball, one SoccerTrack v2 window, weights), install ultralytics,
+# (code tarball, one SoccerTrack v2 window, weights), install the ultralytics wheels,
 # run bench.py. Outputs land in /kaggle/working.
+# Internet stays off on this account; everything comes from the dataset.
 import glob, os, shutil, subprocess, sys, tarfile
 
 def find(name):
@@ -33,7 +34,16 @@ for f in glob.glob(os.path.join(src, "*")):
     elif n == "yolov8s.pt":
         shutil.copy(f, root)
         shutil.copy(f, "/kaggle/working")
-subprocess.run([sys.executable, "-m", "pip", "install", "-q", "ultralytics", "supervision"], check=True)
 subprocess.run(["nvidia-smi"])
+# The kernel has no internet: ultralytics comes as wheels in the dataset
+# (installed without dependencies, the image has the rest), resnet18's
+# ImageNet weights (`ball_heatmap.build`) as a file in torch's hub cache.
+wheels = sorted(glob.glob(os.path.join(src, "*.whl")))
+subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--no-deps", *wheels],
+               check=True)
+hub = os.path.expanduser("~/.cache/torch/hub/checkpoints")
+os.makedirs(hub, exist_ok=True)
+shutil.copy(os.path.join(src, "resnet18-f37072fd.pth"), hub)
+os.environ["YOLO_OFFLINE"] = "1"
 subprocess.run([sys.executable, os.path.join(root, "research/session_scratchpad/kaggle/bench.py"),
                 "--root", root], check=True, cwd="/kaggle/working")
