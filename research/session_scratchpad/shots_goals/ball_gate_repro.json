@@ -2,11 +2,11 @@
  "protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
  "rule": "the 3 attempts already measured must come out not reachable",
  "source": "cached dense v3 rows (.cache/v3_balls_<window>.parquet), marks dropped",
- "scored": 2,
+ "scored": 3,
  "of": 3,
  "not reachable": 2,
- "reproduced": null,
- "goals frozen": false,
+ "reproduced": false,
+ "goals frozen": true,
  "attempts": [
   {
    "window": "st2_128057_1st_f030000",
@@ -73,7 +73,37 @@
   {
    "window": "st2_132831_2nd_f030000",
    "window frame": 2296,
-   "status": "not run (refused)"
+   "match": "132831",
+   "half": 2,
+   "half frame": 32296,
+   "label": "SHOT",
+   "bas side": "right",
+   "player_id": "520189",
+   "status": "scored",
+   "frames detected": 81,
+   "frames missing": [],
+   "candidates >= conf, marks dropped, projected": 641,
+   "reachable": true,
+   "near frames": 2,
+   "path frames": 2,
+   "near offsets": [
+    5,
+    10
+   ],
+   "path offsets": [
+    5,
+    10
+   ],
+   "min m to shooter": 1.6086783549717198,
+   "min m to segment": 0.6334158365892686,
+   "frames without a shooter record": 0,
+   "sensitivity: label-frame shooter": {
+    "reachable": true,
+    "near frames": 2,
+    "path frames": 4
+   },
+   "shooter side (gsr)": "right",
+   "attacked goal x": -52.5
   }
  ]
 }
