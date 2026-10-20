@@ -11,9 +11,11 @@ the CPU-only ones that run back here from the returned files (marks.py, v2):
    run instead of dense_a2.py's chunks, which give the same rows).
 
 Each window's files go to /kaggle/working/<w>.tar.gz with timings in
-<w>.json. A window that fails is logged and the next one runs.
+<w>.json. A window that fails is logged, what it finished is packed, and the
+next one runs. `--allow-seen` passes the flag to the ball step, for windows
+whose CPU v3 run had it.
 
-    python run_windows.py --root /kaggle/working/veo W1 W2 ...
+    python run_windows.py --root /home/user/Veo [--allow-seen] W1 W2 ...
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ import traceback
 from pathlib import Path
 
 
-def ball_gpu(root: Path, w: str) -> dict:
+def ball_gpu(root: Path, w: str, allow_seen: bool) -> dict:
     """detect_ball_heatmap.py --v2 on the whole window, the model on cuda."""
     import torch
 
@@ -51,6 +53,8 @@ def ball_gpu(root: Path, w: str) -> dict:
     sys.argv = ["detect_ball_heatmap.py", "--v2", "--window", w,
                 "--weights", ".cache/ball_v3b.1500.pt", "--stride", "1",
                 "--threads", "4", "--out", f".cache/v3_balls_{w}.parquet"]
+    if allow_seen:
+        sys.argv.append("--allow-seen")
     try:
         dbh.main()
     finally:
@@ -58,9 +62,17 @@ def ball_gpu(root: Path, w: str) -> dict:
     return {}
 
 
-def run(root: Path, w: str, out: Path) -> dict:
+def pack(root: Path, w: str, out: Path):
+    with tarfile.open(out / f"{w}.tar.gz", "w:gz") as t:
+        if (root / f"output_{w}").exists():
+            t.add(root / f"output_{w}", arcname=f"output_{w}")
+        for f in (root / ".cache").glob(f"v3_balls_{w}.parquet*"):
+            t.add(f, arcname=f".cache/{f.name}")
+
+
+def run(root: Path, w: str, rec: dict, allow_seen: bool):
     env = {**os.environ, "PYTHONPATH": str(root)}
-    rec = {"window": w, "steps": {}}
+    rec["steps"] = {}
 
     def step(name, fn):
         t = time.perf_counter()
@@ -76,31 +88,31 @@ def run(root: Path, w: str, out: Path) -> dict:
                                "--stride", "2", "--pitch-margin", "50"))
     step("events_v1", lambda: sh("research/session_scratchpad/events_run.py", w, "events_v1"))
     os.chdir(root)
-    step("ball_v3", lambda: ball_gpu(root, w))
-    with tarfile.open(out / f"{w}.tar.gz", "w:gz") as t:
-        t.add(root / f"output_{w}", arcname=f"output_{w}")
-        for f in (root / ".cache").glob(f"v3_balls_{w}.parquet*"):
-            t.add(f, arcname=f".cache/{f.name}")
-    return rec
+    step("ball_v3", lambda: ball_gpu(root, w, allow_seen))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
+    ap.add_argument("--allow-seen", action="store_true",
+                    help="v3 on windows of a match it was trained on (as their CPU runs)")
     ap.add_argument("windows", nargs="+")
     args = ap.parse_args()
     import torch
 
     root, out = Path(args.root), Path.cwd()
     for w in args.windows:
-        rec = {"window": w, "gpu": torch.cuda.get_device_name(0), "torch": torch.__version__}
+        rec = {"window": w, "gpu": torch.cuda.get_device_name(0), "torch": torch.__version__,
+               "allow_seen": args.allow_seen}
         try:
-            rec.update(run(root, w, out))
+            run(root, w, rec, args.allow_seen)
             rec["ok"] = True
-        except Exception:
+        except BaseException:          # detect_ball_heatmap refuses with SystemExit
             rec["ok"] = False
             rec["error"] = traceback.format_exc()[-3000:]
             print(rec["error"], flush=True)
+        os.chdir(out)
+        pack(root, w, out)             # what finished, even after a failure
         (out / f"{w}.json").write_text(json.dumps(rec, indent=1))
 
 

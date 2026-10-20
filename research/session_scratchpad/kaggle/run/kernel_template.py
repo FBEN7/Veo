@@ -6,6 +6,7 @@
 import glob, os, shutil, subprocess, sys
 
 WINDOWS = __WINDOWS__
+EXTRA = __EXTRA__
 
 
 def find(name):
@@ -43,4 +44,4 @@ os.makedirs(hub, exist_ok=True)
 shutil.copy(os.path.join(assets, "resnet18-f37072fd.pth"), hub)
 os.environ["YOLO_OFFLINE"] = "1"
 subprocess.run([sys.executable, os.path.join(root, "research/session_scratchpad/kaggle/run_windows.py"),
-                "--root", root, *WINDOWS], check=True, cwd="/kaggle/working")
+                "--root", root, *EXTRA, *WINDOWS], check=True, cwd="/kaggle/working")
