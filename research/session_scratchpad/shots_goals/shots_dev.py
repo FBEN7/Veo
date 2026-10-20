@@ -85,11 +85,29 @@ def protocol() -> dict:
 
 
 def units() -> list[dict]:
-    out = [{"name": w, "kind": "window", "span": None} for w in DEV_WINDOWS]
-    for c in json.loads(CLIPS.read_text())["clips"]:
-        out.append({"name": c["name"], "kind": "clip", "span": c["span_local"],
+    """The dev units. A clip span that overlaps a dev window of the same half
+    (M7 1st: the clips of f31370 and f33829 inside st2_128057_1st_f030000) is
+    masked out of that window, so each attempt and each second counts once:
+    in its clip."""
+    clips = json.loads(CLIPS.read_text())["clips"]
+    out = []
+    for w in DEV_WINDOWS:
+        info = info_of(w)
+        start, n = int(info["start_frame"]), int(info["frames"])
+        masks = [[c["span_half"][0] - start, c["span_half"][1] - start] for c in clips
+                 if c["match"] == str(info["match"]) and c["half"] == int(info["half"])
+                 and c["span_half"][1] >= start and c["span_half"][0] < start + n]
+        out.append({"name": w, "kind": "window", "span": None, "mask": masks})
+    for c in clips:
+        out.append({"name": c["name"], "kind": "clip", "span": c["span_local"], "mask": [],
                     "attempts_half": c["attempts_half"]})
     return out
+
+
+def kept(t: float, span_s, mask_s) -> bool:
+    if span_s and not span_s[0] <= t <= span_s[1]:
+        return False
+    return not any(a <= t <= b for a, b in mask_s)
 
 
 def info_of(name: str) -> dict:
@@ -138,7 +156,7 @@ def attacked_goal(metric: pd.DataFrame) -> dict:
     return {t: (GOAL_X[1] if t == low else GOAL_X[0]) for t in means.index}
 
 
-def shots_of(metric: pd.DataFrame, cell: dict, attack: dict, span_s) -> list[float]:
+def shots_of(metric: pd.DataFrame, cell: dict, attack: dict, span_s, mask_s) -> list[float]:
     with contextlib.redirect_stdout(io.StringIO()):
         evs = ev.detect_events(metric, absolute_pitch=True, ball_time_aware=True,
                                params={**FROZEN, **cell})
@@ -149,20 +167,17 @@ def shots_of(metric: pd.DataFrame, cell: dict, attack: dict, span_s) -> list[flo
         goal = GOAL_X[1] if e["end_location_x"] > e["location_x"] else GOAL_X[0]
         if goal != attack[e["team"]]:
             continue
-        if span_s and not span_s[0] <= e["timestamp_s"] <= span_s[1]:
+        if not kept(e["timestamp_s"], span_s, mask_s):
             continue
         out.append(e["timestamp_s"])
     return out
 
 
-def labels_of(u: dict) -> list[float]:
+def labels_of(u: dict, span_s, mask_s) -> list[float]:
     info = info_of(u["name"])
     lab = pd.read_csv(info["dir"] / f"{u['name']}_events.csv")
     t = lab[lab.label.isin(LABELS)].frame.to_numpy() / st.FPS
-    if u["span"]:
-        a, b = (s / st.FPS for s in u["span"])
-        t = t[(t >= a) & (t <= b)]
-    return sorted(t.tolist())
+    return sorted(x for x in t.tolist() if kept(x, span_s, mask_s))
 
 
 def main():
@@ -179,8 +194,9 @@ def main():
     for u in us:
         m = metric_of(u, gpu)
         span_s = [s / st.FPS for s in u["span"]] if u["span"] else None
-        data[u["name"]] = (m, attacked_goal(m), span_s, labels_of(u))
-        print(f"{u['name']}: metric {len(m)} rows, {len(data[u['name']][3])} labels", flush=True)
+        mask_s = [[a / st.FPS, b / st.FPS] for a, b in u["mask"]]
+        data[u["name"]] = (m, attacked_goal(m), span_s, mask_s, labels_of(u, span_s, mask_s))
+        print(f"{u['name']}: metric {len(m)} rows, {len(data[u['name']][4])} labels", flush=True)
     if args.metric_only:
         return
     grid = proto["free parameters (grid)"]
@@ -190,8 +206,8 @@ def main():
         cell = dict(zip(keys, vals))
         tp = fp = fn = 0
         per = {}
-        for name, (m, attack, span_s, labels) in data.items():
-            preds = shots_of(m, cell, attack, span_s)
+        for name, (m, attack, span_s, mask_s, labels) in data.items():
+            preds = shots_of(m, cell, attack, span_s, mask_s)
             matched, f, n = sc.match_one_to_one(preds, labels, TOL_S)
             tp, fp, fn = tp + len(matched), fp + len(f), fn + len(n)
             per[name] = {"events": len(preds), "labels": len(labels), "tp": len(matched)}
