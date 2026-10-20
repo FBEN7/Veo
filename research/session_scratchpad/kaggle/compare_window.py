@@ -86,6 +86,13 @@ def main():
         res[name] = r
     res["events_v1"] = event_match(events_of(g / f"output_{w}/events_v1/events.json"),
                                    events_of(c / f"output_{w}/events_v1/events.json"))
+    if not (c / f".cache/v3_balls_{w}.parquet").exists():
+        res["v3_balls"] = "no CPU run to compare"
+        text = json.dumps(res, indent=1, default=str)
+        print(text)
+        if args.out:
+            Path(args.out).write_text(text)
+        return
     bg = pd.read_parquet(g / f".cache/v3_balls_{w}.parquet")
     bc = pd.read_parquet(c / f".cache/v3_balls_{w}.parquet")
     r = {"rows_gpu": len(bg), "rows_cpu": len(bc)}
