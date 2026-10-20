@@ -68,3 +68,4 @@ goal_corner_labeller2.html
 output_gsr_*/
 # SoccerTrack v2 windows run through the pipeline (eval_soccertrack_v2.py).
 output_st2_*/
+research/session_scratchpad/kaggle/*.log
