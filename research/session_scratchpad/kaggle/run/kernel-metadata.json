@@ -1,6 +1,6 @@
 {
- "id": "francoisbernard/veo-gpu-run",
- "title": "veo-gpu-run",
+ "id": "francoisbernard/veo-gpu-run2",
+ "title": "veo-gpu-run2",
  "code_file": "kernel.py",
  "language": "python",
  "kernel_type": "script",
@@ -9,7 +9,7 @@
  "enable_internet": false,
  "dataset_sources": [
   "francoisbernard/veo-code",
-  "francoisbernard/veo-st2-dev1"
+  "francoisbernard/veo-st2-dev2"
  ],
  "competition_sources": [],
  "kernel_sources": []
