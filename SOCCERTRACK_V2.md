@@ -1502,6 +1502,75 @@ feature was computed):
 
   Per-player counts still need identities.
 
+### Goals by the kick-off formation, and the shot ball gate (`shots_goals/`)
+
+**Protocol** (`protocol.json`, `protocol_notes.json`, `gate_recheck.json`; all
+hashed before use):
+- **The rule:** a goal is followed by a kick-off. Before it, the people of
+  both teams stand in their own halves. A formation run is a stretch of 1-s
+  samples where the share of people in their own half is at least T, for at
+  least N samples. A run matches a goal if it starts 15-60 s after it.
+- **Choice on ground truth** (14 dev halves): T 0.85, N 2. It finds 26 of 26
+  goals, with 0 false runs in 656 min; random times find about 1.
+- **Re-choice on the dev half's detections** (M7 2nd, 1-fps yolov8s scan):
+  the same T 0.85, N 2, 5/5 goals, 0 false runs. Frozen in
+  `frozen_goals.json`.
+
+**The registered test** (`goals_test.json`, scored once): 4 test halves, 8
+restartable goals, 184 min.
+
+| half | goals | hits | false runs |
+|---|---|---|---|
+| M1 1st | 2 | 2 | 0 |
+| M1 2nd | 1 | 1 | 0 |
+| M9 2nd | 3 | 0 | 1 |
+| M5 2nd | 2 | 1 | 1 |
+| **total** | **8** | **4** (Wilson [0.22, 0.79]) | **2** (0.98 per 90 min) |
+
+- **Fails all three registered criteria:**
+  - 7/8 hits needed; 4/8 found.
+  - At most 1 false run allowed; 2 occurred.
+  - The scoring team had to be right on every hit but one; it was right on
+    2 of 4.
+- Random-time runs find 0.21 goals on average (p = 0 for 4).
+- **Team rule:** the frozen rule (the person nearest the spot kicks off) is
+  right 2/4 times. The other rule (where play was in the 10-40 s before) is
+  right 4/4, as it was 5/5 on dev. The frozen choice was a grid-order tie on
+  ground truth.
+- **Why it fails (descriptive, after the test):**
+  - **M9 2nd:** the two detected "teams" have almost the same mean x
+    (-1.2 and -2.2 m). Kit clustering did not separate them, and the share
+    peaks at 0.82-0.88 after its goals.
+  - **M5 2nd:** one goal had 2 samples at or above 0.85, but not
+    consecutive. The false run is a 19-s stoppage.
+  - **M1:** clean peaks (0.94-1.0).
+- **So the rule holds where teams are told apart, and team assignment is
+  the limit.** Next:
+  - teams per track rather than per detection, or a split per sample
+    robust to label swaps;
+  - the second team rule;
+  - a test on halves not yet used.
+
+**The shot ball gate:**
+- **The question:** is the ball seen near the shooter and along the shot,
+  on footage v3 never trained on?
+- **Data:** 26 attempts on M7 1st and M9 2nd. v3 runs on [-1, +2.2] s; the
+  painted marks are dropped.
+- **The criterion:** at least 2 frames with a candidate within 4 m of the
+  shooter, and at least 2 frames within 4 m of the shooter-to-goal segment.
+- **Result: GO, 19/26 reachable** (Wilson [0.54, 0.86]). By half: M7 1st
+  3/10, M9 2nd 16/16.
+- **A placebo** pairs one attempt's candidates with another attempt's
+  geometry. It is reachable on 0.07 (M7) and 0.15 (M9) of pairs, so the
+  hits are not clutter.
+- **The reproducibility check failed** on one attempt. The planning agent's
+  read-only measurement of M9 f2296 was wrong: its ball moves 5 m towards
+  the goal in 0.2 s. This was recorded in `gate_recheck.json` before any
+  scoring.
+- **The shots test is registered** (`protocol_shots.json`): dev on the gate
+  clips, then all 29 M1 attempts, recall at 2 s. It runs next, on one
+  backend.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
