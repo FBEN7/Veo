@@ -5,8 +5,7 @@
 # scripts expect; results (<w>.tar.gz, <w>.json) to /kaggle/working.
 import glob, os, shutil, subprocess, sys
 
-WINDOWS = ["st2_118578_2nd_f015000"]
-EXTRA = ["--allow-seen"]
+WINDOWS = ["st2_118578_2nd_f015000:seen", "st2_117093_1st_f015000:seen", "st2_118575_1st_f015000:seen", "st2_118576_1st_f030000:seen", "st2_118578_1st_f030000:seen", "st2_128058_1st_f030000:seen", "st2_132877_1st_f015000:seen"]
 
 
 def find(name):
@@ -36,6 +35,7 @@ for n in ("ball_v3b.1500.pt", "ball_v3b.1500.pt.calib.json", "ball_v3b.1500.pt.p
     shutil.copy(os.path.join(assets, n), os.path.join(root, ".cache", n))
 shutil.copy(os.path.join(assets, "yolov8s.pt"), root)
 subprocess.run(["nvidia-smi", "-L"], check=True)
+os.makedirs(os.path.join(root, ".cache"), exist_ok=True)
 wheels = sorted(glob.glob(os.path.join(assets, "*.whl")))
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--no-deps", *wheels],
                check=True)
@@ -44,4 +44,4 @@ os.makedirs(hub, exist_ok=True)
 shutil.copy(os.path.join(assets, "resnet18-f37072fd.pth"), hub)
 os.environ["YOLO_OFFLINE"] = "1"
 subprocess.run([sys.executable, os.path.join(root, "research/session_scratchpad/kaggle/run_windows.py"),
-                "--root", root, *EXTRA, *WINDOWS], check=True, cwd="/kaggle/working")
+                "--root", root, *WINDOWS], check=True, cwd="/kaggle/working")

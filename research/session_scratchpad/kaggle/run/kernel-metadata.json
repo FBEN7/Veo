@@ -9,7 +9,7 @@
  "enable_internet": false,
  "dataset_sources": [
   "francoisbernard/veo-code",
-  "francoisbernard/veo-st2-w-check"
+  "francoisbernard/veo-st2-dev1"
  ],
  "competition_sources": [],
  "kernel_sources": []

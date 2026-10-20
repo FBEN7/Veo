@@ -1,7 +1,7 @@
 """Push the window-pipeline kernel (run/kernel_template.py) for some windows,
 with the code dataset and one video dataset as inputs.
 
-    KAGGLE_API_TOKEN=... python push_run.py --data francoisbernard/veo-st2-w-check W1 [W2:seen ...]
+    KAGGLE_API_TOKEN=... python push_run.py W1 [W2:seen ...] --data francoisbernard/veo-st2-w-check
 """
 import argparse
 import json
