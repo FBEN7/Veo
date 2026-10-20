@@ -6,7 +6,7 @@
  "of": 3,
  "not reachable": 2,
  "reproduced": null,
- "before goals freeze override": false,
+ "goals frozen": false,
  "attempts": [
   {
    "window": "st2_128057_1st_f030000",

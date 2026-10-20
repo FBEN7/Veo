@@ -1,0 +1,20 @@
+  132831 half 2: a GOALS test half, refused until the goals rule is frozen (no frozen_goals.json)
+  10 attempts readable now, 0 done, 10 to run
+  GSR 128057 half 1: 1487750 records, 67625 frames  [2 s]
+  pitch y grows towards the camera: True
+  st2_128057_1st_f005050: 801 frames 4096x1080, 22 people, 13 actions ({'DRIVE': 4, 'PASS': 3, 'OUT': 2, 'HIGH PASS': 1, 'PLAYER SUCCESSFUL TACKLE': 1, 'THROW IN': 1, 'SHOT': 1})  [75 s]
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  background pass: 801 frames grabbed, 17 samples [10 s]
+  81 of 81 frames detected -> /home/user/Veo/research/session_scratchpad/shots_goals/gate_v3/128057_1st_005438.parquet, 128057_1st_005438.parquet.meta.json [218 s]
+  128057_1st_005438.parquet done [306 s]
+  GSR 128057 half 1: 1487750 records, 67625 frames  [0 s]
+  pitch y grows towards the camera: True
+  st2_128057_1st_f026500: 801 frames 4096x1080, 22 people, 12 actions ({'DRIVE': 6, 'PASS': 5, 'SHOT': 1})  [78 s]
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1
+  background pass: 801 frames grabbed, 17 samples [10 s]
+  81 of 81 frames detected -> /home/user/Veo/research/session_scratchpad/shots_goals/gate_v3/128057_1st_026886.parquet, 128057_1st_026886.parquet.meta.json [214 s]
+  128057_1st_026886.parquet done [299 s]
+  GSR 128057 half 1: 1487750 records, 67625 frames  [0 s]
+  pitch y grows towards the camera: True
+  st2_128057_1st_f031000: 801 frames 4096x1080, 22 people, 4 actions ({'PLAYER SUCCESSFUL TACKLE': 1, 'PASS': 1, 'DRIVE': 1, 'SHOT': 1})  [60 s]
+  calibration: a = 0.904765, b = -2.068188, tau = 0.1

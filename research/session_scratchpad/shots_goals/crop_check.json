@@ -1,449 +1,1122 @@
 {
+ "protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
  "window": "st2_118578_2nd_f015000",
- "frames": [
-  0,
-  22,
-  44,
-  66,
-  88,
-  110,
-  132,
-  154,
-  176,
-  198,
-  220,
-  242,
-  264,
-  286,
-  308,
-  330,
-  352,
-  374,
-  396,
-  418,
-  440,
-  462,
-  484,
-  506,
-  528,
-  550,
-  572,
-  594,
-  616,
-  638,
-  660,
-  682,
-  704,
-  726,
-  748,
-  770,
-  792,
-  814,
-  836,
-  858,
-  880,
-  902,
-  924,
-  946,
-  968,
-  990,
-  1012,
-  1034,
-  1056,
-  1078,
-  1100,
-  1122,
-  1144,
-  1166,
-  1188,
-  1210,
-  1232,
-  1254,
-  1276,
-  1298,
-  1320,
-  1342,
-  1364,
-  1386,
-  1408,
-  1430,
-  1452,
-  1474,
-  1496,
-  1518,
-  1540,
-  1562,
-  1584,
-  1606,
-  1628,
-  1650,
-  1672,
-  1694,
-  1716,
-  1738,
-  1760,
-  1782,
-  1804,
-  1826,
-  1848,
-  1870,
-  1892,
-  1914,
-  1936,
-  1958,
-  1980,
-  2002,
-  2024,
-  2046,
-  2068,
-  2090,
-  2112,
-  2134,
-  2156,
-  2178,
-  2200,
-  2222,
-  2244,
-  2266,
-  2288,
-  2310,
-  2332,
-  2354,
-  2376,
-  2398,
-  2420,
-  2442,
-  2464,
-  2486,
-  2508,
-  2530,
-  2552,
-  2574,
-  2596,
-  2618,
-  2640,
-  2662,
-  2684,
-  2706,
-  2728,
-  2750,
-  2772,
-  2794,
-  2816,
-  2838,
-  2860,
-  2882,
-  2904,
-  2926,
-  2948,
-  2970,
-  2992,
-  3014,
-  3036,
-  3058,
-  3080,
-  3102,
-  3124,
-  3146,
-  3168,
-  3190,
-  3212,
-  3234,
-  3256,
-  3278,
-  3300,
-  3322,
-  3344,
-  3366,
-  3388,
-  3410,
-  3432,
-  3454,
-  3476,
-  3498,
-  3520,
-  3542,
-  3564,
-  3586,
-  3608,
-  3630,
-  3652,
-  3674,
-  3696,
-  3718,
-  3740,
-  3762,
-  3784,
-  3806,
-  3828,
-  3850,
-  3872,
-  3894,
-  3916,
-  3938,
-  3960,
-  3982,
-  4004,
-  4026,
-  4048,
-  4070,
-  4092,
-  4114,
-  4136,
-  4158,
-  4180,
-  4202,
-  4224,
-  4246,
-  4268,
-  4290,
-  4312,
-  4334,
-  4356,
-  4378
- ],
- "n frames": 200,
- "detector": {
-  "model": "yolov8s.pt",
-  "full imgsz": 4096,
-  "crop imgsz": 3968,
-  "conf call": 0.4,
-  "conf_player": 0.4,
-  "classes": [
-   0,
-   32
-  ],
-  "torch threads": 2
- },
- "crop": {
-  "box xyxy": [
-   32,
-   28,
-   4000,
-   796
-  ],
-  "size": [
-   3968,
-   768
-  ],
+ "scan crop rule": {
+  "outline": "105 x 68 boundary projected through the scan's camera model (crop_check.calibrated_outline)",
   "head margin px": 96,
   "side margin px": 64,
-  "outline": "window json 'pitch' polygon",
-  "full-frame top pad": 4,
-  "area vs letterboxed full frame": 0.684
+  "stride px": 32,
+  "grid": "full frame's (top letterbox pad)"
  },
- "reference": "output_st2_118578_2nd_f015000/tracks.parquet players with feet within 10 px of the outline",
- "crop vs cache": {
-  "frames": 200,
-  "reference boxes": 4336,
-  "matched": 4317,
-  "recall": 0.9956,
-  "median box shift px": 0.012,
-  "p90 box shift px": 0.057,
-  "max box shift px": 4.122,
-  "median largest corner shift px": 0.017,
-  "median IoU": 0.999,
-  "unmatched detections (inside outline + margin)": 83
- },
- "control: full frame vs cache": {
-  "frames": 20,
-  "reference boxes": 440,
-  "matched": 440,
-  "recall": 1.0,
-  "median box shift px": 0.0,
-  "p90 box shift px": 0.0,
-  "max box shift px": 0.0,
-  "median largest corner shift px": 0.0,
-  "median IoU": 1.0,
-  "unmatched detections (inside outline + margin)": 7
- },
- "seconds per frame": {
-  "crop": 1.175,
-  "full frame": 2.028
- },
- "missed reference boxes": [
-  {
-   "frame": 88,
-   "feet": [
-    3199.0,
-    293.3
-   ],
-   "height": 31.2,
-   "px to crop side": 234.0
-  },
-  {
-   "frame": 110,
-   "feet": [
-    2287.0,
-    183.3
-   ],
-   "height": 32.5,
-   "px to crop side": 122.8
-  },
-  {
-   "frame": 220,
-   "feet": [
-    3904.5,
-    560.1
-   ],
-   "height": 48.8,
-   "px to crop side": 85.9
-  },
-  {
-   "frame": 220,
-   "feet": [
-    3113.8,
-    290.4
-   ],
-   "height": 33.7,
-   "px to crop side": 228.7
-  },
-  {
-   "frame": 242,
-   "feet": [
-    2645.6,
-    198.9
-   ],
-   "height": 32.9,
-   "px to crop side": 138.0
-  },
-  {
-   "frame": 330,
-   "feet": [
-    2586.6,
-    188.7
-   ],
-   "height": 34.8,
-   "px to crop side": 125.9
-  },
-  {
-   "frame": 638,
-   "feet": [
-    2791.6,
-    211.0
-   ],
-   "height": 30.3,
-   "px to crop side": 152.6
-  },
-  {
-   "frame": 638,
-   "feet": [
-    2215.1,
-    161.0
-   ],
-   "height": 31.2,
-   "px to crop side": 101.8
-  },
-  {
-   "frame": 726,
-   "feet": [
-    2875.3,
-    217.4
-   ],
-   "height": 28.5,
-   "px to crop side": 160.8
-  },
-  {
-   "frame": 1518,
-   "feet": [
-    2403.1,
-    195.8
-   ],
-   "height": 33.1,
-   "px to crop side": 134.6
-  },
-  {
-   "frame": 2310,
-   "feet": [
-    2781.2,
-    220.0
-   ],
-   "height": 39.6,
-   "px to crop side": 152.4
-  },
-  {
-   "frame": 2948,
-   "feet": [
-    1412.2,
-    201.5
-   ],
-   "height": 25.2,
-   "px to crop side": 148.3
-  },
-  {
-   "frame": 2948,
-   "feet": [
-    1488.1,
-    221.8
-   ],
-   "height": 33.0,
-   "px to crop side": 160.8
-  },
-  {
-   "frame": 3190,
-   "feet": [
-    1403.6,
-    186.5
-   ],
-   "height": 29.0,
-   "px to crop side": 129.5
-  },
-  {
-   "frame": 3256,
-   "feet": [
-    1238.1,
-    275.2
-   ],
-   "height": 45.4,
-   "px to crop side": 201.8
-  },
-  {
-   "frame": 3564,
-   "feet": [
-    1455.4,
-    187.6
-   ],
-   "height": 33.4,
-   "px to crop side": 126.2
-  },
-  {
-   "frame": 3652,
-   "feet": [
-    1552.7,
-    183.9
-   ],
-   "height": 31.0,
-   "px to crop side": 124.8
-  },
-  {
-   "frame": 3740,
-   "feet": [
-    1682.6,
-    173.2
-   ],
-   "height": 29.8,
-   "px to crop side": 115.4
-  },
-  {
-   "frame": 4004,
-   "feet": [
-    1532.8,
-    176.0
-   ],
-   "height": 30.4,
-   "px to crop side": 117.6
-  }
- ],
  "criterion": {
   "recall >=": 0.99,
   "median box shift px <=": 1.0
  },
- "pass": true,
- "scan crop for this match (release calibration outline)": [
-  64,
-  28,
-  4032,
-  796
- ],
- "wall s": 310.0
+ "pass": {
+  "window": true,
+  "calib": true
+ },
+ "results": {
+  "window": {
+   "window": "st2_118578_2nd_f015000",
+   "frames": [
+    0,
+    22,
+    44,
+    66,
+    88,
+    110,
+    132,
+    154,
+    176,
+    198,
+    220,
+    242,
+    264,
+    286,
+    308,
+    330,
+    352,
+    374,
+    396,
+    418,
+    440,
+    462,
+    484,
+    506,
+    528,
+    550,
+    572,
+    594,
+    616,
+    638,
+    660,
+    682,
+    704,
+    726,
+    748,
+    770,
+    792,
+    814,
+    836,
+    858,
+    880,
+    902,
+    924,
+    946,
+    968,
+    990,
+    1012,
+    1034,
+    1056,
+    1078,
+    1100,
+    1122,
+    1144,
+    1166,
+    1188,
+    1210,
+    1232,
+    1254,
+    1276,
+    1298,
+    1320,
+    1342,
+    1364,
+    1386,
+    1408,
+    1430,
+    1452,
+    1474,
+    1496,
+    1518,
+    1540,
+    1562,
+    1584,
+    1606,
+    1628,
+    1650,
+    1672,
+    1694,
+    1716,
+    1738,
+    1760,
+    1782,
+    1804,
+    1826,
+    1848,
+    1870,
+    1892,
+    1914,
+    1936,
+    1958,
+    1980,
+    2002,
+    2024,
+    2046,
+    2068,
+    2090,
+    2112,
+    2134,
+    2156,
+    2178,
+    2200,
+    2222,
+    2244,
+    2266,
+    2288,
+    2310,
+    2332,
+    2354,
+    2376,
+    2398,
+    2420,
+    2442,
+    2464,
+    2486,
+    2508,
+    2530,
+    2552,
+    2574,
+    2596,
+    2618,
+    2640,
+    2662,
+    2684,
+    2706,
+    2728,
+    2750,
+    2772,
+    2794,
+    2816,
+    2838,
+    2860,
+    2882,
+    2904,
+    2926,
+    2948,
+    2970,
+    2992,
+    3014,
+    3036,
+    3058,
+    3080,
+    3102,
+    3124,
+    3146,
+    3168,
+    3190,
+    3212,
+    3234,
+    3256,
+    3278,
+    3300,
+    3322,
+    3344,
+    3366,
+    3388,
+    3410,
+    3432,
+    3454,
+    3476,
+    3498,
+    3520,
+    3542,
+    3564,
+    3586,
+    3608,
+    3630,
+    3652,
+    3674,
+    3696,
+    3718,
+    3740,
+    3762,
+    3784,
+    3806,
+    3828,
+    3850,
+    3872,
+    3894,
+    3916,
+    3938,
+    3960,
+    3982,
+    4004,
+    4026,
+    4048,
+    4070,
+    4092,
+    4114,
+    4136,
+    4158,
+    4180,
+    4202,
+    4224,
+    4246,
+    4268,
+    4290,
+    4312,
+    4334,
+    4356,
+    4378
+   ],
+   "n frames": 200,
+   "detector": {
+    "model": "yolov8s.pt",
+    "full imgsz": 4096,
+    "crop imgsz": 3968,
+    "conf call": 0.4,
+    "conf_player": 0.4,
+    "classes": [
+     0,
+     32
+    ],
+    "torch threads": 2
+   },
+   "crop": {
+    "box xyxy": [
+     32,
+     28,
+     4000,
+     796
+    ],
+    "size": [
+     3968,
+     768
+    ],
+    "head margin px": 96,
+    "side margin px": 64,
+    "outline": "window json 'pitch' polygon",
+    "full-frame top pad": 4,
+    "area vs letterboxed full frame": 0.684
+   },
+   "reference": "output_st2_118578_2nd_f015000/tracks.parquet players with feet within 10 px of the outline",
+   "crop vs cache": {
+    "frames": 200,
+    "reference boxes": 4336,
+    "matched": 4317,
+    "recall": 0.9956,
+    "median box shift px": 0.012,
+    "p90 box shift px": 0.057,
+    "max box shift px": 4.122,
+    "median largest corner shift px": 0.017,
+    "median IoU": 0.999,
+    "unmatched detections (inside outline + margin)": 83
+   },
+   "control: full frame vs cache": {
+    "frames": 20,
+    "reference boxes": 440,
+    "matched": 440,
+    "recall": 1.0,
+    "median box shift px": 0.0,
+    "p90 box shift px": 0.0,
+    "max box shift px": 0.0,
+    "median largest corner shift px": 0.0,
+    "median IoU": 1.0,
+    "unmatched detections (inside outline + margin)": 7
+   },
+   "seconds per frame": {
+    "crop": 1.175,
+    "full frame": 2.028
+   },
+   "missed reference boxes": [
+    {
+     "frame": 88,
+     "feet": [
+      3199.0,
+      293.3
+     ],
+     "height": 31.2,
+     "px to crop side": 234.0
+    },
+    {
+     "frame": 110,
+     "feet": [
+      2287.0,
+      183.3
+     ],
+     "height": 32.5,
+     "px to crop side": 122.8
+    },
+    {
+     "frame": 220,
+     "feet": [
+      3904.5,
+      560.1
+     ],
+     "height": 48.8,
+     "px to crop side": 85.9
+    },
+    {
+     "frame": 220,
+     "feet": [
+      3113.8,
+      290.4
+     ],
+     "height": 33.7,
+     "px to crop side": 228.7
+    },
+    {
+     "frame": 242,
+     "feet": [
+      2645.6,
+      198.9
+     ],
+     "height": 32.9,
+     "px to crop side": 138.0
+    },
+    {
+     "frame": 330,
+     "feet": [
+      2586.6,
+      188.7
+     ],
+     "height": 34.8,
+     "px to crop side": 125.9
+    },
+    {
+     "frame": 638,
+     "feet": [
+      2791.6,
+      211.0
+     ],
+     "height": 30.3,
+     "px to crop side": 152.6
+    },
+    {
+     "frame": 638,
+     "feet": [
+      2215.1,
+      161.0
+     ],
+     "height": 31.2,
+     "px to crop side": 101.8
+    },
+    {
+     "frame": 726,
+     "feet": [
+      2875.3,
+      217.4
+     ],
+     "height": 28.5,
+     "px to crop side": 160.8
+    },
+    {
+     "frame": 1518,
+     "feet": [
+      2403.1,
+      195.8
+     ],
+     "height": 33.1,
+     "px to crop side": 134.6
+    },
+    {
+     "frame": 2310,
+     "feet": [
+      2781.2,
+      220.0
+     ],
+     "height": 39.6,
+     "px to crop side": 152.4
+    },
+    {
+     "frame": 2948,
+     "feet": [
+      1412.2,
+      201.5
+     ],
+     "height": 25.2,
+     "px to crop side": 148.3
+    },
+    {
+     "frame": 2948,
+     "feet": [
+      1488.1,
+      221.8
+     ],
+     "height": 33.0,
+     "px to crop side": 160.8
+    },
+    {
+     "frame": 3190,
+     "feet": [
+      1403.6,
+      186.5
+     ],
+     "height": 29.0,
+     "px to crop side": 129.5
+    },
+    {
+     "frame": 3256,
+     "feet": [
+      1238.1,
+      275.2
+     ],
+     "height": 45.4,
+     "px to crop side": 201.8
+    },
+    {
+     "frame": 3564,
+     "feet": [
+      1455.4,
+      187.6
+     ],
+     "height": 33.4,
+     "px to crop side": 126.2
+    },
+    {
+     "frame": 3652,
+     "feet": [
+      1552.7,
+      183.9
+     ],
+     "height": 31.0,
+     "px to crop side": 124.8
+    },
+    {
+     "frame": 3740,
+     "feet": [
+      1682.6,
+      173.2
+     ],
+     "height": 29.8,
+     "px to crop side": 115.4
+    },
+    {
+     "frame": 4004,
+     "feet": [
+      1532.8,
+      176.0
+     ],
+     "height": 30.4,
+     "px to crop side": 117.6
+    }
+   ],
+   "criterion": {
+    "recall >=": 0.99,
+    "median box shift px <=": 1.0
+   },
+   "pass": true,
+   "scan crop for this match (release calibration outline)": [
+    64,
+    28,
+    4032,
+    796
+   ],
+   "wall s": 310.0
+  },
+  "calib": {
+   "window": "st2_118578_2nd_f015000",
+   "outline kind": "calib",
+   "frames": [
+    0,
+    22,
+    44,
+    66,
+    88,
+    110,
+    132,
+    154,
+    176,
+    198,
+    220,
+    242,
+    264,
+    286,
+    308,
+    330,
+    352,
+    374,
+    396,
+    418,
+    440,
+    462,
+    484,
+    506,
+    528,
+    550,
+    572,
+    594,
+    616,
+    638,
+    660,
+    682,
+    704,
+    726,
+    748,
+    770,
+    792,
+    814,
+    836,
+    858,
+    880,
+    902,
+    924,
+    946,
+    968,
+    990,
+    1012,
+    1034,
+    1056,
+    1078,
+    1100,
+    1122,
+    1144,
+    1166,
+    1188,
+    1210,
+    1232,
+    1254,
+    1276,
+    1298,
+    1320,
+    1342,
+    1364,
+    1386,
+    1408,
+    1430,
+    1452,
+    1474,
+    1496,
+    1518,
+    1540,
+    1562,
+    1584,
+    1606,
+    1628,
+    1650,
+    1672,
+    1694,
+    1716,
+    1738,
+    1760,
+    1782,
+    1804,
+    1826,
+    1848,
+    1870,
+    1892,
+    1914,
+    1936,
+    1958,
+    1980,
+    2002,
+    2024,
+    2046,
+    2068,
+    2090,
+    2112,
+    2134,
+    2156,
+    2178,
+    2200,
+    2222,
+    2244,
+    2266,
+    2288,
+    2310,
+    2332,
+    2354,
+    2376,
+    2398,
+    2420,
+    2442,
+    2464,
+    2486,
+    2508,
+    2530,
+    2552,
+    2574,
+    2596,
+    2618,
+    2640,
+    2662,
+    2684,
+    2706,
+    2728,
+    2750,
+    2772,
+    2794,
+    2816,
+    2838,
+    2860,
+    2882,
+    2904,
+    2926,
+    2948,
+    2970,
+    2992,
+    3014,
+    3036,
+    3058,
+    3080,
+    3102,
+    3124,
+    3146,
+    3168,
+    3190,
+    3212,
+    3234,
+    3256,
+    3278,
+    3300,
+    3322,
+    3344,
+    3366,
+    3388,
+    3410,
+    3432,
+    3454,
+    3476,
+    3498,
+    3520,
+    3542,
+    3564,
+    3586,
+    3608,
+    3630,
+    3652,
+    3674,
+    3696,
+    3718,
+    3740,
+    3762,
+    3784,
+    3806,
+    3828,
+    3850,
+    3872,
+    3894,
+    3916,
+    3938,
+    3960,
+    3982,
+    4004,
+    4026,
+    4048,
+    4070,
+    4092,
+    4114,
+    4136,
+    4158,
+    4180,
+    4202,
+    4224,
+    4246,
+    4268,
+    4290,
+    4312,
+    4334,
+    4356,
+    4378
+   ],
+   "n frames": 200,
+   "detector": {
+    "model": "yolov8s.pt",
+    "full imgsz": 4096,
+    "crop imgsz": 3968,
+    "conf call": 0.4,
+    "conf_player": 0.4,
+    "classes": [
+     0,
+     32
+    ],
+    "torch threads": 2,
+    "cv2 threads": 2
+   },
+   "crop": {
+    "box xyxy": [
+     64,
+     28,
+     4032,
+     796
+    ],
+    "size": [
+     3968,
+     768
+    ],
+    "head margin px": 96,
+    "side margin px": 64,
+    "outline": "the scan's (formation_scan.py): the 105 x 68 boundary projected through the release calibration of 118578",
+    "outline bbox px": [
+     128.8,
+     149.8,
+     3952.3,
+     720.8
+    ],
+    "full-frame top pad": 4,
+    "area vs letterboxed full frame": 0.684
+   },
+   "reference": "output_st2_118578_2nd_f015000/tracks.parquet players with feet within 10 px of the crop's outline",
+   "crop vs cache": {
+    "frames": 200,
+    "reference boxes": 4330,
+    "matched": 4312,
+    "recall": 0.9958,
+    "median box shift px": 0.012,
+    "p90 box shift px": 0.056,
+    "max box shift px": 4.122,
+    "median largest corner shift px": 0.017,
+    "median IoU": 0.999,
+    "unmatched detections (inside outline + margin)": 85
+   },
+   "control: full frame vs cache": {
+    "frames": 20,
+    "reference boxes": 439,
+    "matched": 439,
+    "recall": 1.0,
+    "median box shift px": 0.0,
+    "p90 box shift px": 0.0,
+    "max box shift px": 0.0,
+    "median largest corner shift px": 0.0,
+    "median IoU": 1.0,
+    "unmatched detections (inside outline + margin)": 8
+   },
+   "seconds per frame": {
+    "crop": 2.287,
+    "full frame": 3.325
+   },
+   "missed reference boxes": [
+    {
+     "frame": 88,
+     "feet": [
+      3199.0,
+      293.3
+     ],
+     "height": 31.2,
+     "px to crop side": 234.0
+    },
+    {
+     "frame": 110,
+     "feet": [
+      2287.0,
+      183.3
+     ],
+     "height": 32.5,
+     "px to crop side": 122.8
+    },
+    {
+     "frame": 220,
+     "feet": [
+      3113.8,
+      290.4
+     ],
+     "height": 33.7,
+     "px to crop side": 228.7
+    },
+    {
+     "frame": 242,
+     "feet": [
+      2645.6,
+      198.9
+     ],
+     "height": 32.9,
+     "px to crop side": 138.0
+    },
+    {
+     "frame": 330,
+     "feet": [
+      2586.6,
+      188.7
+     ],
+     "height": 34.8,
+     "px to crop side": 125.9
+    },
+    {
+     "frame": 638,
+     "feet": [
+      2791.6,
+      211.0
+     ],
+     "height": 30.3,
+     "px to crop side": 152.6
+    },
+    {
+     "frame": 638,
+     "feet": [
+      2215.1,
+      161.0
+     ],
+     "height": 31.2,
+     "px to crop side": 101.8
+    },
+    {
+     "frame": 726,
+     "feet": [
+      2875.3,
+      217.4
+     ],
+     "height": 28.5,
+     "px to crop side": 160.8
+    },
+    {
+     "frame": 1518,
+     "feet": [
+      2403.1,
+      195.8
+     ],
+     "height": 33.1,
+     "px to crop side": 134.6
+    },
+    {
+     "frame": 2310,
+     "feet": [
+      2781.2,
+      220.0
+     ],
+     "height": 39.6,
+     "px to crop side": 152.4
+    },
+    {
+     "frame": 2948,
+     "feet": [
+      1412.2,
+      201.5
+     ],
+     "height": 25.2,
+     "px to crop side": 148.3
+    },
+    {
+     "frame": 2948,
+     "feet": [
+      1488.1,
+      221.8
+     ],
+     "height": 33.0,
+     "px to crop side": 160.8
+    },
+    {
+     "frame": 3190,
+     "feet": [
+      1403.6,
+      186.5
+     ],
+     "height": 29.0,
+     "px to crop side": 129.5
+    },
+    {
+     "frame": 3256,
+     "feet": [
+      1238.1,
+      275.2
+     ],
+     "height": 45.4,
+     "px to crop side": 201.8
+    },
+    {
+     "frame": 3564,
+     "feet": [
+      1455.4,
+      187.6
+     ],
+     "height": 33.4,
+     "px to crop side": 126.2
+    },
+    {
+     "frame": 3652,
+     "feet": [
+      1552.7,
+      183.9
+     ],
+     "height": 31.0,
+     "px to crop side": 124.8
+    },
+    {
+     "frame": 3740,
+     "feet": [
+      1682.6,
+      173.2
+     ],
+     "height": 29.8,
+     "px to crop side": 115.4
+    },
+    {
+     "frame": 4004,
+     "feet": [
+      1532.8,
+      176.0
+     ],
+     "height": 30.4,
+     "px to crop side": 117.6
+    }
+   ],
+   "criterion": {
+    "recall >=": 0.99,
+    "median box shift px <=": 1.0
+   },
+   "pass": true,
+   "crop rule": {
+    "outline": "105 x 68 boundary projected through the scan's camera model (crop_check.calibrated_outline)",
+    "head margin px": 96,
+    "side margin px": 64,
+    "stride px": 32,
+    "grid": "full frame's (top letterbox pad)"
+   },
+   "crop vs cache, window-outline reference (reported, not the criterion)": {
+    "frames": 200,
+    "reference boxes": 4336,
+    "matched": 4317,
+    "recall": 0.9956,
+    "median box shift px": 0.012,
+    "p90 box shift px": 0.057,
+    "max box shift px": 4.122,
+    "median largest corner shift px": 0.017,
+    "median IoU": 0.999,
+    "unmatched detections (inside outline + margin)": 83
+   },
+   "wall s": 606.5
+  }
+ },
+ "outline agreement (dev windows)": {
+  "what": "bounding box (x0, y0, x1, y1) of the 105 x 68 boundary projected through the release calibration minus that of the window json 'pitch' polygon (GSR pitch lines)",
+  "skipped": "windows of the test halves and of M1 (not read)",
+  "windows": 19,
+  "matches": 8,
+  "largest px per match": {
+   "117093": 14.5,
+   "118575": 4.3,
+   "118576": 6.3,
+   "118577": 13.5,
+   "118578": 19.8,
+   "128057": 8.2,
+   "128058": 5.6,
+   "132877": 28.2
+  },
+  "largest px, median over matches": 10.8,
+  "largest px, max": 28.2,
+  "per window": {
+   "st2_117093_1st_f015000": {
+    "projected - window bbox px": [
+     -9.9,
+     2.9,
+     14.5,
+     7.8
+    ],
+    "largest px": 14.5
+   },
+   "st2_117093_1st_f045000": {
+    "projected - window bbox px": [
+     -9.9,
+     2.9,
+     14.5,
+     7.8
+    ],
+    "largest px": 14.5
+   },
+   "st2_117093_2nd_f015000": {
+    "projected - window bbox px": [
+     -9.9,
+     2.9,
+     14.5,
+     7.8
+    ],
+    "largest px": 14.5
+   },
+   "st2_117093_2nd_f045000": {
+    "projected - window bbox px": [
+     -9.9,
+     2.9,
+     14.5,
+     7.8
+    ],
+    "largest px": 14.5
+   },
+   "st2_118575_1st_f015000": {
+    "projected - window bbox px": [
+     -0.3,
+     4.3,
+     -2.5,
+     0.2
+    ],
+    "largest px": 4.3
+   },
+   "st2_118576_1st_f030000": {
+    "projected - window bbox px": [
+     4.7,
+     6.3,
+     4.1,
+     4.5
+    ],
+    "largest px": 6.3
+   },
+   "st2_118576_2nd_f015000": {
+    "projected - window bbox px": [
+     4.7,
+     6.3,
+     4.1,
+     4.5
+    ],
+    "largest px": 6.3
+   },
+   "st2_118577_1st_f030000": {
+    "projected - window bbox px": [
+     -12.2,
+     -0.8,
+     -13.5,
+     1.5
+    ],
+    "largest px": 13.5
+   },
+   "st2_118578_1st_f030000": {
+    "projected - window bbox px": [
+     19.8,
+     -2.2,
+     17.3,
+     7.8
+    ],
+    "largest px": 19.8
+   },
+   "st2_118578_1st_f052500": {
+    "projected - window bbox px": [
+     19.8,
+     -2.2,
+     17.3,
+     7.8
+    ],
+    "largest px": 19.8
+   },
+   "st2_118578_2nd_f015000": {
+    "projected - window bbox px": [
+     19.8,
+     -2.2,
+     17.3,
+     7.8
+    ],
+    "largest px": 19.8
+   },
+   "st2_118578_2nd_f037500": {
+    "projected - window bbox px": [
+     19.8,
+     -2.2,
+     17.3,
+     7.8
+    ],
+    "largest px": 19.8
+   },
+   "st2_128057_1st_f030000": {
+    "projected - window bbox px": [
+     0.2,
+     0.8,
+     -1.5,
+     8.2
+    ],
+    "largest px": 8.2
+   },
+   "st2_128058_1st_f030000": {
+    "projected - window bbox px": [
+     5.6,
+     4.5,
+     -3.1,
+     2.3
+    ],
+    "largest px": 5.6
+   },
+   "st2_128058_2nd_f015000": {
+    "projected - window bbox px": [
+     5.6,
+     4.5,
+     -3.1,
+     2.3
+    ],
+    "largest px": 5.6
+   },
+   "st2_132877_1st_f015000": {
+    "projected - window bbox px": [
+     28.2,
+     8.1,
+     8.2,
+     3.7
+    ],
+    "largest px": 28.2
+   },
+   "st2_132877_1st_f045000": {
+    "projected - window bbox px": [
+     28.2,
+     8.1,
+     8.2,
+     3.7
+    ],
+    "largest px": 28.2
+   },
+   "st2_132877_2nd_f015000": {
+    "projected - window bbox px": [
+     28.2,
+     8.1,
+     8.2,
+     3.7
+    ],
+    "largest px": 28.2
+   },
+   "st2_132877_2nd_f045000": {
+    "projected - window bbox px": [
+     28.2,
+     8.1,
+     8.2,
+     3.7
+    ],
+    "largest px": 28.2
+   }
+  }
+ }
 }

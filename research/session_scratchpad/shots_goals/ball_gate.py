@@ -22,11 +22,20 @@ Method, per attempt (BAS label frame L, 0-indexed half frame, 25 fps):
   2. Detection: detect_ball_heatmap.py --v2 with .cache/ball_v3b.1500.pt at
      stride 1 on local frames [L - 25, L + 55] (-1 s to +2.2 s, both ends
      included: --range A B excludes B) into gate_v3/<match>_<half>_<L>.parquet
-     (+ .meta.json sidecar, its processed frames). Resumable: an attempt
-     whose sidecar matches its parquet and lists every requested frame is
-     skipped; the clip's mp4 is deleted once no pending attempt needs it
-     (disk). M7 / M9 are sealed (src/unseal.py): VEO_UNSEAL must be set, as
-     for every opening of them, and no --allow-seen (v3 never saw them).
+     (+ .meta.json sidecar, its processed frames). Resumable: an attempt is
+     done (skipped) only when its sidecar matches its parquet, names the
+     planned clip, start frame and range at stride 1, records the sha256 of
+     the weights file as it is now, and lists every requested frame inside
+     the half (only frames past the half's end, or before its frame 0, may
+     be absent). A clip is
+     used only with CLIP_FRAMES frames, fewer only when it ends at the
+     half's end (the half video's frame count, read from its header). After
+     every attempt -- done, skipped or failed -- its clip's mp4 is deleted
+     unless an attempt still to come in this pass, and not done, needs it;
+     the clips of attempts done before the pass are deleted at its end
+     (disk; --keep-clips keeps them). M7 / M9 are sealed (src/unseal.py):
+     VEO_UNSEAL must be set, as for every opening of them, and no
+     --allow-seen (v3 never saw them).
   3. Candidates: rows with confidence (v3's calibrated p_cal) >= 0.10; the
      painted-spot marks of that match dropped (src/ball_spots.drop_marks,
      4 px), the marks being those found on the match half's processed window
@@ -43,8 +52,11 @@ Method, per attempt (BAS label frame L, 0-indexed half frame, 25 fps):
      shooter's team defends, from each GSR side's mean x over the half.
   5. Decision over the 26: GO >= 13; GO, capped 9-12 (expected recall capped
      at the reachable share in every report); STOP < 9 ("shots not
-     available: ball reachable k/26", Wilson 95%). The reproducibility check
-     (below) must hold first, else the decision is withheld ("re-check").
+     available: ball reachable k/26", Wilson 95%). The decision is written
+     only when all 26 attempts are scored with no frame missing inside the
+     half AND the 3 reproducibility attempts (below) are all scored and all
+     not reachable; otherwise it is "none: incomplete" or "withheld:
+     re-check the gate", with no would-be decision.
 
 Reproducibility (protocol: "the 3 attempts already measured read-only (M7
 f1370 and f3829 of 1st f030000 window time, M9 f2296) must come out not
@@ -74,15 +86,20 @@ Choices where the protocol is silent (simplest reading):
     of each mean alone can put both sides on one end). The BAS side is
     reported beside it.
   - An attempt with no player_id, or a shooter with no GSR record in the
-    half, has no shooter and is not reachable (counted, reason given). An
-    attempt whose detection is incomplete (frames past the video's end) is
-    scored on the frames it has; the missing ones are listed.
+    half, has no shooter and is not reachable (counted, reason given). Only
+    frames past the half's end (its video's frame count) may be missing
+    from an attempt's detection; it is scored on the frames it has and the
+    missing ones are listed. A frame missing inside the half leaves the
+    attempt not done, and the score incomplete (no decision).
   - Two BAS actions on one frame share a parquet; each is its own attempt.
   - Test hygiene (protocol GOALS: all frozen "before any test half is
-    scanned"): 132831 half 2 is a GOALS test half, so its attempts (BAS
-    frames, GSR, video, detections, and M9's reproducibility attempt) are
-    refused until frozen_goals.json and its .sha256 exist here and agree;
-    --before-goals-freeze overrides that and is written into the outputs.
+    scanned"; protocol_notes.json: the goals rule is frozen before the gate
+    reads anything of 132831 half 2): 132831 half 2 is a GOALS test half, so
+    its attempts (BAS frames, GSR, video, detections, its window's json and
+    M9's reproducibility attempt) are refused until frozen_goals.json and
+    frozen_goals.json.sha256 both exist here and agree, and the json records
+    the registered protocol's sha256 ("protocol sha256") and the frozen
+    "T", "N" and "team rule". There is no override.
   - Wilson interval at 95% (z = 1.96) on k/26, reported whatever the
     decision.
 
@@ -100,6 +117,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -113,11 +131,14 @@ from src.motion_bg import BG_HALF_SPAN, BG_STEP, bg_centre  # noqa: E402
 
 HERE = ROOT / "research/session_scratchpad/shots_goals"
 PROTOCOL = HERE / "protocol.json"
+PROTOCOL_SHA256 = "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd"
 FROZEN_GOALS = HERE / "frozen_goals.json"
+FROZEN_KEYS = ("T", "N", "team rule")         # what frozen_goals.json must record
 OUT = HERE / "ball_gate.json"
 REPRO_OUT = HERE / "ball_gate_repro.json"
 DET_DIR = HERE / "gate_v3"
 GATE_DATA = ROOT / "data/shot_gate"            # VEO_DATA_DIR of the clips
+CLIPS = GATE_DATA / "soccertrack_v2"           # the clips' mp4 + json
 WEIGHTS = ".cache/ball_v3b.1500.pt"
 FPS = st.FPS
 LABELS = ("SHOT", "GOAL")
@@ -149,8 +170,8 @@ def protocol() -> dict:
     """The registered protocol, refused if it no longer matches its hash."""
     want = (HERE / "protocol.json.sha256").read_text().split()[0]
     got = sha256(PROTOCOL)
-    if got != want:
-        raise SystemExit(f"protocol.json sha256 {got} != registered {want}")
+    if got != want or got != PROTOCOL_SHA256:
+        raise SystemExit(f"protocol.json sha256 {got} != registered {want} / {PROTOCOL_SHA256}")
     return json.loads(PROTOCOL.read_text())
 
 
@@ -162,22 +183,53 @@ def offsets(window_s) -> tuple[int, int]:
 
 # ---- Hygiene -----------------------------------------------------------------
 
+def frozen_problem(path: Path = FROZEN_GOALS) -> str | None:
+    """Why the goals rule does not count as frozen; None when it does:
+    `path` (frozen_goals.json) and `path`.sha256 both exist and agree, and
+    the json records the registered protocol's sha256 and the frozen T, N
+    and team rule. Read once, so the hash and the content are one file."""
+    side = Path(f"{path}.sha256")
+    if not path.is_file():
+        return f"no {path.name}"
+    if not side.is_file():
+        return f"no {side.name}"
+    try:
+        blob = path.read_bytes()
+        want = side.read_text().split()
+    except OSError as e:
+        return f"unreadable: {e}"
+    if not want or want[0] != hashlib.sha256(blob).hexdigest():
+        return f"{path.name} does not match {side.name}"
+    try:
+        rule = json.loads(blob)
+    except ValueError:
+        return f"{path.name} is not JSON"
+    if not isinstance(rule, dict):
+        return f"{path.name} is not a JSON object"
+    if rule.get("protocol sha256") != PROTOCOL_SHA256:
+        return f"{path.name} does not record \"protocol sha256\": {PROTOCOL_SHA256}"
+    absent = [k for k in FROZEN_KEYS if rule.get(k) is None]
+    if absent:
+        return f"{path.name} does not record {absent}"
+    return None
+
+
 def goals_frozen() -> bool:
-    side = Path(f"{FROZEN_GOALS}.sha256")
-    return (FROZEN_GOALS.exists() and side.exists()
-            and side.read_text().split()[0] == sha256(FROZEN_GOALS))
+    return frozen_problem() is None
 
 
-def allowed(match: str, half: int, test_halves: set, override: bool, what: str) -> bool:
+def allowed(match: str, half: int, test_halves: set, what: str) -> bool:
     """Whether the gate may read this match half: a GOALS test half only once
-    the goals rule is frozen (or with the override), and M7 / M9 only
-    through src/unseal.py (the one way to open them; logged there)."""
+    the goals rule is frozen (no override), and M7 / M9 only through
+    src/unseal.py (the one way to open them; logged there)."""
     from src.unseal import unsealed
 
-    if f"{match}_{HALF_NAMES[half]}" in test_halves and not (goals_frozen() or override):
-        print(f"  {match} half {half}: a GOALS test half, refused until "
-              f"{FROZEN_GOALS.name} is frozen (or --before-goals-freeze)", flush=True)
-        return False
+    if f"{match}_{HALF_NAMES[half]}" in test_halves:
+        why = frozen_problem()
+        if why is not None:
+            print(f"  {match} half {half}: a GOALS test half, refused until the goals rule "
+                  f"is frozen ({why})", flush=True)
+            return False
     if not unsealed(match, what):
         print(f"  {match} half {half}: sealed (set VEO_UNSEAL, src/unseal.py)", flush=True)
         return False
@@ -362,31 +414,114 @@ def det_path(match: str, half: int, label: int) -> Path:
     return DET_DIR / f"{match}_{HALF_NAMES[half]}_{label:06d}.parquet"
 
 
-def det_done(path: Path, rng) -> bool:
+_HALF_FRAMES: dict = {}
+_SHA: dict = {}
+
+
+def half_frames(match: str, half: int) -> int | None:
+    """The frame count of a half's panorama, from its video header; None
+    when it cannot be read (then no frame counts as past the half's end).
+    Asked only of a half the gate may read, and only when a clip or a
+    detection stops short."""
+    key = (str(match), int(half))
+    if key not in _HALF_FRAMES:
+        n = None
+        try:
+            c = st.open_video(*key)
+            try:
+                n = int(c.streams.video[0].frames) or None
+            finally:
+                c.close()
+        except Exception as e:  # noqa: BLE001 -- unknown length: fail closed
+            print(f"  {match} half {half}: video frame count unreadable ({e})", flush=True)
+        _HALF_FRAMES[key] = n
+    return _HALF_FRAMES[key]
+
+
+def inside_half(match: str, half: int, frames) -> list[int]:
+    """The half frames of `frames` inside the half: from its frame 0 to
+    before its end (to no end when the half's length is unknown). Frames
+    below 0 (an attempt within 1 s of the half's start) do not exist."""
+    frames = sorted(f for f in (int(f) for f in frames) if f >= 0)
+    if not frames:
+        return []
+    n = half_frames(match, half)
+    return [f for f in frames if n is None or f < n]
+
+
+def weights_sha256() -> str:
+    """The sha256 of the weights file as it is now (once per run)."""
+    if WEIGHTS not in _SHA:
+        _SHA[WEIGHTS] = sha256(ROOT / WEIGHTS)
+    return _SHA[WEIGHTS]
+
+
+def det_done(path: Path, t: dict) -> bool:
+    """Whether attempt `t`'s detection at `path` is done: the sidecar
+    matches its parquet, its window is the planned clip, its start frame
+    the planned first frame, its range the planned one at stride 1, its
+    checkpoint sha256 that of the weights file now, and it lists every
+    requested frame, but those past the half's end."""
     from detect_ball_heatmap import read_sidecar
 
     try:
         meta = read_sidecar(path)
     except (ValueError, OSError):        # no sidecar, a stale one, or no parquet
         return False
-    return meta.get("range") == list(rng)
+    a, b = t["range"]
+    if (meta.get("window") != t["clip"] or meta.get("start_frame") != t["first"]
+            or meta.get("range") != [a, b] or meta.get("stride") != 1
+            or meta.get("ckpt sha256") != weights_sha256()):
+        return False
+    try:
+        got = {int(f) for f in meta.get("frames", [])}
+    except (TypeError, ValueError):
+        return False
+    absent = set(range(a, b)) - got
+    return not inside_half(t["match"], t["half"], {t["first"] + f for f in absent})
 
 
-def clip_ready(plan: dict) -> bool:
-    j = GATE_DATA / "soccertrack_v2" / f"{plan['clip']}.json"
+def clip_ready(t: dict, root: Path | None = None) -> bool:
+    """Whether attempt `t`'s planned clip is on disk: its json and mp4, the
+    match, half and first frame planned, and CLIP_FRAMES frames -- fewer
+    only when the clip runs to the half's end."""
+    root = CLIPS if root is None else root
+    j = root / f"{t['clip']}.json"
     if not j.exists() or not j.with_suffix(".mp4").exists():
         return False
-    info = json.loads(j.read_text())
-    return int(info["start_frame"]) == plan["first"] and int(info["frames"]) >= 1
+    try:
+        info = json.loads(j.read_text())
+        first, n = int(info["start_frame"]), int(info["frames"])
+        same = str(info["match"]) == t["match"] and int(info["half"]) == t["half"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    if not same or first != t["first"] or not 1 <= n <= CLIP_FRAMES:
+        return False
+    if n == CLIP_FRAMES:
+        return True
+    end = half_frames(t["match"], t["half"])
+    return end is not None and first + n >= end
 
 
 def fetch_clip(match: str, half: int, plan: dict):
     from fetch_soccertrack_v2 import fetch
 
-    root = GATE_DATA / "soccertrack_v2"
-    path = fetch(match, half, plan["first"] / (60 * FPS), plan["count"] / (60 * FPS), root)
+    path = fetch(match, half, plan["first"] / (60 * FPS), plan["count"] / (60 * FPS), CLIPS)
     if path.stem != plan["clip"]:
         raise RuntimeError(f"fetch named the clip {path.stem}, expected {plan['clip']}")
+    if not clip_ready(plan):
+        raise RuntimeError(f"clip {plan['clip']}: not {CLIP_FRAMES} frames and not at the "
+                           f"half's end")
+
+
+def drop_clip(t: dict):
+    (CLIPS / f"{t['clip']}.mp4").unlink(missing_ok=True)
+
+
+def still_needed(clip: str, attempts) -> bool:
+    """Whether an attempt of `attempts` that is not done uses `clip`."""
+    return any(u["clip"] == clip and not det_done(det_path(u["match"], u["half"], u["frame"]), u)
+               for u in attempts)
 
 
 def detect_one(plan: dict, out: Path, threads: int):
@@ -403,7 +538,7 @@ def gate_attempts(args, proto) -> list[dict]:
     test = set(proto["GOALS"]["test halves"])
     out = []
     for (match, half), n in GATE_HALVES.items():
-        if not allowed(match, half, test, args.before_goals_freeze, f"shot gate {args.cmd}"):
+        if not allowed(match, half, test, f"shot gate {args.cmd}"):
             continue
         a = attempts_of(match, half)
         if len(a) != n:
@@ -417,7 +552,7 @@ def gate_attempts(args, proto) -> list[dict]:
 
 def cmd_detect(args, proto):
     todo = gate_attempts(args, proto)
-    pending = [t for t in todo if not det_done(det_path(t["match"], t["half"], t["frame"]), t["range"])]
+    pending = [t for t in todo if not det_done(det_path(t["match"], t["half"], t["frame"]), t)]
     print(f"  {len(todo)} attempts readable now, {len(todo) - len(pending)} done, "
           f"{len(pending)} to run", flush=True)
     if args.dry_run:
@@ -428,23 +563,28 @@ def cmd_detect(args, proto):
     failed = []
     for i, t in enumerate(pending):
         out = det_path(t["match"], t["half"], t["frame"])
-        if det_done(out, t["range"]):         # a shared frame already run
-            continue
         t0 = time.time()
         try:
+            if det_done(out, t):         # a shared frame already run
+                continue
             if not clip_ready(t):
                 fetch_clip(t["match"], t["half"], t)
             detect_one(t, out, args.threads)
-            if not det_done(out, t["range"]):
-                raise RuntimeError("sidecar does not cover the requested range")
+            if not det_done(out, t):
+                raise RuntimeError("the sidecar is not a complete run of the planned clip, "
+                                   "range and checkpoint")
+            print(f"  {out.name} done [{time.time() - t0:.0f} s]", flush=True)
         except Exception as e:  # noqa: BLE001 -- go on with the others, fail at the end
             failed.append(out.name)
             print(f"  FAILED {out.name}: {e}", flush=True)
-            continue
-        rest = [u for u in pending[i + 1:] if u["clip"] == t["clip"]]
-        if not args.keep_clips and not rest:
-            (GATE_DATA / "soccertrack_v2" / f"{t['clip']}.mp4").unlink(missing_ok=True)
-        print(f"  {out.name} done [{time.time() - t0:.0f} s]", flush=True)
+        finally:
+            # Decided after every attempt (done, skipped or failed), over the
+            # attempts still to come in this pass that are not done.
+            if not args.keep_clips and not still_needed(t["clip"], pending[i + 1:]):
+                drop_clip(t)
+    if not args.keep_clips:              # clips left by attempts done before this pass
+        for t in todo:
+            drop_clip(t)
     if failed:
         raise SystemExit(f"{len(failed)} attempts failed: {failed}; rerun to resume")
     if len(todo) < N_ATTEMPTS:
@@ -465,6 +605,15 @@ def rows_of(path: Path) -> tuple[pd.DataFrame, set]:
     return df, {int(f) + s for f in meta["frames"]}
 
 
+def window_half(w: str) -> tuple[str, int]:
+    """(match, half) of a window named st2_<match>_<1st|2nd>_f<first>."""
+    prefix, match, h, first = w.split("_")
+    names = {v: k for k, v in HALF_NAMES.items()}
+    if prefix != "st2" or h not in names or not first.startswith("f"):
+        raise ValueError(f"not a window name: {w}")
+    return match, names[h]
+
+
 class Half:
     """Per match half: GSR, defended ends, marks, calibration (loaded once)."""
 
@@ -482,13 +631,14 @@ def cmd_repro(args, proto) -> dict:
     test = set(proto["GOALS"]["test halves"])
     halves, rows = {}, []
     for w, local in REPRO:
-        info = json.loads((ROOT / "data/soccertrack_v2" / f"{w}.json").read_text())
-        match, half = str(info["match"]), int(info["half"])
+        # The match half from the window's name: nothing of a refused half
+        # (not even its window's json) is read.
+        match, half = window_half(w)
         if args.matches and match not in args.matches:
             rows.append({"window": w, "window frame": local, "status": "not run (--matches)"})
             continue
         if (match, half) not in halves:
-            if not allowed(match, half, test, args.before_goals_freeze, "shot gate reproducibility"):
+            if not allowed(match, half, test, "shot gate reproducibility"):
                 halves[(match, half)] = None
             else:
                 halves[(match, half)] = Half(match, half)
@@ -496,6 +646,9 @@ def cmd_repro(args, proto) -> dict:
         if h is None:
             rows.append({"window": w, "window frame": local, "status": "not run (refused)"})
             continue
+        info = json.loads((ROOT / "data/soccertrack_v2" / f"{w}.json").read_text())
+        if (str(info["match"]), int(info["half"])) != (match, half):
+            raise SystemExit(f"{w}.json is {info['match']} half {info['half']}, not its name")
         label = int(info["start_frame"]) + local
         a = attempts_of(match, half)
         hit = a[a.frame == label]
@@ -515,7 +668,7 @@ def cmd_repro(args, proto) -> dict:
            "scored": len(scored), "of": len(REPRO),
            "not reachable": sum(not r["reachable"] for r in scored),
            "reproduced": ok if len(scored) == len(REPRO) else None,
-           "before goals freeze override": bool(args.before_goals_freeze),
+           "goals frozen": goals_frozen(),
            "attempts": rows}
     if args.write:
         REPRO_OUT.write_text(json.dumps(out, indent=1, default=_jsonable))
@@ -534,10 +687,10 @@ def cmd_repro(args, proto) -> dict:
 def cmd_score(args, proto):
     repro = cmd_repro(argparse.Namespace(**{**vars(args), "matches": None, "write": False}), proto)
     todo = gate_attempts(args, proto)
-    halves, rows, missing = {}, [], []
+    halves, rows, missing, short = {}, [], [], []
     for t in todo:
         path = det_path(t["match"], t["half"], t["frame"])
-        if not det_done(path, t["range"]):
+        if not det_done(path, t):
             missing.append(path.name)
             continue
         key = (t["match"], t["half"])
@@ -546,14 +699,19 @@ def cmd_score(args, proto):
         h = halves[key]
         det, processed = rows_of(path)
         res = score_one(det, processed, t["frame"], h.shooter(t["player_id"]), h.marks, h.cal)
+        inside = inside_half(t["match"], t["half"], [t["frame"] + o for o in res["frames missing"]])
+        res["frames missing inside the half"] = [f - t["frame"] for f in inside]
+        if inside:                       # det_done refuses these; kept as a second check
+            short.append(path.name)
         rows.append({k: t[k] for k in ("match", "half", "frame", "label", "bas side", "player_id",
                                        "clip")} | res)
     k = sum(r["reachable"] for r in rows)
-    complete = len(rows) == N_ATTEMPTS and not missing
+    complete = len(rows) == N_ATTEMPTS and not missing and not short
+    repro_ok = repro["scored"] == len(REPRO) and repro["reproduced"] is True
     out = {"protocol sha256": sha256(PROTOCOL), "section": "SHOT GATE",
-           "readings": "see ball_gate.py docstring", "before goals freeze override":
-           bool(args.before_goals_freeze), "goals frozen": goals_frozen(),
+           "readings": "see ball_gate.py docstring", "goals frozen": goals_frozen(),
            "attempts scored": len(rows), "of": N_ATTEMPTS, "missing": missing,
+           "frames missing inside the half": short,
            "reachable": k,
            "sensitivity: label-frame shooter reachable": sum(
                r["sensitivity: label-frame shooter"]["reachable"] for r in rows),
@@ -565,14 +723,20 @@ def cmd_score(args, proto):
                for m, hf in GATE_HALVES},
            "reproducibility": {k2: repro[k2] for k2 in ("scored", "of", "not reachable", "reproduced")},
            "reproducibility attempts": repro["attempts"]}
+    # The decision is written only when all 26 attempts are scored with no
+    # frame missing inside the half and all 3 reproducibility attempts are
+    # scored and not reachable; never a would-be decision.
     if not complete:
         out["decision"] = {"decision": "none: incomplete",
-                           "note": f"{len(rows)}/{N_ATTEMPTS} attempts scored; rerun detect"}
-    elif repro["reproduced"] is not True:
+                           "note": f"{len(rows)}/{N_ATTEMPTS} attempts scored, {len(missing)} not "
+                                   f"done, {len(short)} with frames missing inside the half; "
+                                   f"rerun detect"}
+    elif not repro_ok:
         out["decision"] = {"decision": "withheld: re-check the gate",
-                           "note": "the reproducibility attempts did not all come out not reachable "
-                                   "(protocol: re-check before deciding)",
-                           "would be": decide(k)}
+                           "note": (f"reproducibility scored {repro['scored']}/{len(REPRO)}"
+                                    if repro["scored"] != len(REPRO) else
+                                    "the reproducibility attempts did not all come out not "
+                                    "reachable") + " (protocol: re-check before deciding)"}
     else:
         out["decision"] = decide(k)
     out["attempts"] = rows
@@ -629,12 +793,99 @@ def _check():
     assert reachable(ball, 1000, gone, fixed=True)["reachable"]
     g = pd.DataFrame({"side": ["a", "a", "b", "b"], "x": [-10.0, 5.0, -2.0, -1.0]})
     assert defended_ends(g)[1] == {"a": "left", "b": "right"}
+    # Both half means below 0 (the sign reading would put both sides on the
+    # left end): the lower mean defends x < 0 and attacks (+52.5, 0).
+    g = pd.DataFrame({"frame": [1, 1, 2, 2], "player_id": ["p", "q", "p", "q"],
+                      "side": ["right", "left", "right", "left"], "x": [-20.0, -3.0, -18.0, -1.0],
+                      "y": [0.0, 0.0, 1.0, 1.0]})
+    _, ends = defended_ends(g)
+    assert ends == {"right": "left", "left": "right"}
+    assert shooter_of(g, "p", ends)["goal"] == (52.5, 0.0)
+    assert shooter_of(g, "q", ends)["goal"] == (-52.5, 0.0)
+    assert shooter_of(g, None, ends) is None and shooter_of(g, "z", ends) is None
+    _check_files()
     assert decide(13)["decision"] == "GO" and decide(12)["decision"] == "GO, capped"
     assert decide(9)["decision"] == "GO, capped" and decide(8)["decision"] == "STOP"
     lo, hi = wilson(8, 26)
     assert 0.16 < lo < 0.17 and 0.49 < hi < 0.50
     print("  ball_gate: windows, clip plan covers the background, segment distance, "
-          "reachable rule, defended ends, decision, Wilson: ok")
+          "reachable rule, defended ends and attacked goal, goals freeze, done detection, "
+          "clip ready, decision, Wilson: ok")
+
+
+def _check_files():
+    """frozen_problem, det_done and clip_ready on files in a temporary
+    directory (nothing is written here; the half's length is faked)."""
+    from detect_ball_heatmap import write_sidecar
+
+    with tempfile.TemporaryDirectory() as d:
+        d = Path(d)
+        # The goals freeze (a stand-in named rule.json: no frozen_goals.json is written).
+        f = d / "rule.json"
+        assert frozen_problem(f) is not None                              # absent
+        good = {"protocol sha256": PROTOCOL_SHA256, "T": 0.85, "N": 2, "team rule": "kick_spot"}
+        for rule, ok in ((good, True), ({**good, "protocol sha256": "0" * 64}, False),
+                         ({k: v for k, v in good.items() if k != "N"}, False),
+                         ({**good, "team rule": None}, False), ([good], False)):
+            f.write_text(json.dumps(rule))
+            assert frozen_problem(f) is not None                          # no .sha256 yet
+            Path(f"{f}.sha256").write_text(f"{sha256(f)}  {f.name}\n")
+            assert (frozen_problem(f) is None) == ok, rule
+            f.write_text(json.dumps(rule) + " ")                           # changed after hashing
+            assert frozen_problem(f) is not None
+            Path(f"{f}.sha256").unlink()
+        # A done detection: attempt at L = 1000 of fake match "x" half 1.
+        t = {"match": "x", "half": 1, "frame": 1000, **clip_plan("x", 1, 1000)}
+        a, b = t["range"]
+        out = d / "x.parquet"
+        pd.DataFrame({"frame": [a], "confidence": [0.5]}).to_parquet(out)
+        meta = {"window": t["clip"], "start_frame": t["first"], "range": [a, b], "stride": 1,
+                "ckpt sha256": weights_sha256()}
+        _HALF_FRAMES[("x", 1)] = t["first"] + b + 100                   # the half ends later
+        write_sidecar(out, range(a, b), **meta)
+        assert det_done(out, t)
+        write_sidecar(out, range(a, b - 1), **meta)                       # one frame inside missing
+        assert not det_done(out, t)
+        _HALF_FRAMES[("x", 1)] = t["first"] + b - 1                       # ... past the half's end
+        assert det_done(out, t)
+        _HALF_FRAMES[("x", 1)] = None                                     # length unknown
+        assert not det_done(out, t)
+        for k, v in (("window", "other"), ("start_frame", t["first"] + 1), ("range", [a, b + 1]),
+                     ("stride", 2), ("ckpt sha256", "0" * 64)):
+            write_sidecar(out, range(a, b), **{**meta, k: v})
+            assert not det_done(out, t), k
+        write_sidecar(out, range(a, b), **meta)
+        pd.DataFrame({"frame": [a + 1], "confidence": [0.5]}).to_parquet(out)  # rewritten after
+        assert not det_done(out, t)
+        # Within 1 s of the half's start: the frames before 0 do not exist.
+        t0 = {"match": "x", "half": 1, "frame": 10, **clip_plan("x", 1, 10)}
+        assert t0["first"] == 0 and t0["range"][0] < 0
+        _HALF_FRAMES[("x", 1)] = 10 ** 5
+        write_sidecar(out, range(0, t0["range"][1]), **{**meta, "window": t0["clip"],
+                                                        "start_frame": 0, "range": t0["range"]})
+        assert det_done(out, t0)
+        write_sidecar(out, range(1, t0["range"][1]), **{**meta, "window": t0["clip"],
+                                                        "start_frame": 0, "range": t0["range"]})
+        assert not det_done(out, t0)
+        # A ready clip.
+        j = d / f"{t['clip']}.json"
+        info = {"match": "x", "half": 1, "start_frame": t["first"], "frames": CLIP_FRAMES}
+        j.write_text(json.dumps(info))
+        assert not clip_ready(t, d)                                       # no mp4
+        j.with_suffix(".mp4").write_bytes(b"")
+        assert clip_ready(t, d)
+        for k, v in (("start_frame", t["first"] + 1), ("half", 2), ("frames", CLIP_FRAMES + 1)):
+            j.write_text(json.dumps({**info, k: v}))
+            assert not clip_ready(t, d), k
+        j.write_text(json.dumps({**info, "frames": CLIP_FRAMES - 100}))
+        _HALF_FRAMES[("x", 1)] = t["first"] + CLIP_FRAMES                 # short, half goes on
+        assert not clip_ready(t, d)
+        _HALF_FRAMES[("x", 1)] = t["first"] + CLIP_FRAMES - 100           # short at the half's end
+        assert clip_ready(t, d)
+        _HALF_FRAMES[("x", 1)] = None
+        assert not clip_ready(t, d)
+        del _HALF_FRAMES[("x", 1)]
+    assert window_half("st2_132831_2nd_f030000") == ("132831", 2)
 
 
 def main():
@@ -645,8 +896,6 @@ def main():
     ap.add_argument("--threads", type=int, default=2)
     ap.add_argument("--dry-run", action="store_true", help="detect: list the plan only")
     ap.add_argument("--keep-clips", action="store_true")
-    ap.add_argument("--before-goals-freeze", action="store_true",
-                    help="read the GOALS test half 132831 2nd before frozen_goals.json exists")
     args = ap.parse_args()
     if args.check:
         _check()

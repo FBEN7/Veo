@@ -5,8 +5,9 @@ features, and two teams clustered on the half's own detections ->
 input of the formation rule (formation.py) on detections.
 
 1. Guard: protocol.json must match its sha256; a test half (protocol "test
-   halves") is refused unless frozen_goals.json exists next to protocol.json
-   (and matches frozen_goals.json.sha256 when that file exists).
+   halves") is refused unless frozen_goals.json and frozen_goals.json.sha256
+   exist and agree, and the json records this protocol's sha256, T, N, the
+   team rule and a "scan key" equal to this script's SCAN_KEY.
 2. Camera: for 117092 (M1) calib_fix/calib_override.py is imported first (the
    refitted model); every other match keeps the release's. The pitch outline
    in pixels is the 105 x 68 boundary projected through that camera
@@ -112,6 +113,10 @@ PITCH_MARGIN_PX = 10.0
 HALF = {1: "1st", 2: "2nd"}
 KIT = ["k0", "k1", "k2", "k3"]
 VERSION = 1
+SCAN_KEY = {"version": VERSION, "crop": "bbox + margins of a window json 'pitch' polygon of the match (M1), else of the calibrated outline; each only if its crop_check result passed",
+            "conf floor": CONF_FLOOR, "conf rule": "auto_tune._pick_player_conf on 12 spread samples",
+            "step": SAMPLE}
+PITCH_BOX_M = (54.5, 36.0)   # people counted on detections: |x|, |y| within (protocol_notes)
 
 
 def sha256(path: Path) -> str:
@@ -129,27 +134,53 @@ def guard(name: str, protocol: dict):
     """A test half only once the goal rule is frozen."""
     if name not in protocol["GOALS"]["test halves"]:
         return
-    if not FROZEN.exists():
-        raise SystemExit(f"{name} is a test half and {FROZEN.name} does not "
-                         "exist yet: refused")
     sidecar = FROZEN.with_name(FROZEN.name + ".sha256")
-    if sidecar.exists() and sidecar.read_text().split()[0] != sha256(FROZEN):
+    if not FROZEN.exists() or not sidecar.exists():
+        raise SystemExit(f"{name} is a test half and {FROZEN.name} (+ .sha256) does not "
+                         "exist yet: refused")
+    if sidecar.read_text().split()[0] != sha256(FROZEN):
         raise SystemExit(f"{FROZEN.name} does not match its sha256: refused")
+    rule = json.loads(FROZEN.read_text())
+    if rule.get("protocol sha256") != sha256(PROTOCOL):
+        raise SystemExit(f"{FROZEN.name} does not record this protocol's sha256: refused")
+    missing = [k for k in ("T", "N", "team rule", "scan key") if rule.get(k) is None]
+    if missing:
+        raise SystemExit(f"{FROZEN.name} lacks {missing}: refused")
+    if rule["scan key"] != SCAN_KEY:
+        raise SystemExit(f"{FROZEN.name} was frozen with another scan key: refused")
 
 
 def camera(match: str) -> dict:
     """M1: the refitted model (calib_override rebinds st.calibration);
     others: the release's."""
     if match == "117092":
+        if not (ROOT / ".cache/calib_fix/117092.npz").exists():
+            raise SystemExit("M1 needs .cache/calib_fix/117092.npz (the refit)")
         sys.path.insert(0, str(CALIB_FIX))
-        import calib_override  # noqa: F401
+        import calib_override
+        cal = st.calibration(match)
+        if np.allclose(cal["Hinv"], calib_override._release(match)["Hinv"]):
+            raise SystemExit("M1: the refit was not loaded")
+        return cal
     return st.calibration(match)
 
 
-def crop_passed() -> bool:
+def crop_passed(kind: str) -> bool:
     if not CROP_CHECK.exists():
         raise SystemExit(f"{CROP_CHECK.name} missing: run crop_check.py first")
-    return bool(json.loads(CROP_CHECK.read_text())["pass"])
+    passed = json.loads(CROP_CHECK.read_text())["pass"]
+    return bool(passed.get(kind)) if isinstance(passed, dict) else False
+
+
+def window_outline(match: str) -> np.ndarray | None:
+    """The 'pitch' polygon (GSR pitch lines, video frame) of a window of the
+    match, or None. M1 uses it: its refit is a warp fitted to player feet and
+    is not trusted to project the pitch boundary."""
+    for j in sorted((ROOT / "data/soccertrack_v2").glob(f"st2_{match}_*.json")):
+        info = json.loads(j.read_text())
+        if info.get("pitch"):
+            return np.asarray(info["pitch"], dtype=float)
+    return None
 
 
 def video_geometry(container) -> tuple[int, int, int]:
@@ -255,14 +286,18 @@ def sample_rows(frame_idx: int, img: np.ndarray, model, box, cal: dict,
 
 def scan(match: str, half: int, minutes: float | None, chunk: int,
          threads: int) -> dict:
+    match = str(match)
     protocol = load_protocol()
     name = f"{match}_{HALF[half]}"
     guard(name, protocol)
-    use_crop = crop_passed()
     cal = camera(match)
     container = st.open_video(match, half)
     w, h, n_frames = video_geometry(container)
-    outline = cc.calibrated_outline(cal)
+    outline = window_outline(match) if match == "117092" else None
+    kind = "window" if outline is not None else "calib"
+    if outline is None:
+        outline = cc.calibrated_outline(cal)
+    use_crop = crop_passed(kind)
     poly = outline.astype(np.float32).reshape(-1, 1, 2)
     box = cc.crop_box(outline, w, h) if use_crop else None
     expected = list(range(0, n_frames, SAMPLE))
@@ -292,10 +327,13 @@ def run_samples(container, todo: list[int], chunk: int, threads: int, box,
     """Detect on the samples `todo` (consecutive), a chunk every `chunk`
     samples. Samples the decoder never delivers (the video ending early, a
     gap) are skipped and counted at assembly."""
+    import cv2
     import torch
     from ultralytics import YOLO
 
     torch.set_num_threads(threads)
+    cv2.setNumThreads(threads)
+    container.streams.video[0].thread_count = threads
     model = YOLO(str(cc.MODEL))
     rows, frames = [], []
     timing = {"wall s": 0.0, "detect s": 0.0, "decode wait s": 0.0}
@@ -346,12 +384,14 @@ def assemble(name: str, parts: Path, expected: list[int], limit: list[int],
     if not cs:
         raise SystemExit(f"{name}: no sample done")
     det = pd.concat([pd.read_parquet(pq) for pq, _ in cs], ignore_index=True)
-    samples = sorted(f for _, m in cs for f in m["frames"])
+    det = det[det.frame.isin(set(limit))]
+    samples = sorted(f for _, m in cs for f in m["frames"] if f in set(limit))
     conf_player = pick_conf(det, samples)
     p = det[(det.conf >= conf_player) & (det.h >= MIN_DETECTION_HEIGHT_PX)
             & det.near & (det.depth_px >= -PITCH_MARGIN_PX)].reset_index(drop=True)
     p["team"] = teams(p)
-    complete = limit == expected
+    missing = sorted(set(limit) - set(samples))
+    complete = limit == expected and not missing
     out = CACHE / (f"{name}.parquet" if complete else f"{name}.partial.parquet")
     p[["frame", "x", "y", "team", "conf"]].to_parquet(out)
 
@@ -363,8 +403,7 @@ def assemble(name: str, parts: Path, expected: list[int], limit: list[int],
         "protocol sha256": sha256(PROTOCOL),
         "samples": {"done": len(samples), "expected in half": len(expected),
                     "first": samples[0], "last": samples[-1],
-                    "missing": len(set(f for f in limit if f <= samples[-1])
-                                   - set(samples))},
+                    "missing": len(missing), "missing first": missing[:5]},
         "crop": list(box) if box else None,
         "outline bbox px": [round(float(v), 1) for v in (*outline.min(0), *outline.max(0))],
         "conf floor": CONF_FLOOR, "conf_player": conf_player,
@@ -379,9 +418,23 @@ def assemble(name: str, parts: Path, expected: list[int], limit: list[int],
                        "decode wait s per sample": round(timing["decode wait s"] / len(samples), 3),
                        "projected full half h": round(s_per * len(expected) / 3600, 2)},
     }
-    (CACHE / f"{name}.json").write_text(json.dumps(meta, indent=1))
+    out.with_suffix(".json").write_text(json.dumps(meta, indent=1))
     print(json.dumps(meta, indent=1))
     return meta
+
+
+def load_scan(name: str) -> tuple[pd.DataFrame, list[int]]:
+    """A complete scan's people counted by the formation rule on detections
+    (team_A / team_B, inside the pitch box of protocol_notes) and its sampled
+    frames (the share is reindexed on them)."""
+    meta = json.loads((CACHE / f"{name}.json").read_text())
+    if not meta["complete"]:
+        raise SystemExit(f"{name}: the scan is not complete")
+    p = pd.read_parquet(CACHE / f"{name}.parquet")
+    keep = (p.team.isin(["team_A", "team_B"]) & (p.x.abs() <= PITCH_BOX_M[0])
+            & (p.y.abs() <= PITCH_BOX_M[1]))
+    s = meta["samples"]
+    return p[keep].reset_index(drop=True), list(range(s["first"], s["last"] + 1, SAMPLE))
 
 
 def main():
