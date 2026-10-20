@@ -4,7 +4,8 @@ one SoccerTrack v2 window (M2, st2_117093_1st_f015000).
 
 Runs inside the kernel (`kernel.py` unpacks the code and data first). The
 ball model is moved to the GPU by wrapping `ball_heatmap.load_v2`, the repo
-code is unchanged; a short CPU run of the same frames checks that both give
+code is unchanged (`--allow-seen`: ball_v3b was trained on M2, and this
+is a timing, not a score); a short CPU run of the same frames checks that both give
 the same candidates. Writes bench.json and the parquets to the cwd.
 
     python bench.py --root /kaggle/working/veo --n-ball 500 --n-player 300
@@ -49,7 +50,7 @@ def ball_run(root: Path, window: str, n: int, device: str, out: Path, threads: i
     bh.load_v2 = load_on
     sys.argv = ["detect_ball_heatmap.py", "--v2", "--window", window,
                 "--weights", ".cache/ball_v3b.1500.pt", "--stride", "1",
-                "--range", "0", str(n), "--threads", str(threads), "--out", str(out)]
+                "--range", "0", str(n), "--allow-seen", "--threads", str(threads), "--out", str(out)]
     t0 = time.perf_counter()
     dbh.main()
     wall = time.perf_counter() - t0
