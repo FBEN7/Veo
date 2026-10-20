@@ -51,7 +51,7 @@ https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
 | Distance | A 1 s estimator holds (2-4%, partly circular). |
 | Possession | Not better than a constant 0.5. |
 | xG (models/xg_xghub.json) on GT shooter feet | AUC 0.70 [0.60, 0.79]. |
-| Goals by kick-off formation (`research/session_scratchpad/shots_goals/`) | GT dev 26/26, 0 false runs. M7 2nd detections 5/5. Frozen in `frozen_goals.json` (T 0.85, N 2, kick_spot). The registered test on 117092 1st/2nd, 132831 2nd and 118577 2nd (8 goals) is running in the previous session; its result lands in `goals_test.json` (pull the branch first). |
+| Goals by kick-off formation (`research/session_scratchpad/shots_goals/`) | GT dev 26/26, 0 false runs. M7 2nd detections 5/5. Frozen in `frozen_goals.json` (T 0.85, N 2, kick_spot). **Registered test done: fails** (`goals_test.json`): 4/8 goals, 2 false runs, team right 2/4 (the other rule 4/4). M1 3/3; M9 0/3: kit clustering did not separate the teams. SOCCERTRACK_V2.md and the status doc are updated (rev 52). |
 | Shot ball gate | GO: 19/26 reachable (M7 3/10, M9 16/16; placebo 0.07/0.15). `ball_gate.json`, `gate_recheck.json`. |
 
 ## Registered protocols: follow them exactly
