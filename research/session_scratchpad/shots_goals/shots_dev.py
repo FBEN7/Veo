@@ -138,6 +138,11 @@ def metric_of(u: dict, gpu: Path) -> pd.DataFrame:
         keep &= np.hypot(rows.px.to_numpy() - x, rows.py.to_numpy() - y) > 1.5 * tr.STATIC_PX
     run = g / f"output_{u['name']}"
     dst = sc.swap_ball_rows(run / "events_v1", run / "shots_v3s_link", rows[keep])
+    # The grass fractions read the video: the run's clip.json names its Kaggle
+    # path; the same file is here (check_cache_provenance compares them).
+    clip = json.loads((dst / "clip.json").read_text())
+    clip["path"] = str(info["dir"] / f"{u['name']}.mp4")
+    (dst / "clip.json").write_text(json.dumps(clip, indent=2))
     with contextlib.redirect_stdout(io.StringIO()):
         merged = sc.merged_from_cached(dst, cal, select="link", top_k=4, tau=0.10,
                                        link_params=tr.LINK)
