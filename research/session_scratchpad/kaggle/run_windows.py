@@ -18,7 +18,8 @@ steps and their arguments are those of the one-GPU run that matched the CPU
 (compare_st2_118578_2nd_f015000.json); only the scheduling changes.
 
 Each window's files go to /kaggle/working/<w>.tar.gz once both lanes are done
-with it, with timings in <w>.json. A failed step is logged, what finished is
+with it (after metric_step.py: its v3s_link pitch tracks), with timings in
+<w>.json. A failed step is logged, what finished is
 packed, and the lanes go on. A window written W:seen runs the ball step with
 --allow-seen (windows whose CPU v3 run had it).
 
@@ -137,19 +138,25 @@ def cutter(root: Path, specs: list, recs: dict):
 
 
 def finish(root: Path, w: str, rec: dict, out: Path):
-    """Pack the window once both lanes are done with it."""
+    """Once both lanes are done with the unit: its v3s_link pitch tracks
+    (metric_step.py, which reads the video), then pack it."""
     with LOCK:
-        if rec["done"] != {"players", "ball"}:
+        if rec["done"] != {"players", "ball"} or rec.get("packing"):
             return
-        with tarfile.open(out / f"{w}.tar.gz", "w:gz") as t:
-            if (root / f"output_{w}").exists():
-                t.add(root / f"output_{w}", arcname=f"output_{w}")
-            for f in (root / ".cache").glob(f"v3_balls_{w}.parquet*"):
-                t.add(f, arcname=f".cache/{f.name}")
-        rec["ok"] = not rec["failed"]
-        (out / f"{w}.json").write_text(json.dumps({**rec, "done": sorted(rec["done"])}, indent=1))
-        if w in READY:                         # a cut clip: free the disk
-            (root / "data/soccertrack_v2" / f"{w}.mp4").unlink(missing_ok=True)
+        rec["packing"] = True
+    if not rec["failed"]:
+        step(rec, "metric", [str(HERE / "metric_step.py"), w], root, lane_env(root, 0),
+             out / f"{w}.players.log")
+    with tarfile.open(out / f"{w}.tar.gz", "w:gz") as t:
+        if (root / f"output_{w}").exists():
+            t.add(root / f"output_{w}", arcname=f"output_{w}")
+        for f in (root / ".cache").glob(f"v3_balls_{w}.parquet*"):
+            t.add(f, arcname=f".cache/{f.name}")
+    rec["ok"] = not rec["failed"]
+    rec.pop("packing", None)
+    (out / f"{w}.json").write_text(json.dumps({**rec, "done": sorted(rec["done"])}, indent=1))
+    if w in READY:                         # a cut clip: free the disk
+        (root / "data/soccertrack_v2" / f"{w}.mp4").unlink(missing_ok=True)
 
 
 def main():
