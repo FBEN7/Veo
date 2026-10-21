@@ -6,10 +6,10 @@
  "kernel_type": "script",
  "is_private": true,
  "enable_gpu": true,
- "enable_internet": false,
+ "enable_internet": true,
  "dataset_sources": [
   "francoisbernard/veo-code",
-  "francoisbernard/veo-st2-dev2"
+  "francoisbernard/veo-st2-train-small"
  ],
  "competition_sources": [],
  "kernel_sources": []
