@@ -33,6 +33,7 @@ STAGE = Path(os.environ.get("VEO_STAGE", "/tmp/veo_stage"))
 SLUGS = ["veo-gpu-run", "veo-gpu-run2"]
 SEEN = ["117093", "118575", "118576", "118578", "128058", "132877"]   # v3 trained on them
 SIZE = 20
+DS_PREFIX = "veo-st2-train-b"
 
 
 def kaggle(*args, check=True) -> str:
@@ -110,7 +111,7 @@ def run(only: int | None):
             for m in {c["match"] for c in b}:
                 for f in (ROOT / ".cache/soccertrack_v2/calib").glob(f"{m}_*"):
                     shutil.copy(f, d)
-            ds = f"veo-st2-train-b{k}"
+            ds = f"{DS_PREFIX}{k}"
             (d / "dataset-metadata.json").write_text(json.dumps(
                 {"title": ds, "id": f"francoisbernard/{ds}", "licenses": [{"name": "CC-BY-4.0"}]}))
             kaggle("datasets", "create", "-p", str(d), check=False)
