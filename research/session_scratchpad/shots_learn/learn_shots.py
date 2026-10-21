@@ -58,8 +58,12 @@ def units(plan: Path) -> list[dict]:
 
 
 def v3s_rows(u: dict) -> pd.DataFrame:
-    """The unit's v3 rows, marks and static points dropped (cached)."""
+    """The unit's v3 rows, marks and static points dropped: from Kaggle's
+    metric_step.py for a clip, else computed here (cached)."""
     g = GPU / u["name"]
+    made = g / f"output_{u['name']}" / "v3s_rows.parquet"
+    if made.exists():
+        return pd.read_parquet(made)
     cache = g / "v3s_rows.parquet"
     if cache.exists():
         return pd.read_parquet(cache)
@@ -111,7 +115,9 @@ def features(u: dict) -> pd.DataFrame:
         return pd.read_parquet(cache)
     info = sd.info_of(u["name"])
     cal = st.calibration(str(info["match"]))
-    metric = sd.metric_of({"name": u["name"], "kind": "clip"}, GPU)
+    made = GPU / u["name"] / f"output_{u['name']}" / "metric_v3s_link.parquet"
+    metric = (pd.read_parquet(made) if made.exists()
+              else sd.metric_of({"name": u["name"], "kind": "clip"}, GPU))   # the dev windows
     frames = np.sort(metric[metric.cls == "player"].frame.unique())
     b = L._ball_series(metric, frames)
     rows = v3s_rows(u)
@@ -236,8 +242,8 @@ def nested(d, names, cols):
 
 
 def train_units():
-    us = [u for u in units(HERE / "clips_train.json") if (GPU / u["name"] / "metric_v3s_link.parquet").exists()
-          or (GPU / u["name"] / f"output_{u['name']}").exists()]
+    us = [u for u in units(HERE / "clips_train.json")
+          if (GPU / u["name"] / f"output_{u['name']}" / "metric_v3s_link.parquet").exists()]
     us += [{"name": w, "match": w.split("_")[1], "span": None} for w in TRAIN_WINDOWS
            if (GPU / w).exists()]
     return us
