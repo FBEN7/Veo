@@ -46,9 +46,13 @@ def lane_env(root: Path, gpu: int) -> dict:
 
 def step(rec: dict, name: str, cmd: list, root: Path, env: dict, log: Path):
     t = time.perf_counter()
-    with open(log, "a") as f:
-        r = subprocess.run([sys.executable, *cmd], cwd=root, env=env, stdout=f,
-                           stderr=subprocess.STDOUT)
+    with open(log, "a") as f:     # each line stamped with seconds since the step began
+        proc = subprocess.Popen([sys.executable, "-u", *cmd], cwd=root, env=env,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in proc.stdout:
+            f.write(f"[{time.perf_counter() - t:7.1f}] {line}")
+        r = proc.wait()
+        r = subprocess.CompletedProcess(cmd, r)
     rec["steps"][name] = round(time.perf_counter() - t, 1)
     if r.returncode:
         rec["failed"].append(name)
