@@ -71,9 +71,18 @@ def cut(c: dict):
     info_path.write_text(json.dumps(info, indent=1))
 
 
-def slug_free(slug: str) -> bool:
+def slug_free(slug: str, for_push: bool = False) -> bool:
+    """Not running; for a push, also no batch on it still to collect (the
+    API serves only a kernel's latest output)."""
     s = kaggle("kernels", "status", f"francoisbernard/{slug}", check=False)
-    return not any(x in s.lower() for x in ("running", "queued"))
+    if any(x in s.lower() for x in ("running", "queued")):
+        return False
+    if for_push:
+        for p in STATE.glob("*.json"):
+            st_ = json.loads(p.read_text())
+            if st_.get("slug") == slug and st_.get("pushed") and not st_.get("collected"):
+                return False
+    return True
 
 
 def run(only: int | None):
@@ -112,7 +121,7 @@ def run(only: int | None):
             for c in b:
                 (CLIPS / f"{c['name']}.mp4").unlink()
             print(f"batch {k}: {len(b)} clips cut and uploaded", flush=True)
-        slug = next((x for x in SLUGS if slug_free(x)), None)
+        slug = next((x for x in SLUGS if slug_free(x, for_push=True)), None)
         if slug is None:
             print(f"batch {k}: uploaded, waiting for a free kernel", flush=True)
             return
