@@ -1568,8 +1568,51 @@ restartable goals, 184 min.
   the goal in 0.2 s. This was recorded in `gate_recheck.json` before any
   scoring.
 - **The shots test is registered** (`protocol_shots.json`): dev on the gate
-  clips, then all 29 M1 attempts, recall at 2 s. It runs next, on one
-  backend.
+  clips, then all 29 M1 attempts, recall at 2 s. Its dev failed and the
+  test was not run (below).
+
+### GPU on Kaggle (`research/session_scratchpad/kaggle/`)
+
+- **Setup:** private Kaggle kernels driven by the Kaggle API from here, T4
+  x2, no internet (wheels, weights and resnet18 come in a private dataset).
+  Data go up as private datasets (CC BY 4.0). M7 / M9 clips are cut here
+  through `src/unseal.py` (every opening logged); `VEO_UNSEAL` never leaves
+  this machine, and the test-match guard is lifted on Kaggle only for the
+  units listed in `opened.json` (owner decision).
+- **Speed:** yolov8s at full width 0.10 s/frame (fp32), the v3 ball 0.12
+  s/frame, against 1.0-1.6 and ~1.2 on CPU. A whole 3-minute window
+  (players, teams and events_v1, dense v3) takes about 14.5 min with the
+  players and the ball on separate GPUs, about 2.5 h on CPU. A 57-s clip
+  still costs ~10 min (fixed costs per run).
+- **GPU equals CPU:** on 7 windows the player rows, tracks, teams and
+  events_v1 are identical to the CPU runs (one extra player row in
+  ~40,000 on M6 1st); the v3 rows are identical where a CPU run exists (max
+  shift 0.0008 px). `compare_*.json`.
+- **Backend note** (`backend_note.json` + addendum, hashed before the
+  shots dev): all on T4 fp32, supervision 0.30.9, ultralytics 8.4.183.
+
+### Shots (`protocol_shots.json`): the dev fails, the test is not run
+
+- **Dev:** 8 windows and the 26 gate attempts as clips (-15 s / +10 s,
+  cut with 400 frames each side for v3's background; owner decision), all
+  on the T4. Two M7 attempts lie both in a clip and in the M7 window: they
+  count once, in their clip.
+- **Frozen** (`frozen_shots.json`): 40 km/h, 35 m, mouth margin 3 m.
+  **Dev F1 0.053: 1 of 32 attempts found, 5 false shots.** No cell of the
+  80 finds more than 1.
+- **Why** (`shots_dev_diagnostic.json`, after the freeze): the data are
+  sound (both teams and an attacked goal on every clip, the ball on 25-60%
+  of detected frames). The rule is too strict for the linked v3 ball, and
+  the attacked-goal filter removes about half of what remains. Off the
+  grid, recall rises only with 15-25 times more events than shots (21/32
+  with 506 events).
+- **The M1 test was not run** (owner decision, `shots_decision.json`): it
+  needs 16/29, and dev reaches 1/32. This is a deviation from the
+  protocol; no M1 shot output exists.
+- **So shots are not available from this rule.** A later attempt needs a
+  different detector (for example the learned spotter extended to shots),
+  a team filter that does not rest on kit clustering, and a new
+  registration.
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 

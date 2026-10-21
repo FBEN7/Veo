@@ -53,40 +53,30 @@ https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
 | xG (models/xg_xghub.json) on GT shooter feet | AUC 0.70 [0.60, 0.79]. |
 | Goals by kick-off formation (`research/session_scratchpad/shots_goals/`) | GT dev 26/26, 0 false runs. M7 2nd detections 5/5. Frozen in `frozen_goals.json` (T 0.85, N 2, kick_spot). **Registered test done: fails** (`goals_test.json`): 4/8 goals, 2 false runs, team right 2/4 (the other rule 4/4). M1 3/3; M9 0/3: kit clustering did not separate the teams. SOCCERTRACK_V2.md and the status doc are updated (rev 52). |
 | Shot ball gate | GO: 19/26 reachable (M7 3/10, M9 16/16; placebo 0.07/0.15). `ball_gate.json`, `gate_recheck.json`. |
+| GPU on Kaggle (`research/session_scratchpad/kaggle/`) | Works: T4 x2, ~14.5 min per 3-min window (CPU ~2.5 h), ~10 min per short clip. Identical to CPU on 7 windows (players, teams, events_v1, v3 rows). `push_run.py` + `run_windows.py`; `cut_shot_clips.py`; `opened.json` for sealed clips. ~8 h of the 30 h weekly quota used on 2026-10-20/21. |
+| Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly
 
 All are hashed (`*.sha256`).
 - `shots_goals/protocol.json`, with `protocol_notes.json` and
   `gate_recheck.json`.
-- `shots_goals/protocol_shots.json`: the next test.
-  - Dev first: 26 gate clips + 8 non-M1 windows.
-  - Freeze in `frozen_shots.json`, then test on all 29 M1 attempts.
-  - Run dev and test on the **same backend** (all GPU or all CPU). Record
-    which in a hashed note before starting.
+- `shots_goals/protocol_shots.json`: closed (dev failed, test not run;
+  `shots_decision.json`).
+- `kaggle/backend_note.json` (+ `backend_note_addendum1.json`): the GPU
+  backend, hashed.
 - M7 (128057) and M9 (132831) are sealed test matches. Opening them needs the
   `VEO_UNSEAL` key (given in your session prompt, not in the repo); every
   opening is logged in `src/unseal.py`.
 
 ## Next steps
 
-1. **GPU on Kaggle (free).** The owner added Kaggle credentials to the
-   environment; they reported it works. Check with an authenticated call.
-   - Plan:
-     - a private Kaggle kernel (GPU, internet) driven by the Kaggle API from
-       here;
-     - first a benchmark on one SoccerTrack window: yolov8s players at full
-       width (now 1.0-1.6 s/frame on CPU) and the v3 ball detector
-       (`detect_ball_heatmap.py --v2`, `.cache/ball_v3b.1500.pt`, about
-       1.2 s/frame on CPU);
-     - then port `detect_track_hybrid.py` and the dense v3 run so whole
-       windows or clips run there and the results come back.
-   - Data: the HF dataset `atomscott/soccertrack-v2` is gated. Either the
-     owner adds a read-only HF token as a Kaggle secret on the kernel, or you
-     upload the needed videos as a private Kaggle dataset from here (HF works
-     here through the proxy).
-   - SoccerTrack is CC BY 4.0. Real club videos must not go to free
-     platforms (GDPR).
-2. The shots phase per `protocol_shots.json`, on the GPU once it works.
+1. **The GPU is ready** for heavy runs: `push_run.py W1 W2:seen ... --data
+   <dataset>` (W:seen = ball with --allow-seen). Upload videos as a private
+   dataset first (see how `veo-st2-dev1` was built). Two kernels can run at
+   once. `kaggle kernels logs` is empty while a run is live; the owner can
+   watch the Kaggle page.
+2. Shots need a new detector and a new registration (see SOCCERTRACK_V2.md,
+   "Shots"); teams per track would help both goals and shots.
 3. Then: actor attribution of learned events (who passed), a foot-point
    correction learned against truth boxes, and the identity work.
