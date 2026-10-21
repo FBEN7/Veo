@@ -6,6 +6,7 @@
 import glob, os, shutil, subprocess, sys
 
 WINDOWS = __WINDOWS__
+CUT = __CUT__
 
 
 def find(name):
@@ -43,5 +44,8 @@ hub = os.path.expanduser("~/.cache/torch/hub/checkpoints")
 os.makedirs(hub, exist_ok=True)
 shutil.copy(os.path.join(assets, "resnet18-f37072fd.pth"), hub)
 os.environ["YOLO_OFFLINE"] = "1"
+if CUT:   # the gated release, read with the owner's token from the kernel's secrets (never printed)
+    from kaggle_secrets import UserSecretsClient
+    os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
 subprocess.run([sys.executable, os.path.join(root, "research/session_scratchpad/kaggle/run_windows.py"),
-                "--root", root, *WINDOWS], check=True, cwd="/kaggle/working")
+                "--root", root, *(["--cut"] if CUT else []), *WINDOWS], check=True, cwd="/kaggle/working")

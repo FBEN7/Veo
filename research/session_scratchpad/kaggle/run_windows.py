@@ -68,7 +68,7 @@ def players_lane(root: Path, specs: list, recs: dict, out: Path):
     env = lane_env(root, 0)
     for w, _, _ in specs:
         rec, log = recs[w], out / f"{w}.players.log"
-        if step(rec, "players", ["eval_soccertrack_v2.py", f"data/soccertrack_v2/{w}.mp4",
+        if wait_ready(w, rec) and step(rec, "players", ["eval_soccertrack_v2.py", f"data/soccertrack_v2/{w}.mp4",
                                  "--out", f"output_{w}", "--run", "--calibrated",
                                  "--model", "yolov8s.pt", "--stride", "2",
                                  "--pitch-margin", "50"], root, env, log):
@@ -81,6 +81,10 @@ def players_lane(root: Path, specs: list, recs: dict, out: Path):
 def ball_lane(root: Path, specs: list, recs: dict, out: Path):
     env = lane_env(root, 1)
     for w, seen, rng in specs:
+        if not wait_ready(w, recs[w]):
+            recs[w]["done"].add("ball")
+            finish(root, w, recs[w], out)
+            continue
         cmd = [str(HERE / "ball_gpu.py"), w, "--threads", THREADS] + (["--allow-seen"] if seen else [])
         if rng:
             cmd += ["--range", str(rng[0]), str(rng[1])]
@@ -90,6 +94,46 @@ def ball_lane(root: Path, specs: list, recs: dict, out: Path):
 
 
 LOCK = threading.Lock()
+READY: dict = {}          # w -> threading.Event, set once its mp4 is there (--cut)
+
+
+def wait_ready(w: str, rec: dict) -> bool:
+    ev = READY.get(w)
+    if ev is None:
+        return True
+    ev.wait()
+    return "cut" not in rec["failed"]
+
+
+def cutter(root: Path, specs: list, recs: dict):
+    """--cut: the units' mp4 from the gated release by range requests (the
+    same st.cut_clip as fetch_soccertrack_v2.py; HF_TOKEN from the kernel's
+    secret), one after the other ahead of the lanes; the unit's .json gets
+    the frames, width and height actually written."""
+    sys.path.insert(0, str(root))
+    from src import soccertrack_v2 as st
+
+    for w, _, _ in specs:
+        rec = recs[w]
+        info_path = root / "data/soccertrack_v2" / f"{w}.json"
+        t = time.perf_counter()
+        try:
+            info = json.loads(info_path.read_text())
+            mp4 = root / "data/soccertrack_v2" / f"{w}.mp4"
+            got = st.cut_clip(str(info["match"]), int(info["half"]), int(info["cut"]["start"]),
+                              int(info["cut"]["count"]), mp4, crf=int(info["cut"]["crf"]))
+            info.update(frames=got["frames"], width=got["width"], height=got["height"],
+                        path=str(mp4))
+            if info_path.is_symlink():
+                info_path.unlink()
+            info_path.write_text(json.dumps(info, indent=1))
+        except Exception as e:                 # the unit is skipped by both lanes
+            rec["failed"].append("cut")
+            rec["cut_error"] = f"{type(e).__name__}: {e}"[:500]
+        rec["steps"]["cut"] = round(time.perf_counter() - t, 1)
+        print(f"{w}: cut {rec['steps']['cut']} s{' FAILED' if 'cut' in rec['failed'] else ''}",
+              flush=True)
+        READY[w].set()
 
 
 def finish(root: Path, w: str, rec: dict, out: Path):
@@ -104,11 +148,15 @@ def finish(root: Path, w: str, rec: dict, out: Path):
                 t.add(f, arcname=f".cache/{f.name}")
         rec["ok"] = not rec["failed"]
         (out / f"{w}.json").write_text(json.dumps({**rec, "done": sorted(rec["done"])}, indent=1))
+        if w in READY:                         # a cut clip: free the disk
+            (root / "data/soccertrack_v2" / f"{w}.mp4").unlink(missing_ok=True)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
+    ap.add_argument("--cut", action="store_true",
+                    help="cut each unit's mp4 here first (its .json carries 'cut'); needs HF_TOKEN")
     ap.add_argument("windows", nargs="+",
                     help="W[:seen][@A-B]: :seen = --allow-seen on the ball, @A-B = the ball on local frames [A, B) only")
     args = ap.parse_args()
@@ -127,8 +175,11 @@ def main():
                 "ball_range": rng, "steps": {}, "failed": [], "done": set()}
             for w, seen, rng in specs}
     t0 = time.perf_counter()
-    lanes = [threading.Thread(target=f, args=(root, specs, recs, out))
-             for f in (players_lane, ball_lane)]
+    funcs = [players_lane, ball_lane]
+    if args.cut:
+        READY.update({w: threading.Event() for w, _, _ in specs})
+        threading.Thread(target=cutter, args=(root, specs, recs), daemon=True).start()
+    lanes = [threading.Thread(target=f, args=(root, specs, recs, out)) for f in funcs]
     for t in lanes:
         t.start()
     for t in lanes:
