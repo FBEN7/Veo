@@ -5,7 +5,7 @@
 # scripts expect; results (<w>.tar.gz, <w>.json) to /kaggle/working.
 import glob, os, shutil, subprocess, sys
 
-WINDOWS = ["st2_128057_1st_f004663", "st2_132831_2nd_f005307"]
+WINDOWS = ["st2_128057_1st_f004663@350-1076", "st2_132831_2nd_f005307"]
 
 
 def find(name):

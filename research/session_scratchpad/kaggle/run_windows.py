@@ -2,8 +2,11 @@
 the same steps as research/session_scratchpad/ball/events_m1/driver.sh, minus
 the CPU-only ones that run back here from the returned files (marks.py, v2):
 
-1. players: eval_soccertrack_v2.py --run --model yolov8s.pt --stride 2
-   --pitch-margin 50 -> output_<w>/ (ultralytics picks the GPU; fp32);
+1. players: eval_soccertrack_v2.py --run --calibrated --model yolov8s.pt
+   --stride 2 --pitch-margin 50 -> output_<w>/ (ultralytics picks the GPU;
+   fp32). --calibrated skips the ground-plane fit (365 of 554 s on a clip),
+   whose result nothing downstream reads: step 2 takes only tracks.parquet,
+   profile.json and clip.json from this run (events_run.py);
 2. teams and events_v1: research/session_scratchpad/events_run.py <w> events_v1;
 3. ball: ball_gpu.py, detect_ball_heatmap.py --v2 with ball_v3b.1500.pt at
    stride 1 over the whole window -> .cache/v3_balls_<w>.parquet (+ sidecar).
@@ -63,11 +66,12 @@ def step(rec: dict, name: str, cmd: list, root: Path, env: dict, log: Path):
 
 def players_lane(root: Path, specs: list, recs: dict, out: Path):
     env = lane_env(root, 0)
-    for w, _ in specs:
+    for w, _, _ in specs:
         rec, log = recs[w], out / f"{w}.players.log"
         if step(rec, "players", ["eval_soccertrack_v2.py", f"data/soccertrack_v2/{w}.mp4",
-                                 "--out", f"output_{w}", "--run", "--model", "yolov8s.pt",
-                                 "--stride", "2", "--pitch-margin", "50"], root, env, log):
+                                 "--out", f"output_{w}", "--run", "--calibrated",
+                                 "--model", "yolov8s.pt", "--stride", "2",
+                                 "--pitch-margin", "50"], root, env, log):
             step(rec, "events_v1", ["research/session_scratchpad/events_run.py", w, "events_v1"],
                  root, env, log)
         rec["done"].add("players")
@@ -76,8 +80,10 @@ def players_lane(root: Path, specs: list, recs: dict, out: Path):
 
 def ball_lane(root: Path, specs: list, recs: dict, out: Path):
     env = lane_env(root, 1)
-    for w, seen in specs:
+    for w, seen, rng in specs:
         cmd = [str(HERE / "ball_gpu.py"), w, "--threads", THREADS] + (["--allow-seen"] if seen else [])
+        if rng:
+            cmd += ["--range", str(rng[0]), str(rng[1])]
         step(recs[w], "ball_v3", cmd, root, env, out / f"{w}.ball.log")
         recs[w]["done"].add("ball")
         finish(root, w, recs[w], out)
@@ -103,17 +109,23 @@ def finish(root: Path, w: str, rec: dict, out: Path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True)
-    ap.add_argument("windows", nargs="+", help="W, or W:seen for --allow-seen on the ball")
+    ap.add_argument("windows", nargs="+",
+                    help="W[:seen][@A-B]: :seen = --allow-seen on the ball, @A-B = the ball on local frames [A, B) only")
     args = ap.parse_args()
     import torch
 
     root, out = Path(args.root), Path.cwd()
-    specs = [(s.split(":")[0], s.endswith(":seen")) for s in args.windows]
+    specs = []
+    for s in args.windows:
+        s, _, rng = s.partition("@")
+        specs.append((s.split(":")[0], s.endswith(":seen"),
+                      tuple(int(x) for x in rng.split("-")) if rng else None))
     gpus = [torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())]
     if len(gpus) < 2:
         raise SystemExit(f"two GPUs expected (T4 x2), found {gpus}")
     recs = {w: {"window": w, "gpus": gpus, "torch": torch.__version__, "allow_seen": seen,
-                "steps": {}, "failed": [], "done": set()} for w, seen in specs}
+                "ball_range": rng, "steps": {}, "failed": [], "done": set()}
+            for w, seen, rng in specs}
     t0 = time.perf_counter()
     lanes = [threading.Thread(target=f, args=(root, specs, recs, out))
              for f in (players_lane, ball_lane)]

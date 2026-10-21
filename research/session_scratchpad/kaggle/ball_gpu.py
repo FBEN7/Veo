@@ -3,7 +3,7 @@ window, the model on cuda (the GPU picked by CUDA_VISIBLE_DEVICES) through a
 wrapped `ball_heatmap.load_v2`; repo code unchanged, the same rows as the CPU
 (compare_st2_118578_2nd_f015000.json). Run from the repo root.
 
-    python ball_gpu.py W [--allow-seen] [--threads N]
+    python ball_gpu.py W [--allow-seen] [--threads N] [--range A B]
 
 A clip of a sealed match (M7 / M9) runs only when opened.json beside this
 script lists it: the clip was cut on the repo machine through src/unseal.py
@@ -25,6 +25,7 @@ from src import ball_heatmap as bh  # noqa: E402
 w = sys.argv[1]
 threads = sys.argv[sys.argv.index("--threads") + 1] if "--threads" in sys.argv else "4"
 allow_seen = "--allow-seen" in sys.argv
+rng = sys.argv[sys.argv.index("--range") + 1:sys.argv.index("--range") + 3] if "--range" in sys.argv else None
 opened = Path(__file__).with_name("opened.json")
 if opened.exists() and w in json.loads(opened.read_text())["clips"]:
     dbh.TEST_MATCHES = set()
@@ -46,4 +47,6 @@ sys.argv = ["detect_ball_heatmap.py", "--v2", "--window", w,
             "--threads", threads, "--out", f".cache/v3_balls_{w}.parquet"]
 if allow_seen:
     sys.argv.append("--allow-seen")
+if rng:          # local frames [A, B); the background still comes from the whole clip
+    sys.argv += ["--range", *rng]
 dbh.main()
