@@ -1,0 +1,106 @@
+{
+ "st2_132831_2nd_f005307": {
+  "track": {
+   "team accuracy": 0.921,
+   "team coverage": 0.916
+  },
+  "det_hsv4": {
+   "team accuracy": 0.961,
+   "team coverage": 0.821
+  },
+  "det_chroma": {
+   "team accuracy": 0.963,
+   "team coverage": 0.855
+  },
+  "det_lab": {
+   "team accuracy": 0.939,
+   "team coverage": 0.76
+  },
+  "det_hsv4_k2": {
+   "team accuracy": 0.943,
+   "team coverage": 0.968
+  },
+  "det_smooth": {
+   "team accuracy": 0.959,
+   "team coverage": 0.853
+  }
+ },
+ "st2_132831_2nd_f007583": {
+  "track": {
+   "team accuracy": 0.915,
+   "team coverage": 0.944
+  },
+  "det_hsv4": {
+   "team accuracy": 0.973,
+   "team coverage": 0.835
+  },
+  "det_chroma": {
+   "team accuracy": 0.976,
+   "team coverage": 0.833
+  },
+  "det_lab": {
+   "team accuracy": 0.956,
+   "team coverage": 0.806
+  },
+  "det_hsv4_k2": {
+   "team accuracy": 0.96,
+   "team coverage": 0.991
+  },
+  "det_smooth": {
+   "team accuracy": 0.963,
+   "team coverage": 0.846
+  }
+ },
+ "st2_132831_2nd_f010419": {
+  "track": {
+   "team accuracy": 0.953,
+   "team coverage": 0.99
+  },
+  "det_hsv4": {
+   "team accuracy": 0.982,
+   "team coverage": 0.873
+  },
+  "det_chroma": {
+   "team accuracy": 0.975,
+   "team coverage": 0.92
+  },
+  "det_lab": {
+   "team accuracy": 0.97,
+   "team coverage": 0.78
+  },
+  "det_hsv4_k2": {
+   "team accuracy": 0.964,
+   "team coverage": 1.0
+  },
+  "det_smooth": {
+   "team accuracy": 0.973,
+   "team coverage": 0.876
+  }
+ },
+ "st2_132831_2nd_f012094": {
+  "track": {
+   "team accuracy": 0.866,
+   "team coverage": 0.993
+  },
+  "det_hsv4": {
+   "team accuracy": 0.99,
+   "team coverage": 0.849
+  },
+  "det_chroma": {
+   "team accuracy": 0.983,
+   "team coverage": 0.878
+  },
+  "det_lab": {
+   "team accuracy": 0.959,
+   "team coverage": 0.862
+  },
+  "det_hsv4_k2": {
+   "team accuracy": 0.98,
+   "team coverage": 0.993
+  },
+  "det_smooth": {
+   "team accuracy": 0.986,
+   "team coverage": 0.91
+  }
+ }
+}
