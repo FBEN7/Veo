@@ -1636,6 +1636,30 @@ restartable goals, 184 min.
   registered bar. Next: more training shots (M7 / M9 are spent), the
   shooter's identity, and a stronger ball near the goals.
 
+### Goals, revisited (`goals_v2/`, `teams/`; exploratory, no GPU)
+
+- **The teams are not the cause of M9's misses.** The 1-fps scan of M9 2nd
+  (re-run here) has its teams right on 0.977 of matched outfield players;
+  per-detection kit clustering is accurate pooled over the half (0.98).
+  The earlier reading ("teams not separated") came from the half-mean x,
+  which is close for both teams in a one-sided half (-9.0 / -3.7 m in the
+  ground truth).
+- **The registered rule is right on the ground truth**: 41/41 restartable
+  goals of the 20 halves, 0 false runs (M9's shares 0.91-0.96). The test's
+  misses come from the detections' share (0.82-0.88 on M9: team errors
+  and positions across the halfway line, 13-17 of 22 people seen).
+- **A kick-off cue (a detection within 3 m of the centre spot) with T
+  0.80**, chosen on the scans of M5 2nd and M9 2nd (5/5, 0 false there,
+  against 1/5, 2 false), was frozen before the M1 scans ended and then
+  **failed on M1: 0/3**, where the registered rule gets 3/3. On the ground
+  truth it is also worse (37/41, 4 false). Not adopted.
+- **So the goals rule stays as registered**; what would help is a cleaner
+  detection share (fewer team errors near the halfway line, more players
+  seen), not a new rule.
+- **Per-detection teams beat per-track teams** on 7 windows (smoothed over
+  +-2 s of the same track: 0.92-0.98 against 0.79-0.93): a candidate for
+  the main pipeline (needs the GPU to recompute kit features on clips).
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
