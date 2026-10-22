@@ -1614,6 +1614,28 @@ restartable goals, 184 min.
   a team filter that does not rest on kit clustering, and a new
   registration.
 
+### Learned shot spotter, tested on M5 (`shots_learn/`)
+
+- **Protocol** (`protocol.json`, hashed before any data): the learned
+  pass/carry spotter's features plus goal geometry, one class 'shot';
+  trained on the clips around all 210 SHOT/GOAL of M1, M2, M3, M4, M6, M8,
+  M10 (194 clips) plus 7 windows; test M5 (29 clips, 33 attempts), batches
+  in a registered random order with an early stop when success is out of
+  reach (owner decision). Success: recall >= 18/33 at 2 s and precision >=
+  0.50. All on the Kaggle T4 (clips cut here, ~1.2 min each, uploaded).
+- **Dev** (nested leave-one-match-out, 216 shots): recall 0.54, precision
+  0.52; gate (0.45 / 0.40) passed; frozen (threshold 0.825). Weak on M1
+  (7/29) and M6 (8/30), strong on M2 (24/29) and M8 (22/29).
+- **Test: fails by one shot.** Recall **17/33 = 0.52** (Wilson [0.35,
+  0.68]); precision **0.61** (17 of 28). The early stop never fired. The
+  rule on the same spans: 2/33.
+- **Disclosed:** v3 was trained on M5 (its provenance), so the ball ran
+  with --allow-seen; M5's shot frames were read to plan the clips.
+- **Reading:** the learned spotter finds about half the shots at about 60%
+  precision, far above the rule, but it is not shown to reach the
+  registered bar. Next: more training shots (M7 / M9 are spent), the
+  shooter's identity, and a stronger ball near the goals.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;

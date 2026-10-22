@@ -54,6 +54,7 @@ https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
 | Goals by kick-off formation (`research/session_scratchpad/shots_goals/`) | GT dev 26/26, 0 false runs. M7 2nd detections 5/5. Frozen in `frozen_goals.json` (T 0.85, N 2, kick_spot). **Registered test done: fails** (`goals_test.json`): 4/8 goals, 2 false runs, team right 2/4 (the other rule 4/4). M1 3/3; M9 0/3: kit clustering did not separate the teams. SOCCERTRACK_V2.md and the status doc are updated (rev 52). |
 | Shot ball gate | GO: 19/26 reachable (M7 3/10, M9 16/16; placebo 0.07/0.15). `ball_gate.json`, `gate_recheck.json`. |
 | GPU on Kaggle (`research/session_scratchpad/kaggle/`) | Works: T4 x2, ~14.5 min per 3-min window (CPU ~2.5 h), ~10 min per short clip. Identical to CPU on 7 windows (players, teams, events_v1, v3 rows). `push_run.py` + `run_windows.py`; `cut_shot_clips.py`; `opened.json` for sealed clips. ~8 h of the 30 h weekly quota used on 2026-10-20/21. |
+| Learned shot spotter (`shots_learn/`) | Registered test on M5: **fails by one shot**, recall 17/33 (needs 18), precision 0.61; dev CV 0.54 / 0.52; the rule gets 2/33. `test.json`. |
 | Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly
@@ -76,7 +77,10 @@ All are hashed (`*.sha256`).
    dataset first (see how `veo-st2-dev1` was built). Two kernels can run at
    once. `kaggle kernels logs` is empty while a run is live; the owner can
    watch the Kaggle page.
-2. Shots need a new detector and a new registration (see SOCCERTRACK_V2.md,
-   "Shots"); teams per track would help both goals and shots.
+2. Shots: the learned spotter (shots_learn/) misses the M5 bar by one shot;
+   more training shots or a better ball near the goals are the levers. Teams
+   per track would help both goals and shots. Clips are cut here
+   (shots_learn/batches.py) and run on Kaggle; Kaggle secrets do not reach
+   API-pushed kernels.
 3. Then: actor attribution of learned events (who passed), a foot-point
    correction learned against truth boxes, and the identity work.
