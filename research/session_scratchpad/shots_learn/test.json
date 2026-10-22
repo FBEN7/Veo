@@ -111,14 +111,116 @@
     "fp": 1,
     "fn": 1
    }
+  },
+  "2": {
+   "st2_118577_2nd_f010581": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f071311": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   },
+   "st2_118577_1st_f018611": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   },
+   "st2_118577_1st_f065751": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f064319": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f052133": {
+    "labels": 1,
+    "events": 2,
+    "tp": 1,
+    "fp": 1,
+    "fn": 0
+   },
+   "st2_118577_1st_f046941": {
+    "labels": 2,
+    "events": 3,
+    "tp": 1,
+    "fp": 2,
+    "fn": 1
+   }
+  },
+  "3": {
+   "st2_118577_1st_f044028": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f044485": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f005697": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f023770": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f067451": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f037936": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f041892": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   }
   }
  },
- "stopped": null,
+ "stopped": "fails: recall out of reach after 29 of 29 clips (17 hits + 0 left < 18)",
  "so far": {
-  "clips": 15,
-  "attempts": 18,
-  "hits": 10,
-  "false": 6,
-  "attempts left": 15
+  "clips": 29,
+  "attempts": 33,
+  "hits": 17,
+  "false": 11,
+  "attempts left": 0
  }
 }
