@@ -222,5 +222,15 @@
   "hits": 17,
   "false": 11,
   "attempts left": 0
+ },
+ "final": {
+  "result": "fails (registered criterion): recall 17/33 = 0.515, Wilson 95% [0.352, 0.675], needs >= 18/33; precision 17/28 = 0.607 (passes >= 0.50)",
+  "per half": {
+   "1st": "10/21 hits, 7 false",
+   "2nd": "7/12 hits, 4 false"
+  },
+  "rule of frozen_shots.json on the same spans": "2/33 hits, 2 false",
+  "early stop": "never fired before the last batch: all 29 clips processed",
+  "reading": "the learned spotter finds about half the shots at about 60% precision, against 2/33 for the rule; the registered bar (18/33) is missed by one shot, so it is not shown to meet it. Consistent with its dev CV (0.54 / 0.52)."
  }
 }
