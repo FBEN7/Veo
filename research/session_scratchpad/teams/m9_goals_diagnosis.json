@@ -1,0 +1,14 @@
+{
+ "written": "2026-10-22, after re-running formation_scan.py on 132831 half 2 (M9 2nd; opened through src/unseal.py, logged)",
+ "question": "the goals test missed M9's 3 goals; the earlier reading was 'kit clustering did not separate the teams' (scan team mean x -1.2 / -2.2)",
+ "scan teams against the GSR (outfield, matched within 1.5 m)": "accuracy 0.977, coverage 0.88: the teams ARE separated",
+ "why the means were close": "M9 2nd is one-sided: the GSR sides' own mean x are -9.0 and -3.7 m; the scan's lower-mean team is the GSR's left side, as it should be",
+ "scan positions": "median distance to the nearest GSR person 1.33 m; 80% within 3 m, 12% beyond 5 m; median x bias near the halfway line +0.3 m",
+ "formation share after each M9 goal, 15-60 s, best 1-s sample": {
+  "goal 6082": "ground truth 0.818, scan 0.824",
+  "goal 61071": "ground truth 0.864, scan 0.846",
+  "goal 64015": "ground truth 0.818, scan 0.882"
+ },
+ "conclusion": "the miss is the formation rule (T 0.85, N 2 consecutive samples), not the teams: even the ground truth does not reach the frozen threshold on two consecutive samples after M9's goals. Better teams cannot recover these goals.",
+ "also measured (scan_teams_diag.json, pooled_diag_132831_2nd.json)": "per-detection kit clustering, smoothed over the same track's detections within +-2 s, beats the pipeline's per-track teams on 7 windows (0.92-0.98 against 0.79-0.93) and matches it on M9 clips"
+}
