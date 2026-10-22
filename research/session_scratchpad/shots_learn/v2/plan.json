@@ -1,0 +1,11 @@
+{
+ "name": "Learned shots v2: player context and more data (exploratory; owner decision 2026-10-22)",
+ "written": "2026-10-22, after the M5 test (fails by one shot), before any v2 feature is computed",
+ "status": "exploratory: no untouched match is left for a registered test (M5 tested, M7/M9 used for the rule's dev, the rest trained on); evidence is cross-validated only",
+ "changes": {
+  "data": "add the 26 M7/M9 gate clips (already detected on the T4, whole-clip ball) and the 29 M5 clips to the 194 training clips; 7 windows kept as negatives",
+  "features (v2)": "v1 plus player context: the nearest player to each goal (distance, speed: a goalkeeper proxy), players of each team in each penalty box, mean player speed in the box near the point, the ball's least distance to a goal line and to the centre spot over the next 10 s (a restart proxy), and ball speed / speed towards goal over +-3 s"
+ },
+ "comparison": "nested leave-one-match-out over all matches with units (thresholds by rate on inner folds, as learn.py), v1 features against v2 features on the same units; recall and precision at 2 s pooled and per match; the difference in hits reported with a paired bootstrap over matches",
+ "no choice is made on M5 alone; the threshold rule is unchanged"
+}
