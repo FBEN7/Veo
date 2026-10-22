@@ -1,0 +1,124 @@
+{
+ "protocol sha256": "323e3a02f3d2ac18bed2018a135e97b48c88a865ca7988076447669bae96c3f6",
+ "frozen sha256": "88c411e1e83ad524157faac2091d43ba68140c9172a519a3efd3170ce336ee48",
+ "ball": "v3 with --allow-seen: ball_v3b.1500.pt was trained on M5 (118577, both halves)",
+ "batches": {
+  "0": {
+   "st2_118577_1st_f009805": {
+    "labels": 2,
+    "events": 2,
+    "tp": 2,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f045939": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f060504": {
+    "labels": 2,
+    "events": 2,
+    "tp": 2,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f067162": {
+    "labels": 2,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 2
+   },
+   "st2_118577_1st_f044855": {
+    "labels": 1,
+    "events": 2,
+    "tp": 1,
+    "fp": 1,
+    "fn": 0
+   },
+   "st2_118577_2nd_f014853": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f054059": {
+    "labels": 1,
+    "events": 2,
+    "tp": 1,
+    "fp": 1,
+    "fn": 0
+   },
+   "st2_118577_2nd_f006406": {
+    "labels": 1,
+    "events": 3,
+    "tp": 1,
+    "fp": 2,
+    "fn": 0
+   }
+  },
+  "1": {
+   "st2_118577_1st_f035619": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f035130": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f017935": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f048843": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   },
+   "st2_118577_2nd_f032472": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f059508": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f003090": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   }
+  }
+ },
+ "stopped": null,
+ "so far": {
+  "clips": 15,
+  "attempts": 18,
+  "hits": 10,
+  "false": 6,
+  "attempts left": 15
+ }
+}
