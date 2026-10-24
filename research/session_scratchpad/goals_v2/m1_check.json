@@ -1,0 +1,33 @@
+{
+ "rule file sha256": "24235ab82b3ca740c55be292c74ee43bce6140a21333bce71133ec361fe311ba",
+ "frozen v2 (T 0.80, R 3, N 2)": {
+  "hits": 0,
+  "restartable": 3,
+  "false runs": 0,
+  "per half": {
+   "117092_1st": [
+    0,
+    0
+   ],
+   "117092_2nd": [
+    0,
+    0
+   ]
+  }
+ },
+ "registered (T 0.85, N 2)": {
+  "hits": 3,
+  "restartable": 3,
+  "false runs": 0,
+  "per half": {
+   "117092_1st": [
+    2,
+    0
+   ],
+   "117092_2nd": [
+    1,
+    0
+   ]
+  }
+ }
+}

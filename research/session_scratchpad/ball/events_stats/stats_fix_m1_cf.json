@@ -1,0 +1,46 @@
+[
+ {
+  "window": "st2_117092_1st_f001500",
+  "per person median abs error": 0.03538541161593281,
+  "truth km (all frames)": 8.866130339441696,
+  "ours km on matched frames": 6.295839355241086,
+  "truth km on matched frames": 6.058320912484783,
+  "possession truth left": 0.6,
+  "possession ours left": 0.59182156133829,
+  "possession abs error": 0.008178438661709975,
+  "frames": 1345
+ },
+ {
+  "window": "st2_117092_1st_f024000",
+  "per person median abs error": 0.020190308514011705,
+  "truth km (all frames)": 7.988614502960402,
+  "ours km on matched frames": 6.072819040851593,
+  "truth km on matched frames": 5.927186932216063,
+  "possession truth left": 0.48529060033484805,
+  "possession ours left": 0.5691347011596789,
+  "possession abs error": 0.08384410082483085,
+  "frames": 1121
+ },
+ {
+  "window": "st2_117092_2nd_f000000",
+  "per person median abs error": 0.03296047765292519,
+  "truth km (all frames)": 8.204859435285659,
+  "ours km on matched frames": 4.414063339926824,
+  "truth km on matched frames": 4.247247905118165,
+  "possession truth left": 0.3573981415296639,
+  "possession ours left": 0.32893401015228424,
+  "possession abs error": 0.028464131377379687,
+  "frames": 985
+ },
+ {
+  "window": "st2_117092_2nd_f027000",
+  "per person median abs error": 0.03534428392848406,
+  "truth km (all frames)": 7.980335638994679,
+  "ours km on matched frames": 4.545094942575622,
+  "truth km on matched frames": 4.367428067067541,
+  "possession truth left": 0.5520107840934622,
+  "possession ours left": 0.25279187817258886,
+  "possession abs error": 0.2992189059208733,
+  "frames": 985
+ }
+]

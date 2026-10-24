@@ -1,0 +1,40 @@
+{
+ "rule": {
+  "T": 0.85,
+  "N": 2,
+  "team rule": "kick_spot"
+ },
+ "primary": {
+  "hits": 4,
+  "restartable goals": 8,
+  "hit rate wilson95": [
+   0.215,
+   0.785
+  ],
+  "false runs": 2,
+  "minutes": 183.8,
+  "false runs per 90 min": 0.98
+ },
+ "secondary": {
+  "team right (frozen rule)": 2,
+  "team right (all rules)": {
+   "kick_spot": 2,
+   "attack_end": 4
+  },
+  "goal-time error s (run start - 22 s - goal)": {
+   "median": 1.4,
+   "mean abs": 3.7
+  },
+  "random-time baseline hits": {
+   "mean": 0.21,
+   "q975": 1,
+   "p >= observed": 0.0
+  }
+ },
+ "success": {
+  "hits >= 7/8": false,
+  "false runs <= 1": false,
+  "team right on all hits but one": false,
+  "all": false
+ }
+}

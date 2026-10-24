@@ -5,15 +5,25 @@ metres; the ball input as in events_tune: v3 with static points dropped,
 linked), features from the ball and the players around t, then one
 gradient-boosted classifier per class ("a pass / a carry starts within 0.24 s
 of t"); events are the peaks of its smoothed probability above a threshold,
-at least 0.6 s apart. Validation: leave one match out; the threshold per class
-from the out-of-fold predictions (pooled F1 at 1 s, score_events_paired).
+at least 0.6 s apart. Validation: leave one match out, nested. The threshold
+per class is set on the training matches' own out-of-fold predictions, so
+that the events they would give number as many as their labels ("rate";
+F1 rises with the event count, and so does chance). The scored fold never
+sets its threshold. The older choice, the pooled F1 at 1 s on the scored
+out-of-fold predictions themselves ("f1"), is kept for comparison; it is
+optimistic.
 
-    python learn.py cv WINDOW ...            # leave-one-match-out on these windows
-    python learn.py fit OUT.pkl WINDOW ...   # final model on all of them (+ CV thresholds)
+Feature caches carry a key (calibration, ball input, feature version) and
+are recomputed when it changes. For M1, import calib_fix/calib_override.py
+first, or the release calibration is used.
+
+    python learn.py cv [--select rate|f1] WINDOW ...
+    python learn.py fit OUT.pkl WINDOW ...   # final model on all of them (+ rate thresholds)
     python learn.py apply MODEL.pkl NAME WINDOW ...   # events -> output_<w>/<NAME>/events.json
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import pickle
 import sys
@@ -37,6 +47,7 @@ POS_S = 0.24          # a frame within this of a label is positive
 NMS_S = 0.6           # events of one class at least this far apart
 OFFSETS = (-12, -6, -2, 2, 6, 12)   # frames (the pipeline detects every 2nd)
 TEAM = {"team_A": 1.0, "team_B": -1.0}
+FEATURE_VERSION = 1
 
 
 def _ball_series(metric: pd.DataFrame, frames: np.ndarray) -> pd.DataFrame:
@@ -127,15 +138,30 @@ def targets(w: str, frames: np.ndarray) -> pd.DataFrame:
                          for c in CLASSES}, index=frames)
 
 
+def cache_key(w: str) -> str:
+    """Calibration, ball input and feature version the features rest on."""
+    match = json.loads((ROOT / f"data/soccertrack_v2/{w}.json").read_text())["match"]
+    cal = st.calibration(str(match))
+    h = hashlib.sha1()
+    for k in ("K", "D", "Knew", "Hinv"):
+        h.update(np.ascontiguousarray(cal[k], dtype=float).tobytes())
+    metric = ROOT / f"output_{w}/tune_{BALL}/metric.parquet"
+    h.update(f"{BALL}|{FEATURE_VERSION}|{metric.stat().st_mtime_ns if metric.exists() else 0}".encode())
+    return h.hexdigest()
+
+
 def data(windows):
     out = {}
     for w in windows:
         cache = ROOT / f"output_{w}/learn_features.parquet"
-        if cache.exists():
+        key_file = cache.with_suffix(".key")
+        key = cache_key(w)
+        if cache.exists() and key_file.exists() and key_file.read_text() == key:
             f = pd.read_parquet(cache)
         else:
             f = features(w)
             f.to_parquet(cache)
+            key_file.write_text(cache_key(w))   # metric.parquet may just have been written
         out[w] = (f, targets(w, f.index.to_numpy()))
     return out
 
@@ -182,6 +208,8 @@ def oof(windows, d):
     probs = {}
     for m in sorted({match_of(w) for w in windows}):
         train = [w for w in windows if match_of(w) != m]
+        if not train:
+            raise ValueError("leave-one-match-out needs two matches or more")
         X = pd.concat([d[w][0][cols] for w in train])
         for c in CLASSES:
             y = pd.concat([d[w][1][c] for w in train])
@@ -213,31 +241,77 @@ def best_thresholds(windows, d, probs, grid=np.arange(0.2, 0.96, 0.025)):
     return thr, truths, durs
 
 
-def cv(windows):
+def rate_thresholds(windows, d, probs, grid=np.arange(0.2, 0.96, 0.025)):
+    """Per class, the threshold whose events number closest to the labels."""
+    truths = {w: sp.labels_of(w) for w in windows}
+    thr = {}
+    for c in CLASSES:
+        n_lab = sum(len(truths[w][c]) for w in windows)
+        n_ev = {float(t): sum(len(peaks(d[w][0].index.to_numpy(), probs[w][c], t)) for w in windows) for t in grid}
+        thr[c] = min(n_ev, key=lambda t: (abs(n_ev[t] - n_lab), -t))
+    return thr
+
+
+def fit_predict(train, test, d, cols):
+    X = pd.concat([d[w][0][cols] for w in train])
+    out = {w: {} for w in test}
+    for c in CLASSES:
+        clf = model().fit(X, pd.concat([d[w][1][c] for w in train]))
+        for w in test:
+            out[w][c] = clf.predict_proba(d[w][0][cols])[:, 1]
+    return out
+
+
+def nested(windows, d):
+    """Outer leave-one-match-out; each outer fold's thresholds by rate on its
+    training matches' inner out-of-fold predictions."""
+    cols = [c for c in d[windows[0]][0].columns if c != "near_team_0"]
+    probs, thr_by = {}, {}
+    for m in sorted({match_of(w) for w in windows}):
+        train = [w for w in windows if match_of(w) != m]
+        test = [w for w in windows if match_of(w) == m]
+        inner, _ = oof(train, d)
+        thr_by[m] = rate_thresholds(train, d, inner)
+        probs |= fit_predict(train, test, d, cols)
+    return probs, thr_by
+
+
+def cv(windows, select="rate"):
     d = data(windows)
-    probs, cols = oof(windows, d)
-    thr, truths, durs = best_thresholds(windows, d, probs)
-    evs = {w: events_of(d[w][0], probs[w], thr) for w in windows}
+    truths = {w: sp.labels_of(w) for w in windows}
+    durs = {w: sp.duration_of(w) for w in windows}
+    if select == "rate":
+        probs, thr_by = nested(windows, d)
+        evs = {w: events_of(d[w][0], probs[w], thr_by[match_of(w)]) for w in windows}
+        thr = thr_by
+    else:
+        probs, _ = oof(windows, d)
+        thr, truths, durs = best_thresholds(windows, d, probs)
+        evs = {w: events_of(d[w][0], probs[w], thr) for w in windows}
     s = sp.score(evs, truths, durs, tols=(1.0,), n_chance=200)
-    return {"thresholds": thr, "1s": s["1s"], "objective": s["objective"]}, evs
+    return {"select": select, "thresholds": thr, "1s": s["1s"], "objective": s["objective"]}, evs
 
 
 def main():
     cmd, args = sys.argv[1], sys.argv[2:]
     if cmd == "cv":
-        res, _ = cv(args)
+        select = "rate"
+        if args[0] == "--select":
+            select, args = args[1], args[2:]
+        res, _ = cv(args, select)
         print(json.dumps(res, indent=1))
     elif cmd == "fit":
         out, windows = args[0], args[1:]
-        res, _ = cv(windows)
+        res, _ = cv(windows, "rate")
         d = data(windows)
-        cols = [c for c in d[windows[0]][0].columns if c != "near_team_0"]
+        probs, cols = oof(windows, d)
+        thr = rate_thresholds(windows, d, probs)
         X = pd.concat([d[w][0][cols] for w in windows])
         models = {c: model().fit(X, pd.concat([d[w][1][c] for w in windows])) for c in CLASSES}
         with open(out, "wb") as fh:
-            pickle.dump({"models": models, "cols": cols, "thresholds": res["thresholds"],
+            pickle.dump({"models": models, "cols": cols, "thresholds": thr,
                          "windows": windows, "cv": res}, fh)
-        print(json.dumps(res, indent=1))
+        print(json.dumps({"thresholds": thr, "cv": res}, indent=1))
     elif cmd == "apply":
         mpath, name, windows = args[0], args[1], args[2:]
         mdl = pickle.loads(Path(mpath).read_bytes())

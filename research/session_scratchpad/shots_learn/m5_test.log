@@ -1,0 +1,15 @@
+batch 0: pushed to veo-gpu-run
+batch 0: 8/8 collected
+batch 0: {'clips': 8, 'attempts': 11, 'hits': 7, 'false': 4, 'attempts left': 22} 
+batch 1: 7 clips cut and uploaded
+batch 1: pushed to veo-gpu-run
+batch 1: 7/7 collected
+batch 1: {'clips': 15, 'attempts': 18, 'hits': 10, 'false': 6, 'attempts left': 15} 
+batch 2: 7 clips cut and uploaded
+batch 2: pushed to veo-gpu-run
+batch 2: 7/7 collected
+batch 2: {'clips': 22, 'attempts': 26, 'hits': 13, 'false': 11, 'attempts left': 7} 
+batch 3: 7 clips cut and uploaded
+batch 3: pushed to veo-gpu-run
+batch 3: 7/7 collected
+batch 3: {'clips': 29, 'attempts': 33, 'hits': 17, 'false': 11, 'attempts left': 0} fails: recall out of reach after 29 of 29 clips (17 hits + 0 left < 18)

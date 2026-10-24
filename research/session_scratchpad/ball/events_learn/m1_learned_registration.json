@@ -1,0 +1,47 @@
+{
+ "test": "learned pass/carry spotter (model_v1) on M1, against E0",
+ "registered": "2026-10-19, after the model was fitted and before any M1 feature or event of it was computed",
+ "owner decision": "reuse the 4 M1 windows (2026-10-19): a second use of M1, so weaker evidence than a fresh test",
+ "model": "research/session_scratchpad/ball/events_learn/model_v1.pkl",
+ "trained on": [
+  "st2_117093_1st_f015000",
+  "st2_118575_1st_f015000",
+  "st2_118576_1st_f030000",
+  "st2_118578_1st_f030000",
+  "st2_118578_2nd_f015000",
+  "st2_128057_1st_f030000",
+  "st2_128058_1st_f030000",
+  "st2_132831_2nd_f030000",
+  "st2_132877_1st_f015000"
+ ],
+ "thresholds": "by event rate on the training matches' out-of-fold predictions (pass 0.65, carry 0.675)",
+ "config": "test_L1",
+ "windows": [
+  "st2_117092_1st_f001500",
+  "st2_117092_1st_f024000",
+  "st2_117092_2nd_f000000",
+  "st2_117092_2nd_f027000"
+ ],
+ "camera": "the M1 refit (calib_fix/calib_override.py), the same instrument as the E0 rerun (test_E0, F1 0.441, +0.111 above chance)",
+ "primary": "pooled F1 at 1 s of test_L1 minus test_E0, paired 10-s block bootstrap (score_events_paired.py --configs test_E0 test_L1); shown if the 95% interval's lower bound is above 0",
+ "secondary": [
+  "F1 minus chance at 1 s, pooled and per window, L1 against E0",
+  "L1 against E2 (test_E2, +0.111), same bootstrap",
+  "per class"
+ ],
+ "expectation from CV (nested, leave one match out)": "+0.405 above chance pooled over 9 windows; on the windows whose ball v3 never trained on: M7 +0.432, M9 +0.199. M1 is unseen by v3 and at night.",
+ "caveats": [
+  "second use of M1: the rules' per-window results were read before this design",
+  "the refit was fitted on player positions of 2 of the 4 windows (labels never read)",
+  "one run, scored once"
+ ],
+ "sha256": {
+  "research/session_scratchpad/ball/events_learn/model_v1.pkl": "4f1b691392faf4431155d908d48d25fa84a6a201ae71f0329dcc9435fbfdd186",
+  "research/session_scratchpad/ball/events_learn/learn.py": "de9dc63c135d6fd1ae05b9f7b177e3f7cd4357684d40789ca7bd3f9b1dbbcc65",
+  "research/session_scratchpad/ball/events_learn/apply_m1.py": "00f76e0f54ee9d514593b05a2804cd04bed2836f6904821a8b3cb4bac432e1c9",
+  "research/session_scratchpad/ball/calib_fix/calib_override.py": "67fdd14d5605dba78d64571857cdadad35041324d0ba99c831e1b24cb774002a",
+  ".cache/calib_fix/117092.npz": "7388b769150906182c060da050fda91a8cf760ed0ac27a918ae61cf1dd8bd80f",
+  "score_events_paired.py": "05cf306a0df133c74ff13c072c45e8f5e4a0a7ba94be85e3a55a07ea14cd0e4f",
+  "research/session_scratchpad/ball/events_tune/tune_rules.py": "4b0d76f496ea6058fb51a3750acea76074c19ede39691f49511ee2945c21050b"
+ }
+}

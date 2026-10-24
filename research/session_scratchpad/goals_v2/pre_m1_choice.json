@@ -1,0 +1,8 @@
+{
+ "written": "2026-10-22, before the M1 (117092) 1st and 2nd half scans finish and before any M1 detection is read",
+ "chosen on": "the detection scans of 118577 2nd and 132831 2nd (5 restartable goals): the cell with the most hits, then fewest false runs, then the larger T, then the smaller R (explore.py's order)",
+ "rule": {"T": 0.80, "R": 3.0, "N": 2, "meaning": ">= 2 consecutive 1-s samples where >= 80% of the team-labelled detections stand in their own half AND a detection stands within 3 m of the centre spot"},
+ "on those two halves": "5/5 hits, 0 false runs (registered rule: 1/5, 2 false)",
+ "on the ground truth of all 20 halves": "to be reported beside the M1 check",
+ "check": "M1 1st and 2nd (3 restartable goals by the ground truth; their detections unseen by this choice): hits and false runs, beside the registered rule; exploratory, M1 was the goals test's half too"
+}

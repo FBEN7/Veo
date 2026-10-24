@@ -1,0 +1,8 @@
+{
+ "amends": "backend_note.json (sha256 a7e12cb7357c3e4acf55ae43f4f54b52a6e130da40a876a87466363a0885b0e4)",
+ "recorded": "2026-10-20, before any shot clip or window is processed for the shots phase",
+ "versions added": {"supervision": "0.30.9 (0.31 dropped sv.ByteTrack, which src/detect_track_hybrid.py uses)"},
+ "ball step": "--allow-seen on windows whose CPU v3 run had it (dense_v3.py), so the GPU rows are the same run",
+ "equivalence on one whole window (st2_118578_2nd_f015000, compare_st2_118578_2nd_f015000.json)": "GPU T4 against the repo's CPU outputs: player rows 55204 / 55204 matched (p99 foot shift 0.0001 px), tracks 216 / 216; teams identical (20952 / 20366 / 7071 rows); events_v1 identical (14 carries, 16 passes, 5 recoveries, 6 shots, all within 0.5 s); v3 ball rows 36000 / 36000, same frames, max logit diff 1e-5, max position diff 0.0008 px",
+ "timing on T4, one 3-minute window": "players 781 s, events_v1 128 s, v3 ball 540 s (about 24 min)"
+}

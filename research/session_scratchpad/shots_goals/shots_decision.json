@@ -1,0 +1,9 @@
+{
+ "protocol": "protocol_shots.json sha256 63ca6258c6bb603a8c95c6187d01c659293f38e80c828d422859c3381b7c545a",
+ "frozen": "frozen_shots.json sha256 d89e3be82f844baa14a3f2f434d02bc1310e4b406ff7de91ac5c3014fffeda57",
+ "written": "2026-10-21, after the dev choice was frozen, before any M1 clip was cut",
+ "owner decision": "B (2026-10-21): the registered M1 test is not run",
+ "why": "dev F1 0.053 (1/32) at the frozen cell, at most 1/32 anywhere in the grid; the registered success needs recall >= 16/29 on M1. The test could not change the conclusion and would cost ~6 GPU hours.",
+ "deviation": "the protocol's test step is skipped; no M1 shot output exists. The shots result is reported as a dev failure, not as a test.",
+ "what is left for a later attempt": "a new rule or a learned detector (e.g. the learned spotter of events_learn/ extended to shots), a team filter that does not depend on kit clustering, and a fresh registration"
+}
