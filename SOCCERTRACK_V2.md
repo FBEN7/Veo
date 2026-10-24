@@ -1660,6 +1660,32 @@ restartable goals, 184 min.
   +-2 s of the same track: 0.92-0.98 against 0.79-0.93): a candidate for
   the main pipeline (needs the GPU to recompute kit features on clips).
 
+### Who made the pass (`passer/`; exploratory, CPU only)
+
+The actor of each labelled BAS action, from detections only, scored apart
+from event detection (`plan.json`, hashed before scoring; `addendum1.json`:
+two fixes after the first runs, rules unchanged). Rule A: at the label
+frame, the v3s_link ball within 0.2 s and the player detection nearest it
+in metres, if within 3 m. Rule B: the best (player, frame) over -0.4/+0.2 s.
+Truth: the detection's ground-truth person (feet; M1 in pitch metres under
+the refit) against the label's player_id.
+
+| | n | right, end to end (A) | precision (A) | coverage (A) | ceiling |
+|---|---|---|---|---|---|
+| passes, matches v3 was trained on | 1847 | 0.253 [0.234, 0.273] | 0.724 | 0.349 | 0.806 |
+| all actions, same matches | 3599 | 0.257 | 0.717 | 0.359 | 0.800 |
+| passes, M1 (unseen) | 214 | 0.061 [0.036, 0.101] | 0.186 | 0.327 | 0.280 |
+
+- **The ball is the bottleneck.** On the seen matches the linked ball is
+  there within 0.2 s of only 47% of the actions; given a ball, a player is
+  within 3 m 77% of the time and is the right one 72% (82% when the
+  labelled player is detected at all). Rule B adds 3 points.
+- **M1 is not measurable here:** the labelled player is matched to a
+  detection on 28% of its actions (80% elsewhere), so attribution and
+  evaluation errors cannot be told apart (M1's camera and truth boxes are
+  off). M7 / M9 have no linked ball track for their clips: not scored.
+- The seen-match figures are optimistic (v3 trained on those matches).
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
