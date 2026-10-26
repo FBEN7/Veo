@@ -8,7 +8,7 @@
 import glob, os, shutil, subprocess, sys, time
 
 CLIPS = __CLIPS__
-MODELS = ["yolov8s.pt", "yolov8m.pt", "yolov8l.pt"]
+MODELS = __MODELS__
 STEP = 25
 T0 = time.time()
 
