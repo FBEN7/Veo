@@ -28,6 +28,7 @@ SEALED = {"128057", "132831"}
 PASSES = {"PASS", "HIGH PASS", "CROSS"}
 NOT_ACTOR = {"OUT", "GOAL"}
 RADIUS = 3.0
+FILL = 0            # ball gaps up to FILL frames filled linearly (ball_interp/; 0: off)
 FIX = ROOT / ".cache/calib_fix"         # M1's refitted camera (calib_fix/fit_players.py)
 
 
@@ -71,6 +72,12 @@ def unit(w: str) -> list[dict]:
     # (the Kaggle metric step used the release's camera, broken on M1)
     m[["x", "y"]] = st.image_to_pitch(m[["px_raw", "py_raw"]].to_numpy(), calibration(str(info["match"])))
     ball = m[m.cls == "ball"].set_index("frame")
+    if FILL:
+        ball = ball[~ball.index.duplicated()].sort_index()
+        fr = ball.index.to_numpy()
+        new = [f for a, b in zip(fr[:-1], fr[1:]) if 1 < b - a <= FILL for f in range(a + 1, b)]
+        full = np.sort(np.r_[fr, new]).astype(int)
+        ball = pd.DataFrame({"x": np.interp(full, fr, ball.x), "y": np.interp(full, fr, ball.y)}, index=full)
     pl = m[m.cls == "player"]
     by_f = {f: g for f, g in pl.groupby("frame")}
     g = pd.read_parquet(CLIPS / f"{w}_gt.parquet")
