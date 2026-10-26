@@ -1,0 +1,5 @@
+{
+ "written": "after the registered run failed (footpoint.json: pooled median 1.46 -> 1.35 m, four held-out matches worse)",
+ "reading": "the per-match median offsets differ in sign (du -6.3 .. +6.9 px), so image position (u, v, W) carries camera-specific geometry that does not transfer",
+ "variant (exploratory, not the registered rule)": "the same model on box-only features (h, w, h/w); and a constant offset (the training matches' median du, dv)"
+}

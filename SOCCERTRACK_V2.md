@@ -1743,6 +1743,22 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   0.57 does not carry to unseen matches; M9 is the weak one.
 
 
+### Foot-point correction (`footpoint/`; CPU, fails)
+
+A model of the image offset from our detection's foot point to the truth
+box's bottom centre (`plan.json`, hashed before fitting), leave one match
+out on 224 shots clips (all matches but M1), 621k matched pairs, error in
+pitch metres:
+
+- **Registered model (box + image position):** pooled median 1.46 ->
+  1.35 m, p90 6.0 -> 4.5 m, but four held-out matches get worse (M6 1.68 ->
+  2.95, M7 1.85 -> 2.73, M9 1.16 -> 2.09, M10 1.70 -> 2.66). Not adopted.
+- **Box-only variant** (exploratory, `addendum1.json`): pooled median 1.57,
+  worse.
+- The per-match offsets differ in sign (du -6.3 .. +6.9 px): the gap
+  between our boxes and the truth's is match-specific, so a correction
+  learned on other matches does not transfer.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
