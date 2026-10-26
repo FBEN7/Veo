@@ -1722,6 +1722,13 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   41% (contests). In 65% the labelled player is the nearest at some
   instant within +-1 s, most often 0.2-0.4 s before the label (the label
   sits slightly after the touch).
+- **Rule C, possession** (`passer/possession.json`; the track most often
+  nearest the ball over a window, votes at every players' frame): on the
+  same 1905 actions, A 0.486, B 0.540, C [-0.4, +0.2] s **0.568** [0.546,
+  0.590] (passes 0.586), precision 0.681, coverage 0.834. Paired with B:
+  90 actions gained, 65 lost (sign test p ~0.05). Longer windows cover
+  more but lose precision. The window is chosen in-sample on matches v3
+  was trained on: a small gain, not shown on a held-out match.
 
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)

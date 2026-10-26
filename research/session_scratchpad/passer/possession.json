@@ -1,0 +1,121 @@
+{
+ "all actions": {
+  "A": {
+   "n": 1905,
+   "right": 925,
+   "share right": 0.486,
+   "wilson": [
+    0.463,
+    0.508
+   ],
+   "coverage": 0.678,
+   "precision": 0.716
+  },
+  "B": {
+   "n": 1905,
+   "right": 1029,
+   "share right": 0.54,
+   "wilson": [
+    0.518,
+    0.562
+   ],
+   "coverage": 0.796,
+   "precision": 0.679
+  },
+  "C [-0.6, +0.12] s": {
+   "n": 1905,
+   "right": 1048,
+   "share right": 0.55,
+   "wilson": [
+    0.528,
+    0.572
+   ],
+   "coverage": 0.84,
+   "precision": 0.655
+  },
+  "C [-1.0, +0.2] s": {
+   "n": 1905,
+   "right": 1054,
+   "share right": 0.553,
+   "wilson": [
+    0.531,
+    0.575
+   ],
+   "coverage": 0.897,
+   "precision": 0.617
+  },
+  "C [-0.4, +0.2] s": {
+   "n": 1905,
+   "right": 1082,
+   "share right": 0.568,
+   "wilson": [
+    0.546,
+    0.59
+   ],
+   "coverage": 0.834,
+   "precision": 0.681
+  }
+ },
+ "passes": {
+  "A": {
+   "n": 935,
+   "right": 467,
+   "share right": 0.499,
+   "wilson": [
+    0.467,
+    0.531
+   ],
+   "coverage": 0.692,
+   "precision": 0.722
+  },
+  "B": {
+   "n": 935,
+   "right": 521,
+   "share right": 0.557,
+   "wilson": [
+    0.525,
+    0.589
+   ],
+   "coverage": 0.807,
+   "precision": 0.69
+  },
+  "C [-0.6, +0.12] s": {
+   "n": 935,
+   "right": 537,
+   "share right": 0.574,
+   "wilson": [
+    0.542,
+    0.606
+   ],
+   "coverage": 0.849,
+   "precision": 0.676
+  },
+  "C [-1.0, +0.2] s": {
+   "n": 935,
+   "right": 559,
+   "share right": 0.598,
+   "wilson": [
+    0.566,
+    0.629
+   ],
+   "coverage": 0.904,
+   "precision": 0.662
+  },
+  "C [-0.4, +0.2] s": {
+   "n": 935,
+   "right": 548,
+   "share right": 0.586,
+   "wilson": [
+    0.554,
+    0.617
+   ],
+   "coverage": 0.845,
+   "precision": 0.694
+  }
+ },
+ "paired, C [-0.4, +0.2] s vs B": {
+  "n": 1516,
+  "C right B wrong": 90,
+  "B right C wrong": 65
+ }
+}
