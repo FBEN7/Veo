@@ -1783,6 +1783,13 @@ gaps filled linearly, on the 27 M7 / M9 clips.
   - Against its bar (M9 +10 points with fill precision >= 0.80): coverage
     yes, precision no. Not adopted; the coverage gain on M9 is real, but
     half the filled positions are not on a player.
+- **v3** (`plan_v3.json`; fills only for slots that are surely players:
+  team A/B, >= 4 s, inside the pitch): M9 coverage 0.580 -> **0.725**,
+  fill precision **0.64**; M7 0.543 -> 0.568, fill precision 0.38; rule C
+  0.298 -> 0.300. Bar not met (0.80). For scale, the detections themselves
+  score 0.82 (M9) and 0.60 (M7) on the same precision metric: the M9 fills
+  are worse than detections but not far, the bar was stricter than the
+  detections. Not adopted as is.
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
