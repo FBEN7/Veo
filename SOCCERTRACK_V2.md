@@ -1729,6 +1729,7 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   90 actions gained, 65 lost (sign test p ~0.05). Longer windows cover
   more but lose precision. The window is chosen in-sample on matches v3
   was trained on: a small gain, not shown on a held-out match.
+  **Adopted as the default** (owner, 2026-10-26): `src/passer.py`.
 
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
