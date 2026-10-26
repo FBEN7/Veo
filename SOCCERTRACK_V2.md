@@ -1791,6 +1791,26 @@ gaps filled linearly, on the 27 M7 / M9 clips.
   are worse than detections but not far, the bar was stricter than the
   detections. Not adopted as is.
 
+### Why the detector misses M9's players (`kaggle/m9_players*`; GPU bench)
+
+Single-frame person detections on every 25th frame of 3 M9 clips and 1 M7
+clip, yolov8s (the pipeline's) and yolov8m, scored against the truth
+(players and goalkeepers; referees count as false):
+
+| setting (yolov8s) | M9 recall | M9 precision | M7 recall | M7 precision |
+|---|---|---|---|---|
+| conf 0.20 + grass filter (pipeline) | 0.701 | 0.775 | 0.959 | 0.627 |
+| conf 0.20, no grass filter | 0.938 | 0.596 | 0.959 | 0.618 |
+| conf 0.10 + grass filter | 0.719 | 0.640 | 0.970 | 0.523 |
+| **conf 0.20 + pitch outline (0 px) instead of grass** | **0.936** | 0.695 | 0.951 | **0.876** |
+
+- **The grass filter is the cause on M9**: it drops a quarter of the
+  real players. A lower threshold or yolov8m (M9 0.706) does not help.
+- Keeping detections whose feet are inside the release's pitch outline
+  instead recovers them (0.70 -> 0.94) and is cleaner on M7 too.
+- Next: switch the fixed-view pipeline from the grass test to the outline,
+  rerun the players on the GPU, and re-measure M9 (attribution included).
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
