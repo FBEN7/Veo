@@ -1733,6 +1733,14 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   `events_learn/learn.py apply` now writes each event's `actor_track`
   (smoke test on M6 2nd f015000: 67 of 68 events get an actor; its team
   is the event's team in 55 of 67).
+- **Registered test on M7 / M9** (`passer/m7m9_protocol.json`, hashed
+  before their pitch tracks existed; `m7m9_test.json`): **fails.** C
+  0.348 [0.309, 0.388] of 552 actions (bar: lower bound 0.45), passes
+  0.354; B 0.332, A 0.277 (C >= B holds: 16 gained, 11 lost). Precision
+  0.40 against 0.68 on the seen matches. By match: M7 0.532 (close to
+  the seen matches), M9 0.253 (ceiling 0.54: the labelled player matched
+  to a detection on 54% of actions, 73% on M7, 78% seen). The in-sample
+  0.57 does not carry to unseen matches; M9 is the weak one.
 
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
