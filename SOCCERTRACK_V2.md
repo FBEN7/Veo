@@ -1759,6 +1759,21 @@ pitch metres:
   between our boxes and the truth's is match-specific, so a correction
   learned on other matches does not transfer.
 
+### Following players through misses (`stitch/`; CPU, v1 fails)
+
+Owner's idea: every player is always on the pitch, so a player can be
+followed through the detector's misses. v1 (`plan.json`, hashed first):
+per team, tracklet ends linked to later starts (Hungarian, <= 5 s, 8 m/s),
+gaps filled linearly, on the 27 M7 / M9 clips.
+
+- Few links (268 / 326 filled positions), and the fills are mostly wrong
+  (precision 0.26 on M7, 0.38 on M9); coverage unchanged (0.49 / 0.51 in
+  pitch metres at 3 m); rule C worse (0.298 -> 0.265, not a clean
+  comparison: v1 drops the tracks with team "other").
+- **But the misses are short:** 77-78% of a player's missed time is in runs
+  of 5 s or less (M9 21% <= 1 s). The idea stands; v1 is too weak: it does
+  not fill the gaps inside a track, and its team labels are noisy.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
