@@ -17,6 +17,7 @@ ap.add_argument("--videos", nargs="+", required=True)
 ap.add_argument("--units", nargs="+", required=True)
 ap.add_argument("--stage", required=True)
 ap.add_argument("--slug", default="veo-cpu-metric")
+ap.add_argument("--inputs", default="veo-metric-inputs", help="the staged inputs' dataset name (a new one per batch)")
 args = ap.parse_args()
 st = Path(args.stage)
 shutil.rmtree(st, ignore_errors=True)
@@ -27,7 +28,7 @@ for w in args.units:
     for n in (f"v3_balls_{w}.parquet", f"v3_balls_{w}.parquet.meta.json"):
         shutil.copy(g / ".cache" / n, st / "data" / n)
 (st / "data/dataset-metadata.json").write_text(json.dumps(
-    {"title": "veo-metric-inputs", "id": "francoisbernard/veo-metric-inputs",
+    {"title": args.inputs, "id": f"francoisbernard/{args.inputs}",
      "licenses": [{"name": "CC-BY-4.0"}]}))
 subprocess.run(["kaggle", "datasets", "create", "-p", str(st / "data"), "--dir-mode", "tar"])
 k = st / "kernel"
@@ -38,6 +39,6 @@ k.mkdir()
     "id": f"francoisbernard/{args.slug}", "title": args.slug, "code_file": "kernel.py",
     "language": "python", "kernel_type": "script", "is_private": True,
     "enable_gpu": False, "enable_internet": False,
-    "dataset_sources": ["francoisbernard/veo-code", "francoisbernard/veo-metric-inputs", *args.videos],
+    "dataset_sources": ["francoisbernard/veo-code", f"francoisbernard/{args.inputs}", *args.videos],
     "competition_sources": [], "kernel_sources": []}, indent=1))
 print("staged; push after the dataset is ready:", k)
