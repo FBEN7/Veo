@@ -1714,6 +1714,15 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   actors are mostly wrong). Inside the range the limits are precision
   (28% wrong when someone is named) and the ceiling (23% of labelled
   players never matched to a detection), not ball gaps.
+- **Why rule A names the wrong player** (`passer/diagnose.json`; 367 wrong
+  of 1293 named, in range, seen matches): an opponent 61%, a teammate
+  22%, a detection with no truth person 17%. The labelled player is not
+  detected at that frame in 44% of them. When it is, it is a median 3.3 m
+  from the ball against 1.45 m for the named one, within 1 m of it in
+  41% (contests). In 65% the labelled player is the nearest at some
+  instant within +-1 s, most often 0.2-0.4 s before the label (the label
+  sits slightly after the touch).
+
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
