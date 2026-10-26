@@ -1773,6 +1773,16 @@ gaps filled linearly, on the 27 M7 / M9 clips.
 - **But the misses are short:** 77-78% of a player's missed time is in runs
   of 5 s or less (M9 21% <= 1 s). The idea stands; v1 is too weak: it does
   not fill the gaps inside a track, and its team labels are noisy.
+- **v2** (`plan_v2.json`, hashed before running; `stitch_v2.json`): team
+  per tracklet, every tracklet kept, gaps inside tracks filled too.
+  - M9: coverage 0.580 -> **0.745** (any team 0.632 -> 0.819), but fill
+    precision 0.51; identity continuity 0.83 -> 0.81.
+  - M7: coverage 0.543 -> 0.571, fill precision 0.19 (fills of tracks that
+    are not players: M7 has more detections than people).
+  - Who made the action, rule C: unchanged (0.298 both; M7 0.365, M9 0.265).
+  - Against its bar (M9 +10 points with fill precision >= 0.80): coverage
+    yes, precision no. Not adopted; the coverage gain on M9 is real, but
+    half the filled positions are not on a player.
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
