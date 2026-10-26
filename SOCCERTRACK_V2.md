@@ -1686,6 +1686,24 @@ the refit) against the label's player_id.
   off). M7 / M9 have no linked ball track for their clips: not scored.
 - The seen-match figures are optimistic (v3 trained on those matches).
 
+### Inferring the ball in gaps (`ball_interp/`; quick feasibility, CPU)
+
+Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
+(`src/ball_link.py`, a Viterbi that already skips up to 5 frames) covers
+0.95 of them at precision 0.99. Linear filling of its gaps:
+
+- **Real frames:** coverage 1.00, precision 0.96-0.97 (12 px).
+- **Simulated occlusions** (detections removed around verified balls),
+  within 30 px: 0.5 s holes 0.70, 1 s 0.49, 2 s 0.18. Following the
+  player's feet instead of the line is worse (0.57 at 0.5 s).
+- **Who passed:** no gain (rule A 0.253 -> 0.249 / 0.250 with 0.5 / 1 s
+  fills): the gaps around actions are mostly longer than 1 s.
+- So filling works for short gaps only; the loss is upstream: on the
+  shots clips v3 proposes candidates on almost every frame but the link
+  keeps a ball on 40-70% of them. Unexplained: `ball_link.link` called
+  directly on M6 clips' kept rows keeps 2-3x more frames than the
+  pipeline's metric file.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
