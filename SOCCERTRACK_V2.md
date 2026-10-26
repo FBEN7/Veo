@@ -1707,8 +1707,13 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
 - So filling works for short gaps only. The "2-3x more frames" of a
   direct link is explained (`passer/ball_range.json`): the pipeline links
   on the players' frames only (every 2nd frame) and cuts candidates below
-  p 0.10 first (about 1.25x); no later stage loses balls. The no-gain on
-  who passed was measured with the clips' margins, which have no ball.
+  p 0.10 first (about 1.25x); no later stage loses balls. Rerun inside the
+  ball range (`passer/fill_check_range.json`, 936 passes): still no gain.
+  Rule A 0.500 -> 0.491 / 0.494 with 0.5 / 1 s fills; rule B 0.558 ->
+  0.552 / 0.556 (coverage 0.81 -> 0.85, precision 0.69 -> 0.65: the added
+  actors are mostly wrong). Inside the range the limits are precision
+  (28% wrong when someone is named) and the ceiling (23% of labelled
+  players never matched to a detection), not ball gaps.
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
