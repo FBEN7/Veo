@@ -20,6 +20,9 @@ first, or the release calibration is used.
     python learn.py cv [--select rate|f1] WINDOW ...
     python learn.py fit OUT.pkl WINDOW ...   # final model on all of them (+ rate thresholds)
     python learn.py apply MODEL.pkl NAME WINDOW ...   # events -> output_<w>/<NAME>/events.json
+
+`apply` adds each event's actor (`actor_track`, the pipeline's track id, or
+None) by the possession rule of src/passer.py; cv and fit are unchanged.
 """
 from __future__ import annotations
 
@@ -38,6 +41,7 @@ sys.path.insert(0, str(ROOT / "research/session_scratchpad/ball/events_tune"))
 import score_events_paired as sp  # noqa: E402
 import score_soccernet as sc  # noqa: E402
 import tune_rules as tr  # noqa: E402
+from src import passer  # noqa: E402
 from src import soccertrack_v2 as st  # noqa: E402
 
 FPS = 25.0
@@ -319,6 +323,8 @@ def main():
             f = data([w])[w][0]
             probs = {c: mdl["models"][c].predict_proba(f[mdl["cols"]])[:, 1] for c in CLASSES}
             ev = events_of(f, probs, mdl["thresholds"])
+            # who made it: the possession rule (src/passer.py), on the same pitch tracks
+            ev = passer.attach(ev, tr.metric_of(w, BALL), FPS)
             out = ROOT / f"output_{w}/{name}/events.json"
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(json.dumps(ev, indent=1))

@@ -1729,7 +1729,10 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   90 actions gained, 65 lost (sign test p ~0.05). Longer windows cover
   more but lose precision. The window is chosen in-sample on matches v3
   was trained on: a small gain, not shown on a held-out match.
-  **Adopted as the default** (owner, 2026-10-26): `src/passer.py`.
+  **Adopted as the default** (owner, 2026-10-26): `src/passer.py`, and
+  `events_learn/learn.py apply` now writes each event's `actor_track`
+  (smoke test on M6 2nd f015000: 67 of 68 events get an actor; its team
+  is the event's team in 55 of 67).
 
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
