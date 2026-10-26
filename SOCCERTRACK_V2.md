@@ -1676,6 +1676,12 @@ the refit) against the label's player_id.
 | all actions, same matches | 3599 | 0.257 | 0.717 | 0.359 | 0.800 |
 | passes, M1 (unseen) | 214 | 0.061 [0.036, 0.101] | 0.186 | 0.327 | 0.280 |
 
+- **Correction (2026-10-26, `ball_range.json`):** the clips' ball was
+  detected only on local frames 350-1075 (the per-clip cost cut); half of
+  the labelled actions sit in the margins, where no ball exists. Inside
+  the ball range rule A is right on **0.487** of all actions (passes
+  0.502), precision 0.717, coverage 0.679; the table above counts the
+  margins.
 - **The ball is the bottleneck.** On the seen matches the linked ball is
   there within 0.2 s of only 47% of the actions; given a ball, a player is
   within 3 m 77% of the time and is the right one 72% (82% when the
@@ -1698,11 +1704,11 @@ Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
   player's feet instead of the line is worse (0.57 at 0.5 s).
 - **Who passed:** no gain (rule A 0.253 -> 0.249 / 0.250 with 0.5 / 1 s
   fills): the gaps around actions are mostly longer than 1 s.
-- So filling works for short gaps only; the loss is upstream: on the
-  shots clips v3 proposes candidates on almost every frame but the link
-  keeps a ball on 40-70% of them. Unexplained: `ball_link.link` called
-  directly on M6 clips' kept rows keeps 2-3x more frames than the
-  pipeline's metric file.
+- So filling works for short gaps only. The "2-3x more frames" of a
+  direct link is explained (`passer/ball_range.json`): the pipeline links
+  on the players' frames only (every 2nd frame) and cuts candidates below
+  p 0.10 first (about 1.25x); no later stage loses balls. The no-gain on
+  who passed was measured with the clips' margins, which have no ball.
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
