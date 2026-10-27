@@ -1,5 +1,6 @@
 # Kaggle GPU kernel for ball detector v4 (written by push_v4.py). Inputs:
-# veo-code (code tree, wheels, v3b), veo-ball-v4-stream (v2's stream strips),
+# veo-code (code tree, wheels, v3b), veo-ball-v4-stream (v2's stream strips
+# and their labels in stream_strips.tar),
 # veo-ball-v4-stage (ball_v4 scripts, prepare.py's stage, the click page's
 # manifest) and the shot-clip datasets. No internet. Steps: cut the clicked
 # strips (CPU, PARTS processes), train fold A on GPU 0 and fold B on GPU 1,
@@ -65,7 +66,13 @@ for n in ("targets.parquet", "codes.npy", "test_frames.parquet"):
 os.makedirs(os.path.join(root, "research/session_scratchpad/ball_clicks"), exist_ok=True)
 shutil.copy(os.path.join(stage_in, "manifest.json"),
             os.path.join(root, "research/session_scratchpad/ball_clicks/manifest.json"))
-stream = os.path.dirname(find(STREAM_PROBE))
+hits = glob.glob(f"/kaggle/input/**/{STREAM_PROBE}", recursive=True)
+if hits:                          # Kaggle unpacked the archive
+    stream = os.path.dirname(hits[0])
+else:                             # one tar (a dataset holds at most 1,000 files)
+    stream = "/kaggle/stream"
+    os.makedirs(stream, exist_ok=True)
+    subprocess.run(["tar", "-xf", find("stream_strips.tar"), "-C", stream], check=True)
 clips = sorted(set(os.path.dirname(f) for f in glob.glob("/kaggle/input/**/st2_*.mp4", recursive=True)))
 os.makedirs("/kaggle/working/logs", exist_ok=True)
 subprocess.run(["nvidia-smi", "-L"], check=True)
