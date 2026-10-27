@@ -1845,6 +1845,22 @@ candidates fall under the 0.40 bar. Relinked without that test
   fails at 0.348); 0.582 clears that test's bar (0.45) but is exploratory,
   not a registered pass.
 
+### Learned shots with the grass tests off (`shots_learn/v3/`; exploratory)
+
+The v2 spotter, unchanged, on 249 clips of all ten matches, nested
+leave-one-match-out, old pitch tracks against the relinked ones (no grass
+test on the ball; M7 / M9 also with the no-grass players), plan hashed
+before any feature (`plan.json`, `cv_v3.json`):
+
+| | hits | false | missed | recall | precision |
+|---|---|---|---|---|---|
+| old tracks | 151 | 146 | 118 | 0.561 | 0.508 |
+| no grass tests | 150 | 126 | 119 | 0.558 | 0.543 |
+
+- Hits new - old: -1, 95% [-17, +14] over matches: no change in recall;
+  20 fewer false shots. M9 4 -> 7 hits, M7 7 -> 9; M6, M10 and M8 lose a few.
+- The shot spotter's limit is not the ball's grass test.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
