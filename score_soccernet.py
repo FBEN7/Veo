@@ -304,7 +304,9 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
             clip, stride=stride, model_name=model_name,
             conf_player=profile.conf_player, conf_ball=profile.conf_ball,
             out_path=str(raw), max_seconds=0, imgsz=profile.imgsz,
-            ball_detection_method="yolo")
+            ball_detection_method="yolo",
+            # a fixed view with an outline filters players by it below
+            player_grass_filter=not (fixed_camera and pitch is not None))
         tracks.to_parquet(raw)
 
     fixed_view = fixed_camera and pitch is not None
