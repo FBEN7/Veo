@@ -1,0 +1,173 @@
+{
+ "plan sha256": "c1fd0431e7fb27b367339be06e2f8d351a0cd90d63c2f2d55a0de319cf6e7026",
+ "measure 1 (verified balls)": {
+  "all": {
+   "n": 508,
+   "raw any": 0.984,
+   "kept any": 0.978,
+   "top1": 0.856,
+   "linked": 0.846,
+   "ball size px": 6.1
+  },
+  "elsewhere": {
+   "n": 427,
+   "raw any": 0.984,
+   "kept any": 0.979,
+   "top1": 0.843,
+   "linked": 0.836,
+   "ball size px": 6.4
+  },
+  "near a goal": {
+   "n": 81,
+   "raw any": 0.988,
+   "kept any": 0.975,
+   "top1": 0.926,
+   "linked": 0.901,
+   "ball size px": 4.1
+  },
+  "118578 elsewhere": {
+   "n": 277,
+   "raw any": 0.993,
+   "kept any": 0.986,
+   "top1": 0.942,
+   "linked": 0.83,
+   "ball size px": 6.5
+  },
+  "118578 near a goal": {
+   "n": 43,
+   "raw any": 1.0,
+   "kept any": 0.977,
+   "top1": 0.977,
+   "linked": 0.93,
+   "ball size px": 4.5
+  },
+  "128057 elsewhere": {
+   "n": 62,
+   "raw any": 0.968,
+   "kept any": 0.968,
+   "top1": 0.855,
+   "linked": 0.742,
+   "ball size px": 4.9
+  },
+  "128057 near a goal": {
+   "n": 14,
+   "raw any": 1.0,
+   "kept any": 1.0,
+   "top1": 1.0,
+   "linked": 0.857,
+   "ball size px": 4.9
+  },
+  "132831 elsewhere": {
+   "n": 88,
+   "raw any": 0.966,
+   "kept any": 0.966,
+   "top1": 0.523,
+   "linked": 0.92,
+   "ball size px": 6.3
+  },
+  "132831 near a goal": {
+   "n": 24,
+   "raw any": 0.958,
+   "kept any": 0.958,
+   "top1": 0.792,
+   "linked": 0.875,
+   "ball size px": 3.7
+  }
+ },
+ "measure 2 (labelled shots and passes, ball at the actor's feet)": {
+  "pass": {
+   "n": 1201,
+   "candidate at feet": 0.934,
+   "linked at feet": 0.775
+  },
+  "shot": {
+   "n": 242,
+   "candidate at feet": 0.979,
+   "linked at feet": 0.773
+  },
+  "pass, elsewhere": {
+   "n": 824,
+   "candidate at feet": 0.949,
+   "linked at feet": 0.806
+  },
+  "pass, near a goal": {
+   "n": 377,
+   "candidate at feet": 0.902,
+   "linked at feet": 0.708
+  },
+  "shot, elsewhere": {
+   "n": 82,
+   "candidate at feet": 0.988,
+   "linked at feet": 0.939
+  },
+  "shot, near a goal": {
+   "n": 159,
+   "candidate at feet": 0.981,
+   "linked at feet": 0.692
+  },
+  "shots per match": {
+   "117093": {
+    "n": 28,
+    "candidate": 1.0,
+    "linked": 0.86
+   },
+   "118575": {
+    "n": 24,
+    "candidate": 1.0,
+    "linked": 0.79
+   },
+   "118576": {
+    "n": 43,
+    "candidate": 0.98,
+    "linked": 0.77
+   },
+   "118577": {
+    "n": 33,
+    "candidate": 0.94,
+    "linked": 0.64
+   },
+   "118578": {
+    "n": 29,
+    "candidate": 1.0,
+    "linked": 0.55
+   },
+   "128057": {
+    "n": 12,
+    "candidate": 1.0,
+    "linked": 0.83
+   },
+   "128058": {
+    "n": 29,
+    "candidate": 0.97,
+    "linked": 0.79
+   },
+   "132831": {
+    "n": 16,
+    "candidate": 1.0,
+    "linked": 0.94
+   },
+   "132877": {
+    "n": 28,
+    "candidate": 0.96,
+    "linked": 0.93
+   }
+  }
+ },
+ "follow-up: where the shooter's ball is lost (shots, +-0.4 s, exploratory)": {
+  "near a goal (159 shots)": {
+   "candidate at the feet": 0.981,
+   "... with confidence >= 0.10": 0.742,
+   "... in the top 4": 0.742,
+   "linked": 0.692,
+   "candidates >= 0.10 per frame": 0.63
+  },
+  "elsewhere (82 shots)": {
+   "candidate at the feet": 0.988,
+   "... with confidence >= 0.10": 0.963,
+   "... in the top 4": 0.963,
+   "linked": 0.939,
+   "candidates >= 0.10 per frame": 1.05
+  },
+  "reading": "near the goals the detector still proposes something at the shooter's feet, but with lower confidence: the 0.10 cut before the link drops it a quarter of the time; the top-4 cut and the link lose little more"
+ }
+}

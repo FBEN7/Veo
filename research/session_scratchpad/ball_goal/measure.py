@@ -103,7 +103,8 @@ def measure2():
             pid = str(int(e.player_id))
             cand = link = False
             gx = np.nan
-            for f in range(int(e.frame) - 10, int(e.frame) + 11, 2):
+            f0 = int(e.frame) - int(e.frame) % 2          # the players' (even) frames
+            for f in range(f0 - 10, f0 + 11, 2):
                 g = gby.get(f)
                 if g is None:
                     continue
@@ -112,7 +113,7 @@ def measure2():
                     continue
                 s = s.iloc[0]
                 fx, fy, h = s.bx + s.bw / 2, s.by + s.bh, s.bh
-                if f == int(e.frame) - int(e.frame) % 2:
+                if f == f0:
                     gx = s.x
                 k = kby.get(f)
                 if k is not None and (np.hypot(k.px - fx, k.py - fy) <= h).any():

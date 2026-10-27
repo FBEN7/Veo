@@ -1871,6 +1871,33 @@ before any feature (`plan.json`, `cv_v3.json`):
     them (hits 50%), a slower top speed (19 vs 28 m/s) and sit further
     from goal (12.7 vs 8.8 m).
 
+### The ball near the goals (`ball_goal/`; CPU, descriptive)
+
+Plan hashed first (`plan.json`); `measure.json`.
+
+- **Hand-verified balls** (M6 / M7 / M9 windows, 508 frames): near a goal
+  (within 16.5 m of the goal line, 81 frames) the detector proposes the
+  ball on 0.99 of them, top-1 0.93, linked 0.90; elsewhere 0.98 / 0.84 /
+  0.84. On frames where a person saw the ball, near-goal balls are not
+  harder.
+- **At the labelled shots** (242, all matches but M1; something within
+  one box height of the shooter's feet within +-0.4 s):
+
+| | candidate there | with confidence >= 0.10 | linked |
+|---|---|---|---|
+| shots near a goal (159) | 0.98 | **0.74** | 0.69 |
+| shots elsewhere (82) | 0.99 | 0.96 | 0.94 |
+| passes near a goal (377) | 0.90 | -- | 0.71 |
+
+- So near the goals the detector does propose a candidate at the
+  shooter's feet, but with low confidence (0.63 candidates >= 0.10 per
+  frame there, 1.05 elsewhere): the 0.10 cut before the link drops it a
+  quarter of the time. Caveat: a low-confidence candidate at the feet may
+  be a boot, not the ball.
+- Levers: a lower or zone-dependent confidence cut (CPU, to test against
+  the verified balls for false picks), or a detector more confident on
+  small far balls (GPU: tiles, or retraining on near-goal clicks).
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
