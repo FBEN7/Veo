@@ -1,0 +1,20 @@
+{
+ "name": "ball detector v4: v3b fine-tuned on clicked shot balls",
+ "registered": "2026-10-27, before any click was made",
+ "data": {
+  "clicks": "the owner on the click page (artifact GLjrvrfDP6uJn8vV5gSN6J): 93 shots of 8 matches (not M7, M9), 6 frames each at -4, +4, +10, +16, +24, +34 frames from the labelled shot frame (k = 0 is before the kick); status ball (with its position), none (no ball in the 800 x 450 crop) or unsure",
+  "folds": {"A": ["117092", "117093", "118575", "118577"], "B": ["118576", "128058", "132877"], "guard (never trained on)": ["118578"]},
+  "training strips per ball frame": "3 crops around the ball (codes 1 within 12 px, 0 to 20 px, -1 elsewhere) and 1 crop clear of it (all -1)",
+  "regulariser": "1,200 of v2's stream strips (flight 450, action 300, free 450; stream_subset.py, seed 0), already in v3b's training"
+ },
+ "training": "train_v4.py per fold, from ball_v3b.1500.pt: v3's optimiser, learning rates, frozen early batch norms, EMA 0.999 and strip losses; batches of 16 (8 verified, 2 verified_neg, 2 flight, 1 action, 3 free); 600 steps (warm-up 100, cosine); seed 0. The 600-step checkpoint is the result; the 300-step one is reported, never chosen.",
+ "test": "eval_v4.py: detect_v2 at top_k 8, tau 0.05, on every clicked frame and on the verified balls of the M6 window st2_118578_2nd_f015000 (ball_verified/A); a candidate is right within 12 px of the click",
+ "primary endpoint": "hit@4 (a right candidate among the 4 most confident) on the ball frames after the kick (k >= 1) of folds A and B, each frame by the v4 of the other fold, minus v3b's on the same frames; 95% interval by a bootstrap over shots (2,000 draws, seed 0)",
+ "secondary": ["hit@1", "conf10: a right candidate at confidence >= 0.10 (indicative only: v4 carries v3b's Platt calibration)", "on none frames, a candidate inside the crop (any; at >= 0.10)", "M6 guard window hit@4 for v4A.600 and v4B.600 against v3b", "hit@4 on the shots the spotter missed", "all of the above at 300 steps"],
+ "decision": {
+  "v4 is better": "difference >= +0.05 and the interval's lower end > 0, and on the M6 guard window neither v4A.600 nor v4B.600 loses more than 0.03 of hit@4 against v3b, and on none frames the share with a candidate in the crop rises by at most 0.05",
+  "then (not part of this test)": "train v4 on both folds' clicks, refit its calibration (calibrate_ball_heatmap.py), and measure the shot spotter again (shots_learn cv) before any adoption in the pipeline",
+  "otherwise": "reported; nothing adopted"
+ },
+ "known limits": ["one rater: no estimate of click noise", "v3b's init (v1) was trained on M6's first half and v3b was selected on M6: the guard favours v3b slightly", "the test matches' stream strips are in v3b's (and so v4's) training: 'unseen' holds for the clicks only", "the shots were picked missed-first (13 per match at most): not a random sample of shots"]
+}
