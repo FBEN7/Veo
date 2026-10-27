@@ -1808,8 +1808,18 @@ clip, yolov8s (the pipeline's) and yolov8m, scored against the truth
   real players. A lower threshold or yolov8m (M9 0.706) does not help.
 - Keeping detections whose feet are inside the release's pitch outline
   instead recovers them (0.70 -> 0.94) and is cleaner on M7 too.
-- Next: switch the fixed-view pipeline from the grass test to the outline,
-  rerun the players on the GPU, and re-measure M9 (attribution included).
+- **Done** (`src/detect_track_hybrid.py`, `score_soccernet.py`: no grass
+  test on players when a fixed view has an outline; runs at --pitch-margin
+  0, players-only, `.cache/gpu_nograss/`). Re-measure
+  (`passer/nograss_protocol.json`, hashed before the runs returned):
+  - player recall (pitch tracks, feet): M9 0.647 -> **0.882** (precision
+    0.82 -> 0.73), M7 unchanged (0.895);
+  - who made the action, rule C: unchanged, 0.348 [0.309, 0.388] (M7 0.532,
+    M9 0.253), although M9's ceiling rose 0.54 -> 0.83;
+  - why: on M9 the linked ball sits a median 10 box heights from the
+    labelled player at the label (M7 1.0, seen matches 0.6), with no
+    constant time shift: **M9's ball track is now the limit**
+    (`passer/nograss_test.json`).
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 

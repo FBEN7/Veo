@@ -17,6 +17,12 @@ RULE_C = "C [-0.4, +0.2] s"
 
 
 def main():
+    import sys
+    from pathlib import Path
+    out_name = "m7m9_test.json"
+    if "--gpu" in sys.argv:            # another set of runs (nograss_protocol.json)
+        P.GPU = P.ROOT / sys.argv[sys.argv.index("--gpu") + 1]
+        out_name = sys.argv[sys.argv.index("--out") + 1]
     for m in MATCHES:
         if not unsealed(m, "passer: registered M7 / M9 actor test"):
             raise SystemExit("VEO_UNSEAL needed for M7 / M9")
@@ -38,7 +44,7 @@ def main():
     c, b = out["all actions"][RULE_C], out["all actions"]["B"]
     out["holds"] = bool(c["wilson"][0] >= 0.45 and c["share right"] >= b["share right"])
     print(json.dumps(out, indent=1, default=str))
-    (P.HERE / "m7m9_test.json").write_text(json.dumps(out, indent=1, default=str))
+    (P.HERE / out_name).write_text(json.dumps(out, indent=1, default=str))
 
 
 if __name__ == "__main__":
