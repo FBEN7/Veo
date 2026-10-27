@@ -1,6 +1,6 @@
 """Which shots the v3 spotter misses, and what its inputs looked like there
 (owner, 2026-10-27). The same nested leave-one-match-out as learn_v3.py on
-the relinked tracks, outer folds in parallel; per labelled shot: hit or
+the relinked tracks; per labelled shot: hit or
 missed, the model's best probability within 2 s and the fold's threshold,
 and the ball around it (tracked share within 1 s, top speed, distance to
 the nearer goal). Writes missed.parquet and missed.json.
@@ -9,7 +9,6 @@ the nearer goal). Writes missed.parquet and missed.json.
 """
 import json
 import sys
-from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
@@ -46,8 +45,11 @@ def main():
     us = V3.new_tree([u for u in V.units() if (LS.GPU / u["name"]).exists()])
     LS.GPU = V.GPU = V3.NEW
     D = {u["name"]: (V.features_v2(u), LS.labels(u), u["match"]) for u in us}
-    with Pool(4) as pool:
-        res = pool.map(fold, sorted({v[2] for v in D.values()}))
+    # sequential: forked workers hung with the classifier's OpenMP threads
+    res = []
+    for m in sorted({v[2] for v in D.values()}):
+        res.append(fold(m))
+        print("fold", m, "done", flush=True)
     thr = {m: t for m, t, _ in res}
     probs = {n: p for _, _, ps in res for n, p in ps.items()}
     rows = []
