@@ -1,0 +1,131 @@
+{
+ "variant": "zone03",
+ "seen matches": {
+  "units": 197,
+  "no grass (t10)": {
+   "all": {
+    "n": 1905,
+    "right": 1087,
+    "share right": 0.571,
+    "wilson": [
+     0.548,
+     0.593
+    ],
+    "coverage": 0.834,
+    "precision": 0.684
+   },
+   "passes": {
+    "n": 935,
+    "right": 551,
+    "share right": 0.589,
+    "wilson": [
+     0.557,
+     0.62
+    ],
+    "coverage": 0.848,
+    "precision": 0.695
+   },
+   "per match": {
+    "117093": 0.593,
+    "118575": 0.599,
+    "118576": 0.603,
+    "118577": 0.469,
+    "118578": 0.547,
+    "128058": 0.57,
+    "132877": 0.594
+   }
+  },
+  "zone03": {
+   "all": {
+    "n": 1905,
+    "right": 1099,
+    "share right": 0.577,
+    "wilson": [
+     0.555,
+     0.599
+    ],
+    "coverage": 0.879,
+    "precision": 0.656
+   },
+   "passes": {
+    "n": 935,
+    "right": 562,
+    "share right": 0.601,
+    "wilson": [
+     0.569,
+     0.632
+    ],
+    "coverage": 0.887,
+    "precision": 0.678
+   },
+   "per match": {
+    "117093": 0.608,
+    "118575": 0.589,
+    "118576": 0.594,
+    "118577": 0.492,
+    "118578": 0.568,
+    "128058": 0.586,
+    "132877": 0.591
+   }
+  }
+ },
+ "M7 / M9": {
+  "units": 27,
+  "no grass (t10)": {
+   "all": {
+    "n": 552,
+    "right": 321,
+    "share right": 0.582,
+    "wilson": [
+     0.54,
+     0.622
+    ],
+    "coverage": 0.906,
+    "precision": 0.642
+   },
+   "passes": {
+    "n": 285,
+    "right": 172,
+    "share right": 0.604,
+    "wilson": [
+     0.546,
+     0.659
+    ],
+    "coverage": 0.916,
+    "precision": 0.659
+   },
+   "per match": {
+    "128057": 0.532,
+    "132831": 0.607
+   }
+  },
+  "zone03": {
+   "all": {
+    "n": 552,
+    "right": 319,
+    "share right": 0.578,
+    "wilson": [
+     0.536,
+     0.618
+    ],
+    "coverage": 0.895,
+    "precision": 0.646
+   },
+   "passes": {
+    "n": 285,
+    "right": 174,
+    "share right": 0.611,
+    "wilson": [
+     0.553,
+     0.665
+    ],
+    "coverage": 0.905,
+    "precision": 0.674
+   },
+   "per match": {
+    "128057": 0.532,
+    "132831": 0.602
+   }
+  }
+ }
+}
