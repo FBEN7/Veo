@@ -7,6 +7,7 @@ import glob, os, shutil, subprocess, sys
 
 WINDOWS = __WINDOWS__
 CUT = __CUT__
+EXTRA = __EXTRA__
 
 
 def find(name):
@@ -30,6 +31,9 @@ for f in glob.glob("/kaggle/input/**/*", recursive=True):
     if n.startswith("st2_") and n.endswith((".mp4", ".json", "_gt.parquet", "_events.csv")):
         dst = os.path.join(root, "data/soccertrack_v2", n)
         os.path.exists(dst) or os.symlink(f, dst)
+    elif n.startswith("v3_balls_st2_") and n.endswith((".parquet", ".parquet.meta.json")):
+        os.makedirs(os.path.join(root, ".cache"), exist_ok=True)
+        shutil.copy(f, os.path.join(root, ".cache", n))   # --players-only: the ball rows already made
     elif n.endswith(("_camera_intrinsics.npz", "_homography.npy")):
         shutil.copy(f, os.path.join(root, ".cache/soccertrack_v2/calib", n))
 for n in ("ball_v3b.1500.pt", "ball_v3b.1500.pt.calib.json", "ball_v3b.1500.pt.provenance.json"):
@@ -48,4 +52,4 @@ if CUT:   # the gated release, read with the owner's token from the kernel's sec
     from kaggle_secrets import UserSecretsClient
     os.environ["HF_TOKEN"] = UserSecretsClient().get_secret("HF_TOKEN")
 subprocess.run([sys.executable, os.path.join(root, "research/session_scratchpad/kaggle/run_windows.py"),
-                "--root", root, *(["--cut"] if CUT else []), *WINDOWS], check=True, cwd="/kaggle/working")
+                "--root", root, *(["--cut"] if CUT else []), *EXTRA, *WINDOWS], check=True, cwd="/kaggle/working")

@@ -40,6 +40,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 THREADS = "2"
+PITCH_MARGIN = "50"
 
 
 def lane_env(root: Path, gpu: int) -> dict:
@@ -72,11 +73,31 @@ def players_lane(root: Path, specs: list, recs: dict, out: Path):
         if wait_ready(w, rec) and step(rec, "players", ["eval_soccertrack_v2.py", f"data/soccertrack_v2/{w}.mp4",
                                  "--out", f"output_{w}", "--run", "--calibrated",
                                  "--model", "yolov8s.pt", "--stride", "2",
-                                 "--pitch-margin", "50"], root, env, log):
+                                 "--pitch-margin", PITCH_MARGIN], root, env, log):
             step(rec, "events_v1", ["research/session_scratchpad/events_run.py", w, "events_v1"],
                  root, env, log)
         rec["done"].add("players")
         finish(root, w, rec, out)
+
+
+def players_lane_on(gpu: int):
+    """--players-only: a players lane on GPU `gpu`; the units' v3 ball rows
+    are already in .cache (copied from the inputs), so the ball counts as done."""
+    def lane(root: Path, specs: list, recs: dict, out: Path):
+        for w, _, _ in specs:
+            recs[w]["done"].add("ball")
+        env = lane_env(root, gpu)
+        for w, _, _ in specs:
+            rec, log = recs[w], out / f"{w}.players.log"
+            if step(rec, "players", ["eval_soccertrack_v2.py", f"data/soccertrack_v2/{w}.mp4",
+                                     "--out", f"output_{w}", "--run", "--calibrated",
+                                     "--model", "yolov8s.pt", "--stride", "2",
+                                     "--pitch-margin", PITCH_MARGIN], root, env, log):
+                step(rec, "events_v1", ["research/session_scratchpad/events_run.py", w, "events_v1"],
+                     root, env, log)
+            rec["done"].add("players")
+            finish(root, w, rec, out)
+    return lane
 
 
 def ball_lane(root: Path, specs: list, recs: dict, out: Path):
@@ -164,9 +185,14 @@ def main():
     ap.add_argument("--root", required=True)
     ap.add_argument("--cut", action="store_true",
                     help="cut each unit's mp4 here first (its .json carries 'cut'); needs HF_TOKEN")
+    ap.add_argument("--players-only", action="store_true",
+                    help="players on both GPUs, the v3 ball rows given in .cache")
+    ap.add_argument("--pitch-margin", default="50")
     ap.add_argument("windows", nargs="+",
                     help="W[:seen][@A-B]: :seen = --allow-seen on the ball, @A-B = the ball on local frames [A, B) only")
     args = ap.parse_args()
+    global PITCH_MARGIN
+    PITCH_MARGIN = args.pitch_margin
     import torch
 
     root, out = Path(args.root), Path.cwd()
@@ -183,6 +209,19 @@ def main():
             for w, seen, rng in specs}
     t0 = time.perf_counter()
     funcs = [players_lane, ball_lane]
+    if args.players_only:
+        missing = [w for w, _, _ in specs if not (root / ".cache" / f"v3_balls_{w}.parquet").exists()]
+        if missing:
+            raise SystemExit(f"--players-only: no v3 ball rows for {missing}")
+        halves = [specs[0::2], specs[1::2]]
+        lanes = [threading.Thread(target=players_lane_on(g), args=(root, h, recs, out))
+                 for g, h in enumerate(halves)]
+        for t in lanes:
+            t.start()
+        for t in lanes:
+            t.join()
+        print(f"all lanes done in {time.perf_counter() - t0:.0f} s", flush=True)
+        return
     if args.cut:
         READY.update({w: threading.Event() for w, _, _ in specs})
         threading.Thread(target=cutter, args=(root, specs, recs), daemon=True).start()
