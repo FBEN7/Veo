@@ -1918,6 +1918,25 @@ Stage 2 on the chosen zone03 (`stage2_*.json`):
   shots instead of 69%, yet the spotter finds no more shots: its limit is
   elsewhere (what the ball does after the kick, or the model itself).
 
+### Is the ball tracked after the kick? (`shot_flight/`; CPU, descriptive)
+
+The 1.5 s after each labelled shot (239 shots, M1 out; hit / missed by the
+v3 spotter), plan hashed first (`plan.json`, `flight.json`):
+
+| | hit (147) | missed (92) |
+|---|---|---|
+| frames with a linked ball | 0.31 | 0.25 |
+| linked ball 3 m+ closer to the goal line than the shooter | **0.70** | **0.45** |
+| frames with a v3 candidate 3 m+ closer to the goal than the shooter | 0.60 | 0.38 |
+| shooter's distance to the goal line (m) | 13.7 | 11.8 |
+
+- The ball in flight is tracked on a third of the frames at best, even
+  for the shots that are found.
+- On missed shots the ball is seen heading to goal less than half the
+  time, and the detector itself proposes nothing toward the goal on most
+  frames: the fast ball after the kick, often from close range, is what
+  the detector misses (blur, a few px), not the ball at the feet.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;

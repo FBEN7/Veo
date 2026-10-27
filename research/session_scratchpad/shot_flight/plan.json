@@ -1,0 +1,13 @@
+{
+ "question": "Is the ball tracked after the kick on the shots the spotter misses? (owner, 2026-10-27)",
+ "status": "descriptive, CPU, written before any measure",
+ "shots": "the 269 labelled shots of shots_learn/v3/missed.parquet (hit or missed by the v3 spotter on the no-grass tracks), M1 left out (its camera)",
+ "window": "the 1.5 s after the labelled shot, the players' (even) frames",
+ "measures": {
+  "linked share": "frames with a linked ball (metric_v3s_link_nograss)",
+  "flight tracked": "the linked ball gets 5 m or more from the shooter (truth position at the label) within the window",
+  "toward the goal": "the linked ball gets 3 m or more closer to the nearer goal line than the shooter",
+  "candidates toward the goal": "frames with a kept v3 candidate (any confidence) whose ground point is 3 m or more closer to that goal line than the shooter"
+ },
+ "compared": "hit vs missed shots"
+}
