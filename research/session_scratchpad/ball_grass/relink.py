@@ -16,7 +16,7 @@ import tune_rules as tr  # noqa: E402
 from src import pixel_scale  # noqa: E402
 from src import soccertrack_v2 as st  # noqa: E402
 
-SKIP = {"117092"}
+SKIP = set() if "--all" in sys.argv else {"117092"}
 NEW_PLAYERS = {"128057", "132831"}
 
 
@@ -30,6 +30,14 @@ def main():
         base = ROOT / (".cache/gpu_nograss" if m in NEW_PLAYERS else ".cache/gpu") / w / f"output_{w}"
         run = base / "shots_v3s_link"
         if not (run / "tracks_grass.parquet").exists():
+            if "--all" not in sys.argv or not (base / "v3s_rows.parquet").exists() or (base / "metric_v3s_link_nograss.parquet").exists():
+                continue
+            # no cached ball run: rebuild it from events_v1 and the kept v3 rows; without the
+            # ball's grass test no grass fraction is needed (left empty)
+            import pandas as pd
+            sc.swap_ball_rows(base / "events_v1", run, pd.read_parquet(base / "v3s_rows.parquet"))
+            pd.read_parquet(run / "tracks_teams.parquet").assign(grass_frac=float("nan")).to_parquet(run / "tracks_grass.parquet")
+        elif "--all" in sys.argv and (base / "metric_v3s_link_nograss.parquet").exists():
             continue
         cal = st.calibration(m)
         with contextlib.redirect_stdout(io.StringIO()):
