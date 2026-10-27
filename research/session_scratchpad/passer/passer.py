@@ -28,6 +28,7 @@ SEALED = {"128057", "132831"}
 PASSES = {"PASS", "HIGH PASS", "CROSS"}
 NOT_ACTOR = {"OUT", "GOAL"}
 RADIUS = 3.0
+METRIC = "metric_v3s_link.parquet"   # the pitch tracks read (ball_grass/: the relinked ones)
 FILL = 0            # ball gaps up to FILL frames filled linearly (ball_interp/; 0: off)
 FIX = ROOT / ".cache/calib_fix"         # M1's refitted camera (calib_fix/fit_players.py)
 

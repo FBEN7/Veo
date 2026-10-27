@@ -1,0 +1,9 @@
+{
+ "question": "Does dropping the ball's grass test (ball_pitch_filter.filter_ball_by_pitch) fix M9's ball without hurting the other matches?",
+ "status": "exploratory, CPU, written before any relink (2026-10-27)",
+ "finding that motivates it": "on M9's verified clip the true ball's grass fraction is a median 0.10 and 76% of its candidates fall under 0.40 (M5's candidates: 0.9); relinking the same kept rows without that filter puts the ball on 38 of 39 verified frames",
+ "change": "score_soccernet.merged_from_cached(ball_grass_filter=False); everything else as kaggle/metric_step.py (link, top 4, tau 0.10, outline from the run's pitch.json)",
+ "units": "every shots clip with a cached shots_v3s_link/tracks_grass.parquet; M7 / M9 from .cache/gpu_nograss (the no-grass players), the others from .cache/gpu; M1 left out (its camera)",
+ "measures": "linked ball frames per clip; on M9's verified clip the share of verified balls hit (12 px); rule C (possession.py) with the new pitch tracks against the old, seen matches in range and M7 / M9",
+ "adopt if": "M7 / M9 rule C rises and the seen matches' rule C does not fall by more than 1 point"
+}

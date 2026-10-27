@@ -21,7 +21,7 @@ WINDOWS = {"C [-0.6, +0.12] s": (-15, 3), "C [-1.0, +0.2] s": (-25, 5), "C [-0.4
 
 def unit(w, lo, hi):
     info = json.loads((P.CLIPS / f"{w}.json").read_text())
-    m = pd.read_parquet(P.GPU / w / f"output_{w}" / "metric_v3s_link.parquet")
+    m = pd.read_parquet(P.GPU / w / f"output_{w}" / P.METRIC)
     m[["x", "y"]] = P.st.image_to_pitch(m[["px_raw", "py_raw"]].to_numpy(), P.calibration(str(info["match"])))
     ball = m[m.cls == "ball"].set_index("frame")
     ball = ball[~ball.index.duplicated()].sort_index()

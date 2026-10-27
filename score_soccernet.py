@@ -609,7 +609,8 @@ def swap_ball_rows(src_dir, dst_dir, rows: pd.DataFrame | None = None) -> Path:
 def merged_from_cached(run_dir, cal: dict, select: str = "v1",
                        link_params: dict | None = None,
                        top_k: int | None = None, tau: float | None = None,
-                       verbose: bool = False) -> pd.DataFrame:
+                       verbose: bool = False,
+                       ball_grass_filter: bool = True) -> pd.DataFrame:
     """run_pipeline's steps from its cached teams to the merged tracks, on
     a fixed view with a pitch outline and a calibration: grass fractions
     (cached in tracks_grass.parquet, measured on the clip when absent),
@@ -635,7 +636,10 @@ def merged_from_cached(run_dir, cal: dict, select: str = "v1",
             verbose=verbose)
         tracks.to_parquet(grass)
 
-    filtered = ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=verbose)
+    # ball_grass_filter False: the outline alone keeps the ball on the pitch
+    # (the grass test drops most of M9's true balls: research/session_scratchpad/ball_grass/)
+    filtered = (ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=verbose)
+                if ball_grass_filter else tracks.copy())
     scale = pixel_scale.estimate_px_per_m(filtered)
     filtered = filtered.assign(px_raw=filtered.px, py_raw=filtered.py)
     capped = player_filter.filter_players(filtered, verbose=verbose)
