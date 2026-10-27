@@ -1860,6 +1860,16 @@ before any feature (`plan.json`, `cv_v3.json`):
 - Hits new - old: -1, 95% [-17, +14] over matches: no change in recall;
   20 fewer false shots. M9 4 -> 7 hits, M7 7 -> 9; M6, M10 and M8 lose a few.
 - The shot spotter's limit is not the ball's grass test.
+- **Why shots are missed** (`missed.py`, `missed.json`; 118 of 269):
+  - no ball tracked within 1 s of the shot: 54 (50 outside M1, which is
+    nearly blind: 3 of 29);
+  - the model fired but not within 2 s, or merged with another peak: 24;
+  - the ball was tracked but the model saw no shot: 25 (long shots: median
+    23 m from goal);
+  - the model was just under its threshold: 15.
+  - Missed shots have the ball tracked a median 35% of the second around
+    them (hits 50%), a slower top speed (19 vs 28 m/s) and sit further
+    from goal (12.7 vs 8.8 m).
 
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
