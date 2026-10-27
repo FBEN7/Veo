@@ -1937,6 +1937,27 @@ v3 spotter), plan hashed first (`plan.json`, `flight.json`):
   frames: the fast ball after the kick, often from close range, is what
   the detector misses (blur, a few px), not the ball at the feet.
 
+### Learned shots v4: the players' reactions (`shots_learn/v4/`; exploratory)
+
+v2 features plus ball-free reactions (plan hashed before any feature;
+`cv_v4.json`): for the goal with more players within 25 m, the keeper
+proxy's speed before t and its top speed / lateral speed in the next 1 s,
+players within 20 m of that goal (count, speed and run toward the goal,
+before / after), and all players' mean speed before / after (speeds
+clipped at 12 m/s against track switches). Same 249 clips and tracks as v3,
+nested leave-one-match-out:
+
+| | hits | false | missed | recall | precision |
+|---|---|---|---|---|---|
+| v2 features | 150 | 126 | 119 | 0.558 | 0.543 |
+| **v4 (+ reactions)** | **165** | **113** | **104** | **0.613** | **0.594** |
+
+- Hits +15, 95% [-3, +34] over matches: a gain on both recall and
+  precision, but the interval includes zero (ten matches).
+- Gains on M2, M5, M6, M8, M10 (+2 to +7); M1 -2 and M7 -3.
+- The best shot spotter so far; every match has been used, so this is
+  cross-validated evidence only.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
