@@ -1821,6 +1821,30 @@ clip, yolov8s (the pipeline's) and yolov8m, scored against the truth
     constant time shift: **M9's ball track is now the limit**
     (`passer/nograss_test.json`).
 
+### The ball's grass test (`ball_grass/`; CPU)
+
+On M9 the v3 detector proposes the true ball (45 of 47 verified frames on
+the clip overlapping the verified window, confidence ~0.7), but
+`ball_pitch_filter.filter_ball_by_pitch` drops it: the true ball's grass
+fraction is a median 0.10 there (M5's candidates 0.9), so 76% of its
+candidates fall under the 0.40 bar. Relinked without that test
+(`plan.json`, hashed first; outline kept), on 191 clips:
+
+| rule C, who made the action | before | without the ball's grass test |
+|---|---|---|
+| matches v3 was trained on (1544 actions) | 0.569 | 0.571 |
+| **M7 / M9 (552)** | 0.348 [0.309, 0.388] | **0.582 [0.540, 0.622]** |
+| M7 | 0.532 | 0.532 |
+| M9 | 0.253 | **0.607** |
+| M9 verified balls hit (39) | 9 | 38 |
+
+- Adopted (bar: M7 / M9 up, seen matches not down by more than a point):
+  for a fixed view with an outline the ball's grass test is off
+  (`score_soccernet.run_pipeline` and `merged_from_cached`).
+- M7 / M9 had been used for the registered test (`passer/m7m9_test.json`,
+  fails at 0.348); 0.582 clears that test's bar (0.45) but is exploratory,
+  not a registered pass.
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;

@@ -369,7 +369,11 @@ def run_pipeline(clip: str, out_dir: Path, return_tracks: bool = False,
         tracks.loc[is_player, "team"] = (
             tracks.loc[is_player, "track_id"].map(team_override))
 
-    filtered = ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=True)
+    # A fixed view with an outline keeps the ball on the pitch by the outline
+    # alone: the grass test dropped most of M9's true balls
+    # (research/session_scratchpad/ball_grass/score.json).
+    filtered = (tracks.copy() if fixed_view
+                else ball_pitch_filter.filter_ball_by_pitch(tracks, verbose=True))
     scale = pixel_scale.estimate_px_per_m(filtered)
     # Where each detection is in the picture, kept through camera
     # compensation, which rewrites px/py: player identity crops the frames.
@@ -610,7 +614,7 @@ def merged_from_cached(run_dir, cal: dict, select: str = "v1",
                        link_params: dict | None = None,
                        top_k: int | None = None, tau: float | None = None,
                        verbose: bool = False,
-                       ball_grass_filter: bool = True) -> pd.DataFrame:
+                       ball_grass_filter: bool = False) -> pd.DataFrame:
     """run_pipeline's steps from its cached teams to the merged tracks, on
     a fixed view with a pitch outline and a calibration: grass fractions
     (cached in tracks_grass.parquet, measured on the clip when absent),
