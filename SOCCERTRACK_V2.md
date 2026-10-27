@@ -1898,6 +1898,26 @@ Plan hashed first (`plan.json`); `measure.json`.
   the verified balls for false picks), or a detector more confident on
   small far balls (GPU: tiles, or retraining on near-goal clicks).
 
+### A lower ball confidence cut near the goals (`ball_tau/`; CPU, not adopted)
+
+Plan hashed first (`plan.json`). Stage 1, four cuts (cut and link tau):
+
+| variant | verified balls hit | wrong picks | shots near a goal, linked ball at the feet | elsewhere |
+|---|---|---|---|---|
+| t10 (current) | 0.846 | 0.069 | 0.692 | 0.939 |
+| t05 | 0.866 | 0.075 | 0.780 | 0.951 |
+| t02 | 0.884 | 0.085 | 0.811 | 0.963 |
+| **zone03** (0.03 within 16.5 m of a goal line, 0.10 elsewhere) | 0.846 | 0.071 | **0.855** | 0.927 |
+
+Stage 2 on the chosen zone03 (`stage2_*.json`):
+- shot spotter (v3, 249 clips, nested leave-one-match-out): 148 hits,
+  139 false, 121 missed, against 150 / 126 / 119: **no gain** (bar: hits up);
+- who made the action (rule C): seen matches 0.571 -> 0.577, M7 / M9
+  0.582 -> 0.578.
+- Not adopted. The ball is now at the shooter's feet on 86% of near-goal
+  shots instead of 69%, yet the spotter finds no more shots: its limit is
+  elsewhere (what the ball does after the kick, or the model itself).
+
 ### Distance and possession (`events_stats/`; descriptive, weak evidence)
 
 **The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
