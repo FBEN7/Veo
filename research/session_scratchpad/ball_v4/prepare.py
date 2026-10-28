@@ -73,7 +73,7 @@ def main():
     docs = [json.loads(p.read_text()) for p in sorted(clicks_dir.rglob("*.json"))]
     docs = [d.get("data", d) for d in docs]
     rng = np.random.default_rng(SEED)
-    targets, codes, tests = [], [], []
+    targets, codes, tests, outside = [], [], [], set()
     for d in docs:
         s = man[d["shot"]]
         info = json.loads((CLIPS / f"{s['unit']}.json").read_text())
@@ -92,8 +92,12 @@ def main():
                 "fold": fold_of(s["match"]), "frame": start + local, "u": bx, "v": by}
         for _ in range(PLACEMENTS):
             x0, y0 = place((bx - BALL_PX, by - BALL_PX, bx + BALL_PX, by + BALL_PX), rng, box)
+            c = codes_for(x0, y0, bx, by)
+            if not (c == 1).any():             # the ball outside the pitch box: no bag to learn
+                outside.add((d["shot"], int(d["k"])))
+                continue
             targets.append(dict(base, kind="verified", x0=int(x0), y0=int(y0)))
-            codes.append(codes_for(x0, y0, bx, by))
+            codes.append(c)
         for _ in range(20):                       # one crop clear of the ball's 40 px box
             x0 = int(rng.integers(box[0], box[2] - SIZE))
             y0 = int(rng.integers(box[1], max(box[1] + 1, box[3] - SIZE)))
@@ -114,6 +118,7 @@ def main():
     tf = pd.DataFrame(tests)
     tf.to_parquet(st / "test_frames.parquet")
     print("clicked frames", len(tf), tf.status.value_counts().to_dict())
+    print("ball frames outside the pitch box (no strip)", len(outside))
     print("strips", len(t), t.groupby(["fold", "kind"]).size().to_dict() if len(t) else {})
 
 
