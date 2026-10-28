@@ -170,17 +170,18 @@ def score(out, tf=None, stage=None):
 
 def primary(res: pd.DataFrame, n_boot: int = 2000, seed: int = 0) -> dict:
     """protocol.json's endpoint: hit@4 on the clicked ball frames after the
-    kick (k >= 1) of folds A and B, each frame by the v4 of the other fold
-    ("v4.<step>") against v3b, paired per frame; 95% interval of the
+    kick (k >= 1) of folds A and B, each frame by the model of the other fold
+    ("<recipe>.<step>", from "<recipe>A.<step>" and "<recipe>B.<step>") against v3b, paired per frame; 95% interval of the
     difference by a bootstrap over shots (a shot's frames move together)."""
     b = res[(res.status == "ball") & res.fold.isin(["A", "B"]) & (res.k >= 1)]
     key = ["unit", "frame", "shot"]
     v3 = b[b.model == "v3b"].set_index(key).hit4
-    steps = sorted({m.split(".")[1] for m in set(b.model) if m.startswith("v4A.")}, key=int)
+    pairs = sorted({(m.split(".")[0][:-1], m.split(".")[1]) for m in set(b.model)
+                    if m != "v3b" and m.split(".")[0].endswith("A")})         # ("v4r", "600")
     out = {}
-    for s in steps:
-        v4 = b[((b.fold == "A") & (b.model == f"v4B.{s}"))
-               | ((b.fold == "B") & (b.model == f"v4A.{s}"))].set_index(key).hit4
+    for p, s in pairs:
+        v4 = b[((b.fold == "A") & (b.model == f"{p}B.{s}"))
+               | ((b.fold == "B") & (b.model == f"{p}A.{s}"))].set_index(key).hit4
         m = pd.concat({"v3": v3, "v4": v4}, axis=1, join="inner").astype(float).reset_index()
         d = (m.v4 - m.v3).to_numpy()
         codes, ids = pd.factorize(m.shot)
@@ -188,7 +189,7 @@ def primary(res: pd.DataFrame, n_boot: int = 2000, seed: int = 0) -> dict:
         rng = np.random.default_rng(seed)
         boot = [d[np.concatenate([groups[j] for j in rng.integers(len(groups), size=len(groups))])].mean()
                 for _ in range(n_boot)] if len(groups) else [np.nan]
-        out[f"v4.{s}"] = {"frames": len(m), "shots": len(ids),
+        out[f"{p}.{s}"] = {"frames": len(m), "shots": len(ids),
                           "v3b hit4": round(float(m.v3.mean()), 3), "v4 hit4": round(float(m.v4.mean()), 3),
                           "difference": round(float(d.mean()), 3),
                           "95% interval": [round(float(np.percentile(boot, 2.5)), 3),

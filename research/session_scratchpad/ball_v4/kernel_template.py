@@ -9,6 +9,7 @@
 import glob, os, shutil, subprocess, sys, time
 
 STEPS = __STEPS__
+RECIPE = __RECIPE__               # train_v4.py --recipe: v4, v4r
 STREAM_PROBE = __PROBE__          # one of the stream strips: its directory is the stream dataset
 PARTS = 3
 T0 = time.time()
@@ -85,11 +86,12 @@ run_all([([py, f"{v4}/cut_v4.py", "--stage", stage, "--clips", *clips, "--out", 
            "--part", str(i), "--parts", str(PARTS)], {}) for i in range(PARTS)], "cut")
 subprocess.run([py, f"{v4}/cut_v4.py", "--stage", stage, "--out", strips, "--merge", "--stream", stream],
                check=True, cwd=root)
-run_all([([py, f"{v4}/train_v4.py", "--fold", k, "--strips", strips, "--out", f"{W}/ball_v4{k}",
+run_all([([py, f"{v4}/train_v4.py", "--fold", k, "--strips", strips, "--out", f"{W}/ball_{RECIPE}{k}",
+           "--recipe", RECIPE,
            "--steps", str(STEPS)], {"CUDA_VISIBLE_DEVICES": str(g), "OMP_NUM_THREADS": "2"})
          for g, k in enumerate("AB")], "train")
 ckpts = [f"v3b={root}/.cache/ball_v3b.1500.pt"] + [
-    f"v4{k}.{s}={W}/ball_v4{k}.{s}.pt" for k in "AB" for s in (STEPS // 2, STEPS)]
+    f"{RECIPE}{k}.{s}={W}/ball_{RECIPE}{k}.{s}.pt" for k in "AB" for s in (STEPS // 2, STEPS)]
 run_all([([py, f"{v4}/eval_v4.py", "--stage", stage, "--clips", *clips, "--ckpt", *ckpts,
            "--out", f"{W}/eval_part{g}.parquet", "--part", str(g), "--parts", "2"],
           {"CUDA_VISIBLE_DEVICES": str(g)}) for g in (0, 1)], "eval")

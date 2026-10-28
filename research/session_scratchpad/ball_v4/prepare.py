@@ -16,7 +16,8 @@ ball's full-frame position is the click plus the crop's offset.
   give no strip.
 - Test frames: every clicked frame (ball / none / unsure) with its truth,
   and the verified balls of the M6 window st2_118578_2nd_f015000 (fold
-  "guard_w"; v3 was selected on M6, so this guard favours v3b slightly).
+  "guard_w", spent on v4's decision) and of st2_118578_2nd_f037500 ("guard_w2",
+  v4r's guard); v3 was selected on M6, so these guards favour v3b slightly.
 
 Writes stage/targets.parquet (one row per strip, with clip and fold),
 stage/codes.npy (aligned) and stage/test_frames.parquet.
@@ -39,7 +40,8 @@ from src.ball_heatmap import pitch_box  # noqa: E402
 CLIPS = ROOT / "data/shot_clips/soccertrack_v2"
 FOLDS = {"A": {"117092", "117093", "118575", "118577"}, "B": {"118576", "128058", "132877"}}
 GUARD = "118578"
-GUARD_WINDOW = "st2_118578_2nd_f015000"        # v3's verified balls (ball_verified/A)
+# v3's verified balls (ball_verified/A): guard_w decided v4 (spent), guard_w2 is v4r's
+GUARD_WINDOWS = {"guard_w": "st2_118578_2nd_f015000", "guard_w2": "st2_118578_2nd_f037500"}
 SIZE, STRIDE = 320, 4
 CELLS = SIZE // STRIDE
 BALL_PX, RING_PX = 12.0, 20.0
@@ -106,10 +108,10 @@ def main():
                 codes.append(codes_for(x0, y0, None, None))
                 break
     g = pd.read_parquet(ROOT / ".cache/soccertrack_v2/ball_verified/A/frames.parquet")
-    g = g[(g.window == GUARD_WINDOW) & (g.status == "ball")]
-    tests += [{"unit": GUARD_WINDOW, "match": GUARD, "fold": "guard_w", "shot": "", "k": -1,
-               "frame": int(r.frame), "status": "ball", "u": float(r.u), "v": float(r.v),
-               "spotter_hit": True} for r in g.itertuples()]
+    for fold, w in GUARD_WINDOWS.items():
+        tests += [{"unit": w, "match": GUARD, "fold": fold, "shot": "", "k": -1,
+                   "frame": int(r.frame), "status": "ball", "u": float(r.u), "v": float(r.v),
+                   "spotter_hit": True} for r in g[(g.window == w) & (g.status == "ball")].itertuples()]
     st = HERE / "stage"
     st.mkdir(exist_ok=True)
     t = pd.DataFrame(targets)
