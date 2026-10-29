@@ -64,10 +64,14 @@ def load(name):
         models[name] = (m, info, bh.load_calibration(ck))
     return models[name]
 def find(name):
-    return glob.glob(f"/kaggle/input/**/{name}", recursive=True)[0]
+    hits = glob.glob(f"/kaggle/input/**/{name}", recursive=True)
+    return hits[0] if hits else None
 t0 = time.time()
 for i, w in enumerate(units):
     g = fr[fr.unit == w]
+    if find(f"{w}.json") is None or find(f"{w}.mp4") is None:
+        print(f"{i + 1}/{len(units)} {w}: MISSING clip, skipped", flush=True)
+        continue
     info = json.loads(Path(find(f"{w}.json")).read_text())
     m, mi, calib = load(g.model.iloc[0])
     df, done = dbh.dense_v2(find(f"{w}.mp4"), info, m, sorted(g.frame.astype(int)), calib=calib,

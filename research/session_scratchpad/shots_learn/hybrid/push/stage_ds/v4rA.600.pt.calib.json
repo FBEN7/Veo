@@ -1,0 +1,274 @@
+{
+ "a": 0.904765,
+ "b": -2.068188,
+ "tau": 0.1,
+ "ckpt": ".cache/ball_v3b.1500.pt",
+ "ckpt sha256": "3013808cc2e2c4df4f48963ba29ee583cfdb7798a5bacb1a5ad64a7a594d0e1d",
+ "detector": "ball_v3b.1500.pt",
+ "sigma": {
+  "SIGMA_D": 0.0535,
+  "SIGMA_F": 0.0174
+ },
+ "rgb_only": false,
+ "scores": [
+  {
+   "path": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/v5/v3eval_b_st2_118578_2nd_f015000.json",
+   "sha256": "da0c41d5a9183423a6d7e60491cabcc358e558698bab2e9c04ec1f3e6ea2a80d"
+  },
+  {
+   "path": "/tmp/claude-0/-home-user-Veo/cad650b3-8188-596d-8724-bf1756dd5cab/scratchpad/ball/v5/v3eval_b_st2_118578_2nd_f037500.json",
+   "sha256": "f773d5c4cd55ec41086d5f644ad69917cab511b7d1477f7a8d743caaaa6ae694"
+  }
+ ],
+ "windows": [
+  "st2_118578_2nd_f015000",
+  "st2_118578_2nd_f037500"
+ ],
+ "candidates": 2088,
+ "positives": 195,
+ "by kind": {
+  "pass": {
+   "candidates": 1184,
+   "positives": 138,
+   "ece": 0.0267
+  },
+  "action": {
+   "candidates": 904,
+   "positives": 57,
+   "ece": 0.0305
+  }
+ },
+ "frames": {
+  "pass": 148,
+  "action": 113,
+  "pass without people": 0,
+  "pass not measured": 0,
+  "action not measured": 0
+ },
+ "fit": {
+  "iterations": 7,
+  "log loss": 0.177753
+ },
+ "reliability": [
+  {
+   "bin": [
+    0.0,
+    0.1
+   ],
+   "n": 1817,
+   "p_cal": 0.0306,
+   "positive": 0.0231
+  },
+  {
+   "bin": [
+    0.1,
+    0.2
+   ],
+   "n": 72,
+   "p_cal": 0.1398,
+   "positive": 0.2361
+  },
+  {
+   "bin": [
+    0.2,
+    0.3
+   ],
+   "n": 26,
+   "p_cal": 0.2431,
+   "positive": 0.4615
+  },
+  {
+   "bin": [
+    0.3,
+    0.4
+   ],
+   "n": 14,
+   "p_cal": 0.356,
+   "positive": 0.5
+  },
+  {
+   "bin": [
+    0.4,
+    0.5
+   ],
+   "n": 21,
+   "p_cal": 0.452,
+   "positive": 0.6667
+  },
+  {
+   "bin": [
+    0.5,
+    0.6
+   ],
+   "n": 13,
+   "p_cal": 0.5533,
+   "positive": 0.6923
+  },
+  {
+   "bin": [
+    0.6,
+    0.7
+   ],
+   "n": 28,
+   "p_cal": 0.6417,
+   "positive": 0.6071
+  },
+  {
+   "bin": [
+    0.7,
+    0.8
+   ],
+   "n": 30,
+   "p_cal": 0.7496,
+   "positive": 0.9
+  },
+  {
+   "bin": [
+    0.8,
+    0.9
+   ],
+   "n": 25,
+   "p_cal": 0.8476,
+   "positive": 0.76
+  },
+  {
+   "bin": [
+    0.9,
+    1.0
+   ],
+   "n": 42,
+   "p_cal": 0.9465,
+   "positive": 0.7381
+  }
+ ],
+ "ece": 0.0244,
+ "random frames": 100,
+ "tau grid": [
+  {
+   "tau": 0.05,
+   "candidates per frame": 1.8,
+   "exact": true
+  },
+  {
+   "tau": 0.1,
+   "candidates per frame": 0.84,
+   "exact": true
+  },
+  {
+   "tau": 0.15,
+   "candidates per frame": 0.69,
+   "exact": true
+  },
+  {
+   "tau": 0.2,
+   "candidates per frame": 0.58,
+   "exact": true
+  },
+  {
+   "tau": 0.25,
+   "candidates per frame": 0.55,
+   "exact": true
+  },
+  {
+   "tau": 0.3,
+   "candidates per frame": 0.51,
+   "exact": true
+  },
+  {
+   "tau": 0.35,
+   "candidates per frame": 0.48,
+   "exact": true
+  },
+  {
+   "tau": 0.4,
+   "candidates per frame": 0.46,
+   "exact": true
+  },
+  {
+   "tau": 0.45,
+   "candidates per frame": 0.43,
+   "exact": true
+  },
+  {
+   "tau": 0.5,
+   "candidates per frame": 0.42,
+   "exact": true
+  },
+  {
+   "tau": 0.55,
+   "candidates per frame": 0.38,
+   "exact": true
+  },
+  {
+   "tau": 0.6,
+   "candidates per frame": 0.34,
+   "exact": true
+  },
+  {
+   "tau": 0.65,
+   "candidates per frame": 0.31,
+   "exact": true
+  },
+  {
+   "tau": 0.7,
+   "candidates per frame": 0.3,
+   "exact": true
+  },
+  {
+   "tau": 0.75,
+   "candidates per frame": 0.28,
+   "exact": true
+  },
+  {
+   "tau": 0.8,
+   "candidates per frame": 0.18,
+   "exact": true
+  },
+  {
+   "tau": 0.85,
+   "candidates per frame": 0.15,
+   "exact": true
+  },
+  {
+   "tau": 0.9,
+   "candidates per frame": 0.11,
+   "exact": true
+  },
+  {
+   "tau": 0.95,
+   "candidates per frame": 0.06,
+   "exact": true
+  }
+ ],
+ "rules": {
+  "FF_W": 4.0,
+  "FF_DT": 0.3,
+  "FF_R": 1.0,
+  "ACTOR_R": 1.5,
+  "TOP_K": 8,
+  "V2_TAU": 0.05,
+  "BINS": 10,
+  "TAU_GRID": [
+   0.05,
+   0.1,
+   0.15,
+   0.2,
+   0.25,
+   0.3,
+   0.35,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7,
+   0.75,
+   0.8,
+   0.85,
+   0.9,
+   0.95
+  ],
+  "MAX_PER_FRAME": 1.0
+ }
+}

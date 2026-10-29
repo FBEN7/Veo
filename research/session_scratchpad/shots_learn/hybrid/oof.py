@@ -3,6 +3,7 @@ nested leave-one-match-out, same units, tracks and features), saved for the
 hybrid ball's windows, and how well windows from them cover the shots.
 
     VEO_UNSEAL=... python oof.py
+    python oof.py --cover          # the coverage again from oof_v4.parquet
 """
 import json
 import sys
@@ -21,8 +22,46 @@ import learn_v2 as V  # noqa: E402
 import learn_v3 as V3  # noqa: E402
 import learn_v4 as V4  # noqa: E402
 
-THRESHOLDS = (0.02, 0.05, 0.1, 0.2)
+THRESHOLDS = (0.02, 0.05, 0.1, 0.2, 0.3)
 HALF_S = 2.0
+
+
+def coverage(p: pd.DataFrame, thr: dict, labs: dict) -> dict:
+    """Per probability threshold: the share of the ball range (frames
+    350..1075) within 2 s of a frame at or above it, and the found / missed
+    shots (the spotter's peaks at its per-match threshold) with a window
+    frame within 0.5 s."""
+    cover = {}
+    for t in THRESHOLDS:
+        n_fr = n_in = hit = hit_in = miss = miss_in = 0
+        for n, g in p.groupby("unit"):
+            fr, pr = g.frame.to_numpy(), g.p.to_numpy()
+            inw = np.zeros(len(fr), bool)
+            for h in fr[pr >= t]:
+                inw |= np.abs(fr - h) <= HALF_S * LS.FPS
+            rng = (fr >= 350) & (fr <= 1075)
+            n_fr, n_in = n_fr + int(rng.sum()), n_in + int((inw & rng).sum())
+            pred = [fr[i] / LS.FPS for i in LS.peaks(fr, pr, thr[str(g.match.iloc[0])])]
+            _, _, fn = LS.sc.match_one_to_one(pred, labs[n], LS.TOL_S)
+            for ti, lab in enumerate(labs[n]):
+                near = bool(inw[np.abs(fr / LS.FPS - lab) <= 0.5].any())
+                if ti in fn:
+                    miss, miss_in = miss + 1, miss_in + near
+                else:
+                    hit, hit_in = hit + 1, hit_in + near
+        cover[str(t)] = {"ball range in windows": round(n_in / n_fr, 3),
+                         "found shots in windows": f"{hit_in}/{hit}", "missed shots in windows": f"{miss_in}/{miss}"}
+    return cover
+
+
+def recover():
+    """Coverage again from the saved probabilities (no refit)."""
+    p = pd.read_parquet(HERE / "oof_v4.parquet")
+    out = json.loads((HERE / "oof_v4.json").read_text())
+    us = {u["name"]: u for u in V.units()}
+    out["windows +-2 s"] = coverage(p, out["thresholds"], {n: LS.labels(us[n]) for n in p.unit.unique()})
+    (HERE / "oof_v4.json").write_text(json.dumps(out, indent=1))
+    print(json.dumps(out["windows +-2 s"], indent=1))
 
 
 def main():
@@ -40,28 +79,7 @@ def main():
             for n in names]
     p = pd.concat(rows, ignore_index=True)
     p.to_parquet(HERE / "oof_v4.parquet")
-    cover = {}
-    for t in THRESHOLDS:
-        n_fr = n_in = n_lab = lab_in = miss = miss_in = 0
-        for n in names:
-            fr = d[n][0].index.to_numpy()
-            hot = fr[probs[n] >= t]
-            inw = np.zeros(len(fr), bool)
-            for h in hot:
-                inw |= np.abs(fr - h) <= HALF_S * LS.FPS
-            n_fr, n_in = n_fr + len(fr), n_in + int(inw.sum())
-            pred = [fr[i] / LS.FPS for i in LS.peaks(fr, probs[n], thr[d[n][2]])]
-            _, _, missed = LS.sc.match_one_to_one(pred, d[n][1], LS.TOL_S)
-            for lab in d[n][1]:
-                k = np.abs(fr / LS.FPS - lab) <= 0.5
-                n_lab += 1
-                lab_in += int(inw[k].any())
-            for lab in missed:
-                k = np.abs(fr / LS.FPS - lab) <= 0.5
-                miss += 1
-                miss_in += int(inw[k].any())
-        cover[str(t)] = {"frames in windows": round(n_in / n_fr, 3), "shots in windows": f"{lab_in}/{n_lab}",
-                         "missed shots in windows": f"{miss_in}/{miss}"}
+    cover = coverage(p, {k: float(v) for k, v in thr.items()}, {n: d[n][1] for n in names})
     out = {"spotter (same as cv_v4.json)": {k: res[k] for k in ("tp", "fp", "fn", "recall", "precision")},
            "thresholds": {str(k): float(v) for k, v in thr.items()}, "windows +-2 s": cover}
     (HERE / "oof_v4.json").write_text(json.dumps(out, indent=1))
@@ -69,4 +87,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    recover() if "--cover" in sys.argv else main()

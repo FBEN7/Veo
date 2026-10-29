@@ -18,7 +18,7 @@ from pathlib import Path
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]
+ROOT = HERE.parents[3]
 sys.path.insert(0, str(ROOT))
 OWNER = "francoisbernard"
 SEALED_DS = f"{OWNER}/veo-st2-dev2"
