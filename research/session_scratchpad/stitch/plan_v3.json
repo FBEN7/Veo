@@ -1,0 +1,5 @@
+{
+ "written": "2026-10-26, after v2 (stitch_v2.json) and before any v3 run",
+ "change from v2": "fills only for slots that are almost surely players: team_A / team_B, at least 4 s of detected rows, and their detected median position inside the pitch (|x| <= 52.5, |y| <= 34 m); other slots kept without fills",
+ "metrics and bar": "as plan_v2.json (M9 coverage +10 points or more with fill precision >= 0.80; rule C not lower)"
+}

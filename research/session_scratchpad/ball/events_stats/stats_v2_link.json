@@ -1,0 +1,177 @@
+[
+ {
+  "window": "st2_118578_2nd_f015000",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "right",
+   "team_B": "left"
+  },
+  "positions": {
+   "coverage": 0.881,
+   "median error m": 1.39
+  },
+  "distance": {
+   "truth total km": 3.55,
+   "ours total km (team tracks)": 7.69,
+   "per person median abs error, perfect identity": 0.923,
+   "per person median abs error, our identities": 1.194,
+   "persons": 20
+  },
+  "possession": {
+   "truth left": 0.387,
+   "ours left": 0.732,
+   "frames used": 235,
+   "abs error": 0.345
+  }
+ },
+ {
+  "window": "st2_128057_1st_f030000",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "left",
+   "team_B": "right"
+  },
+  "positions": {
+   "coverage": 0.857,
+   "median error m": 2.86
+  },
+  "distance": {
+   "truth total km": 3.64,
+   "ours total km (team tracks)": 6.45,
+   "per person median abs error, perfect identity": 0.572,
+   "per person median abs error, our identities": 0.536,
+   "persons": 20
+  },
+  "possession": {
+   "truth left": 0.772,
+   "ours left": 0.925,
+   "frames used": 40,
+   "abs error": 0.153
+  }
+ },
+ {
+  "window": "st2_132831_2nd_f030000",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "right",
+   "team_B": "left"
+  },
+  "positions": {
+   "coverage": 0.607,
+   "median error m": 1.22
+  },
+  "distance": {
+   "truth total km": 3.42,
+   "ours total km (team tracks)": 6.96,
+   "per person median abs error, perfect identity": 0.224,
+   "per person median abs error, our identities": 0.35,
+   "persons": 25
+  },
+  "possession": {
+   "truth left": 0.558,
+   "ours left": 0.86,
+   "frames used": 136,
+   "abs error": 0.302
+  }
+ },
+ {
+  "window": "st2_117092_1st_f001500",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "right",
+   "team_B": "left"
+  },
+  "positions": {
+   "coverage": 0.523,
+   "median error m": 3.44
+  },
+  "distance": {
+   "truth total km": 4.61,
+   "ours total km (team tracks)": 9.17,
+   "per person median abs error, perfect identity": 0.403,
+   "per person median abs error, our identities": 0.859,
+   "persons": 20
+  },
+  "possession": {
+   "truth left": 0.6,
+   "ours left": 0.463,
+   "frames used": 134,
+   "abs error": 0.137
+  }
+ },
+ {
+  "window": "st2_117092_1st_f024000",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "right",
+   "team_B": "left"
+  },
+  "positions": {
+   "coverage": 0.58,
+   "median error m": 3.31
+  },
+  "distance": {
+   "truth total km": 4.66,
+   "ours total km (team tracks)": 7.67,
+   "per person median abs error, perfect identity": 0.298,
+   "per person median abs error, our identities": 0.693,
+   "persons": 20
+  },
+  "possession": {
+   "truth left": 0.485,
+   "ours left": 0.33,
+   "frames used": 106,
+   "abs error": 0.155
+  }
+ },
+ {
+  "window": "st2_117092_2nd_f000000",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "right",
+   "team_B": "left"
+  },
+  "positions": {
+   "coverage": 0.429,
+   "median error m": 3.17
+  },
+  "distance": {
+   "truth total km": 3.98,
+   "ours total km (team tracks)": 7.1,
+   "per person median abs error, perfect identity": 0.174,
+   "per person median abs error, our identities": 0.343,
+   "persons": 20
+  },
+  "possession": {
+   "truth left": 0.357,
+   "ours left": 0.465,
+   "frames used": 187,
+   "abs error": 0.108
+  }
+ },
+ {
+  "window": "st2_117092_2nd_f027000",
+  "ball": "v2_link",
+  "team map": {
+   "team_A": "right",
+   "team_B": "left"
+  },
+  "positions": {
+   "coverage": 0.403,
+   "median error m": 3.19
+  },
+  "distance": {
+   "truth total km": 3.8,
+   "ours total km (team tracks)": 6.3,
+   "per person median abs error, perfect identity": 0.241,
+   "per person median abs error, our identities": 0.875,
+   "persons": 20
+  },
+  "possession": {
+   "truth left": 0.552,
+   "ours left": 0.159,
+   "frames used": 69,
+   "abs error": 0.393
+  }
+ }
+]

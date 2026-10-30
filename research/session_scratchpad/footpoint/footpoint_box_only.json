@@ -1,0 +1,117 @@
+{
+ "plan sha256": "9439d1a73d3b9c6da9b53d7f1f398dd2d0efe0b33d62111cdc00a70ef6bce7ad",
+ "units": 224,
+ "pooled (held out)": {
+  "n": 620963,
+  "median before": 1.46,
+  "median after": 1.568,
+  "p90 before": 6.009,
+  "p90 after": 5.436,
+  "median offset px (du, dv)": [
+   1.2,
+   -3.0
+  ]
+ },
+ "per match (held out)": {
+  "117093": {
+   "n": 75691,
+   "median before": 1.35,
+   "median after": 1.394,
+   "p90 before": 5.031,
+   "p90 after": 4.623,
+   "median offset px (du, dv)": [
+    6.9,
+    -2.5
+   ]
+  },
+  "118575": {
+   "n": 63226,
+   "median before": 1.233,
+   "median after": 1.568,
+   "p90 before": 5.796,
+   "p90 after": 4.969,
+   "median offset px (du, dv)": [
+    1.9,
+    -1.4
+   ]
+  },
+  "118576": {
+   "n": 112093,
+   "median before": 1.652,
+   "median after": 1.69,
+   "p90 before": 6.8,
+   "p90 after": 5.433,
+   "median offset px (du, dv)": [
+    2.6,
+    -4.0
+   ]
+  },
+  "118577": {
+   "n": 79864,
+   "median before": 1.4,
+   "median after": 1.17,
+   "p90 before": 6.672,
+   "p90 after": 5.344,
+   "median offset px (du, dv)": [
+    0.1,
+    -4.3
+   ]
+  },
+  "118578": {
+   "n": 73039,
+   "median before": 1.675,
+   "median after": 1.507,
+   "p90 before": 8.353,
+   "p90 after": 6.904,
+   "median offset px (du, dv)": [
+    5.1,
+    -5.0
+   ]
+  },
+  "128057": {
+   "n": 37037,
+   "median before": 1.851,
+   "median after": 1.634,
+   "p90 before": 8.6,
+   "p90 after": 6.765,
+   "median offset px (du, dv)": [
+    1.7,
+    -8.0
+   ]
+  },
+  "128058": {
+   "n": 73529,
+   "median before": 1.232,
+   "median after": 1.404,
+   "p90 before": 4.703,
+   "p90 after": 4.312,
+   "median offset px (du, dv)": [
+    1.5,
+    -1.3
+   ]
+  },
+  "132831": {
+   "n": 32586,
+   "median before": 1.157,
+   "median after": 1.172,
+   "p90 before": 3.088,
+   "p90 after": 3.595,
+   "median offset px (du, dv)": [
+    -6.3,
+    -8.3
+   ]
+  },
+  "132877": {
+   "n": 73898,
+   "median before": 1.701,
+   "median after": 2.664,
+   "p90 before": 4.054,
+   "p90 after": 6.617,
+   "median offset px (du, dv)": [
+    -4.7,
+    1.7
+   ]
+  }
+ },
+ "adopt": false
+}

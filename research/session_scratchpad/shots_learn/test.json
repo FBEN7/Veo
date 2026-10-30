@@ -1,0 +1,236 @@
+{
+ "protocol sha256": "323e3a02f3d2ac18bed2018a135e97b48c88a865ca7988076447669bae96c3f6",
+ "frozen sha256": "88c411e1e83ad524157faac2091d43ba68140c9172a519a3efd3170ce336ee48",
+ "ball": "v3 with --allow-seen: ball_v3b.1500.pt was trained on M5 (118577, both halves)",
+ "batches": {
+  "0": {
+   "st2_118577_1st_f009805": {
+    "labels": 2,
+    "events": 2,
+    "tp": 2,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f045939": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f060504": {
+    "labels": 2,
+    "events": 2,
+    "tp": 2,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f067162": {
+    "labels": 2,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 2
+   },
+   "st2_118577_1st_f044855": {
+    "labels": 1,
+    "events": 2,
+    "tp": 1,
+    "fp": 1,
+    "fn": 0
+   },
+   "st2_118577_2nd_f014853": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f054059": {
+    "labels": 1,
+    "events": 2,
+    "tp": 1,
+    "fp": 1,
+    "fn": 0
+   },
+   "st2_118577_2nd_f006406": {
+    "labels": 1,
+    "events": 3,
+    "tp": 1,
+    "fp": 2,
+    "fn": 0
+   }
+  },
+  "1": {
+   "st2_118577_1st_f035619": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f035130": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f017935": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f048843": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   },
+   "st2_118577_2nd_f032472": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f059508": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f003090": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   }
+  },
+  "2": {
+   "st2_118577_2nd_f010581": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f071311": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   },
+   "st2_118577_1st_f018611": {
+    "labels": 1,
+    "events": 1,
+    "tp": 0,
+    "fp": 1,
+    "fn": 1
+   },
+   "st2_118577_1st_f065751": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f064319": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f052133": {
+    "labels": 1,
+    "events": 2,
+    "tp": 1,
+    "fp": 1,
+    "fn": 0
+   },
+   "st2_118577_1st_f046941": {
+    "labels": 2,
+    "events": 3,
+    "tp": 1,
+    "fp": 2,
+    "fn": 1
+   }
+  },
+  "3": {
+   "st2_118577_1st_f044028": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f044485": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_2nd_f005697": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_1st_f023770": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f067451": {
+    "labels": 1,
+    "events": 1,
+    "tp": 1,
+    "fp": 0,
+    "fn": 0
+   },
+   "st2_118577_2nd_f037936": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   },
+   "st2_118577_1st_f041892": {
+    "labels": 1,
+    "events": 0,
+    "tp": 0,
+    "fp": 0,
+    "fn": 1
+   }
+  }
+ },
+ "stopped": "fails: recall out of reach after 29 of 29 clips (17 hits + 0 left < 18)",
+ "so far": {
+  "clips": 29,
+  "attempts": 33,
+  "hits": 17,
+  "false": 11,
+  "attempts left": 0
+ },
+ "final": {
+  "result": "fails (registered criterion): recall 17/33 = 0.515, Wilson 95% [0.352, 0.675], needs >= 18/33; precision 17/28 = 0.607 (passes >= 0.50)",
+  "per half": {
+   "1st": "10/21 hits, 7 false",
+   "2nd": "7/12 hits, 4 false"
+  },
+  "rule of frozen_shots.json on the same spans": "2/33 hits, 2 false",
+  "early stop": "never fired before the last batch: all 29 clips processed",
+  "reading": "the learned spotter finds about half the shots at about 60% precision, against 2/33 for the rule; the registered bar (18/33) is missed by one shot, so it is not shown to meet it. Consistent with its dev CV (0.54 / 0.52)."
+ }
+}

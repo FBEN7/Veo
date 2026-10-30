@@ -1,0 +1,15 @@
+fold A: 2038 strips {'verified': 626, 'flight': 450, 'free': 450, 'action': 300, 'verified_neg': 212}
+  step 50: loss 1.3539 (negatives 0.1760, distillation 0.0182) [185 s]
+  step 100: loss 1.2980 (negatives 0.1646, distillation 0.0263) [318 s]
+  step 150: loss 1.1445 (negatives 0.1386, distillation 0.0382) [420 s]
+  step 200: loss 1.0466 (negatives 0.1228, distillation 0.0426) [498 s]
+  step 250: loss 1.1888 (negatives 0.2035, distillation 0.0445) [562 s]
+  step 300: loss 1.1357 (negatives 0.1733, distillation 0.0447) [614 s]
+  saved /kaggle/working/ball_v4rA.300.pt
+  step 350: loss 1.0191 (negatives 0.1562, distillation 0.0485) [657 s]
+  step 400: loss 0.9824 (negatives 0.0880, distillation 0.0451) [692 s]
+  step 450: loss 1.1241 (negatives 0.1776, distillation 0.0493) [726 s]
+  step 500: loss 1.0390 (negatives 0.1250, distillation 0.0475) [755 s]
+  step 550: loss 1.0253 (negatives 0.1201, distillation 0.0458) [779 s]
+  step 600: loss 1.0744 (negatives 0.1569, distillation 0.0467) [808 s]
+  saved /kaggle/working/ball_v4rA.600.pt

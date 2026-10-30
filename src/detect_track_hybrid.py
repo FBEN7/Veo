@@ -394,8 +394,14 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
     conf_player: float = 0.25, conf_ball: float = 0.12,
     out_path: str = "output/tracks.parquet",
     max_seconds: int = 0, imgsz: int = 640,
-    ball_detection_method: str = "yolo") -> pd.DataFrame:
+    ball_detection_method: str = "yolo",
+    player_grass_filter: bool = True) -> pd.DataFrame:
     """Run detection and tracking.
+
+    ``player_grass_filter`` False keeps players whatever the grass around
+    their feet: for a fixed view whose pitch outline filters them later
+    (on SoccerTrack v2's M9 the grass test dropped a quarter of the real
+    players; research/session_scratchpad/kaggle/m9_players.json).
 
     Args:
         video_path: Path to video
@@ -473,7 +479,7 @@ def run(video_path: str, stride: int = 3, model_name: str = "yolov8m.pt",
                 h_px = float(y2 - y1)
                 if h_px < MIN_DETECTION_HEIGHT_PX:
                     continue
-                if not boxes_near[tuple(xyxy.tolist())]:
+                if player_grass_filter and not boxes_near[tuple(xyxy.tolist())]:
                     continue
                 rows.append(dict(frame=frame_idx, time_s=frame_idx / fps,
                                  track_id=int(tid), cls="player",

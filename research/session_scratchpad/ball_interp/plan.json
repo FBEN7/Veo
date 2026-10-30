@@ -1,0 +1,11 @@
+{
+ "question": "Quick feasibility: can the ball be inferred where it is not detected, from the frames before and after (owner, 2026-10-26)?",
+ "status": "exploratory feasibility test, small sample, CPU; written before scoring",
+ "sample": "M6 (118578) 2nd f015000 and f037500: the only windows here with v3 candidates on every frame and hand-verified ball positions (ball_verified/A: 320 'ball' frames, 105 'unknown'). v3 was trained on M6: detection is optimistic, the gap-filling test less so.",
+ "base": "src/ball_link.link on the v3 rows after marks and static drops (as kaggle/metric_step.py), tau 0.10, c_null 1, c_static 2 -- step 1, which already exists (Viterbi, skips up to 5 frames)",
+ "step 3 (fill)": "between consecutive linked picks up to G frames apart (G 12 / 25 / 50 = 0.5 / 1 / 2 s), positions linearly interpolated in the picture",
+ "step 2 (at feet)": "f015000 only (the only one with player tracks here): if both ends of a gap are within one box height of the same player track's feet, the gap follows that player's feet instead of the line",
+ "scores": "on 'ball' frames: coverage, hit within 12 px (HIT_PX) and within 30 px, precision; on 'unknown' frames: coverage only (unverifiable)",
+ "simulated occlusion": "for each 'ball' frame the base hits, every candidate within +-h frames is removed (h 6 / 12 / 25: holes of 0.5 / 1 / 2 s), relinked on +-200 frames, filled; recovery = hit at the frame",
+ "feasible if": "simulated 0.5 s holes recovered within 30 px on >= 70% and real coverage gain without precision falling more than 5 points"
+}

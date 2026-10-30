@@ -1,0 +1,10 @@
+{
+ "protocol": "protocol.json (sha256 6b7716c02117144913fa3457d3fe950210b1b31353b0fd2339f88c5acf0ac678)",
+ "kernel": "francoisbernard/veo-hybrid-ball v1: v4r at 48,508 window frames of 249 units, 2 x T4, ~2 h, no clip missing",
+ "primary (cv_hybrid.json)": "hybrid 157 found / 138 false / 112 missed against v3b 165 / 113 / 104 (cv_v4.json): hits -8 [-26, +8], false alarms +25 [-4, +58]",
+ "decision": "fails (the hits interval reaches below 0 and false alarms rise more than hits): nothing adopted; the spotter keeps the v3b ball",
+ "control (cv_control.json, reported)": "v3b's own rows through the same steps: 167 / 124 / 102. The steps alone move hits by +2 and false alarms by +11, and single matches by up to 5 hits (118576 34 -> 29, 132831 7 -> 11): the spotter's cross-validated counts are noisy at this scale",
+ "hybrid against the control (reported)": "hits -10 [-26, +1], false alarms +14 [-17, +49]",
+ "ball after the kick (flight_compare.json, diagnostic)": "the linked ball heads to the goal within 1.5 s more often with the hybrid rows (shots the spotter missed 0.446 -> 0.533, found 0.701 -> 0.762; 22 shots gained, 5 lost), yet the spotter does not find more shots",
+ "reading": "v4r recovers balls in flight, but in the same windows it adds ball motion that is not a shot; the spotter, held to about as many detections as there are shots, trades hits for false alarms. A better ball near shots is not, on its own, a better shot spotter here."
+}

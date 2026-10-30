@@ -1,0 +1,54 @@
+{
+ "protocol sha256": "155e1ac9abe3bd8e3c5ae5e8d5e25cae433e3b522fea51eb4a81e51e469c2730",
+ "null change (control - v4)": {
+  "counts (nested, seed 0), hits as a share of the 269 labels": {
+   "difference": 0.0074,
+   "95% over matches": [
+    -0.052,
+    0.0632
+   ],
+   "width": 0.1152,
+   "mean |per-match change| (recall)": 0.089
+  },
+  "event AP (seed-averaged)": {
+   "difference": 0.0056,
+   "95% over matches": [
+    -0.0195,
+    0.0384
+   ],
+   "width": 0.0579,
+   "mean |per-match change|": 0.0403
+  }
+ },
+ "AP spread over seeds (sd)": {
+  "v4": 0.003,
+  "control": 0.0083,
+  "hybrid": 0.0046,
+  "candB": 0.004,
+  "candC": 0.0112
+ },
+ "decision": "AP's null-change interval is half the counts' (0.058 vs 0.115) and so is the mean per-match change (0.040 vs 0.089): event AP on seed-averaged probabilities (3 seeds) becomes the measure for future spotter comparisons, registered per study. It removes the threshold's noise, not the tracks': a null change still moves one match (M9, 16 shots) by 0.17 AP, so a change needs about +0.04 AP over the 10 matches to show.",
+ "exploratory re-scoring (past decisions stand)": {
+  "hybrid - v4": {
+   "AP difference": -0.0036,
+   "95% bootstrap over matches": [
+    -0.0463,
+    0.0455
+   ]
+  },
+  "candB - v4": {
+   "AP difference": 0.0258,
+   "95% bootstrap over matches": [
+    -0.0127,
+    0.0541
+   ]
+  },
+  "candC - v4": {
+   "AP difference": 0.0199,
+   "95% bootstrap over matches": [
+    -0.02,
+    0.0565
+   ]
+  }
+ }
+}
