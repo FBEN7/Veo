@@ -1427,9 +1427,10 @@ holds refits of M6/M7/M9, kept only as evidence; do not use them).
     metres at the panorama's ends.
 - The refits there make the truth's feet worse: 2.55 m on M6's 2nd half,
   and 13.7 m near the goals.
-- **So position accuracy is limited by the detector's foot point.** The next
-  lever is a foot-point correction learned against the truth's boxes on the
-  training matches, then re-measured.
+- ~~So position accuracy is limited by the detector's foot point.~~
+  **Withdrawn (2026-11-01, `footpoint/diag/`):** the gap is mostly the
+  truth's own box placement, not our foot point (see "Why the foot-point
+  gap is match-specific" below).
 
 **The M1 events test rerun** under the refit (same frozen code and rules,
 `m1_cf_*.json`). This is exploratory:
@@ -1758,6 +1759,29 @@ pitch metres:
 - The per-match offsets differ in sign (du -6.3 .. +6.9 px): the gap
   between our boxes and the truth's is match-specific, so a correction
   learned on other matches does not transfer.
+
+### Why the foot-point gap is match-specific (`footpoint/diag/`; CPU)
+
+Diagnostic (`plan.json`, hashed before any number), 197 unsealed shots
+clips (M7 / M9 not opened), 551k pairs, plus a picture check on 7 windows:
+
+- **Not timing:** each clip's best lag scatters around 0 (mostly -3..+3
+  frames, no match consistent); moving to it leaves the pooled error at
+  1.47 m.
+- **Per-match shape:** an affine offset in (u, v) learned on half of a
+  match's clips helps its other half on M6 (1.68 -> 1.33 m) and M10
+  (1.70 -> 1.23 m), but hurts them when learned on other matches (2.35,
+  2.27 m). About 1.2-1.4 m remain even within a match.
+- **Pictures** (`pictures/`): our boxes sit on the players, their bottom
+  on the feet. The truth boxes are fixed-height (36-48 px), often wider
+  than the player, their bottom 10-25 px above or beside the feet, some on
+  empty grass.
+- **Reading:** the 1.2-1.7 m gap is mostly the truth's own placement,
+  which differs per match. Our foot point is not shown to be the limit, and
+  this truth cannot measure our position error below about 1.2 m. A
+  correction against it learns the truth's errors (as above). Measuring
+  our real error needs independent foot points (owner clicks on ~150
+  crops).
 
 ### Following players through misses (`stitch/`; CPU, v1 fails)
 

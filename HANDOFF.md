@@ -47,7 +47,8 @@ https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
 | Topic | Result |
 |---|---|
 | Learned pass/carry spotter (`research/session_scratchpad/ball/events_learn/`) | M1 test F1 0.660 vs rules 0.441, +0.219 [+0.166, +0.271]: shown. Passes: recall 0.29 → 0.77. A second use of M1, so weaker evidence. |
-| Calibration | Release calibrations are right (truth-box feet 0.3-0.5 m). Our detections' foot point is off (0.9-1.4 m). M1's labels sit in another pixel frame. The M1 refit (`calib_fix/`) is a non-physical warp, for player feet only. |
+| Calibration | Release calibrations agree with the truth (truth-box feet 0.3-0.5 m). M1's labels sit in another pixel frame. The M1 refit (`calib_fix/`) is a non-physical warp, for player feet only. |
+| Foot point (`footpoint/`, `footpoint/diag/`) | A learned correction fails (match-specific offsets). Diagnostic: no timing lag; our boxes sit on the feet in pictures, the truth's boxes are approximate (fixed height, 10-25 px off). The 1.2-1.7 m gap is mostly the truth's; **this truth cannot measure our position error below ~1.2 m**. Real error needs owner foot clicks. |
 | Distance | A 1 s estimator holds (2-4%, partly circular). |
 | Possession | Not better than a constant 0.5. |
 | xG (models/xg_xghub.json) on GT shooter feet | AUC 0.70 [0.60, 0.79]. |
@@ -93,5 +94,5 @@ All are hashed (`*.sha256`).
    is left: contests and passers the detector misses (GPU), or a model
    learned on verified ball positions. M7/M9 need their
    metric step (video) on Kaggle (CPU kernel, push_metric.py) to be scored.
-4. Then: a foot-point
-   correction learned against truth boxes, and the identity work.
+4. Then: the identity work. (A foot-point correction is done and fails;
+   the gap is the truth's, see `footpoint/diag/reading.json`.)
