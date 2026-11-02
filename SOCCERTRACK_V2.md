@@ -1760,6 +1760,25 @@ pitch metres:
   between our boxes and the truth's is match-specific, so a correction
   learned on other matches does not transfer.
 
+### Passes per team (`team_passes/`; CPU, fails)
+
+Team statistics only for now (owner, 2026-11-02). The learned pass /
+carry spotter (`events_learn/learn.py`, nested leave one match out) on the
+249 shots clips' ball range (frames 350-1075, `addendum1.json`), an
+event's team = the nearest player's at its frame; per match against
+constants (`plan.json`, hashed first):
+
+| per match | ours | constant | ours - constant, 95% |
+|---|---|---|---|
+| left side's share of the passes, abs error | 0.087 | 0.097 (0.5) | [-0.062, +0.038] |
+| team pass success rate, abs error | 0.199 | 0.061 (other matches) | [+0.092, +0.184] |
+
+- Neither is shown; counts per team are no better than our total split
+  50 / 50 (median relative error 0.20 both).
+- Why (exploratory): our passes within 1 s of a truth pass carry the
+  right team only 68% of the time, so consecutive events flip teams and
+  our success rates sit 0.1-0.3 below the truth's.
+
 ### Why the foot-point gap is match-specific (`footpoint/diag/`; CPU)
 
 Diagnostic (`plan.json`, hashed before any number), 197 unsealed shots
