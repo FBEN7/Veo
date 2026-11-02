@@ -135,37 +135,20 @@ def passes_with_success(times, sides, kinds, out_label=None):
     return rows
 
 
-def main():
-    from src.unseal import unsealed
-    for m in SEALED:
-        if not unsealed(m, "team passes: M7 / M9 clips as spotter training and scored data"):
-            raise SystemExit("VEO_UNSEAL needed")
-    L.sp.labels_of = clip_labels              # the spotter's rate thresholds read the clips' labels
-    units = sorted(p.name for p in TREE.iterdir() if p.name.startswith("st2_"))
-    d = {}
-    for i, w in enumerate(units):
-        f = features(w)
-        d[w] = (f, targets(w, f.index.to_numpy()))
-        if i % 25 == 0:
-            print("features", i, w, flush=True)
-    probs, thr_by = L.nested(units, d)
-    print("thresholds", thr_by, flush=True)
-    rows = []
-    for w in units:
-        m = w.split("_")[1]
-        tm = team_map(w)
-        ev = L.events_of(d[w][0], probs[w], thr_by[m])
-        ours = passes_with_success([e["timestamp_s"] for e in ev], [tm.get(e["team"]) if e["team"] else None for e in ev],
-                                   [e["event_type"] for e in ev])
-        lab = labels(w)
-        lab = lab[lab.label.isin(set().union(*[g[0] for g in GROUPS.values()]) | {"BALL PLAYER BLOCK", "HEADER", "FREE KICK", "THROW IN"})]
-        kinds = ["pass" if l in GROUPS["pass"][0] else "other" for l in lab.label]
-        truth = passes_with_success(list(lab.frame / FPS), list(lab.side), kinds, list(lab.label))
-        rows += [(w, m, "ours", t, s, ok) for t, s, ok in ours]
-        rows += [(w, m, "truth", t, s, ok) for t, s, ok in truth]
-    df = pd.DataFrame(rows, columns=["unit", "match", "who", "t", "side", "success"])
-    df.to_parquet(HERE / "passes.parquet")
+def unit_rows(w: str, times, sides, kinds) -> list:
+    """(unit, match, who, t, side, success) for our passes and the truth's."""
+    m = w.split("_")[1]
+    ours = passes_with_success(times, sides, kinds)
+    lab = labels(w)
+    lab = lab[lab.label.isin(set().union(*[g[0] for g in GROUPS.values()]) | {"BALL PLAYER BLOCK", "HEADER", "FREE KICK", "THROW IN"})]
+    tk = ["pass" if lb in GROUPS["pass"][0] else "other" for lb in lab.label]
+    truth = passes_with_success(list(lab.frame / FPS), list(lab.side), tk, list(lab.label))
+    return [(w, m, "ours", t, s, ok) for t, s, ok in ours] + [(w, m, "truth", t, s, ok) for t, s, ok in truth]
 
+
+def score(df: pd.DataFrame) -> dict:
+    """Per match: the left side's share and each side's success rate,
+    ours and the constants', with the paired bootstrap over matches."""
     matches = sorted(df.match.unique())
     per = {}
     for m in matches:
@@ -212,10 +195,7 @@ def main():
             if t[s]:
                 cnt_rel.append(abs(o[s] - t[s]) / t[s])
                 cnt_half.append(abs(tot / 2 - t[s]) / t[s])
-    out = {"plan sha256": (HERE / "plan.json.sha256").read_text().split()[0],
-           "addendum1 sha256": (HERE / "addendum1.json.sha256").read_text().split()[0],
-           "units": len(units), "thresholds per held-out match": thr_by,
-           "share of the left side's passes": {"mean abs error, ours": round(float(e_share.mean()), 4),
+    return {"share of the left side's passes": {"mean abs error, ours": round(float(e_share.mean()), 4),
                                                "constant 0.5": round(float(c_share.mean()), 4),
                                                "ours - constant, 95% over matches": boot(e_share, c_share),
                                                "shown": bool(boot(e_share, c_share)[1] < 0)},
@@ -226,6 +206,35 @@ def main():
            "pass counts per team (descriptive)": {"median relative error, ours": round(float(np.median(cnt_rel)), 4),
                                                   "our total split 50/50": round(float(np.median(cnt_half)), 4)},
            "per match": per}
+
+
+def main():
+    from src.unseal import unsealed
+    for m in SEALED:
+        if not unsealed(m, "team passes: M7 / M9 clips as spotter training and scored data"):
+            raise SystemExit("VEO_UNSEAL needed")
+    L.sp.labels_of = clip_labels              # the spotter's rate thresholds read the clips' labels
+    units = sorted(p.name for p in TREE.iterdir() if p.name.startswith("st2_"))
+    d = {}
+    for i, w in enumerate(units):
+        f = features(w)
+        d[w] = (f, targets(w, f.index.to_numpy()))
+        if i % 25 == 0:
+            print("features", i, w, flush=True)
+    probs, thr_by = L.nested(units, d)
+    print("thresholds", thr_by, flush=True)
+    rows = []
+    for w in units:
+        m = w.split("_")[1]
+        tm = team_map(w)
+        ev = L.events_of(d[w][0], probs[w], thr_by[m])
+        rows += unit_rows(w, [e["timestamp_s"] for e in ev], [tm.get(e["team"]) if e["team"] else None for e in ev],
+                          [e["event_type"] for e in ev])
+    df = pd.DataFrame(rows, columns=["unit", "match", "who", "t", "side", "success"])
+    df.to_parquet(HERE / "passes.parquet")
+    out = {"plan sha256": (HERE / "plan.json.sha256").read_text().split()[0],
+           "addendum1 sha256": (HERE / "addendum1.json.sha256").read_text().split()[0],
+           "units": len(units), "thresholds per held-out match": thr_by, **score(df)}
     (HERE / "team_passes.json").write_text(json.dumps(out, indent=1, default=str))
     print(json.dumps({k: v for k, v in out.items() if k != "per match"}, indent=1, default=str))
 
