@@ -1760,6 +1760,26 @@ pitch metres:
   between our boxes and the truth's is match-specific, so a correction
   learned on other matches does not transfer.
 
+### Distance per team (`team_distance/`; CPU, fails)
+
+`plan.json` (hashed first): on the 249 clips (frames 300-1125), each
+team's distance = 10 x the mean 1-s speed of its detections (tracks
+smoothed over 1 s, per-detection kit teams), each second; the truth's
+outfield path lengths at the same 1-s scale; per match against a constant
+rate (the other matches' metres per team-second).
+
+| per match | ours | constant | ours - constant, 95% |
+|---|---|---|---|
+| distance per team, relative error | 0.096 | 0.050 | [+0.007, +0.086] |
+| left side's share, abs error | 0.0067 | 0.0083 (0.5) | [-0.0085, +0.0043] |
+
+- **Not shown; the distance is worse than a constant.** Ours is below the
+  truth in all 20 team-matches (truth / ours 1.01-1.24): the 1-s speeds of
+  the players we track miss the fast or unseen ones. With the truth's
+  teams it is no better (0.121), so the team labels are not the cause.
+- The teams' shares are about 0.5 in every match: a team's distance over a
+  period mostly measures the period's length here.
+
 ### Passes per team (`team_passes/`; CPU, fails)
 
 Team statistics only for now (owner, 2026-11-02). The learned pass /
