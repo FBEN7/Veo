@@ -1787,6 +1787,19 @@ constants (`plan.json`, hashed first):
   has a team label (not 'other') on 0.52 of passes and carries, the right
   one on 0.79 of those. Per-detection kit teams (0.92-0.98 on windows) need
   the GPU on the clips.
+- **Per-detection kit teams on the clips** (`plan_v3.json`, hashed first;
+  kit colours on a Kaggle CPU kernel, 249 clips, 33 min; det_smooth per
+  clip): our detections' team right among labelled 0.851 -> 0.895
+  (labelled 0.86 both), our events' team 0.697 -> 0.735. The test: share
+  error 0.071 against 0.097 for 0.5, [-0.086, +0.029], **not shown**;
+  success rate 0.245 against 0.061, worse. Counts per team: median
+  relative error 0.145 against 0.199 for our total split 50 / 50
+  (descriptive).
+- The success rate needs two consecutive events' teams right (about 0.61
+  of pairs at 0.73 each): it is underestimated by construction.
+- Near the ball (exploratory): our nearest detection to the truth actor is
+  beyond 3 m on 38% of passes and carries (median 2.1 m; the truth's own
+  positions are approximate), 'other' on 8%.
 
 ### Why the foot-point gap is match-specific (`footpoint/diag/`; CPU)
 
