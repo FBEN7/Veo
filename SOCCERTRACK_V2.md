@@ -1781,6 +1781,28 @@ matches (M1 left out), image-space matching as eval_soccertrack_v2:
 - Reading: detection in crowds is the lever, then tracking (GPU next,
   budget 10 h).
 
+**Detector variants** (`plan_v2.json`, hashed first; Kaggle GPU kernel
+`veo-nearball-det`, ~1.2 h; `variants.json`). Raw detections on the
+action frames, feet inside the outline, same matching:
+
+| variant | actor detected | taken | missed | unmatched / frame |
+|---|---|---|---|---|
+| V0 yolov8s, conf 0.20, IoU 0.70 | 0.867 | 0.067 | 0.065 | 2.97 |
+| V1 NMS IoU 0.85 | 0.896 | 0.040 | 0.064 | 6.37 (guard) |
+| V2 conf 0.10 | 0.902 | 0.040 | 0.058 | 4.66 (guard) |
+| V3 yolov8m | 0.877 | 0.059 | 0.064 | 2.80 |
+| V4 yolov8x | 0.887 | 0.049 | 0.063 | 2.71 |
+| V5 TTA | 0.896 | 0.045 | 0.059 | 4.93 (guard) |
+
+- **Selected V4, +0.020 [+0.009, +0.030] over V0: under the 0.03 bar, no
+  pipeline run.** The variants that gain more do it with 1.6-2.1x the
+  false detections.
+- Exploratory (not registered): the same yolov8s finds the actor on 0.867
+  of the actions, the pipeline's output on 0.767. On 11.3% of the actions
+  the raw detector has the actor and the pipeline does not (5.4% missed,
+  5.9% given to a neighbour); the reverse is 1.3%. **The loss is after
+  detection** (tracking, filters), 5x what a bigger model gives.
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each

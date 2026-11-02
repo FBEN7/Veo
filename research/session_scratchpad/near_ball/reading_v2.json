@@ -1,0 +1,16 @@
+{
+ "plan": "plan_v2.json (sha256 e79c5b3c...), scored by score_det.py on the kernel veo-nearball-det (223 units, 2,255 actions, 9 matches)",
+ "registered result": {
+  "selected": "V4 (yolov8x, conf 0.20, NMS IoU 0.70): actor detected 0.887 vs V0 0.867, gain +0.020 [+0.009, +0.030], under the 0.03 bar",
+  "excluded by the false-detection guard (unmatched per frame <= 3.56)": "V1 IoU 0.85 (0.896, 6.37), V2 conf 0.10 (0.902, 4.66), V5 TTA (0.896, 4.93)",
+  "decision": "no full-pipeline run on a new detector"
+ },
+ "exploratory (not registered): raw detector V0 vs the pipeline's output on the same actions": {
+  "actor detected": "raw 0.867 vs pipeline 0.767 (near_ball.json)",
+  "raw detects the actor, the pipeline does not": 0.113,
+  "of which the pipeline misses it / gives it to a neighbour": [0.054, 0.059],
+  "pipeline detects it, raw does not": 0.013,
+  "per match (raw yes, pipeline no)": "0.065 to 0.167"
+ },
+ "reading": "The detector is not the limit near the ball: the same yolov8s finds the actor on 87% of the actions, a bigger model adds 2 points. About 11 points are lost after detection, in tracking and the pipeline's filters. Next lever, if pursued: find which step drops these detections (CPU, from the pipeline's intermediate outputs), under a new registered plan."
+}
