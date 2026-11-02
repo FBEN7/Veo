@@ -32,10 +32,11 @@ The 15 target statistics are listed in the status doc.
 - Per-player stats need identities. The owner first chose: the coach names
   players on clips cut by the product; on 2026-11-01 asked for zero effort
   instead. Identity by role fails its ceiling (0.59 of actions, `identity_roles/`).
+  **2026-11-02: team statistics only for now** (owner); per-player stats wait.
 
 **Status doc (French, update it after each result):** Claude Docs at
 https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
-- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 62.
+- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 63.
 - Tables:
   - module table `.1860`;
   - stats table `.11947` (status enum `c07b100f-0db3`: 0 Abouti, 1 Partiel,
