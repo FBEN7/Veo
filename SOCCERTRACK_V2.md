@@ -1760,6 +1760,27 @@ pitch metres:
   between our boxes and the truth's is match-specific, so a correction
   learned on other matches does not transfer.
 
+### Player on the ball (`near_ball/`; option B; CPU diagnostic)
+
+`plan.json` (hashed first). 2,257 labelled actions of the shots clips of 9
+matches (M1 left out), image-space matching as eval_soccertrack_v2:
+
+| actor | share |
+|---|---|
+| detected | 0.767 |
+| taken by a neighbour (a detection within 43 px went to someone else) | 0.113 |
+| missed (no detection within 43 px) | 0.121 |
+
+- Other outfield players on the same frames are detected at 0.884: the
+  player on the ball is 12 points harder. 9.7% of the actors' detections
+  hold two persons. Headers 0.14, throw-ins 0.44, crosses 0.54.
+- Detected actors sit a median 1.59 m from the truth's position (28%
+  beyond 3 m): the earlier "38% beyond 3 m" mixes misses and positions.
+- Within +-1 s of a detected action, 20% of the frames put the actor on
+  another track.
+- Reading: detection in crowds is the lever, then tracking (GPU next,
+  budget 10 h).
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each

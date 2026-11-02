@@ -1,0 +1,21 @@
+{
+ "plan sha256": "40db5fd67030ec31473402bcb3c2945386681044aa93b0a6e31e53d8cbb60dde",
+ "actions": 2257,
+ "actor": {
+  "detected": 0.7665,
+  "missed": 0.1205,
+  "taken": 0.113
+ },
+ "control": 0.8841,
+ "merged": 0.0967,
+ "track": {
+  "same track +-1 s": 0.7997,
+  "switch within +-1 s": 0.3168
+ },
+ "position of detected actors": {
+  "median": 1.59,
+  "p75": 3.3,
+  "beyond 3 m": 0.2786
+ },
+ "reading": "detection in crowds (plan.json): the actor is missed or taken by a neighbour on 0.233 of actions (detected 0.767 against 0.884 for the other outfield players on the same frames); 0.097 of actors' detections hold two persons. Positions add to it: 0.28 of detected actors are beyond 3 m of the truth (median 1.59 m), so the earlier 38% mixes both. Tracking also matters: around a detected actor, 0.20 of frames within +-1 s are on another track (the switch share, 0.32, is inflated by the approximate truth boxes). Headers (0.14), throw-ins (0.44) and crosses (0.54) are the worst."
+}
