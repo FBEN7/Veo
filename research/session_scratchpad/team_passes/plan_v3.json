@@ -1,0 +1,14 @@
+{
+ "question": "The players' team labels near the ball are the limit (decision_v2.json: the truth actor's nearest detection has a team on 0.52, right on 0.79). Do per-detection kit teams (teams/scan_teams_diag.py's det_smooth: 0.92-0.98 accuracy on 7 windows) fix them on the clips, and do passes per team then pass plan.json's test?",
+ "status": "registered 2026-11-02 before any kit feature of the clips is computed; kit features on a Kaggle CPU kernel (the clips' videos are there), the rest on CPU here",
+ "kit features": "per clip, every player row of .cache/gpu_shots3's metric_v3s_link at even frames 300-1125 (the ball range plus 2 s): team_assignment_v2._torso_feature (hsv4) at (px_raw, py_raw, crop_h), one sequential pass through the clip's video",
+ "teams per detection (det_smooth)": "each row's feature replaced by the median of its own track's features within +-50 frames; team_assignment_v2.cluster_teams (hsv4, 3 clusters, residual cut as is) fitted on the rows whose feet are at least 0.15 box heights inside the clip's pitch outline; per clip; rows without a feature or outside a team: 'other'",
+ "measures": {
+  "detections": "share of our player rows (frames 350-1075, every 25th) within 3 m of a truth person with a team label, and right among those (per-clip team mapping as plan.json), old labels against new",
+  "ceiling": "plan_v2.json's ceiling with the new labels",
+  "events": "the same out-of-fold events (events_v2.parquet, unchanged), method A (nearest team-labelled player at the event frame) with the new labels: team accuracy on matched events",
+  "test (primary)": "plan.json's share and success tests with these teams (same constants, bootstrap, decision rule)"
+ },
+ "missing clips": "a clip whose video is not on Kaggle keeps its old labels; their number is reported",
+ "caveats": ["the spotter's features (which use the old team labels) are not recomputed: only the events' teams change", "det_smooth was chosen on 7 windows at 1 fps; here it runs at every even frame"]
+}
