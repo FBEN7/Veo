@@ -44,6 +44,10 @@ https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
   - blockers `.6487`;
   - dated log `.18125` (newest first, insert after header row `.18126`).
 
+**Bilan d'une page (2026-11-02, French, for the owner's decision):** Claude Docs at
+https://claude.ai/artifact/QSjBMF2krjrkoNLAWu86U6 (nothing shown as a match
+statistic; options: semi-automatic product, players near the ball, new data).
+
 ## Results so far (all in SOCCERTRACK_V2.md)
 
 | Topic | Result |
