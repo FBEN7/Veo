@@ -1778,6 +1778,15 @@ constants (`plan.json`, hashed first):
 - Why (exploratory): our passes within 1 s of a truth pass carry the
   right team only 68% of the time, so consecutive events flip teams and
   our success rates sit 0.1-0.3 below the truth's.
+- **The event's team rule is not the limit** (`plan_v2.json`, hashed
+  first; 1,266 of our events matched to the truth's): the nearest player
+  at the event frame 0.70, the possession rule's actor track 0.68, a team
+  vote over -0.4 / +0.2 s 0.69 (the last two leave 16-19% without a team).
+  The test with the first is unchanged (fails).
+- **The players' team labels are:** the detection nearest the truth actor
+  has a team label (not 'other') on 0.52 of passes and carries, the right
+  one on 0.79 of those. Per-detection kit teams (0.92-0.98 on windows) need
+  the GPU on the clips.
 
 ### Why the foot-point gap is match-specific (`footpoint/diag/`; CPU)
 
