@@ -1877,11 +1877,33 @@ M7 is reproduced exactly:
   threshold, not ByteTrack: at a fixed 0.20 the tracker costs the actor
   0.8 points (A S1 0.859 vs S0 0.867). plan_v4's A is the pipeline at 0.20,
   not as run; B2 - A (+3.2) holds against a 0.20 pipeline. The grass
-  test's cost on the 7 other matches is still mixed with the threshold.
+  test's cost on the 7 other matches is still mixed with the threshold
+  (separated below: 0.3 points).
 - The lever is the threshold itself: on M7, 0.20 instead of the
   auto-tuned value gives +12.8 points at S1. Not registered yet: its cost
   in false detections, on all 9 matches. M9 (imgsz 3840, not reproduced
   here) is not covered.
+
+**A fixed 0.20 against the auto-tuned threshold, at the tracker stage**
+(`plan_v6.json`, hashed first; `v6.json`; local CPU; 221 units, 2,230
+actions; 2 units with conf_player 0.08 left out):
+
+| tracker output (S1) | actor detected | control | unmatched / action frame |
+|---|---|---|---|
+| A': each clip's conf_player (the pipeline) | 0.779 | 0.898 | 3.80 |
+| A: 0.20 | 0.859 | 0.935 | 5.93 |
+
+- A - A': **+0.081 [+0.063, +0.102]**, positive on 9 of 9 matches (+0.016
+  on M9, whose clips already sit at 0.20, to +0.129). **The bar is met.**
+- **The false-detection guard fails at S1**: 5.93 unmatched boxes per
+  action frame against 3.80 (1.56x, the guard is 1.2x). The plan reads S1
+  as not the output: the roster cap removes boxes, so the next step is the
+  same comparison at S4, whatever this guard says.
+- Exploratory (`reading_v6.json`): A' gives the original S1's verdict on
+  98.9% of the actions (M9, at another imgsz, 91.8%). On the 7 matches that
+  had the grass test on players, A' without it gives 0.779, the original
+  0.776: **that test cost 0.3 points.** plan_v3's tracker-stage loss is the
+  auto-tuned threshold.
 
 ### Distance per team (`team_distance/`; CPU, fails)
 
