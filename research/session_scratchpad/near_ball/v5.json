@@ -1,0 +1,324 @@
+{
+ "plan_v5 sha256": "48b1ca6459741376236f8242c1eb0d75a0cb1a87ce572e4a6657cc4b24a59a8c",
+ "actions": 86,
+ "actor detected at S1": {
+  "O": 0.6628,
+  "A": 0.7907,
+  "A'": 0.6628
+ },
+ "per unit": {
+  "st2_128057_1st_f004663": {
+   "conf_player": 0.5,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    10120,
+    12949,
+    10120
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9961,
+    0.7785
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9961,
+    0.7737
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9999,
+    0.9999
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    1.0,
+    0.9999
+   ],
+   "actor detected O / A / A'": [
+    0.4615,
+    0.4615,
+    0.4615
+   ]
+  },
+  "st2_128057_1st_f026111": {
+   "conf_player": 0.5,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    9543,
+    11919,
+    9536
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9976,
+    0.7987
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9974,
+    0.7958
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9993,
+    1.0
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9996,
+    1.0
+   ],
+   "actor detected O / A / A'": [
+    0.6154,
+    0.9231,
+    0.6154
+   ]
+  },
+  "st2_128057_1st_f030595": {
+   "conf_player": 0.5,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    9356,
+    11892,
+    9352
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9964,
+    0.7839
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9963,
+    0.7749
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9995,
+    0.9999
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9998,
+    0.9999
+   ],
+   "actor detected O / A / A'": [
+    0.25,
+    1.0,
+    0.25
+   ]
+  },
+  "st2_128057_1st_f033054": {
+   "conf_player": 0.2,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    12048,
+    12016,
+    12016
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9958,
+    0.9985
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9974,
+    0.9989
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9958,
+    0.9985
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9974,
+    0.9989
+   ],
+   "actor detected O / A / A'": [
+    1.0,
+    1.0,
+    1.0
+   ]
+  },
+  "st2_128057_1st_f046616": {
+   "conf_player": 0.5,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    9521,
+    12501,
+    9515
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9973,
+    0.7595
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9974,
+    0.7607
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9991,
+    0.9997
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9999,
+    0.9998
+   ],
+   "actor detected O / A / A'": [
+    0.7,
+    0.8,
+    0.7
+   ]
+  },
+  "st2_128057_1st_f047719": {
+   "conf_player": 0.4,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    9718,
+    12466,
+    9709
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9972,
+    0.7774
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9972,
+    0.7799
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9991,
+    1.0
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9998,
+    1.0
+   ],
+   "actor detected O / A / A'": [
+    0.4,
+    1.0,
+    0.4
+   ]
+  },
+  "st2_128057_1st_f050874": {
+   "conf_player": 0.5,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    10652,
+    13791,
+    10643
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.996,
+    0.7693
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9958,
+    0.7708
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9992,
+    1.0
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9995,
+    1.0
+   ],
+   "actor detected O / A / A'": [
+    0.4545,
+    0.5455,
+    0.4545
+   ]
+  },
+  "st2_128057_1st_f057953": {
+   "conf_player": 0.15,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    14412,
+    13911,
+    14365
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9616,
+    0.9962
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9629,
+    0.996
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9967,
+    1.0
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9974,
+    1.0
+   ],
+   "actor detected O / A / A'": [
+    0.8,
+    0.8,
+    0.8
+   ]
+  },
+  "st2_128057_1st_f059492": {
+   "conf_player": 0.2,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    14262,
+    14230,
+    14230
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9978,
+    1.0
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9989,
+    1.0
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9978,
+    1.0
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9989,
+    1.0
+   ],
+   "actor detected O / A / A'": [
+    0.75,
+    0.75,
+    0.75
+   ]
+  },
+  "st2_128057_1st_f061990": {
+   "conf_player": 0.1,
+   "same outline": true,
+   "margin": 10.0,
+   "boxes O / A / A'": [
+    14189,
+    13477,
+    13981
+   ],
+   "A frames>=300: O found / A found in O": [
+    0.9428,
+    0.9927
+   ],
+   "A frames>=350: O found / A found in O": [
+    0.9429,
+    0.9925
+   ],
+   "A' frames>=300: O found / A' found in O": [
+    0.9834,
+    0.998
+   ],
+   "A' frames>=350: O found / A' found in O": [
+    0.9851,
+    0.998
+   ],
+   "actor detected O / A / A'": [
+    1.0,
+    0.9167,
+    1.0
+   ]
+  }
+ },
+ "check O = 0.663": true,
+ "reproduced (A' within 0.02 of O, box agreement >= 0.95 both ways from frame 350)": true,
+ "lowest unit box agreement from frame 350 (A')": 0.9851
+}

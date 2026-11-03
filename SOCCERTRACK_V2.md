@@ -1857,6 +1857,32 @@ player steps replayed on Kaggle CPU). Same 2,254 actions and matching:
   (A 0.814). Before the pipeline takes B2: join those boxes to tracks, and
   explain the reproduction gap.
 
+**The replay gap is the confidence threshold** (`plan_v5.json`, hashed
+first; `v5.json`; local CPU, M7's 10 units). The original runs feed the
+tracker the boxes above each clip's auto-tuned `conf_player`
+(`auto_tune`, 0.08 to 0.5 over the 223 units, 0.4 or 0.5 on 156 of them);
+plan_v4 used 0.20 everywhere. Replayed at each clip's own threshold (A'),
+M7 is reproduced exactly:
+
+| M7, 86 actions | actor detected at S1 |
+|---|---|
+| original (O) | 0.663 |
+| A' (replay, the clip's threshold) | 0.663 |
+| A (replay, 0.20) | 0.791 |
+
+- A' and O share 98.5% or more of their boxes (IoU >= 0.9, both ways) in
+  every unit. The GPU pass reproduces the original detections; the
+  tracker's start at frame 300 does not matter.
+- So plan_v3's "tracker stage" loss (S0 at 0.20, then S1) is mostly the
+  threshold, not ByteTrack: at a fixed 0.20 the tracker costs the actor
+  0.8 points (A S1 0.859 vs S0 0.867). plan_v4's A is the pipeline at 0.20,
+  not as run; B2 - A (+3.2) holds against a 0.20 pipeline. The grass
+  test's cost on the 7 other matches is still mixed with the threshold.
+- The lever is the threshold itself: on M7, 0.20 instead of the
+  auto-tuned value gives +12.8 points at S1. Not registered yet: its cost
+  in false detections, on all 9 matches. M9 (imgsz 3840, not reproduced
+  here) is not covered.
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each
