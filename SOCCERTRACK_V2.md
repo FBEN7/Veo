@@ -1817,11 +1817,11 @@ stage, same actions and matching:
 | S5 output | 0.766 | 0.884 |
 
 - **The tracker stage is the loss: 10.2 of the 11.4 points** (roster cap
-  0.9, unassigned team 0.3). Correction: on 7 of the 9 matches (197 units,
-  tracked before 2026-10-27) that stage also held a grass test on players,
-  since turned off for a fixed view; without it (M7, M9) the stage loses
-  15.1 and 1.1 points. plan_v4 separates the two. It costs the actor 8.9 points, the other players
-  4.8; per match 1.1 (M9) to 15.1 (M7).
+  0.9, unassigned team 0.3). It costs the actor 8.9 points, the other
+  players 4.8; per match 1.1 (M9) to 15.1 (M7). Correction: on 7 of the 9
+  matches (197 units, tracked before 2026-10-27) that stage also held a
+  grass test on players, since turned off for a fixed view. plan_v4
+  separates the two.
 - Exploratory: of the actions lost by the tracker, 81% have the actor's
   raw box absent from its output; 43% of those boxes overlap another
   detection (16% for actors kept). The tracker writes only detections
@@ -1830,6 +1830,32 @@ stage, same actions and matching:
 - Lever: write every detection (unmatched ones under a new id) and leave
   them to the re-joining step. Needs every frame's detections, not cached
   here (a GPU pass, or the original runs' caches if Kaggle has them).
+
+**Tracker variants** (`plan_v4.json` + addenda 1, 2, hashed first;
+`v4.json`; GPU 2.6 h for the detections on 223 units, then the tracker and
+player steps replayed on Kaggle CPU). Same 2,254 actions and matching:
+
+| variant | S1 | S3 | S4 | control S4 | unmatched / frame S4 | same track ±1 s |
+|---|---|---|---|---|---|---|
+| A: matched detections only (the pipeline) | 0.859 | 0.856 | 0.847 | 0.928 | 5.60 | 0.814 |
+| A2: A + teams for short tracks | | 0.859 | 0.849 | 0.928 | 5.63 | 0.812 |
+| B2: every detection + that rule | 0.890 | 0.890 | 0.878 | 0.939 | 6.56 | 0.756 |
+
+- Primary, B2 - A at S4: **+0.032 [+0.026, +0.038]**, positive on 9 of 9
+  matches (+0.012 to +0.051). Guards hold (unmatched 6.56 <= 1.2 x 5.60;
+  control 0.939 >= 0.918). **The bar is met**, by 0.2 points.
+  Decomposition: A2 - A +0.003, B2 - A2 +0.029; the gain is the unmatched
+  detections, not their teams.
+- **The reproduction fails** (addendum 1): on M7 / M9, which had no grass
+  test, A should equal the original; it gives 0.804 at S4 against 0.778.
+  Exploratory (`reading_v4.json`): it is not one shift (M7 S1 0.791 vs
+  0.663, M9 0.848 vs 0.864). So A is a replay, not the pipeline as it ran,
+  and on the 7 other matches A - original (+0.088 at S4, 5.3 to 15.2 per
+  match) is not the grass test's cost alone.
+- Not registered, but it matters for the report: B2's added boxes are
+  one-frame ids, and a detected actor keeps one track over ±1 s on 0.756
+  (A 0.814). Before the pipeline takes B2: join those boxes to tracks, and
+  explain the reproduction gap.
 
 ### Distance per team (`team_distance/`; CPU, fails)
 
