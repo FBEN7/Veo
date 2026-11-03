@@ -1,0 +1,149 @@
+{
+ "plan_v3 sha256": "665fb2936c8f4b40d860ce51d3f443010c219effb05d38e5bdea1caa42888067",
+ "addendum1 sha256": "dc951ea5fd1027b881eb3351b05e27ee6284e6c67bab967eb6d7d5d7243199a5",
+ "actions": 2254,
+ "check: output's player rows found in S4": {
+  "min": 1.0,
+  "mean": 1.0,
+  "units below 0.99": 0
+ },
+ "per stage": {
+  "S0 raw": {
+   "detected": 0.8673,
+   "taken": 0.0674,
+   "missed": 0.0652,
+   "control": 0.9404,
+   "detections per action frame": 23.57
+  },
+  "S1 tracker": {
+   "detected": 0.7782,
+   "taken": 0.1096,
+   "missed": 0.1122,
+   "control": 0.8926,
+   "detections per action frame": 23.33
+  },
+  "S2 teams": {
+   "detected": 0.7782,
+   "taken": 0.1096,
+   "missed": 0.1122,
+   "control": 0.8926,
+   "detections per action frame": 23.33
+  },
+  "S3 assigned": {
+   "detected": 0.7746,
+   "taken": 0.1118,
+   "missed": 0.1136,
+   "control": 0.8916,
+   "detections per action frame": 23.27
+  },
+  "S4 roster cap": {
+   "detected": 0.7662,
+   "taken": 0.1131,
+   "missed": 0.1207,
+   "control": 0.8841,
+   "detections per action frame": 22.93
+  },
+  "S5 output": {
+   "detected": 0.7662,
+   "taken": 0.1131,
+   "missed": 0.1207,
+   "control": 0.8841,
+   "detections per action frame": 22.93
+  }
+ },
+ "raw has the actor, output does not (share of actions)": 0.114,
+ "first stage where it is lost (share of actions)": {
+  "S1 tracker": 0.102,
+  "S2 teams": 0.0,
+  "S3 assigned": 0.0031,
+  "S4 roster cap": 0.0089,
+  "S5 output": 0.0,
+  "regained then lost (not monotone)": 0.0
+ },
+ "lost at the roster cap": {
+  "share of actions": 0.0089,
+  "actor's label at S3": {
+   "team_A": 0.85,
+   "other": 0.1,
+   "team_B": 0.05
+  },
+  "actor's track length (frames at stride 2), median": 272.5,
+  "same, actors kept by the cap": 490.0,
+  "actor's length rank among its label on the frame, median": 13.0,
+  "same-label detections on the frame, median": 13.5
+ },
+ "per match: detected": {
+  "117093": {
+   "S0 raw": 0.858,
+   "S1 tracker": 0.782,
+   "S2 teams": 0.782,
+   "S3 assigned": 0.782,
+   "S4 roster cap": 0.775,
+   "S5 output": 0.775
+  },
+  "118575": {
+   "S0 raw": 0.848,
+   "S1 tracker": 0.733,
+   "S2 teams": 0.733,
+   "S3 assigned": 0.728,
+   "S4 roster cap": 0.724,
+   "S5 output": 0.724
+  },
+  "118576": {
+   "S0 raw": 0.9,
+   "S1 tracker": 0.841,
+   "S2 teams": 0.841,
+   "S3 assigned": 0.838,
+   "S4 roster cap": 0.838,
+   "S5 output": 0.838
+  },
+  "118577": {
+   "S0 raw": 0.844,
+   "S1 tracker": 0.743,
+   "S2 teams": 0.743,
+   "S3 assigned": 0.739,
+   "S4 roster cap": 0.732,
+   "S5 output": 0.732
+  },
+  "118578": {
+   "S0 raw": 0.844,
+   "S1 tracker": 0.722,
+   "S2 teams": 0.722,
+   "S3 assigned": 0.722,
+   "S4 roster cap": 0.688,
+   "S5 output": 0.688
+  },
+  "128057": {
+   "S0 raw": 0.814,
+   "S1 tracker": 0.663,
+   "S2 teams": 0.663,
+   "S3 assigned": 0.663,
+   "S4 roster cap": 0.663,
+   "S5 output": 0.663
+  },
+  "128058": {
+   "S0 raw": 0.837,
+   "S1 tracker": 0.725,
+   "S2 teams": 0.725,
+   "S3 assigned": 0.721,
+   "S4 roster cap": 0.721,
+   "S5 output": 0.721
+  },
+  "132831": {
+   "S0 raw": 0.875,
+   "S1 tracker": 0.864,
+   "S2 teams": 0.864,
+   "S3 assigned": 0.859,
+   "S4 roster cap": 0.832,
+   "S5 output": 0.832
+  },
+  "132877": {
+   "S0 raw": 0.92,
+   "S1 tracker": 0.823,
+   "S2 teams": 0.823,
+   "S3 assigned": 0.813,
+   "S4 roster cap": 0.813,
+   "S5 output": 0.813
+  }
+ }
+}

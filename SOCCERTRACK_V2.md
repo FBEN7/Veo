@@ -1803,6 +1803,31 @@ action frames, feet inside the outline, same matching:
   5.9% given to a neighbour); the reverse is 1.3%. **The loss is after
   detection** (tracking, filters), 5x what a bigger model gives.
 
+**Pipeline stages** (`plan_v3.json` + addendum 1, hashed first;
+`stages.json`, `reading_v3.json`; CPU). Actor detected at each cached
+stage, same actions and matching:
+
+| stage | actor detected | control |
+|---|---|---|
+| S0 raw detector | 0.867 | 0.940 |
+| S1 tracker (ByteTrack) | 0.778 | 0.893 |
+| S2 team labels | 0.778 | 0.893 |
+| S3 unassigned dropped | 0.775 | 0.892 |
+| S4 roster cap (11 per label) | 0.766 | 0.884 |
+| S5 output | 0.766 | 0.884 |
+
+- **The tracker is the loss: 10.2 of the 11.4 points** (roster cap 0.9,
+  unassigned team 0.3). It costs the actor 8.9 points, the other players
+  4.8; per match 1.1 (M9) to 15.1 (M7).
+- Exploratory: of the actions lost by the tracker, 81% have the actor's
+  raw box absent from its output; 43% of those boxes overlap another
+  detection (16% for actors kept). The tracker writes only detections
+  matched to an activated track: the first detection of a track and the
+  loser of a crowded IoU assignment are dropped.
+- Lever: write every detection (unmatched ones under a new id) and leave
+  them to the re-joining step. Needs every frame's detections, not cached
+  here (a GPU pass, or the original runs' caches if Kaggle has them).
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each
