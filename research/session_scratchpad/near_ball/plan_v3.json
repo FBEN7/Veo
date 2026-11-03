@@ -1,0 +1,25 @@
+{
+ "name": "near_ball plan_v3: where the pipeline loses the player on the ball",
+ "date": "2026-11-03",
+ "owner request": "Oui lance (find, on CPU, which pipeline step loses the actor)",
+ "why": "plan_v2 (exploratory part): the raw detector finds the actor on 0.867 of the actions, the pipeline's output on 0.767; on 11.3% of the actions the raw detector has the actor and the output does not.",
+ "seen before this plan": "Row counts of one unit's stage files (st2_117093_1st_f000000): players 27,570 in tracks.parquet, 26,659 after the outline, 18,715 in tracks_merged; team labels in tracks_grass: other 14,285, team_A 8,243, team_B 4,076, NaN 55. No actor-level result of any stage was looked at.",
+ "data": "The 2,255 actions of variants.parquet (actions.parquet x the clips' labels, 223 units, 9 matches, M1 left out), each at its even frame. The pipeline's cached stages in the unit's run directory (the folder metric_v3s_link.parquet links to).",
+ "stages (players only)": {
+  "S0 raw": "plan_v2's V0 detections (yolov8s, imgsz 4096, conf >= 0.20, NMS IoU 0.70), feet inside the outline (margin 0), from the kernel veo-nearball-det",
+  "S1 tracker": "tracks.parquet (run_detection: detector + tracker), feet inside the outline with the run's margin (pitch.json margin_px)",
+  "S2 teams": "tracks_grass.parquet (the outline cut, team labels, grass fractions)",
+  "S3 assigned": "S2 without unassigned team labels (player_filter.filter_players rule 1 alone)",
+  "S4 roster cap": "player_filter.filter_players(S2): rule 1, then at most 11 per frame per team label, longest tracks first",
+  "S5 output": "metric_v3s_link.parquet (the rows near_ball.py scored: track re-joining, ball selection, pitch metres)"
+ },
+ "measure (per stage, same as score_det.py)": "actor detected (a detection matched to the actor by feet, eval_soccertrack_v2.match_feet, 43 px) / taken (a detection within 43 px matched to someone else) / missed; the control (other outfield players on the same frames detected); detections per frame.",
+ "reported": [
+  "the share of actions with the actor detected at each stage",
+  "among actions detected at S0 and not at S5: the first stage where the actor is lost (share of all actions)",
+  "for actions lost at S4: the team label of the actor's detection at S3 and its track's length rank among its frame's same-label detections",
+  "the same per match, and the control's loss per stage (is the loss specific to the actor?)"
+ ],
+ "reading rule": "Diagnostic, no pass bar. A stage is named the main loss if it accounts for at least half of the 11.3 points; any fix it suggests goes to a new registered plan scored end to end.",
+ "unseal": "M7 / M9 opened clips through src/unseal.py, logged."
+}
