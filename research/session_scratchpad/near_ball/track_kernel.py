@@ -31,7 +31,10 @@ for f, want in json.load(open(f"{stage_ds}/track_stage.json"))["sha256"].items()
     shutil.copy(f"{stage_ds}/{n}", f"{stage}/src/{n}")
 code = os.path.dirname(find("supervision-0.30.9-py3-none-any.whl"))
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--no-deps",
-                os.path.join(code, "supervision-0.30.9-py3-none-any.whl")], check=True)
+                *[os.path.join(code, w) for w in ("supervision-0.30.9-py3-none-any.whl",
+                                                  "pydeprecate-0.13.0-py3-none-any.whl")]], check=True)
+subprocess.run([sys.executable, "-c", "import supervision, cv2, sklearn, pyarrow; print('supervision', supervision.__version__)"],
+               check=True)                            # fail here, not in the workers
 det_dir = os.path.dirname(find("units.txt"))          # the GPU kernel's output
 os.makedirs("/kaggle/working/trk", exist_ok=True)
 print(f"[{time.time() - T0:5.0f}s] setup done", flush=True)
@@ -194,3 +197,4 @@ for p in procs:
 for k in range(PARTS):
     print(open(f"/kaggle/working/tlog_{k}.txt").read()[-2000:], flush=True)
 print(f"[{time.time() - T0:5.0f}s] done", flush=True)
+assert all(p.returncode == 0 for p in procs), [p.returncode for p in procs]
