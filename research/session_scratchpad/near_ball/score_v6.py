@@ -43,10 +43,13 @@ def unit(args):
     for name, t in arms.items():
         d = TMP / name
         d.mkdir(exist_ok=True)
-        t = t.assign(team=None, in_s4=False)[COLS]
-        for v in ("A", "A2", "B2"):
-            t.to_parquet(d / f"{w}_{v}.parquet")
+        f = d / f"{w}_A.parquet"
+        t.assign(team=None, in_s4=False)[COLS].to_parquet(f)
+        for v in ("A2", "B2"):                     # score_v4.unit loads all three
+            (d / f"{w}_{v}.parquet").symlink_to(f)
         out += [dict(x, variant=name) for x in score_v4.unit(w, d, a) if x["variant"] == "A" and x["stage"] == "S1"]
+        for v in ("A", "A2", "B2"):
+            (d / f"{w}_{v}.parquet").unlink()
     return out
 
 
