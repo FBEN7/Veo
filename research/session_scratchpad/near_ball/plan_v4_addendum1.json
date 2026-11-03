@@ -1,0 +1,11 @@
+{
+ "amends": "plan_v4.json (sha256 2f7242b6...)",
+ "date": "2026-11-03, written while step 1 (GPU detection) runs, before any of its output was seen",
+ "finding": "src/detect_track_hybrid.run applied a grass test to players (detections whose feet are not near grass dropped) until commit ca98c6c2 (2026-10-27 06:57), which turned it off for a fixed view with a pitch outline. 197 of the 223 units (7 matches) were tracked before it (tracks.parquet 2026-10-21/22); only M7 and M9 (26 units, 2026-10-27 07:03 onwards) after it. So plan_v3's 'S1 tracker' is detector + tracker + that grass test on 7 of the 9 matches.",
+ "change": "Both variants follow the pipeline as it is now: no grass test on players (player_grass_filter False), as plan_v4 already specifies.",
+ "reproduction check, now split": {
+  "M7 and M9 (26 units, no grass test in the original)": "A should reproduce stages.json's S1 and S4 there; a gap above 0.02 at S4 is flagged",
+  "the 7 other matches (197 units)": "A - original at S1 estimates what the grass test cost the actor (with the tracker's later start); reported, no bar"
+ },
+ "unchanged": "variants, measures, primary (B - A at S4), bar and guards"
+}

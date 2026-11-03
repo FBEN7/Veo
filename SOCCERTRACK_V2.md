@@ -1816,8 +1816,11 @@ stage, same actions and matching:
 | S4 roster cap (11 per label) | 0.766 | 0.884 |
 | S5 output | 0.766 | 0.884 |
 
-- **The tracker is the loss: 10.2 of the 11.4 points** (roster cap 0.9,
-  unassigned team 0.3). It costs the actor 8.9 points, the other players
+- **The tracker stage is the loss: 10.2 of the 11.4 points** (roster cap
+  0.9, unassigned team 0.3). Correction: on 7 of the 9 matches (197 units,
+  tracked before 2026-10-27) that stage also held a grass test on players,
+  since turned off for a fixed view; without it (M7, M9) the stage loses
+  15.1 and 1.1 points. plan_v4 separates the two. It costs the actor 8.9 points, the other players
   4.8; per match 1.1 (M9) to 15.1 (M7).
 - Exploratory: of the actions lost by the tracker, 81% have the actor's
   raw box absent from its output; 43% of those boxes overlap another
