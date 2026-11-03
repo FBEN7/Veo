@@ -1,0 +1,9 @@
+{
+ "amends": "plan_v3.json (sha256 665fb293...)",
+ "date": "2026-11-03",
+ "why": "The stage files named in plan_v3 (the top of the run directory) are not the ones the output was built from. metric_v3s_link.parquet was built by shots_goals/shots_dev.metric_of from <run>/shots_v3s_link/ (a copy of events_v1/ with the ball rows swapped): its pitch.json has margin 10 px (50 px at the top) and its tracks_grass.parquet has other team labels. On st2_117093_1st_f000000, filter_players(shots_v3s_link/tracks_grass) gives exactly the output's player rows (18,651 of 18,651 at 0 px); from the top-level files it does not.",
+ "seen before this amendment": "A smoke test of stages.py on st2_117093_1st_f000000 with the top-level files: 10 actions, detected at every stage but S4 (8 of 10), and again at S5 (10 of 10). Nothing else at actor level.",
+ "change": "S1 to S4 read <run>/shots_v3s_link/ (tracks.parquet; its pitch.json outline and margin; tracks_grass.parquet). S0 and S5 unchanged.",
+ "added check": "Per unit, the share of the output's player rows found in S4 at the same frame and pixel position (expected 1.0); reported.",
+ "unchanged": "measures, reported items and the reading rule"
+}
