@@ -1,0 +1,139 @@
+{
+ "plan_v7 sha256": "b511a38b33c7f4227ec66946a87569aa996365bbad0dbdc209df2b9a9523ea7f",
+ "units": 221,
+ "units missing": [
+  "st2_132877_2nd_f002350",
+  "st2_132877_2nd_f005698"
+ ],
+ "per arm (S4)": {
+  "A": {
+   "actions": 2230,
+   "detected": 0.8466,
+   "control": 0.9272,
+   "unmatched per action frame": 5.576,
+   "same track +-1s (detected actors)": 0.8135
+  },
+  "A'": {
+   "actions": 2230,
+   "detected": 0.77,
+   "control": 0.8932,
+   "unmatched per action frame": 3.609,
+   "same track +-1s (detected actors)": 0.8027
+  }
+ },
+ "primary: actor detected at S4, A - A'": {
+  "gain": 0.0767,
+  "95% bootstrap over matches": [
+   0.0598,
+   0.0961
+  ],
+  "per match": {
+   "117093": 0.08,
+   "118575": 0.101,
+   "118576": 0.055,
+   "118577": 0.066,
+   "118578": 0.122,
+   "128057": 0.116,
+   "128058": 0.096,
+   "132831": 0.016,
+   "132877": 0.065
+  }
+ },
+ "guards": {
+  "unmatched per action frame, A <= 1.2 x A'": false,
+  "control, A >= A' - 0.01": true
+ },
+ "bar met (gain >= 0.03, lower bound > 0, guards)": false,
+ "per match": {
+  "117093": {
+   "A": {
+    "detected": 0.862,
+    "unmatched per action frame": 6.43
+   },
+   "A'": {
+    "detected": 0.782,
+    "unmatched per action frame": 5.17
+   }
+  },
+  "118575": {
+   "A": {
+    "detected": 0.848,
+    "unmatched per action frame": 4.2
+   },
+   "A'": {
+    "detected": 0.747,
+    "unmatched per action frame": 2.46
+   }
+  },
+  "118576": {
+   "A": {
+    "detected": 0.891,
+    "unmatched per action frame": 4.67
+   },
+   "A'": {
+    "detected": 0.836,
+    "unmatched per action frame": 2.39
+   }
+  },
+  "118577": {
+   "A": {
+    "detected": 0.798,
+    "unmatched per action frame": 3.75
+   },
+   "A'": {
+    "detected": 0.732,
+    "unmatched per action frame": 2.44
+   }
+  },
+  "118578": {
+   "A": {
+    "detected": 0.84,
+    "unmatched per action frame": 5.03
+   },
+   "A'": {
+    "detected": 0.719,
+    "unmatched per action frame": 2.75
+   }
+  },
+  "128057": {
+   "A": {
+    "detected": 0.767,
+    "unmatched per action frame": 8.73
+   },
+   "A'": {
+    "detected": 0.651,
+    "unmatched per action frame": 5.85
+   }
+  },
+  "128058": {
+   "A": {
+    "detected": 0.817,
+    "unmatched per action frame": 4.95
+   },
+   "A'": {
+    "detected": 0.721,
+    "unmatched per action frame": 3.09
+   }
+  },
+  "132831": {
+   "A": {
+    "detected": 0.821,
+    "unmatched per action frame": 7.96
+   },
+   "A'": {
+    "detected": 0.804,
+    "unmatched per action frame": 7.57
+   }
+  },
+  "132877": {
+   "A": {
+    "detected": 0.884,
+    "unmatched per action frame": 7.41
+   },
+   "A'": {
+    "detected": 0.819,
+    "unmatched per action frame": 3.86
+   }
+  }
+ }
+}

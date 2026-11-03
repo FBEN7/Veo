@@ -1905,6 +1905,29 @@ actions; 2 units with conf_player 0.08 left out):
   0.776: **that test cost 0.3 points.** plan_v3's tracker-stage loss is the
   auto-tuned threshold.
 
+**The same at the roster cap** (`plan_v7.json`, hashed first; `v7.json`;
+Kaggle CPU 52 min for A', local scoring; same 221 units, 2,230 actions):
+
+| roster cap (S4) | actor detected | control | unmatched / action frame | same track ±1 s |
+|---|---|---|---|---|
+| A': each clip's conf_player (the pipeline) | 0.770 | 0.893 | 3.61 | 0.803 |
+| A: 0.20 | 0.847 | 0.927 | 5.58 | 0.814 |
+
+- A - A': +0.077 [+0.060, +0.096], positive on 9 of 9 matches (+0.016 on
+  M9 to +0.122). The gain clears 0.03, but **the false-detection guard
+  fails again**: 5.58 against 3.61 unmatched boxes per action frame
+  (1.54x; the guard is 1.2x). Control holds (+0.034). **The bar is not
+  met: no change to the pipeline.**
+- The roster cap removes few of the extra boxes (S1 5.93 to S4 5.58 at
+  0.20): the trade is +7.7 points on the actor for about two more
+  unmatched boxes per frame, which a report counts.
+- Exploratory (`reading_v7.json`): A' gives the original S4's verdict on
+  97.7% of the actions (original 0.766, A' 0.770; M9 88%).
+- Open: what the extra boxes are (duplicates of a matched player, people
+  off the truth, spurious) and what they cost in the report's figures. A
+  threshold chosen on these 9 matches would need matches it was not
+  chosen on.
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each
