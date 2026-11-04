@@ -1928,6 +1928,28 @@ Kaggle CPU 52 min for A', local scoring; same 221 units, 2,230 actions):
   threshold chosen on these 9 matches would need matches it was not
   chosen on.
 
+**What the extra boxes are** (exploratory, not registered, read after
+`v7.json`: `extra_boxes.py`, `actor_team.py`, `reading_extra_boxes.json`,
+`reading_actor_team.json`). The boxes unmatched at S4 that only A has,
+2.0 per action frame (the guard's gap):
+
+- 90% have their foot outside the pitch outline (in its 10-px margin), and
+  58% have no truth person within 100 px: people on the touchline
+  (assistant referees and staff are not in the truth). 34% lie 60 to 87 px
+  from a player (a box on a person, its foot off), 8% are a second box on
+  a matched player. Confidence: median 0.32.
+- 96% carry the team label "other": the team figures do not count them.
+  Unmatched boxes with a team label: 0.74 per action frame for A vs 0.59
+  for A' (1.24x); with the foot inside the outline: 2.03 vs 1.81 (1.12x).
+- The actor's box carries a team label on 0.737 of the actions for A vs
+  0.675 for A' (+6.2 points); of the 188 actions A gains, 154 have a team
+  label (whether it is the right team is not checked).
+- So the registered guard (every unmatched box) mostly counts touchline
+  people the report ignores. A guard on what the report uses would be
+  near the 1.2x line (1.24x on team-labelled boxes). Chosen after seeing
+  these data, such a guard needs its own plan, and ideally matches not
+  used here.
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each
