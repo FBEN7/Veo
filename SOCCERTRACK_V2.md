@@ -2394,3 +2394,24 @@ within 0.16 s:
   gets right is confident (median 0.95). So most of "selection" is the
   detector's confidence at the action (the ball at the feet, in contact):
   lowering tau would let it in, with every other weak candidate.
+
+**Linking variants** (`plan_v3.json`, hashed first; `link_variants.json`;
+local CPU). 24 variants of `src/ball_link.link`'s inputs (even frames or
+all frames; tau 0.10, 0.05, 0.03, 0.01; a bonus of 0, 1 or 2 in logit for
+candidates within 1.5 m of a player's feet), each chosen on 8 matches and
+scored on the 9th:
+
+- Held out, end to end 0.352 against 0.343 for the pipeline's variant:
+  **+0.008 [+0.000, +0.017]**. Every fold chose all frames, at a tau of
+  0.05 or lower. **Under the 0.03 bar: no change to the pipeline.**
+- Guard: the ball after the kick on the owner's 366 clicks, hit 0.415
+  against 0.336, so it holds. Part of that rise is the odd frames: half
+  the clicks are on odd frames, which the pipeline never links.
+- The reproduction checks fail, narrowly. 11 of 223 units relink 1 to 18
+  ball rows differently from the stored ones, and a tie between two
+  equally near frames breaks otherwise. 20 actions of 2,257 change their
+  ball-within-3-m test and 12 their end to end (0.3434 vs 0.3451). All
+  variants are scored the same way, so their differences hold.
+- Reading: the linker is not where the ball's +0.25 lies. The near ball
+  is too weak in the detector (median confidence 0.07) for any linking
+  rule to pick it out of the noise.
