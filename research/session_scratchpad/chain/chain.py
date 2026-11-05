@@ -35,6 +35,7 @@ def match(a, b, lim):
 
 def unit(w):
     m = pd.read_parquet(TREE / w / f"output_{w}" / "metric_v3s_link.parquet")
+    m = m.assign(x=m.x - 52.5, y=m.y - 34.0)       # addendum 1: corner origin -> centre spot
     pl = m[(m.cls == "player") & m.x.notna()]
     ball = m[(m.cls == "ball") & m.x.notna()]
     gt = pd.read_parquet(CLIPS / f"{w}_gt.parquet")
@@ -122,7 +123,7 @@ def main():
             "swap ball", "swap player", "swap team"]
     share = lambda g: {c: round(float(g[c].mean()), 4) for c in cols}
     kinds = df.kind.where(df.kind.isin(["pass", "carry"]), "other")
-    out = {"plan sha256": (HERE / "plan.json.sha256").read_text().split()[0], "units": len(units), "actions": len(df),
+    out = {"plan sha256": (HERE / "plan.json.sha256").read_text().split()[0], "addendum1 sha256": (HERE / "plan_addendum1.json.sha256").read_text().split()[0], "units": len(units), "actions": len(df),
            "shares (of all actions)": share(df),
            "conditional": {"S2 | S1": round(float(df["S2 nearest is actor"].sum() / df["S1 ball found"].sum()), 4),
                            "S3 | S2": round(float(df["S3 team given"].sum() / df["S2 nearest is actor"].sum()), 4),

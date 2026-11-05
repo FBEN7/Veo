@@ -2338,3 +2338,31 @@ metres within 3 m (`--pitch`; M1's truth boxes are in another frame):
    be gated by running speed. A re-ID model would need far more distinct
    people than the 60 here -- the test matches M7 and M9, or other
    footage -- or larger crops.
+
+### The chain ball -> player on the ball -> team (`chain/`; local CPU)
+
+`plan.json` + addendum 1 (hashed first; the addendum fixes a frame
+mismatch found when every share came out ~0: our x / y have the corner
+origin). 2,257 labelled actions of the 223 shot clips, 9 matches (M7 / M9
+now development data, owner 2026-11-05). Per action: our ball within 3 m
+and 0.16 s of the action, our player nearest that ball, its team.
+
+| link | share of actions | given the previous link |
+|---|---|---|
+| S1 our ball within 3 m | 0.506 | |
+| S2 our player nearest it is the actor | 0.343 | 0.68 |
+| S3 that player has a team | 0.307 | 0.90 |
+| S4 the team is right | 0.273 | 0.89 |
+| end to end: the nearest player's team is the actor's (a teammate counts) | **0.345 [0.324, 0.368]** | |
+
+- Swapping one link for the truth: **the ball +0.252 [+0.226, +0.278]**,
+  the team +0.008 [-0.016, +0.029], the player -0.059 (an artefact: the
+  2-m pitch matching finds the actor on 0.49 of actions, against 0.77 in
+  the image; the truth's positions are approximate, 1.2-1.7 m). **The
+  ball is the link to work on first.** With our ball within 3 m, the team
+  is right on 0.68 of the actions; without it, no answer.
+- Exploratory (`reading_ball_miss.json`): within 0.16 s of the action, a
+  ball row of ours exists but lies more than 3 m away on 31% of actions
+  (median 5.9 m, quartiles 4.0-10.6), and there is no ball row at all on
+  12% (the nearest is a median 0.32 s away). The ball is mostly placed
+  wrong, more often than it is missing.

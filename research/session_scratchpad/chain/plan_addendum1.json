@@ -1,0 +1,6 @@
+{
+ "amends": "plan.json (sha256 in plan.json.sha256)",
+ "date": "2026-11-05, after a first run whose every share was ~0 (a frame mismatch, not a result)",
+ "finding": "metric_v3s_link's x / y are pitch metres with the corner origin (src/pixel_scale.to_pitch_metres: centre-spot metres + (52.5, 34)); the truth and the events files use the centre spot",
+ "change": "our players' and ball's x / y minus (52.5, 34) before any distance; nothing else"
+}
