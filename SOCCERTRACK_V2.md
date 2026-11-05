@@ -1950,6 +1950,17 @@ Kaggle CPU 52 min for A', local scoring; same 221 units, 2,230 actions):
   these data, such a guard needs its own plan, and ideally matches not
   used here.
 
+**Closed (owner, 2026-11-05): the pipeline keeps the auto-tuned
+threshold.** No other annotated matches exist. M1 (117092), the only
+match never used, cannot be brought into our video's pixels
+(`m1/reading_m1.json`, gate before a plan; no GPU used). Its calibration
+fits the truth's frame (0.3-0.4 m), not the video's (2.9-3.8 m). The best
+image mapping (degree-3 polynomial, fit on frames 0-298) finds 52% of its
+players on frames 1126-1424, against 89% elsewhere, and none in the lower
+image, near the camera. The trade on record: a fixed 0.20 gives +6.2
+points on the actor with a team label, for 1.24x the team-labelled
+unmatched boxes, measured on data already seen.
+
 ### Distance per team (`team_distance/`; CPU, fails)
 
 `plan.json` (hashed first): on the 249 clips (frames 300-1125), each
