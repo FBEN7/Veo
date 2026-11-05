@@ -48,6 +48,8 @@ https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
 https://claude.ai/artifact/QSjBMF2krjrkoNLAWu86U6 (nothing shown as a match
 statistic; options: semi-automatic product, players near the ball, new data).
 
+**Plan (2026-11-05, French):** Claude Docs at https://claude.ai/artifact/W3p48YE4osJht9DBKRbjYf. The owner wants a 100% automatic report, has no pilot club or customer input yet, and has time. Plan: (1) target-camera footage from 1-2 pilot clubs (GDPR consent) and the clubs' top statistics, while I measure the chain with no annotation on SoccerTrack (automatic pitch outline); (2) owner annotates 3-5 target matches with a tool I build, 2 kept unseen; (3) adapt and test against product bars fixed beforehand.
+
 ## Results so far (all in SOCCERTRACK_V2.md)
 
 | Topic | Result |
