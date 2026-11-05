@@ -2366,3 +2366,22 @@ and 0.16 s of the action, our player nearest that ball, its team.
   (median 5.9 m, quartiles 4.0-10.6), and there is no ball row at all on
   12% (the nearest is a median 0.32 s away). The ball is mostly placed
   wrong, more often than it is missing.
+
+**Selection or detection** (`plan_v2.json`, hashed first; `cand.json`).
+For the actions where our linked ball is not within 3 m, the detector's
+own candidates (about 4 per frame, the linked ball always one of them),
+within 0.16 s:
+
+| category | share of actions |
+|---|---|
+| linked ball within 3 m | 0.506 |
+| selection: a frame's top candidate is within 3 m, the link chose otherwise | 0.150 |
+| selection: a lower-ranked candidate is within 3 m | 0.087 |
+| detection: no candidate within 3 m | 0.257 |
+
+- Selection minus detection: -0.020 [-0.069, +0.032]. By the plan's
+  rule, **both matter**: the linking step loses 15 points that the
+  detector had at the top of a frame (CPU work, no retraining); the
+  detector misses the ball near the action on a quarter of the actions
+  (retraining, GPU). Shots and other actions are worse (linked 0.31,
+  detection 0.33).
