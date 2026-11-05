@@ -2385,3 +2385,12 @@ within 0.16 s:
   detector misses the ball near the action on a quarter of the actions
   (retraining, GPU). Shots and other actions are worse (linked 0.31,
   detection 0.33).
+- Exploratory (`reading_sel_split.json`): the linker sees only candidates
+  with confidence 0.10 or more (`kaggle/metric_step.py`: top 4 a frame,
+  tau 0.10, c_null 1, c_static 2, the pipeline's players for the static
+  penalty). Of the 23.7% "selection" actions, 14.1 points have their near
+  candidate below 0.10 (median 0.072: never seen by the linker), 9.7
+  points at 0.10 or more (seen, another chosen or none). The ball the link
+  gets right is confident (median 0.95). So most of "selection" is the
+  detector's confidence at the action (the ball at the feet, in contact):
+  lowering tau would let it in, with every other weak candidate.
