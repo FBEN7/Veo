@@ -2415,3 +2415,28 @@ scored on the 9th:
 - Reading: the linker is not where the ball's +0.25 lies. The near ball
   is too weak in the detector (median confidence 0.07) for any linking
   rule to pick it out of the noise.
+
+**A learned "who has the ball"** (`plan_v4.json`, hashed first;
+`possessor.json`; local CPU). Per action, a gradient-boosted score over our
+players (distance to the linked ball now and nearest in time, the raw
+candidates' confidence near the feet within 0.24 s, speed, neighbours,
+team label), trained on 8 matches and scored on the 9th, against rules
+that, like it, run without the truth:
+
+| team at the ball, 2,257 actions | share |
+|---|---|
+| B1: nearest player to the linked ball (pipeline) | 0.538 |
+| B2: B1, else the linked ball nearest in time (1 s) | 0.595 |
+| B3: nearest player to the top raw candidate | 0.549 |
+| learned (held out) | **0.601** (actor itself 0.571) |
+
+- Learned minus B2: +0.007 [-0.003, +0.017]. **Under the 0.03 bar.**
+  B1 here is not chain.json's 0.345, which needed the ball within 3 m of
+  the true action position.
+- Exploratory (`reading_ceiling.json`): **with the true action position**,
+  our nearest detection has the right team on 0.597, the same as the rules.
+  It has a team label on 0.864 of the actions, and the label is right on
+  only 0.690 of those, far below the ~0.9 seen away from the ball.
+  With a perfect label it would be 0.720: in contact, the nearest player
+  is often an opponent. **Near the ball the limit is now the team labels
+  (31% wrong) and the duels, more than the ball.**
