@@ -2440,3 +2440,18 @@ that, like it, run without the truth:
   With a perfect label it would be 0.720: in contact, the nearest player
   is often an opponent. **Near the ball the limit is now the team labels
   (31% wrong) and the duels, more than the ball.**
+
+### Shots on the relinked ball (`shots_learn/linkall/`; local CPU)
+
+`plan.json` (hashed first): the v4 spotter's features on the ball relinked
+with all frames (tau 0.03, no feet bonus: chain plan v3's variant, chosen
+there for the team at the ball, not for shots), eval_ap's measure (10
+matches left out in turn, 3 seeds). The new ball has 2.6x the rows
+(131,840 vs 49,950).
+
+- Event AP 0.616 vs v4's 0.612: **+0.004 [-0.035, +0.050]**, under the
+  +0.04 bar: no change. Hits at the rate threshold 160 vs 162 of 269.
+  Per match the change runs from -0.10 (M5) to +0.08 (M9), as noisy as
+  the null change.
+- A better-linked ball after the kick (chain plan v3's guard) does not make
+  a better shot spotter: the spotter's limit is elsewhere.
