@@ -1661,6 +1661,30 @@ restartable goals, 184 min.
   +-2 s of the same track: 0.92-0.98 against 0.79-0.93): a candidate for
   the main pipeline (needs the GPU to recompute kit features on clips).
 
+### Goals on all 20 halves (`goals_v3/`, 2026-11-07; registered, CPU only)
+
+`plan.json` (hashed first): the kick-off formation rule on 1-fps yolov8s
+scans of all 20 halves (16 new, ~1.5 h each on 2 local lanes), its cell
+(T, R, N) chosen by `goals_v2/explore.choose` on 9 matches and scored on
+the 10th. Bar: restartable goals found >= 0.95 and <= 1 false run per
+match; scoring team right on >= 0.9 of hits (`kick_spot`). `goals_v3.json`.
+
+| | found | false runs | per match | team right |
+|---|---|---|---|---|
+| held out (cell chosen on 9 matches) | 34 / 41 (0.83) | 85 | 8.5 | 27 / 34 (0.79) |
+| registered cell (T 0.85, N 2), all halves | 30 / 41 | 37 | 3.7 | 20 / 30 |
+| random times, same run counts | 4.3 mean (95th pct 7) | | | |
+
+- **Bar not met** (found and false runs both fail; team fails too). The
+  rule is far above chance, so the formation signal is real.
+- The chosen cell is almost always T 0.75, R 5 m, N 2 (looser than the
+  registered T 0.85): it finds more goals at the cost of false runs.
+- False runs are concentrated: 118575 26, 132831 16, 118577 14; 118576
+  has 1. Misses: 118577 2/4, 118578 2/4, 132877 1/3.
+- On the ground truth the same rule is 41/41 with 0 false runs, so the
+  gap is the detections' share (team labels near the halfway line and
+  people not seen), as `goals_v2/` found on M9.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart
