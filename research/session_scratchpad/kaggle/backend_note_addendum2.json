@@ -1,0 +1,8 @@
+{
+ "amends": "backend_note.json (sha256 a7e12cb7357c3e4acf55ae43f4f54b52a6e130da40a876a87466363a0885b0e4) and addendum1",
+ "recorded": "2026-10-21, before the learned-shots protocol (shots_learn/protocol.json)",
+ "players step": "eval_soccertrack_v2.py with --calibrated: skips the ground-plane fit, whose result no later step reads",
+ "ball step": "an optional local range per unit (the background still from the whole video)",
+ "evidence": "compare_opt.json: identical tracks, teams, merged tracks, events and v3 rows on two clips",
+ "log lines": "each step's log lines are stamped with seconds since the step began"
+}

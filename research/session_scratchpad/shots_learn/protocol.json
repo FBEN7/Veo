@@ -1,0 +1,38 @@
+{
+ "name": "Learned shot spotter on the panorama, tested on M5 (owner decision 2026-10-21)",
+ "registered": "2026-10-21, before any training clip is cut or processed and before any M5 detection exists",
+ "known peeks (disclosed)": [
+  "M5's BAS SHOT/GOAL frames were read to plan its clips and draw their order (29 merged clips, 33 attempts). No M5 video, detection or other label was read.",
+  "The rule of protocol_shots.json failed on dev (1/32, frozen_shots.json); its diagnostic (shots_dev_diagnostic.json) is known."
+ ],
+ "backend": "Kaggle T4 x2, fp32, as research/session_scratchpad/kaggle/backend_note.json + addendum1 + addendum2 (players step with --calibrated, ball over the span +-2 s of a clip only; both shown output-identical, compare_opt.json). Training and test on this backend.",
+ "units": {
+  "clip": "-15 s / +10 s around each BAS SHOT and GOAL of a half, merged where they overlap (kaggle/cut_shot_clips.py spans); cut with 400 frames each side; players on the whole cut, the ball on [span start - 50, span end + 50] local frames; features and labels only inside the span",
+  "training matches": ["117092 (M1)", "117093 (M2)", "118575 (M3)", "118576 (M4)", "118578 (M6)", "128058 (M8)", "132877 (M10)"],
+  "training units": "the clips of all their SHOT/GOAL (194 clips) plus the 7 processed GPU windows of these matches (whole windows, extra negatives)",
+  "excluded": "M7 and M9 (sealed, spent on the rule's dev); M5 until the test",
+  "test": "M5 (118577): its 29 clips (33 attempts), in the registered order below"
+ },
+ "ball and players input": "per unit, as shots_dev.py metric_of: v3 rows, painted marks dropped, static points dropped, linked (v3s_link), to pitch metres with the release calibration",
+ "model": {
+  "features": "learn.py's per-frame features (ball, candidates, nearest players, changes across t; FEATURE_VERSION 1) plus goal geometry at t and over +-12 frames: distance from the point to the nearer goal centre, the point's velocity component towards that goal, and whether the velocity ray meets that goal line within 5 m of the mouth",
+  "classifier": "learn.py's HistGradientBoostingClassifier settings, one class 'shot' (SHOT or GOAL label within 0.24 s of t)",
+  "events": "peaks of the smoothed probability above a threshold, at least 1.0 s apart",
+  "threshold": "by rate on the training data's out-of-fold predictions (events closest in number to the labels), as learn.py"
+ },
+ "dev": {
+  "validation": "nested leave-one-match-out over the 7 training matches, thresholds by rate on the inner folds (learn.py nested)",
+  "measures": "recall at 2 s (one to one, SHOT and GOAL), precision, events, per match",
+  "go to the test only if": "pooled cross-validated recall >= 0.45 AND precision >= 0.40; otherwise stop, report, no M5 processing",
+  "then": "one final model on all 7 matches, rate thresholds; frozen in frozen.json with its sha256 before any M5 clip is cut"
+ },
+ "test": {
+  "order": "M5 clips processed in the order drawn with numpy default_rng(20261021).permutation(29) over the clips listed half 1 then half 2, by time: [0, 7, 12, 15, 6, 21, 27, 19, 3, 24, 22, 9, 23, 11, 17, 20, 16, 1, 14, 13, 10, 8, 5, 26, 18, 2, 28, 25, 4]",
+  "batches": "in that order, 8, 7, 7, 7 clips",
+  "primary": "recall at 2 s, one to one, on the 33 M5 attempts, with a Wilson 95% interval",
+  "secondary": ["precision on the M5 spans", "the frozen rule of frozen_shots.json on the same spans", "recall and precision per half"],
+  "success": "recall >= 18/33 AND precision >= 0.50 on the M5 spans",
+  "early stop (owner decision 2026-10-21)": "after each batch is scored: stop when success is out of reach, i.e. hits so far + attempts not yet processed < 18, or false shots so far > hits so far + attempts not yet processed (precision could no longer reach 0.50). The result is then 'fails (stopped after k of 29 clips)' with the counts so far. No stop for success: the test runs to the end when it can still succeed.",
+  "power": "33 attempts: recall known to about +-0.17"
+ }
+}

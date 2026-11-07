@@ -1,0 +1,109 @@
+{
+ "plan_v2 sha256": "2c052419861ac33cd5c77e136e02b7b51041b58a03421f7bdb937cbe94fe5be9",
+ "units": 27,
+ "128057": {
+  "before": {
+   "coverage": 0.543,
+   "coverage any team": 0.62,
+   "fills": 0,
+   "fill precision": null,
+   "identity continuity (weighted)": 0.764
+  },
+  "after": {
+   "coverage": 0.568,
+   "coverage any team": 0.656,
+   "fills": 3153,
+   "fill precision": 0.375,
+   "identity continuity (weighted)": 0.754
+  }
+ },
+ "132831": {
+  "before": {
+   "coverage": 0.58,
+   "coverage any team": 0.632,
+   "fills": 0,
+   "fill precision": null,
+   "identity continuity (weighted)": 0.832
+  },
+  "after": {
+   "coverage": 0.725,
+   "coverage any team": 0.799,
+   "fills": 11734,
+   "fill precision": 0.638,
+   "identity continuity (weighted)": 0.821
+  }
+ },
+ "who made the action (rule C, metres)": {
+  "all": {
+   "before": {
+    "n": 533,
+    "right": 159,
+    "share": 0.298,
+    "wilson": [
+     0.261,
+     0.338
+    ],
+    "given": 0.865
+   },
+   "after": {
+    "n": 533,
+    "right": 160,
+    "share": 0.3,
+    "wilson": [
+     0.263,
+     0.34
+    ],
+    "given": 0.878
+   }
+  },
+  "128057": {
+   "before": {
+    "n": 178,
+    "right": 65,
+    "share": 0.365,
+    "wilson": [
+     0.298,
+     0.438
+    ],
+    "given": 0.882
+   },
+   "after": {
+    "n": 178,
+    "right": 66,
+    "share": 0.371,
+    "wilson": [
+     0.303,
+     0.444
+    ],
+    "given": 0.916
+   }
+  },
+  "132831": {
+   "before": {
+    "n": 355,
+    "right": 94,
+    "share": 0.265,
+    "wilson": [
+     0.222,
+     0.313
+    ],
+    "given": 0.856
+   },
+   "after": {
+    "n": 355,
+    "right": 94,
+    "share": 0.265,
+    "wilson": [
+     0.222,
+     0.313
+    ],
+    "given": 0.859
+   }
+  }
+ },
+ "plan_v3 sha256": "27c0585d6d6540d73c6de4560968df42419552a7069397d2f00aea7a9b11251d",
+ "detection precision, same metric (team_A / team_B rows within 3 m of a truth person of their side)": {
+  "128057": 0.6,
+  "132831": 0.816
+ }
+}

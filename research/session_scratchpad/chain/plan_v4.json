@@ -1,0 +1,27 @@
+{
+ "plan": "chain plan v4: a learned 'who has the ball' at the labelled actions, against simple rules, leaving one match out",
+ "date": "2026-11-06, after link_variants.json; before any computation below",
+ "known before": "chain.json: end to end 0.345 (nearest player to our linked ball, no answer without it); link_variants.json: linking variants +0.008; reading_sel_split.json: the near ball's candidates are weak (median confidence 0.07)",
+ "actions": "chain.parquet's 2,257 actions (chain.py's iteration), 9 matches",
+ "per action, the choices": "our player rows at the action's even frame f (metric_v3s_link, cls player)",
+ "label": "the detection matched to the actor by eval_soccertrack_v2.match_feet (image feet, 43 px) at f; actions without a matched actor are not trained on but are scored",
+ "features per player (fixed before any fit)": [
+  "distance to our linked ball at the nearest linked frame within f +- 4 (NaN if none) and the player's rank by it",
+  "distance to the linked ball nearest in time within f +- 25 frames, and that time gap",
+  "raw candidates of v3s_rows within f +- 6 frames: max confidence within 1, 2 and 3 m of the player's feet; count with confidence >= 0.02 within 2 m; sum of confidence within 2 m; the player's rank by the max within 2 m",
+  "distance to the top-confidence candidate of the nearest candidate frame within f +- 4",
+  "speed (m/s) from the player's own track over f +- 4",
+  "players within 3 m; distance to the nearest player with another team label and with the same one",
+  "box height in pixels; whether the player has a team label; the number of players at f"
+ ],
+ "model": "sklearn HistGradientBoostingClassifier(max_iter=300, learning_rate=0.05, max_leaf_nodes=15, random_state=0), no tuning; per action the player with the highest score",
+ "rules compared (same actions)": {
+  "B1 pipeline": "the nearest player to our linked ball at the nearest linked frame within f +- 4 (no use of the action's position); no answer without one",
+  "B2 pipeline + fallback": "B1; without a linked ball within f +- 4, the nearest player to the linked ball nearest in time within f +- 25 frames",
+  "B3 top candidate": "the nearest player to the top-confidence raw candidate of the nearest candidate frame within f +- 4"
+ },
+ "primary": "end to end (the chosen player's mapped team is the action's side; chain.py's team map), held out by leaving one match out; gain = the model minus the best of B1, B2, B3 (the best chosen on all 9 matches, which favours the rules); 95% bootstrap over matches (5,000, seed 0)",
+ "also reported": "the actor chosen (identity) share; per action kind; per match",
+ "bar": "gain >= 0.03 with the interval's lower bound > 0",
+ "note": "B1 here does not use the action's position (chain S1 did): it is the pipeline's rule as it would run, so its share differs from chain.json's 0.345"
+}

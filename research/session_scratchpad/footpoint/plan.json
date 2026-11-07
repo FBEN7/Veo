@@ -1,0 +1,10 @@
+{
+ "question": "Can a learned correction of the detector's foot point bring our player positions near the truth (now 0.9-1.4 m off)?",
+ "status": "exploratory, CPU, written before any fit (owner, 2026-10-26)",
+ "data": "the shots clips with pitch tracks (.cache/gpu/<w>/output_<w>/metric_v3s_link.parquet), every 10th frame; all matches but M1 (its truth boxes are in another frame); M7 / M9 through src/unseal.py",
+ "pairs": "player detections matched to truth persons by feet (eval_soccertrack_v2.match_feet, 43 px)",
+ "target": "the image offset from the detection's foot point (px_raw, py_raw) to the truth box's bottom centre",
+ "model": "sklearn HistGradientBoostingRegressor per offset component, features: u, v, box height, box width, height/width, image width; defaults",
+ "validation": "leave one match out; error = pitch distance (release calibration) to the truth's pitch position, median and p90, before vs after, per held-out match and pooled",
+ "adopt if": "pooled held-out median error falls by >= 30% and no held-out match gets worse"
+}

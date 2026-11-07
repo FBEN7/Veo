@@ -1,0 +1,28 @@
+{
+ "plan sha256": "bf3431906dae6d75567db17732623e66c3ca0abd04d413e266f27ff90b8b3b28",
+ "addendum1 sha256": "71aefdbd366064d5f436c876347c67a8c18ab20102ca3223282aee9583731fa3",
+ "share of the left side's passes": {
+  "mean abs error, ours": 0.0866,
+  "constant 0.5": 0.0971,
+  "ours - constant, 95% over matches": [
+   -0.0619,
+   0.0379
+  ],
+  "shown": false
+ },
+ "pass success rate per team": {
+  "mean abs error, ours": 0.1993,
+  "constant (other matches' rate)": 0.0614,
+  "ours - constant, 95% over matches": [
+   0.0917,
+   0.1843
+  ],
+  "shown": false
+ },
+ "pass counts per team (descriptive)": {
+  "median relative error, ours": 0.2037,
+  "our total split 50/50": 0.1986
+ },
+ "decision": "neither is shown: the share is no better than 0.5 (0.087 vs 0.097, [-0.062, +0.038]); the success rate is clearly worse than a constant (0.199 vs 0.061, [+0.092, +0.184]); counts per team are no better than our total split 50/50. Passes per team are not reported as measured.",
+ "diagnostic (exploratory, after the result)": "of our passes within 1 s of a truth pass (757 with a team), the team is right on 0.683 (matches 0.55-0.76): the nearest player's team at the event frame is the weak link; our success rates sit 0.1-0.3 below the truth's because consecutive events flip teams"
+}

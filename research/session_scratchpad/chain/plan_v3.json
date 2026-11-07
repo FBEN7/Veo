@@ -1,0 +1,20 @@
+{
+ "plan": "chain plan v3: ball linking variants, chosen without looking at the scored match, for the team at the ball",
+ "date": "2026-11-05, after cand.json and reading_sel_split.json; before any computation below",
+ "known before": "chain.json: end to end 0.345, ball within 3 m 0.506 (linked as in kaggle/metric_step.py: even frames, tau 0.10, top 4, c_null 1, c_static 2, the pipeline's players); reading_sel_split.json: 14.1 points of actions have their near candidate below 0.10",
+ "variants (24)": {
+  "frames": ["even (the pipeline's, now)", "all (the detector's candidates on odd frames too)"],
+  "tau": [0.10, 0.05, 0.03, 0.01],
+  "feet bonus b": [0, 1, 2],
+  "definition": "candidates of v3s_rows.parquet on those frames with confidence >= tau, the top 4 a frame by confidence; a candidate whose ground point lies within 1.5 m of a pipeline player's feet (the player frame at or nearest within 1 frame) gets confidence sigmoid(logit(p) + b) before src/ball_link.link (as committed; fps 25, the variant's tau, c_null 1, c_static 2, the pipeline's player rows in pixels); ball to pitch metres as src/pixel_scale.to_pitch_metres",
+  "order (for ties)": "even before all, then tau descending, then b ascending: the closest to the pipeline first"
+ },
+ "reproduction checks": [
+  "variant (even, 0.10, 0) reproduces metric_v3s_link's ball rows (frame and pixel) on every unit",
+  "with it, the per-action 'end to end' equals chain.parquet's"
+ ],
+ "primary": "end to end as chain plan v1 + addendum 1 (the mapped team of our player nearest our ball is the action's side). Leave one match out over the 9 matches: for each match, the variant with the highest end to end on the 8 others; that variant scored on the match. Gain = pooled held-out end to end minus the pipeline variant's on the same actions; 95% bootstrap over matches (5,000, seed 0) of that per-match difference",
+ "guard": "the ball after the kick, on the owner's clicks (research/session_scratchpad/ball_v4/clicks.parquet, status 'ball', full-frame = click + the crop offset of ball_clicks/manifest.json; M1 left out): hit = a linked ball row within 1 frame and 40 px of the click. Each held-out match's chosen variant against the pipeline variant, pooled: hit rate may not fall by more than 0.02",
+ "also reported": "every variant's in-sample end to end, ball within 3 m, and guard hit rate; the variants chosen per fold",
+ "bar": "held-out gain >= 0.03 with the interval's lower bound > 0, and the guard holds. Met: propose to the owner the variant chosen on all 9 matches for the pipeline (a code change, not made by this plan). Not met: no change"
+}

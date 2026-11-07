@@ -422,3 +422,24 @@ given #1, which only goalkeepers wear; the named players' own tracks read
 showed there. It was fine-tuned on crops with a number only, so it never
 learnt that a shirt may show none; the jersey set's ~400 tracklets with
 no legible number are the negatives to teach that.
+
+## Identity by role, without clicks (SoccerTrack v2, `research/session_scratchpad/identity_roles/`)
+
+The owner asked for zero-effort identity (2026-11-01). Stage 1 measured the
+ceiling from the truth's own positions, teams and actors (`plan.json`,
+hashed first; 8 unsealed matches, full halves, one frame a second): each
+team's 10 outfield players are put in roles of the team's shape (relative
+to the centroid, Hungarian per frame against role means fitted without
+identities), and a role stands for its most frequent holder over the half.
+
+| players followed for | role purity | actions credited to the actor |
+|---|---|---|
+| **one frame (no tracking)** | 0.625 | **0.587** (9,349 of 15,936) |
+| 10 s | 0.645 | 0.637 |
+| 60 s | 0.717 | 0.756 |
+
+- Below the registered bar (0.70): **identity by role is not viable for
+  per-player statistics**; stopped before our detections (stage 2).
+- These university players move around the shape a lot, more so in second
+  halves (purity mostly 0.52-0.65 against 0.62-0.77 in first halves).
+- Goalkeepers (6% of actions) are not counted; they are recognised by role.

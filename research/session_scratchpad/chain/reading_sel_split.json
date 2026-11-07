@@ -1,0 +1,18 @@
+{
+ "status": "exploratory, not registered; after cand.json",
+ "actions": 2257,
+ "selection (share of all actions)": 0.237,
+ "selection, near candidate below tau 0.10 (never seen by the linker)": 0.1405,
+ "selection, near candidate >= 0.10 (seen, not chosen)": 0.0966,
+ "near max conf quartiles (selection)": [
+  0.038,
+  0.072,
+  0.303
+ ],
+ "selection, no linked row in the window": 0.0594,
+ "linked ok, near max conf quartiles": [
+  0.75,
+  0.952,
+  0.993
+ ]
+}

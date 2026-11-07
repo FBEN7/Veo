@@ -1,0 +1,22 @@
+{
+ "plan": "plan_v3.json (665fb293...) + addendum1 (dc951ea5...), stages.py -> stages.json, 2,254 actions, 9 matches",
+ "check": "the output's player rows are exactly filter_players(shots_v3s_link/tracks_grass) in all 223 units",
+ "registered result": {
+  "actor detected": "S0 raw 0.867, S1 tracker 0.778, S2 teams 0.778, S3 assigned 0.775, S4 roster cap 0.766, S5 output 0.766",
+  "raw has the actor, output does not": 0.114,
+  "first stage where lost": "tracker 0.102, unassigned team 0.003, roster cap 0.009, others 0",
+  "control (other outfield players)": "0.940 raw -> 0.893 tracker -> 0.884 output: the tracker costs the actor 8.9 points, the others 4.8",
+  "per match": "the tracker loses 1.1 (M9) to 15.1 (M7) points",
+  "main loss (>= half of 11.4 points)": "S1 tracker"
+ },
+ "exploratory (not registered), 231 actions lost at S1": {
+  "the actor's raw box absent from the tracker's output (best IoU <= 0.3)": 0.81,
+  "present but shifted (0.3-0.9)": 0.074,
+  "same box, matched to someone else": 0.117,
+  "the actor's raw box overlaps another raw box (IoU > 0.1)": "0.43 vs 0.16 for actors the tracker keeps (300 sampled)",
+  "mechanism (src/detect_track_hybrid.py, supervision ByteTrack.update_with_detections)": "only detections matched to an activated track are written; a detection that starts a track, or that loses the IoU assignment in a crowd, is dropped"
+ },
+ "reading": "The player on the ball is lost by the tracker, not by the detector, the team step or the roster cap: the tracker drops detections it cannot attach to a track, more often in contact. Lever: write every detection (unmatched ones under their own new id) and let the later track re-joining handle them; to be registered and scored end to end. It needs every frame's detections (stride 2), which are not cached here: a GPU detection pass over the 249 clips, or the original runs' detection caches if Kaggle still holds them.",
+ "caches (checked 2026-11-03)": "Not recoverable: _DetectionCache.close() deletes <out>/tracks.parquet.detcache at the end of each run, before the unit is packed, and Kaggle keeps only each kernel's last version's outputs. A players step took ~226 s per clip on one T4 (veo-gpu-run, st2_128057_1st_f004663).",
+ "correction (2026-11-03)": "S1 'tracker' is detector + tracker + a grass test on players for 197 of the 223 units (7 matches, tracked before commit ca98c6c2 of 2026-10-27 turned that test off for a fixed view). Only M7 and M9 (26 units) were tracked without it: there the S1 loss is 15.1 (M7) and 1.1 (M9) points. The 10.2 points are the tracker and that grass test together; plan_v4 separates them."
+}

@@ -1,0 +1,258 @@
+{
+ "protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
+ "rule": {
+  "T": 0.85,
+  "N": 2,
+  "team rule": "kick_spot"
+ },
+ "calibration": "release (st.calibration)",
+ "note": "reported, not used to choose (protocol: extra dev check)",
+ "windows": 8,
+ "skipped": [
+  {
+   "window": "output_st2_132831_2nd_f030000",
+   "reason": "test half 132831_2nd: its detections may not be read"
+  }
+ ],
+ "minutes": 21.0,
+ "false_runs": 0,
+ "false_runs_per_90": 0.0,
+ "hits": 1,
+ "per window": [
+  {
+   "window": "output_st2_117093_1st_f015000",
+   "start_frame": 15000,
+   "minutes": 3.0,
+   "tracked_frames": 2250,
+   "samples": 180,
+   "person_samples": 3541,
+   "nan_metres": 0,
+   "outside_pitch": 0,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "mean_x": {
+    "team_A": 3.18,
+    "team_B": 15.53
+   },
+   "share_median": 0.5555555555555556,
+   "share_ge_T": 0.011111111111111112,
+   "share_max": 0.8571428571428571,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  },
+  {
+   "window": "output_st2_118575_1st_f015000",
+   "start_frame": 15000,
+   "minutes": 3.0,
+   "tracked_frames": 2250,
+   "samples": 180,
+   "person_samples": 3093,
+   "nan_metres": 0,
+   "outside_pitch": 2,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "mean_x": {
+    "team_A": -12.03,
+    "team_B": -4.48
+   },
+   "share_median": 0.5590277777777778,
+   "share_ge_T": 0.0,
+   "share_max": 0.8235294117647058,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  },
+  {
+   "window": "output_st2_118576_1st_f030000",
+   "start_frame": 30000,
+   "minutes": 2.0,
+   "tracked_frames": 1500,
+   "samples": 120,
+   "person_samples": 2124,
+   "nan_metres": 0,
+   "outside_pitch": 5,
+   "ends": {
+    "team_B": -1,
+    "team_A": 1
+   },
+   "mean_x": {
+    "team_A": -0.87,
+    "team_B": -8.37
+   },
+   "share_median": 0.5882352941176471,
+   "share_ge_T": 0.0,
+   "share_max": 0.8125,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  },
+  {
+   "window": "output_st2_118578_1st_f030000",
+   "start_frame": 30000,
+   "minutes": 2.0,
+   "tracked_frames": 1500,
+   "samples": 120,
+   "person_samples": 2193,
+   "nan_metres": 0,
+   "outside_pitch": 17,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "mean_x": {
+    "team_A": -20.96,
+    "team_B": -12.81
+   },
+   "share_median": 0.5625,
+   "share_ge_T": 0.0,
+   "share_max": 0.7222222222222222,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  },
+  {
+   "window": "output_st2_118578_2nd_f015000",
+   "start_frame": 15000,
+   "minutes": 3.0,
+   "tracked_frames": 2250,
+   "samples": 180,
+   "person_samples": 3301,
+   "nan_metres": 0,
+   "outside_pitch": 0,
+   "ends": {
+    "team_B": -1,
+    "team_A": 1
+   },
+   "mean_x": {
+    "team_A": 6.22,
+    "team_B": -0.8
+   },
+   "share_median": 0.5789473684210527,
+   "share_ge_T": 0.06666666666666667,
+   "share_max": 0.9230769230769231,
+   "runs_half_s": [
+    [
+     743.0,
+     767.0
+    ]
+   ],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [
+    18095
+   ],
+   "hits": 1,
+   "matches": [
+    {
+     "goal_frame": 18095,
+     "run": [
+      18575,
+      19175
+     ],
+     "delay_s": 19.2,
+     "goal_side": "right",
+     "scorer": "team_A",
+     "team_right": true
+    }
+   ]
+  },
+  {
+   "window": "output_st2_128057_1st_f030000",
+   "start_frame": 30000,
+   "minutes": 3.0,
+   "tracked_frames": 2250,
+   "samples": 180,
+   "person_samples": 3132,
+   "nan_metres": 0,
+   "outside_pitch": 0,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "mean_x": {
+    "team_A": 15.82,
+    "team_B": 22.23
+   },
+   "share_median": 0.4444444444444444,
+   "share_ge_T": 0.0,
+   "share_max": 0.6923076923076923,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  },
+  {
+   "window": "output_st2_128058_1st_f030000",
+   "start_frame": 30000,
+   "minutes": 2.0,
+   "tracked_frames": 1500,
+   "samples": 120,
+   "person_samples": 1485,
+   "nan_metres": 0,
+   "outside_pitch": 0,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "mean_x": {
+    "team_A": -28.25,
+    "team_B": -24.13
+   },
+   "share_median": 0.5,
+   "share_ge_T": 0.0,
+   "share_max": 0.8333333333333334,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  },
+  {
+   "window": "output_st2_132877_1st_f015000",
+   "start_frame": 15000,
+   "minutes": 3.0,
+   "tracked_frames": 2250,
+   "samples": 180,
+   "person_samples": 3281,
+   "nan_metres": 0,
+   "outside_pitch": 4,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "mean_x": {
+    "team_A": -10.53,
+    "team_B": -1.57
+   },
+   "share_median": 0.55,
+   "share_ge_T": 0.0,
+   "share_max": 0.8,
+   "runs_half_s": [],
+   "false_runs": 0,
+   "false_runs_half_s": [],
+   "goals_in_window": [],
+   "hits": 0,
+   "matches": []
+  }
+ ]
+}

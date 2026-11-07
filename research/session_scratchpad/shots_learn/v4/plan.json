@@ -1,0 +1,14 @@
+{
+ "name": "Learned shots v4: players' reactions, without the ball (exploratory; owner decision 2026-10-27)",
+ "written": "2026-10-27, before any v4 feature is computed",
+ "why": "missed shots lack the ball in flight toward the goal (shot_flight/flight.json); reactions of the goalkeeper and of the players near the goal do not need the ball",
+ "features added to v2 (same tracks as shots_learn/v3, no grass tests)": {
+  "goal": "per frame, the goal with more players within 25 m of its centre (ball-free choice)",
+  "goalkeeper proxy": "the player nearest that goal's centre: mean speed over the 0.5 s before t, max speed over the 1 s after, their difference, max lateral speed after",
+  "box players": "players within 20 m of that goal's centre: count, mean speed before / after and difference, mean velocity toward the goal before / after and difference",
+  "all players": "mean speed before / after and difference (the collective stop after a shot)"
+ },
+ "comparison": "nested leave-one-match-out on the 249 v3 units, v4 against v2 features on the same tracks (shots_learn/v3/cv_v3.json, 'no grass tests': 150 hits, 126 false, 119 missed; the classifier is seeded, so that reference is reproducible), hits and false shots, paired bootstrap of hits over matches",
+ "status": "every match has been used; cross-validated evidence only",
+ "note (before the run)": "player speeds clipped at 12 m/s: a first look at one clip showed 35-70 m/s jumps from track switches"
+}

@@ -1,0 +1,110 @@
+{
+ "name": "Goals by kick-off formation, and the ball gate for shots (task #4)",
+ "registered": "2026-10-19, before any test-half detection is computed or read",
+ "owner decision": "goals + ball gate (2026-10-19): ~12 h; shots only if the gate passes",
+ "source plan": "workflow wf_42c3ab6d-5bb, judge's plan 1 with grafts",
+ "known peeks (disclosed)": [
+  "While planning, read-only agents read the own-half share on M1 ground truth (3 runs 17-24 s after its 3 restartable goals, none at half starts) and on one M1 detection sample (2nd f000000, frame 1400).",
+  "One agent read the share at the first frame of all 18 cached halves, M5 2nd included (0.90-1.00).",
+  "So the M1 goals result is not blind; M5 2nd is the closest to blind."
+ ],
+ "GOALS": {
+  "event": "a formation run: on 1-s samples, the share of team-labelled people (players and goalkeepers; referees excluded) standing in their own half is >= T on >= N consecutive samples. A team's own half is the end it defends: its mean x over the half. Runs starting in the first 60 s of a half are ignored; runs less than 20 s apart are merged.",
+  "scoring team rules (grid)": {
+   "kick_spot": "the team of the person nearest the centre spot at the run's last sample kicks off, so the other team scored",
+   "attack_end": "the team whose half holds the players' mean x over the 10-40 s before the run conceded"
+  },
+  "grid": {
+   "T": [
+    0.8,
+    0.825,
+    0.85,
+    0.875,
+    0.9,
+    0.925,
+    0.95
+   ],
+   "N": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "team rule": [
+    "kick_spot",
+    "attack_end"
+   ]
+  },
+  "match": "one to one: a run matches a BAS GOAL of the same half if it starts 15-60 s after it",
+  "restartable goal": "a BAS GOAL with a later action of the same half at least 15 s after it; others are reported as missed by construction",
+  "dev, ground truth": [
+   "117093_1st",
+   "117093_2nd",
+   "118575_1st",
+   "118575_2nd",
+   "118576_1st",
+   "118576_2nd",
+   "118577_1st",
+   "118578_1st",
+   "118578_2nd",
+   "128057_1st",
+   "128058_1st",
+   "128058_2nd",
+   "132877_1st",
+   "132877_2nd"
+  ],
+  "dev selection on ground truth": "T, N and the team rule maximising hits, then fewest false runs, then the larger T, then the larger N; the team rule is then frozen",
+  "dev, detections": "128057_2nd (M7 2nd; 5 restartable goals at frames 2281, 37445, 46853, 53874, 67790): only T and N re-chosen within the grid: hits, then fewest false runs, then the larger T. Then all frozen in frozen_goals.json, hashed, before any test half is scanned.",
+  "extra dev check": "false runs on the 9 processed non-M1 windows (tracks_teams, 1 fps), reported, not used to choose",
+  "test halves": [
+   "117092_1st",
+   "117092_2nd",
+   "132831_2nd",
+   "118577_2nd"
+  ],
+  "test goals (restartable)": {
+   "117092_1st": [
+    42406,
+    59245
+   ],
+   "117092_2nd": [
+    57951
+   ],
+   "132831_2nd": [
+    6082,
+    61071,
+    64015
+   ],
+   "118577_2nd": [
+    3865,
+    33247
+   ]
+  },
+  "missed by construction": {
+   "117092_1st": [
+    67275
+   ]
+  },
+  "pipeline": "1-fps pass over the whole half: yolov8s players (on the pitch-outline crop if the crop check passes: recall >= 0.99 and median box shift <= 1 px on 200 frames of M6 2nd f015000), feet to pitch metres (M1: calib_fix/calib_override.py; others: release), kit features and two-team clustering on the half's own detections.",
+  "primary": "hits over the 8 restartable test goals; false runs per 90 min over the 4 test halves",
+  "secondary": "scoring team right per hit (team_A/B to BAS left/right through the end each team defends); goal-time error (run start - 22 s); random-time baseline: the same number of runs at uniform random times, same matching, 1000 draws",
+  "baseline": "the current events.py goal rule (_in_goal): 0 goals on all 13 processed windows",
+  "success": "hits >= 7/8, false runs <= 1 over the 4 test halves, scoring team right on all hits but at most 1",
+  "power": "8/8 gives Wilson 95% [0.68, 1.00]; this is 'works on these halves', not a rate"
+ },
+ "SHOT GATE": {
+  "question": "is the ball near the goals seen at all on footage v3 never trained on?",
+  "data": "every BAS SHOT and GOAL of 128057 half 1 (10) and 132831 half 2 (16): 26 attempts",
+  "per attempt": "a clip around the label frame; v3 (ball_v3b.1500.pt) at stride 1 on [-1 s, +2.2 s]; candidates with confidence >= 0.10; the painted marks of that match dropped; candidate feet to pitch metres with the release calibration",
+  "reachable": ">= 2 frames with a candidate within 4 m of the GSR shooter in [-1 s, +0.5 s] AND >= 2 frames with a candidate within 4 m of the segment from the shooter to the centre of the goal his team attacks, in [0 s, +2 s]. The attacked goal: opposite to the end the shooter's team defends (its GSR mean x over the half).",
+  "decision": {
+   "GO": ">= 13/26 reachable",
+   "GO, capped": "9-12/26: shots may proceed, with expected recall capped at the reachable share in every report",
+   "STOP": "< 9/26: no shot or pipeline xG work; report 'shots not available: ball reachable k/26' with a Wilson interval"
+  },
+  "reproducibility": "the 3 attempts already measured read-only (M7 f1370 and f3829 of 1st f030000 window time, M9 f2296) must come out not reachable; if not, the definition was not reproduced and the gate is re-checked before deciding",
+  "order": "the M1 pass/carry result of the learned model (task #3) is read before any M1 shot output"
+ },
+ "XG": "descriptive only: the frozen xGHub model (models/xg_xghub.json) on GSR shooter feet for all BAS SHOT/GOAL with an actor position; AUC with a half-block bootstrap, Brier against the base rate, quintile calibration; M1 shown apart. No threshold. Penalties cannot be told apart (no source).",
+ "PER PLAYER": "no automatic per-person totals (identities fragment, ~14 tracks per person). Each detected goal gets a clip (run start - 45 s to run start - 15 s) for the coach to name the scorer."
+}

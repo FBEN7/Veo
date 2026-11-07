@@ -1,0 +1,19 @@
+{
+ "question": "Zero-effort player identity (owner, 2026-11-01): can a player's role in the team's shape (left back, centre forward ...) stand in for who they are? Stage 1 is the ceiling: the truth's positions, teams and actors.",
+ "status": "registered before any number below is computed; CPU; stage 2 (our detections) only if stage 1 passes",
+ "data": "the release's game-state truth of full halves (.cache/soccertrack_v2/gsr), the 8 unsealed matches M1-M6, M8, M10 (M7 / M9 kept for a later registered test); one frame a second (every 25th), plus every labelled action's frame (BAS, with its actor's player_id)",
+ "roles": {
+  "who": "per team and half, the 10 outfield players (goalkeepers are recognised by their role and left out; their share of actions is reported)",
+  "shape": "per frame, positions relative to the team's centroid",
+  "fit": "no identities used: 10 role means from k-means (k = 10, n_init 10, seed 0) on all relative positions, then 20 rounds of: per frame, players to roles by the Hungarian method (squared distance), role means re-estimated",
+  "windows": "W = one frame (no tracking needed: primary), 10 s and 60 s (a player keeps one role inside a window: needs tracking that long; summed costs)"
+ },
+ "scores": {
+  "role purity": "share of outfield player-seconds in which the player holds the role whose most frequent holder (over the half) they are",
+  "actions (primary)": "share of the outfield actors' actions where the actor's role at the action frame has the actor as its most frequent holder over the half (W = one frame)",
+  "across halves": "roles of the two halves paired by the Hungarian method on their means (2nd half mirrored); share of roles whose most frequent holder is the same player",
+  "pooled over the 8 matches, and per match"
+ },
+ "decision": "primary >= 0.85: go to stage 2 (our detections, team and actor); 0.70-0.85: role only as a supplement to tracking; < 0.70: identity by role is not viable for per-player statistics, stop",
+ "note": "the score maps each role to its most frequent holder with the truth: in the product a role is reported as a role ('left back'), which the coach reads as a name; this is the best case of that reading"
+}

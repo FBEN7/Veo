@@ -1,0 +1,10 @@
+{
+ "status": "exploratory, not registered; after possessor.json",
+ "actions": 2257,
+ "nearest detection to the true position: within 1.5 m": 0.4152,
+ "its label's team is right": 0.5968,
+ "it has a label": 0.8644,
+ "label right, among labelled": 0.6904,
+ "its truth team is right (a perfect label)": 0.7195,
+ "it matches a truth person (image)": 0.9513
+}

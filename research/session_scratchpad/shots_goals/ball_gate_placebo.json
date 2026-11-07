@@ -1,0 +1,16 @@
+{
+ "128057_1": {
+  "attempts": 10,
+  "reachable": 3,
+  "placebo reachable share (candidates of one attempt, geometry of another)": 0.067,
+  "placebo pairs": 90,
+  "candidates per frame": 0.58
+ },
+ "132831_2": {
+  "attempts": 16,
+  "reachable": 16,
+  "placebo reachable share (candidates of one attempt, geometry of another)": 0.154,
+  "placebo pairs": 240,
+  "candidates per frame": 7.57
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "plan_v2 sha256": "e8ccbe146b29cdbc2210f174dda9263323dfebee9c12c003e807c9c202c2c666",
+ "team accuracy on 1,266 matched events": {
+  "A": 0.6967,
+  "B": 0.6825,
+  "C": 0.6919
+ },
+ "no team": {
+  "A": 0.003,
+  "B": 0.187,
+  "C": 0.16
+ },
+ "selected": "A (no method better; A kept)",
+ "test with A": {
+  "share of the left side's passes": {
+   "mean abs error, ours": 0.0857,
+   "constant 0.5": 0.0982,
+   "ours - constant, 95% over matches": [
+    -0.0627,
+    0.0347
+   ],
+   "shown": false
+  },
+  "pass success rate per team": {
+   "mean abs error, ours": 0.2003,
+   "constant (other matches' rate)": 0.0621,
+   "ours - constant, 95% over matches": [
+    0.0907,
+    0.1849
+   ],
+   "shown": false
+  },
+  "pass counts per team (descriptive)": {
+   "median relative error, ours": 0.2033,
+   "our total split 50/50": 0.2097
+  }
+ },
+ "ceiling": {
+  "truth events": 1947,
+  "with a team label": 0.5239,
+  "label is the truth's side": 0.4155,
+  "right among labelled": 0.7931
+ },
+ "decision": "no event-team method beats the nearest player at the event frame (0.70 / 0.68 / 0.69); the test still fails as in decision.json. The limit is the players' team labels near the ball: the detection nearest the truth actor has a team label on 0.52 of events ('other' or none on the rest) and the right one on 0.79 of those. The next lever is the players' teams (per-detection kit teams, 0.92-0.98 on windows; needs the GPU on the clips), not the event's rule."
+}

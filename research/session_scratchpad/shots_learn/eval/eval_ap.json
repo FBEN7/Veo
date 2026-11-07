@@ -1,0 +1,177 @@
+{
+ "protocol sha256": "155e1ac9abe3bd8e3c5ae5e8d5e25cae433e3b522fea51eb4a81e51e469c2730",
+ "variants": {
+  "v4": {
+   "AP per seed": [
+    0.6081,
+    0.6035,
+    0.6025
+   ],
+   "hits at the rate threshold per seed": [
+    162,
+    161,
+    159
+   ],
+   "AP of the seed average": 0.6121,
+   "hits of the seed average": 162,
+   "labels": 269,
+   "AP per match (seed average)": {
+    "117092": 0.382,
+    "117093": 0.829,
+    "118575": 0.587,
+    "118576": 0.609,
+    "118577": 0.7,
+    "118578": 0.533,
+    "128057": 0.52,
+    "128058": 0.881,
+    "132831": 0.497,
+    "132877": 0.66
+   }
+  },
+  "control": {
+   "AP per seed": [
+    0.6063,
+    0.6205,
+    0.6058
+   ],
+   "hits at the rate threshold per seed": [
+    165,
+    158,
+    156
+   ],
+   "AP of the seed average": 0.6177,
+   "hits of the seed average": 159,
+   "labels": 269,
+   "AP per match (seed average)": {
+    "117092": 0.456,
+    "117093": 0.825,
+    "118575": 0.621,
+    "118576": 0.628,
+    "118577": 0.69,
+    "118578": 0.494,
+    "128057": 0.504,
+    "128058": 0.841,
+    "132831": 0.663,
+    "132877": 0.661
+   }
+  },
+  "hybrid": {
+   "AP per seed": [
+    0.6111,
+    0.6022,
+    0.6044
+   ],
+   "hits at the rate threshold per seed": [
+    155,
+    148,
+    152
+   ],
+   "AP of the seed average": 0.6085,
+   "hits of the seed average": 152,
+   "labels": 269,
+   "AP per match (seed average)": {
+    "117092": 0.395,
+    "117093": 0.777,
+    "118575": 0.617,
+    "118576": 0.59,
+    "118577": 0.548,
+    "118578": 0.556,
+    "128057": 0.475,
+    "128058": 0.831,
+    "132831": 0.656,
+    "132877": 0.767
+   }
+  },
+  "candB": {
+   "AP per seed": [
+    0.6394,
+    0.6325,
+    0.6394
+   ],
+   "hits at the rate threshold per seed": [
+    165,
+    162,
+    163
+   ],
+   "AP of the seed average": 0.6379,
+   "hits of the seed average": 166,
+   "labels": 269,
+   "AP per match (seed average)": {
+    "117092": 0.376,
+    "117093": 0.732,
+    "118575": 0.669,
+    "118576": 0.641,
+    "118577": 0.732,
+    "118578": 0.568,
+    "128057": 0.453,
+    "128058": 0.87,
+    "132831": 0.577,
+    "132877": 0.735
+   }
+  },
+  "candC": {
+   "AP per seed": [
+    0.6361,
+    0.6357,
+    0.6165
+   ],
+   "hits at the rate threshold per seed": [
+    161,
+    162,
+    151
+   ],
+   "AP of the seed average": 0.632,
+   "hits of the seed average": 158,
+   "labels": 269,
+   "AP per match (seed average)": {
+    "117092": 0.354,
+    "117093": 0.73,
+    "118575": 0.709,
+    "118576": 0.625,
+    "118577": 0.67,
+    "118578": 0.551,
+    "128057": 0.543,
+    "128058": 0.824,
+    "132831": 0.549,
+    "132877": 0.743
+   }
+  }
+ },
+ "against v4 (seed-averaged probabilities)": {
+  "control - v4": {
+   "AP difference": 0.0056,
+   "95% bootstrap over matches": [
+    -0.0195,
+    0.0384
+   ]
+  },
+  "hybrid - v4": {
+   "AP difference": -0.0036,
+   "95% bootstrap over matches": [
+    -0.0463,
+    0.0455
+   ]
+  },
+  "candB - v4": {
+   "AP difference": 0.0258,
+   "95% bootstrap over matches": [
+    -0.0127,
+    0.0541
+   ]
+  },
+  "candC - v4": {
+   "AP difference": 0.0199,
+   "95% bootstrap over matches": [
+    -0.02,
+    0.0565
+   ]
+  }
+ },
+ "AP spread over seeds (sd)": {
+  "v4": 0.003,
+  "control": 0.0083,
+  "hybrid": 0.0046,
+  "candB": 0.004,
+  "candC": 0.0112
+ }
+}

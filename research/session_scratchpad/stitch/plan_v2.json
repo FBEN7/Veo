@@ -1,0 +1,10 @@
+{
+ "written": "2026-10-26, after v1 (stitch.json) and before any v2 run",
+ "changes from v1": [
+  "team per tracklet = the majority of its rows (team_A / team_B / other); 'other' tracklets kept as their own slots, never linked",
+  "gaps inside a track (or a chain) up to 5 s filled linearly, as between linked tracklets",
+  "before and after use the same tracklet teams and keep every tracklet, so the comparison is clean"
+ ],
+ "metrics": "as plan.json, plus coverage ignoring the team (a position within 3 m of the person)",
+ "worth pursuing if": "as plan.json: M9 coverage +10 points or more, fill precision >= 0.80, rule C not lower"
+}

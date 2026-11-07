@@ -1,0 +1,12 @@
+{
+ "rule A, all player actions, matches v3 was trained on (ball optimistic)": {
+  "ball row within 0.2 s of the label": 0.468,
+  "actor given (a player within 3 m), of those": 0.767,
+  "right, of actor given": 0.717,
+  "right, of actor given and labelled player detected": 0.819,
+  "end to end": 0.257
+ },
+ "M1 (unseen)": {"ball row within 0.2 s": 0.481, "labelled player matched to a detection (ceiling)": 0.278, "end to end": 0.057,
+   "reading": "not measurable: with the ceiling at 28% (80% elsewhere) attribution and evaluation errors cannot be told apart; M1's truth boxes and camera are known to be off"},
+ "M7 / M9": "not scored: no linked ball track for their units"
+}
