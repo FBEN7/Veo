@@ -1685,6 +1685,30 @@ match; scoring team right on >= 0.9 of hits (`kick_spot`). `goals_v3.json`.
   gap is the detections' share (team labels near the halfway line and
   people not seen), as `goals_v2/` found on M9.
 
+**Why the false runs** (exploratory, `false_runs.py`,
+`reading_false_runs.json`, `reading_false_runs_extra.json`, `extra/`):
+- Scan and truth are aligned in time (best lag 0 s on all 20 halves).
+- **One half has its ends inverted**: on 118577 1st the half's mean x
+  puts the teams at the wrong ends (share correlation with the truth
+  -0.67): 13 false runs and 2 misses. Ends from the first 10 s of the half
+  are right on 20/20; held out with them: 32/41, 69 false runs (6.9 per
+  match), team 29/32. More robust, far from the bar.
+- Of the 85 false runs, 14 are formation-like moments in the truth too (at
+  the chosen T, mostly 0.75); 71 come from the detections: we see ~13 of
+  22 people (12 matched); on 40 the people we see are in formation in the
+  truth (the unseen are not); on 34 true teams bring the share below T.
+- **They fall in live play**: median 1.7 s after the last labelled action
+  and 1.4 s before the next, whereas a goal is followed by >= 15 s with no
+  action. A dead-ball cue would separate them, but 1-fps people do not
+  give it: run length (hits median 5 s, false 2 s) and crowd speed
+  (1.18 vs 1.57 m/s; keeping 32/34 hits keeps 59/85 false) are weak.
+- Misses: 2 from the inverted half; 3 runs start 11-14 s after the goal,
+  just before the 15 s window; 2 below T. Wrong team (7): the run's last
+  sample comes before the kick-off is set (the truth's nearest person is
+  also 2-6 m from the spot).
+- The truth has no ball, so a ball-at-the-centre-spot cue cannot be
+  checked on it.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart
