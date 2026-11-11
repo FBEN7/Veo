@@ -1,0 +1,46 @@
+{
+ "title": "goals v5: the kick-off formation rule plus the referee's whistle",
+ "written": "2026-11-11, before any whistle feature is computed beyond the 4 goals of 117093 looked at in goals_v4/reading_probe_and_audio.json; hashed (plan.json.sha256) before the first extraction",
+ "owner request": "2026-11-11: 'Oui vas y' (to: prepare the plan for formation + whistle)",
+ "why": "goals_v3 (registered) failed its bar: held out 34/41 restartable goals, 8.5 false runs per match; the false runs fall in live play. goals_v4 (registered) stopped at its probe: the ball on the centre spot is not seen. The half videos carry audio (AAC 48 kHz), and on the 4 restartable goals of 117093 the strongest whistle-like sound lay within 2 s of the kick-off action. Here: does a whistle at the end of a formation run separate kick-offs from live play?",
+ "data": "the 20 halves of the 10 SoccerTrack v2 matches (M7 128057 and M9 132831 are development data since 2026-11-05; each opening through src/unseal.py, reason 'development use, seal lifted 2026-11-05'); the 1-fps people scans of goals_v3 (.cache/formation_scan/, unchanged); BAS events for goals and actions; the half videos' audio streamed from Hugging Face (st.open_video; only the audio stream is decoded).",
+ "kept from goals_v4's plan (both post hoc on these 20 halves, disclosed there)": {
+  "defended ends": "the team with the lower mean x over the half's first 10 s (frames 0-250, team-labelled scan people) defends x < 0",
+  "matching window": "a run matches a GOAL if it starts 10-60 s after it; restartable goals as goals_v3 (a later action >= 15 s after the goal)"
+ },
+ "audio features (extract.py, one pass per half)": {
+  "signal": "the audio stream decoded to float, channels averaged; time t = audio pts time - video stream start time (s), so a video frame k sits at k / 25",
+  "bins": "0.1 s (4,800 samples at 48 kHz; resampled to 48 kHz first if the stream differs), Hann window, |rfft|",
+  "per bin": "ratio = energy in 2.5-4.5 kHz / energy above 200 Hz; tonality = max |X| in 2.5-4.5 kHz / median |X| there; score = ratio * ln(tonality), 0 when tonality <= 1; also the bin's rms",
+  "output": ".cache/whistle/<match>_<half>.parquet (t, score, ratio, tonality, rms) and .json (sample rate, channels, duration, seconds of audio decoded, run time)"
+ },
+ "whistle events": "per half, the bins with score >= the half's own q-quantile of score (q in the grid; per-half so that a microphone's level does not matter); consecutive such bins form an event if they last >= L s; an event's time is its first bin's t",
+ "rule": {
+  "formation run": "goals_v3's: >= N consecutive 1-s samples with own-half share >= T (and, when R is set, the nearest team-labelled person within R m of the spot), 60-s start exclusion, 20-s merge; kick-off ends",
+  "whistle cue": "a run is kept if a whistle event starts between the run's start and its end + B s",
+  "alarm": "a kept run; matched to GOALs as goals_v3 with the 10-60 s window; hits on restartable goals; a kept run matched to no goal is a false run",
+  "scoring team (kick_whistle, primary)": "at the 1-s sample nearest the cue's first whistle event in the window, the team of the team-labelled scan person nearest the spot kicks off, so the other team scored",
+  "scoring team (kick_spot, reported)": "goals_v3's: the person nearest the spot at the run's last sample"
+ },
+ "grid": {
+  "T": [0.70, 0.725, 0.75, 0.775, 0.8, 0.825, 0.85, 0.875, 0.9],
+  "R": [1.0, 2.0, 3.0, 5.0, null],
+  "N": [1, 2, 3],
+  "q": [0.99, 0.995, 0.998, 0.999],
+  "L": [0.2, 0.3, 0.5],
+  "B": [0, 5, 10]
+ },
+ "choice of the cell": "most hits on restartable goals, then fewest false runs, then larger T, smaller R (None last), larger q, larger L, smaller B, smaller N",
+ "held out": "leave one match out: the cell chosen on 9 matches' halves, scored on the 10th's; pooled over the 10 matches",
+ "bar (unchanged, the owner's product bar)": "restartable goals found >= 0.95 and <= 1 false run per match, held out; scoring team right (kick_whistle) on >= 0.9 of hits",
+ "also reported": [
+  "the same held out without the whistle cue (kick-off ends and the 10-60 s window only), to separate the effects",
+  "kick_spot on the hits",
+  "per match: hits, restartable goals, false runs, team right, chosen cell",
+  "the cell chosen on all 10 matches",
+  "random-time baseline as goals_v3 (same kept-run counts per half, 1000 draws, seed 0)",
+  "diagnostics at the chosen cells (exploratory): whistle events per minute; share of restartable goals with a whistle event within 3 s of their kick-off action (the first labelled action >= 10 s after the goal); share of 30-s live-play stretches (>= 1 labelled action every 5 s, no GOAL in the 90 s before) holding a whistle event"
+ ],
+ "cost": "local CPU only, no GPU, no Kaggle. Each half's file (~3.5 GB) is streamed once for its audio: ~6 min per half measured on 117093 2nd (120 s of audio in 14.6 s), ~1-2 h for the 20 halves on two lanes; features in seconds; scoring in minutes. Disk: a few MB.",
+ "what this cannot show": "these 20 halves have been looked at (goals_v3, its readings, goals_v4), so a pass is development evidence and the owner's own matches remain the test; the product needs a camera that records audio, with the referee audible"
+}
