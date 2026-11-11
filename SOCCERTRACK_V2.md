@@ -1709,6 +1709,20 @@ match; scoring team right on >= 0.9 of hits (`kick_spot`). `goals_v3.json`.
 - The truth has no ball, so a ball-at-the-centre-spot cue cannot be
   checked on it.
 
+### Goals v4: a ball on the centre spot (`goals_v4/`, 2026-11-11)
+
+`plan.json` (hashed first): formation runs (kick-off ends, window 10-60 s)
+kept only with a ball near the spot; a stage-1 probe on the 20 half-start
+kick-offs picks the detector and decides go (>= 15/20 at a live-play rate
+<= 3%). **No go** (`probe.json`): yolov8s sports ball (crop x1/x2/x3) and
+the v3b heatmap find the ball within 2 m of the spot on 0-1 of 20; stage 2
+is not run. The ball there is ~4-5 px, white on the white halfway line,
+~35 m from the camera, often under the kicker. Exploratory
+(`reading_probe_and_audio.json`): the half videos carry audio (AAC 48 kHz);
+on 4 restartable goals of 117093 the strongest whistle-like sound (2.5-4.5
+kHz) lies within 2 s of the kick-off action every time. Unknown: whistles in
+live play, hence what a formation + whistle rule would remove.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart
