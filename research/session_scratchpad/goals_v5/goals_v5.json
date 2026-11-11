@@ -1,0 +1,199 @@
+{
+ "plan sha256": "8a9312574ceb3d106f257b558ed24a61e5a6981b438fb8f4dc41fd760f9f8ef1",
+ "halves": 20,
+ "held out": {
+  "restartable goals found": "16 / 41",
+  "share": 0.3902,
+  "false runs": 15,
+  "false runs per match": 1.5,
+  "scoring team right (kick_whistle)": 0.625,
+  "scoring team right (kick_spot)": 0.6875,
+  "per match": {
+   "117092": {
+    "hits": 0,
+    "restartable": 3,
+    "false runs": 0,
+    "team right (kick_whistle)": 0,
+    "team right (kick_spot)": 0,
+    "kept runs": 0,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "117093": {
+    "hits": 1,
+    "restartable": 4,
+    "false runs": 1,
+    "team right (kick_whistle)": 1,
+    "team right (kick_spot)": 1,
+    "kept runs": 2,
+    "cell": {
+     "T": 0.8,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "118575": {
+    "hits": 2,
+    "restartable": 3,
+    "false runs": 10,
+    "team right (kick_whistle)": 1,
+    "team right (kick_spot)": 2,
+    "kept runs": 12,
+    "cell": {
+     "T": 0.725,
+     "R": 5.0,
+     "N": 2,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "118576": {
+    "hits": 2,
+    "restartable": 5,
+    "false runs": 0,
+    "team right (kick_whistle)": 1,
+    "team right (kick_spot)": 1,
+    "kept runs": 2,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "118577": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 3,
+    "team right (kick_whistle)": 3,
+    "team right (kick_spot)": 3,
+    "kept runs": 7,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "118578": {
+    "hits": 2,
+    "restartable": 4,
+    "false runs": 0,
+    "team right (kick_whistle)": 1,
+    "team right (kick_spot)": 1,
+    "kept runs": 2,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "128057": {
+    "hits": 3,
+    "restartable": 5,
+    "false runs": 0,
+    "team right (kick_whistle)": 2,
+    "team right (kick_spot)": 1,
+    "kept runs": 3,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "128058": {
+    "hits": 1,
+    "restartable": 5,
+    "false runs": 0,
+    "team right (kick_whistle)": 1,
+    "team right (kick_spot)": 1,
+    "kept runs": 1,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "132831": {
+    "hits": 0,
+    "restartable": 5,
+    "false runs": 0,
+    "team right (kick_whistle)": 0,
+    "team right (kick_spot)": 0,
+    "kept runs": 0,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   },
+   "132877": {
+    "hits": 1,
+    "restartable": 3,
+    "false runs": 1,
+    "team right (kick_whistle)": 0,
+    "team right (kick_spot)": 1,
+    "kept runs": 2,
+    "cell": {
+     "T": 0.75,
+     "R": null,
+     "N": 3,
+     "q": 0.99,
+     "L": 0.2,
+     "B": 10
+    }
+   }
+  }
+ },
+ "without the whistle (kick-off ends, 10-60 s), held out": {
+  "hits": 40,
+  "restartable": 41,
+  "false runs": 71,
+  "false runs per match": 7.1
+ },
+ "random-time baseline (held-out kept-run counts), hits": {
+  "mean": 1.48,
+  "95th percentile": 4.0
+ },
+ "cell chosen on all 10 matches": {
+  "T": 0.75,
+  "R": null,
+  "N": 3,
+  "q": 0.99,
+  "L": 0.2,
+  "B": 10
+ },
+ "diagnostics at that cell (exploratory)": {
+  "whistle events per minute": 0.82,
+  "restartable goals with a whistle event within 3 s of the kick-off action": "16 / 41",
+  "30-s live-play stretches holding a whistle event": "87 / 400"
+ },
+ "bar met (found >= 0.95, false runs <= 1 per match)": false,
+ "team bar met (kick_whistle right on >= 0.9 of hits)": false
+}

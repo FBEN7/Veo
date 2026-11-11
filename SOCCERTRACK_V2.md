@@ -1723,6 +1723,34 @@ on 4 restartable goals of 117093 the strongest whistle-like sound (2.5-4.5
 kHz) lies within 2 s of the kick-off action every time. Unknown: whistles in
 live play, hence what a formation + whistle rule would remove.
 
+### Goals v5: formation + the referee's whistle (`goals_v5/`, 2026-11-11)
+
+`plan.json` (hashed first): formation runs (kick-off ends, window 10-60 s)
+kept only if a whistle event (0.1-s bins, score = 2.5-4.5 kHz energy share
+x ln tonality, >= the half's q-quantile for >= L s) starts in the run or up
+to B s after it; grid T x R x N x q x L x B, leave one match out
+(`goals_v5.json`; audio of 20 halves streamed once, ~2 h on two CPU lanes).
+
+| held out, 10 matches | restartable goals found | false runs / match | team right |
+|---|---|---|---|
+| formation + whistle | 16 / 41 (0.39) | 1.5 | 0.63 (kick_whistle), 0.69 (kick_spot) |
+| formation only (kick-off ends, 10-60 s) | 40 / 41 | 7.1 | |
+| random times, same kept counts | 1.5 (p95 4) | | |
+
+- **Fails the bar** (0.95, <= 1 false per match, team 0.9). The cell chosen
+  on all matches sits at the grid's edge (q 0.99, B 10).
+- **M1 (117092) and M9 (132831) have silent audio** (every sample 0, both
+  halves): 8 of the 41 goals cannot be heard. On the 8 audible matches,
+  16 / 33.
+- Exploratory (`reading_ko_whistle.json`): on audible matches the loudest
+  whistle score within +-3 s of the kick-off action reaches the half's top
+  1% on 73% of the restartable goals (top 5%: 91%), against 29% (71%) for
+  random 6-s windows; 22% of 30-s live-play stretches hold an event. The
+  whistle is there at most kick-offs, but this crude detector also fires in
+  live play (fouls, crowd, other pitches), so it cannot carry the rule alone.
+- Not registered, but on record: kick-off ends + the 10-60 s window alone
+  take goals_v3's 34 / 41 at 8.5 false per match to 40 / 41 at 7.1.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart
