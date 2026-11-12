@@ -1,0 +1,357 @@
+{
+ "seed": 20261112,
+ "shortfalls moved": [
+  {
+   "from": [
+    "118576",
+    1
+   ],
+   "to": [
+    "117092",
+    2
+   ]
+  },
+  {
+   "from": [
+    "118576",
+    2
+   ],
+   "to": [
+    "117093",
+    2
+   ]
+  },
+  {
+   "from": [
+    "118578",
+    2
+   ],
+   "to": [
+    "118578",
+    1
+   ]
+  }
+ ],
+ "windows": [
+  {
+   "name": "st2_117092_1st_f024810",
+   "match": "117092",
+   "half": 1,
+   "start": 24810,
+   "frames": 4500,
+   "half_frames_est": 67375
+  },
+  {
+   "name": "st2_117092_1st_f018910",
+   "match": "117092",
+   "half": 1,
+   "start": 18910,
+   "frames": 4500,
+   "half_frames_est": 67375
+  },
+  {
+   "name": "st2_117092_2nd_f025846",
+   "match": "117092",
+   "half": 2,
+   "start": 25846,
+   "frames": 4500,
+   "half_frames_est": 67550
+  },
+  {
+   "name": "st2_117092_2nd_f003372",
+   "match": "117092",
+   "half": 2,
+   "start": 3372,
+   "frames": 4500,
+   "half_frames_est": 67550
+  },
+  {
+   "name": "st2_117093_1st_f061613",
+   "match": "117093",
+   "half": 1,
+   "start": 61613,
+   "frames": 4500,
+   "half_frames_est": 67625
+  },
+  {
+   "name": "st2_117093_1st_f006629",
+   "match": "117093",
+   "half": 1,
+   "start": 6629,
+   "frames": 4500,
+   "half_frames_est": 67625
+  },
+  {
+   "name": "st2_117093_2nd_f030964",
+   "match": "117093",
+   "half": 2,
+   "start": 30964,
+   "frames": 4500,
+   "half_frames_est": 70475
+  },
+  {
+   "name": "st2_117093_2nd_f050835",
+   "match": "117093",
+   "half": 2,
+   "start": 50835,
+   "frames": 4500,
+   "half_frames_est": 70475
+  },
+  {
+   "name": "st2_118575_1st_f031986",
+   "match": "118575",
+   "half": 1,
+   "start": 31986,
+   "frames": 4500,
+   "half_frames_est": 71850
+  },
+  {
+   "name": "st2_118575_1st_f048759",
+   "match": "118575",
+   "half": 1,
+   "start": 48759,
+   "frames": 4500,
+   "half_frames_est": 71850
+  },
+  {
+   "name": "st2_118575_2nd_f005396",
+   "match": "118575",
+   "half": 2,
+   "start": 5396,
+   "frames": 4500,
+   "half_frames_est": 73425
+  },
+  {
+   "name": "st2_118575_2nd_f024224",
+   "match": "118575",
+   "half": 2,
+   "start": 24224,
+   "frames": 4500,
+   "half_frames_est": 73425
+  },
+  {
+   "name": "st2_118576_1st_f040180",
+   "match": "118576",
+   "half": 1,
+   "start": 40180,
+   "frames": 4500,
+   "half_frames_est": 72825
+  },
+  {
+   "name": "st2_118576_2nd_f020796",
+   "match": "118576",
+   "half": 2,
+   "start": 20796,
+   "frames": 4500,
+   "half_frames_est": 72775
+  },
+  {
+   "name": "st2_118577_1st_f028291",
+   "match": "118577",
+   "half": 1,
+   "start": 28291,
+   "frames": 4500,
+   "half_frames_est": 72425
+  },
+  {
+   "name": "st2_118577_1st_f012519",
+   "match": "118577",
+   "half": 1,
+   "start": 12519,
+   "frames": 4500,
+   "half_frames_est": 72425
+  },
+  {
+   "name": "st2_118577_2nd_f021635",
+   "match": "118577",
+   "half": 2,
+   "start": 21635,
+   "frames": 4500,
+   "half_frames_est": 72475
+  },
+  {
+   "name": "st2_118577_2nd_f047405",
+   "match": "118577",
+   "half": 2,
+   "start": 47405,
+   "frames": 4500,
+   "half_frames_est": 72475
+  },
+  {
+   "name": "st2_118578_1st_f039746",
+   "match": "118578",
+   "half": 1,
+   "start": 39746,
+   "frames": 4500,
+   "half_frames_est": 70350
+  },
+  {
+   "name": "st2_118578_1st_f005654",
+   "match": "118578",
+   "half": 1,
+   "start": 5654,
+   "frames": 4500,
+   "half_frames_est": 70350
+  },
+  {
+   "name": "st2_118578_2nd_f035133",
+   "match": "118578",
+   "half": 2,
+   "start": 35133,
+   "frames": 4500,
+   "half_frames_est": 70975
+  },
+  {
+   "name": "st2_128057_1st_f008778",
+   "match": "128057",
+   "half": 1,
+   "start": 8778,
+   "frames": 4500,
+   "half_frames_est": 67625
+  },
+  {
+   "name": "st2_128057_1st_f036192",
+   "match": "128057",
+   "half": 1,
+   "start": 36192,
+   "frames": 4500,
+   "half_frames_est": 67625
+  },
+  {
+   "name": "st2_128057_2nd_f027577",
+   "match": "128057",
+   "half": 2,
+   "start": 27577,
+   "frames": 4500,
+   "half_frames_est": 70350
+  },
+  {
+   "name": "st2_128057_2nd_f034678",
+   "match": "128057",
+   "half": 2,
+   "start": 34678,
+   "frames": 4500,
+   "half_frames_est": 70350
+  },
+  {
+   "name": "st2_128058_1st_f003755",
+   "match": "128058",
+   "half": 1,
+   "start": 3755,
+   "frames": 4500,
+   "half_frames_est": 68975
+  },
+  {
+   "name": "st2_128058_1st_f058689",
+   "match": "128058",
+   "half": 1,
+   "start": 58689,
+   "frames": 4500,
+   "half_frames_est": 68975
+  },
+  {
+   "name": "st2_128058_2nd_f035662",
+   "match": "128058",
+   "half": 2,
+   "start": 35662,
+   "frames": 4500,
+   "half_frames_est": 67750
+  },
+  {
+   "name": "st2_128058_2nd_f023456",
+   "match": "128058",
+   "half": 2,
+   "start": 23456,
+   "frames": 4500,
+   "half_frames_est": 67750
+  },
+  {
+   "name": "st2_132831_1st_f055436",
+   "match": "132831",
+   "half": 1,
+   "start": 55436,
+   "frames": 4500,
+   "half_frames_est": 67775
+  },
+  {
+   "name": "st2_132831_1st_f016629",
+   "match": "132831",
+   "half": 1,
+   "start": 16629,
+   "frames": 4500,
+   "half_frames_est": 67775
+  },
+  {
+   "name": "st2_132831_2nd_f014460",
+   "match": "132831",
+   "half": 2,
+   "start": 14460,
+   "frames": 4500,
+   "half_frames_est": 68375
+  },
+  {
+   "name": "st2_132831_2nd_f023525",
+   "match": "132831",
+   "half": 2,
+   "start": 23525,
+   "frames": 4500,
+   "half_frames_est": 68375
+  },
+  {
+   "name": "st2_132877_1st_f036329",
+   "match": "132877",
+   "half": 1,
+   "start": 36329,
+   "frames": 4500,
+   "half_frames_est": 67700
+  },
+  {
+   "name": "st2_132877_1st_f023440",
+   "match": "132877",
+   "half": 1,
+   "start": 23440,
+   "frames": 4500,
+   "half_frames_est": 67700
+  },
+  {
+   "name": "st2_132877_2nd_f022379",
+   "match": "132877",
+   "half": 2,
+   "start": 22379,
+   "frames": 4500,
+   "half_frames_est": 69350
+  },
+  {
+   "name": "st2_132877_2nd_f008190",
+   "match": "132877",
+   "half": 2,
+   "start": 8190,
+   "frames": 4500,
+   "half_frames_est": 69350
+  },
+  {
+   "name": "st2_117092_2nd_f035421",
+   "match": "117092",
+   "half": 2,
+   "start": 35421,
+   "frames": 4500,
+   "half_frames_est": 67550
+  },
+  {
+   "name": "st2_117093_2nd_f042330",
+   "match": "117093",
+   "half": 2,
+   "start": 42330,
+   "frames": 4500,
+   "half_frames_est": 70475
+  },
+  {
+   "name": "st2_118578_1st_f022997",
+   "match": "118578",
+   "half": 1,
+   "start": 22997,
+   "frames": 4500,
+   "half_frames_est": 70350
+  }
+ ]
+}

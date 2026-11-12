@@ -1,0 +1,6 @@
+{
+ "title": "shots negatives, addendum 1: drawing the windows",
+ "written": "2026-11-12, after the plan's draw stopped on 118576 half 1 (no second window found in 1,000 tries) and before any window was kept, cut or run",
+ "found": "the halves are crowded with shot clips: with 30-s gaps, 118576 1st has room for one 3-min window only (15 s of valid starts), and rejection sampling over the whole range is a poor way to find small gaps",
+ "change": "the start is drawn uniformly over the exactly computed valid starts (integer frames in [3,000, half frames - 6,000] whose window lies >= 750 frames from every clip cut range, dev window and window already drawn), same generator and seed, same order; a half without room for its second (or first) window gets fewer, and the shortfall is drawn, after all halves, from the other half of the same match, then from the matches in E.MATCHES order, one window at a time, until 40 windows are drawn or no room is left. Windows' length (4,500 frames), gap (750) and everything else in plan.json are unchanged."
+}
