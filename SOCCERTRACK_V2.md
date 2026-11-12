@@ -1822,6 +1822,25 @@ other halves), and V1 with 14 people on the pitch at half-time (V3).
   (V0-V2, true starts). The rule needs a minimum of players present, or the
   half-time cut out.
 
+**Owner (2026-11-12): the club enters each half's kick-off time** (`main.py
+--half-starts 0:00,52:30`; the report shows the times used and warns when
+a video over 65 min has only one). `match_periods` stays out of main.py.
+
+### Goals v8: a minimum of players present (`goals_v8/`, 2026-11-12; adopted)
+
+`plan.json` (hashed first): a 1-s sample counts for the formation only with
+>= 6 team-labelled players present. `goals_v8.json`:
+
+| | without | with >= 6 |
+|---|---|---|
+| frozen cell, 20 halves (in-sample) | 41 / 41, 11.3 per match, scorer 39 / 41 | 41 / 41, 11.2, 39 / 41 |
+| held out (formation only, LOMO) | 40 / 41, 7.1 false per match | 40 / 41, 7.0 |
+| half-time candidates per match, simulated V0 / V1 / V2 / V3 | 5.6 / 3.8 / 5.6 / 0.1 | 0 / 0 / 0 / 0.1 |
+
+- The bar holds (no goal lost, half-time candidates <= 0.5 per match):
+  **adopted** in `src/goal_candidates.py` (MIN_PRESENT 6). Real half-times
+  (children on the pitch, people in kits) are untested.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart

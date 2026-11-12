@@ -15,14 +15,19 @@ The rule, frozen from goals_v6 (cell T 0.75, R none, N 3; team rule
 attack_end):
 - **Defended ends:** per half, the team with the lower mean x over its
   first 10 s defends the x < 0 end. The half must start at its kick-off.
-- **Share:** at each 1-s sample, the share of team-labelled players
-  standing in their own half.
+- **Share:** at each 1-s sample with >= 6 team-labelled players present
+  (goals_v8: the few people on the pitch at half-time otherwise form
+  chance formations), the share of them standing in their own half.
 - **Formation:** >= 3 consecutive samples with a share >= 0.75. Those
   starting in the half's first 60 s are dropped, and those less than 20 s
   apart are merged.
 - **Scorer:** the half that held the players' mean x 10-40 s before the
   formation is the conceding team's; the other team scored.
 - The goal itself lies 10-60 s before the formation starts.
+
+The club enters each half's kick-off time (main.py --half-starts, e.g.
+"0:00,52:30"); finding them automatically failed on simulated recordings
+(goals_v7, src/match_periods.py).
 
     python -m src.goal_candidates      # synthetic self-check
 """
@@ -41,6 +46,7 @@ MERGE_S = 20
 ENDS_S = 10             # defended ends from the half's first 10 s
 ATTACK_S = (10, 40)     # where play was before the formation
 GOAL_BEFORE_S = (10, 60)
+MIN_PRESENT = 6         # players present for a sample to count (goals_v8)
 
 
 def _centred(x: np.ndarray, y: np.ndarray, origin: str):
@@ -102,13 +108,15 @@ def _runs(share: np.ndarray) -> list[tuple[int, int]]:
 
 
 def find(tracks: pd.DataFrame, fps: float = 25.0, half_starts_s=(0.0,),
-         origin: str = "corner", teams=TEAMS) -> list[dict]:
+         origin: str = "corner", teams=TEAMS, min_present: int = MIN_PRESENT) -> list[dict]:
     """Possible goals from tracked players.
 
     tracks: one row per player per frame, with frame, x, y (pitch metres)
     and team; rows whose team is not in `teams` are ignored, and so are rows
     with cls other than 'player' when that column exists.
     half_starts_s: the video time of each half's kick-off.
+    min_present: a sample counts for the formation only with at least this
+    many team-labelled players (goals_v8).
     Returns one dict per candidate, in time order.
     """
     p = tracks
@@ -139,7 +147,10 @@ def find(tracks: pd.DataFrame, fps: float = 25.0, half_starts_s=(0.0,),
         if ends is None:
             continue
         own = q.x.to_numpy() * q.team.map(ends).to_numpy() >= 0
-        share = pd.Series(own).groupby(q.k.to_numpy()).mean().reindex(range(len(smp))).to_numpy()
+        g = pd.Series(own).groupby(q.k.to_numpy())
+        share = g.mean().reindex(range(len(smp))).to_numpy().copy()
+        n = g.size().reindex(range(len(smp))).fillna(0).to_numpy()
+        share[n < min_present] = np.nan
         for a, b in _runs(share):
             w = q[(q.k >= a - ATTACK_S[1]) & (q.k <= a - ATTACK_S[0])]
             scorer = None
@@ -157,6 +168,25 @@ def find(tracks: pd.DataFrame, fps: float = 25.0, half_starts_s=(0.0,),
                 "proposed_scorer": scorer,
                 "ends_from": ends_from,
             })
+    return out
+
+
+def parse_times(text: str) -> list[float]:
+    """'0:00, 52:30' or '0,3150' or '1:02:03' -> seconds."""
+    out = []
+    for tok in str(text).split(","):
+        tok = tok.strip()
+        if not tok:
+            continue
+        parts = [float(p) for p in tok.split(":")]
+        if len(parts) > 3 or any(p < 0 for p in parts) or any(p >= 60 for p in parts[1:]):
+            raise ValueError(f"not a time: {tok!r} (use m:ss, h:mm:ss or seconds)")
+        v = 0.0
+        for p in parts:
+            v = v * 60 + p
+        out.append(v)
+    if out != sorted(out):
+        raise ValueError(f"kick-off times must increase: {text!r}")
     return out
 
 
@@ -217,6 +247,26 @@ def _check() -> int:
           and all(x["proposed_scorer"] == "team_B" for x in c))
     print("two halves:", [(x["half"], x["formation_from_s"], x["proposed_scorer"]) for x in c],
           "OK" if ok else "FAIL")
+    bad += not ok
+    d = _synthetic()
+    # a half-time with two people, each standing in their own half (team_A defends x < 0)
+    ht = pd.DataFrame({"frame": np.repeat(np.arange(560 * 25, 600 * 25, 25), 2),
+                       "team": ["team_A", "team_B"] * 40, "x": [10.0, 95.0] * 40, "y": 30.0, "cls": "player"})
+    both = pd.concat([d[d.frame / 25 < 560], ht])
+    c, c0 = find(both), find(both, min_present=0)
+    ok = len(c) == 1 and len(c0) == 2
+    print("two people at half-time:", len(c), "candidate(s), without the minimum", len(c0),
+          "OK" if ok else "FAIL")
+    bad += not ok
+    ok = parse_times("0:00, 52:30") == [0.0, 3150.0] and parse_times("1:02:03") == [3723.0] \
+        and parse_times("0,3150") == [0.0, 3150.0]
+    for badtext in ("52:30,0:00", "1:75"):
+        try:
+            parse_times(badtext)
+            ok = False
+        except ValueError:
+            pass
+    print("kick-off times parsed:", "OK" if ok else "FAIL")
     bad += not ok
     print("goal candidates self-check:", "FAIL" if bad else "OK")
     return bad

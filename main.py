@@ -55,10 +55,10 @@ def main():
                    help="détection automatique des coins du terrain (pas de clic manuel)")
     p.add_argument("--homography", default="",
                    help="chemin vers un fichier .npy d'homographie à utiliser")
-    p.add_argument("--half-starts", default="0",
-                   help="temps vidéo (s) du coup d'envoi de chaque mi-temps, "
-                        "séparés par des virgules (défaut: 0, la vidéo commence "
-                        "au coup d'envoi et ne contient qu'une mi-temps)")
+    p.add_argument("--half-starts", default="0:00",
+                   help="heure du coup d'envoi de chaque mi-temps dans la vidéo, "
+                        "séparées par des virgules (ex. 0:00,52:30 ; défaut 0:00 : "
+                        "la vidéo commence au coup d'envoi et ne contient qu'une mi-temps)")
     p.add_argument("--debug", action="store_true",
                    help="affiche les statistiques détaillées de détection")
     args = p.parse_args()
@@ -175,7 +175,7 @@ def main():
     cap.release()
 
     # Buts possibles à confirmer par le club (formation de coup d'envoi)
-    half_starts = [float(v) for v in args.half_starts.split(",") if v.strip()]
+    half_starts = goal_candidates.parse_times(args.half_starts)
     goal_cands = goal_candidates.find(tracks, fps=video_fps, half_starts_s=half_starts)
     print(f"  Buts possibles à confirmer : {len(goal_cands)}")
 
@@ -238,6 +238,8 @@ def main():
         team_event_totals=tet,
         out_path=args.out,
         goal_candidates=goal_cands,
+        goal_kickoffs_s=half_starts,
+        video_duration_s=duration_s,
     )
 
     print(f"\nTerminé !")

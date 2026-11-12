@@ -284,11 +284,26 @@ def build_payload(tracks: pd.DataFrame, phys: pd.DataFrame, tilt: dict,
     }
 
 
-def _goal_candidates_page(story: list, styles: dict, cands: list[dict]) -> None:
+def _goal_candidates_page(story: list, styles: dict, cands: list[dict],
+                          kickoffs_s: list[float] | None = None,
+                          video_s: float | None = None) -> None:
     """Possible goals for the club to confirm (src/goal_candidates.py)."""
     from src.goal_candidates import mmss
     story.append(Paragraph("Possible Goals — to confirm", styles["h1"]))
     story.append(Spacer(1, 0.3*cm))
+    if kickoffs_s:
+        story.append(Paragraph("Kick-off times used (video time): " + ", ".join(
+            f"{mmss(t)} (half {i})" for i, t in enumerate(kickoffs_s, 1)), styles["body"]))
+        story.append(Spacer(1, 0.2*cm))
+    if kickoffs_s is not None and len(kickoffs_s) < 2 and (video_s or 0) > 65 * 60:
+        story.append(Paragraph(
+            f"<b>Check the kick-off times:</b> only one was given for a {video_s / 60:.0f}-min "
+            "video. If it holds both halves, enter the second half's kick-off too "
+            "(--half-starts, e.g. 0:00,52:30): the teams change ends at half-time and "
+            "this list is unreliable without it.", ParagraphStyle(
+                "KickoffWarn", parent=getSampleStyleSheet()["Normal"], fontSize=9,
+                backColor=colors.HexColor("#f8d7da"), borderPadding=8, borderColor="#B02A37")))
+        story.append(Spacer(1, 0.3*cm))
     if not cands:
         story.append(Paragraph("No kick-off formation was found after the start of "
                                "each half: no possible goal to confirm.", styles["body"]))
@@ -314,7 +329,8 @@ def _goal_candidates_page(story: list, styles: dict, cands: list[dict]) -> None:
     story.append(Paragraph(
         "<b>How to read this page:</b> after a goal, both teams walk back to their own "
         "halves for the kick-off. Each row is such a formation; the goal, if there was "
-        "one, lies 10-60 s before it (times are video times). Most rows are not goals "
+        "one, lies 10-60 s before it (times are video times, and each half must be "
+        "given its kick-off time). Most rows are not goals "
         "(other stoppages look the same): watch each window, keep the goals and "
         "correct the scorer if needed. On ten test matches the list held 40 of 41 "
         "goals with about 11 rows per match, and the proposed scorer was right on 39 "
@@ -328,7 +344,9 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
              quality_report: dict[str, Any] | None = None,
              match_label: str = "Match", team_event_totals: dict | None = None,
              out_path: str = "output/report.pdf",
-             goal_candidates: list[dict] | None = None) -> str:
+             goal_candidates: list[dict] | None = None,
+             goal_kickoffs_s: list[float] | None = None,
+             video_duration_s: float | None = None) -> str:
     """Generate spec-compliant PDF report.
 
     goal_candidates: src.goal_candidates.find's list; when given, a page
@@ -434,7 +452,8 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
     story.append(PageBreak())
 
     if goal_candidates is not None:
-        _goal_candidates_page(story, styles, goal_candidates)
+        _goal_candidates_page(story, styles, goal_candidates, goal_kickoffs_s,
+                              video_duration_s)
         story.append(PageBreak())
 
     # PAGE 3: FIELD OCCUPATION
