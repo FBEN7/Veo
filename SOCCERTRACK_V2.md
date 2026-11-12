@@ -1751,6 +1751,34 @@ to B s after it; grid T x R x N x q x L x B, leave one match out
 - Not registered, but on record: kick-off ends + the 10-60 s window alone
   take goals_v3's 34 / 41 at 8.5 false per match to 40 / 41 at 7.1.
 
+### Goals v6: a list of possible goals, the team proposed (`goals_v6/`, 2026-11-12)
+
+Owner's choice (2026-11-12): semi-automatic. The report lists possible goals
+(about 11 per match accepted), the club confirms each; the scoring team is
+proposed and correctable. Candidates: formation only, kick-off ends, 10-60 s,
+the cell chosen on all 20 halves (T 0.75, R none, N 3): 41 / 41 restartable
+goals in-sample, 11.3 candidates and 7.2 false per match (held out in
+goals_v5: 40 / 41, 7.1). In-sample trade-off (`goals_v5/reading_tradeoff.json`):
+~7 candidates per match find 39 / 41, ~5 find 31 / 41.
+
+`plan.json` (hashed first): five team rules, one chosen leaving one match
+out (`goals_v6.json`):
+
+| team rule (in-sample, 41 hits) | right |
+|---|---|
+| kick_spot (nearest to the spot at the run's end) | 0.68 |
+| **attack_end** (the half holding the people's mean x 10-40 s before the run conceded) | **0.95** |
+| spot_vote (nearest to the spot, majority over the run) | 0.93 |
+| circle_count (more people within 9.15 m of the spot kicks off) | 0.24 |
+| circle_count, last 10 s | 0.32 |
+
+- **Held out: 39 / 41 (0.95), the bar (0.9) is met**; attack_end is chosen
+  in every fold.
+- circle_count is mostly inverted: at these samples the scoring team has
+  more people near the spot (not what a kick-off implies); not pursued.
+- The candidate cell and the rules were studied on these halves; the
+  owner's matches remain the test.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart
