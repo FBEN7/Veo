@@ -17,6 +17,8 @@ ap.add_argument("--plan", help="a clips_*.json plan: its clips become the units 
 ap.add_argument("--seen", nargs="*", default=[], help="with --plan: matches whose ball needs --allow-seen")
 ap.add_argument("--only", nargs=2, type=int, metavar=("I", "J"), help="with --plan: clips [I, J) of it")
 ap.add_argument("--extra", default="", help='more run_windows.py options in one string, e.g. --extra="--players-only --pitch-margin 0"')
+ap.add_argument("--opened", nargs="*", default=[],
+                help="sealed-match windows cut here through src/unseal.py: added to opened.json on Kaggle")
 ap.add_argument("windows", nargs="*", help="W, or W:seen (ball with --allow-seen)")
 args = ap.parse_args()
 if args.plan:
@@ -31,7 +33,8 @@ d = HERE / "run"
 (d / "kernel.py").write_text((d / "kernel_template.py").read_text()
                              .replace("__WINDOWS__", json.dumps(args.windows))
                              .replace("__CUT__", "True" if args.cut else "False")
-                             .replace("__EXTRA__", json.dumps(args.extra.split())))
+                             .replace("__EXTRA__", json.dumps(args.extra.split()))
+                             .replace("__OPENED__", json.dumps(args.opened)))
 (d / "kernel-metadata.json").write_text(json.dumps({
     "id": f"francoisbernard/{args.slug}", "title": args.slug, "code_file": "kernel.py",
     "language": "python", "kernel_type": "script", "is_private": True,

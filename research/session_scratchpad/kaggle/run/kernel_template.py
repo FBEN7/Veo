@@ -18,9 +18,17 @@ def find(name):
     return hits[0]
 
 
+OPENED = __OPENED__   # sealed-match windows cut on the repo machine through src/unseal.py (push_run.py --opened)
+
 root = "/home/user/Veo"
 code = os.path.dirname(find("eval_soccertrack_v2.py"))
 shutil.copytree(code, root, dirs_exist_ok=True)
+if OPENED:   # ball_gpu.py lifts the test-match guard for the units listed in opened.json
+    import json
+    op = os.path.join(root, "research/session_scratchpad/kaggle/opened.json")
+    rec = json.load(open(op))
+    rec["clips"] = sorted(set(rec["clips"]) | set(OPENED))
+    json.dump(rec, open(op, "w"), indent=1)
 assets = os.path.dirname(find("ball_v3b.1500.pt"))
 for d in ("data/soccertrack_v2", ".cache/soccertrack_v2/calib"):
     os.makedirs(os.path.join(root, d), exist_ok=True)

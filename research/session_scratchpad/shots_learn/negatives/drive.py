@@ -33,7 +33,9 @@ DATA = ROOT / "data/negatives/soccertrack_v2"
 STAGE = Path(os.environ.get("VEO_STAGE", "/tmp/claude-0/veo_stage_neg"))
 OUT = ROOT / ".cache/gpu_windows"
 SLUGS = ["veo-gpu-run", "veo-gpu-run2"]
-SEEN = {"117093", "118575", "118576", "118578", "128058", "132877"}   # v3 trained on them
+# the matches ball_v3b.1500.pt was trained on, from its provenance (the plan's "6 matches" was copied
+# from shots_learn/batches.py; the checkpoint lists 7, 118577 too, whose windows failed without --allow-seen)
+SEEN = set(json.loads((ROOT / ".cache/ball_v3b.1500.pt.provenance.json").read_text())["train"])
 SEALED = {"128057", "132831"}
 SIZE = 10
 DS_PREFIX = "veo-st2-neg-b"
@@ -241,6 +243,34 @@ def collect():
         print(f"batch {k}: {len(ok)}/{len(s['windows'])} collected", flush=True)
 
 
+RERUN = 4   # state/4.json: the one rerun the plan allows
+
+
+def rerun(slug):
+    """The plan's one rerun, on the batches' own datasets: windows of 118577
+    (now with --allow-seen) and of the sealed matches (cut here through
+    src/unseal.py, listed for opened.json) not collected yet."""
+    if state(RERUN).get("pushed"):
+        raise SystemExit("the rerun was already pushed")
+    ok, ds = set(), []
+    for k in range(len(batches())):
+        ok |= set(state(k).get("ok", []))
+        ds.append(state(k)["dataset"])
+    ws = [w for b in batches() for w in b
+          if w["name"] not in ok and (w["match"] in SEALED or w["match"] == "118577")]
+    spec = [f"{w['name']}{':seen' if w['match'] in SEEN else ''}" for w in ws]
+    opened = [w["name"] for w in ws if w["match"] in SEALED]
+    r = subprocess.run([sys.executable, str(ROOT / "research/session_scratchpad/kaggle/push_run.py"),
+                        "--slug", slug, *spec, "--opened", *opened, "--data", *ds],
+                       capture_output=True, text=True,
+                       env={**os.environ, "KAGGLE_API_TOKEN": os.environ.get("KAGGLE_TOKEN", "")})
+    if r.returncode:
+        raise SystemExit(f"push rerun: {r.stderr[-500:]}")
+    mark(RERUN, pushed=True, slug=slug, windows=[w["name"] for w in ws], spec=spec, opened=opened,
+         datasets=ds, pushed_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+    print(f"rerun: {len(ws)} windows pushed to {slug}: {spec}", flush=True)
+
+
 def status():
     for k, b in enumerate(batches()):
         s = state(k)
@@ -255,10 +285,12 @@ def cut_only(k):
 
 
 if __name__ == "__main__":
-    cmd, arg = sys.argv[1], (int(sys.argv[2]) if len(sys.argv) > 2 else None)
+    cmd, arg = sys.argv[1], (int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else None)
     if cmd == "run":
         run(arg)
     elif cmd == "cut":
         cut_only(arg)
+    elif cmd == "rerun":
+        rerun(sys.argv[2])
     else:
         {"draw": draw, "collect": collect, "status": status}[cmd]()
