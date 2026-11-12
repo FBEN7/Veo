@@ -164,9 +164,11 @@ def slug_free(slug, for_push=False):
     return True
 
 
-def run():
+def run(only=None):
     check_plan()
     for k, b in enumerate(batches()):
+        if only is not None and k != only:
+            continue
         s = state(k)
         if s.get("pushed"):
             continue
@@ -208,7 +210,7 @@ def run():
             return
         ws = [f"{w['name']}{':seen' if w['match'] in SEEN else ''}" for w in b]
         r = subprocess.run([sys.executable, str(ROOT / "research/session_scratchpad/kaggle/push_run.py"),
-                            "--slug", slug, "--data", state(k)["dataset"], *ws],
+                            "--slug", slug, *ws, "--data", state(k)["dataset"]],
                            capture_output=True, text=True,
                            env={**os.environ, "KAGGLE_API_TOKEN": os.environ.get("KAGGLE_TOKEN", "")})
         if r.returncode:
@@ -246,5 +248,17 @@ def status():
               f"ok {len(s.get('ok', []))}/{len(b)}" if s.get("collected") else "")
 
 
+def cut_only(k):
+    for w in batches()[k]:
+        cut(w)
+        print("cut", w["name"], flush=True)
+
+
 if __name__ == "__main__":
-    {"draw": draw, "run": run, "collect": collect, "status": status}[sys.argv[1]]()
+    cmd, arg = sys.argv[1], (int(sys.argv[2]) if len(sys.argv) > 2 else None)
+    if cmd == "run":
+        run(arg)
+    elif cmd == "cut":
+        cut_only(arg)
+    else:
+        {"draw": draw, "collect": collect, "status": status}[cmd]()
