@@ -2635,3 +2635,27 @@ matches left out in turn, 3 seeds). The new ball has 2.6x the rows
   the null change.
 - A better-linked ball after the kick (chain plan v3's guard) does not make
   a better shot spotter: the spotter's limit is elsewhere.
+
+### Shots in ordinary play: the spotter's real precision (`shots_learn/realistic/`, 2026-11-12)
+
+Every shots measure so far ran on clips cut -15 s / +10 s around labelled
+shots, far denser in shots than a match. `plan.json` (hashed first): the v4
+spotter (fitted on the other matches' clips, 3 seeds) on the 7 cached dev
+windows of ordinary play (18 min with features, 6 labelled shots; never
+used for v4), then extrapolated to a 92-min match with the clips' own
+recall and false alarms (`realistic.json`):
+
+| threshold | recall (clips) | precision (clips) | false alarms / min of play | false alarms / match | precision, whole match |
+|---|---|---|---|---|---|
+| rate threshold (0.76) | 0.60 | 0.60 | 0.89 [0.51, 1.44] | 83 [52, 128] | **0.16** [0.11, 0.24] |
+| recall 0.80 (0.53) | 0.80 | 0.33 | 1.89 [1.31, 2.64] | 198 [151, 259] | **0.10** [0.08, 0.13] |
+
+- **The clips hid the false alarms.** In ordinary play the spotter fires
+  about once a minute; over a match that is 5x the shots it finds. The
+  0.59-0.61 precision of every earlier report holds only on shot-dense
+  clips. The 6 labelled shots in the windows were all found.
+- Against the owner's bar (80% found, 80% of alerts right) the gap is not
+  a few points: precision is 0.10-0.16 on a whole match. A list to
+  confirm, as for goals, would hold 100-220 rows per match.
+- Small sample (18 min, 7 matches); the intervals are Poisson on the
+  windows' count only.
