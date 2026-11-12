@@ -238,6 +238,10 @@ def collect():
                 with tarfile.open(tgz) as t:
                     t.extractall(OUT / w)
                 ok.append(w)
+            else:   # keep why it failed (the kernel's output is replaced by the next push)
+                for f in out.glob(f"{w}.*"):
+                    if not f.name.endswith(".tar.gz"):
+                        shutil.copy(f, HERE / "logs" / f"b{k}_{f.name}")
         mark(k, collected=True, ok=ok, n=len(s["windows"]))
         shutil.rmtree(out, ignore_errors=True)
         print(f"batch {k}: {len(ok)}/{len(s['windows'])} collected", flush=True)
