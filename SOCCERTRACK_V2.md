@@ -1788,6 +1788,40 @@ halves differ; 41 / 41, scorer 39 / 41). Open: the half's start must be its
 kick-off (ends from its first 10 s, 60-s exclusion); a recording that
 starts earlier or holds both halves needs `--half-starts` or a detector.
 
+### Goals v7: the kick-offs of a whole recording (`goals_v7/`, 2026-11-12; fails)
+
+Owner's case: one file per match, or a recording that starts before the
+kick-off. `src/match_periods.py` (plan.json + addendum1.json, hashed first;
+the addendum fixed the kick-off after a split, found by the module's own
+synthetic check): periods of play from the players present, warm-ups
+dropped by their separation, a long period split where the ends flip, the
+kick-off at the end of the period's first formation. Checked on 40
+recordings simulated from the scans (`simulate.py`, `goals_v7.json`): half 1
++ half-time + half 2, with no pre-match (V0), a synthetic warm-up and a
+45-s formation held from each half's first sample (V1, V2: warm-up in the
+other halves), and V1 with 14 people on the pitch at half-time (V3).
+
+| variant | both kick-offs within 10 s | goal list equal to the true-start list |
+|---|---|---|
+| V0 | 9 / 10 | 9 / 10 |
+| V1 | 5 / 10 | 9 / 10 |
+| V2 | 5 / 10 | 9 / 10 |
+| V3 | 4 / 10 | 7 / 10 |
+
+- **Fails the bar** (every kick-off within 10 s, lists equal). Most misses
+  are 20-40 s early: the held formation (each half's first sample, where
+  the share is already near 0.75: 0-5 s at the real start) breaks into
+  pieces and the first piece is taken. Harmless for the goal list (34 / 40
+  equal), but against the plan.
+- M9 (132831) has no formation at its kick-offs (share < 0.75 from the
+  first second): the first restart is taken, 13-70 s late.
+- V3: the split is refused on 118577 and 132831; on 118575 the second
+  half's formation is missed and a later one (2,204 s on) is taken.
+- Found on the way: when the half-time is in the file, the goal rule lists
+  its few people's chance formations, 3.8-5.6 extra candidates per match
+  (V0-V2, true starts). The rule needs a minimum of players present, or the
+  half-time cut out.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart
