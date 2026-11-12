@@ -194,7 +194,7 @@ def run(only=None):
                 {"title": ds, "id": f"francoisbernard/{ds}", "licenses": [{"name": "CC-BY-4.0"}]}))
             kaggle("datasets", "create", "-p", str(d), check=False)
             for _ in range(240):
-                if kaggle("datasets", "status", f"francoisbernard/{ds}", check=False).strip() == "ready":
+                if (kaggle("datasets", "status", f"francoisbernard/{ds}", check=False).strip().splitlines() or [""])[-1] == "ready":
                     break
                 time.sleep(30)
             else:
