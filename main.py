@@ -26,6 +26,7 @@ from src import quality
 from src import player_rating
 from src import advanced_events
 from src import advanced_metrics
+from src import goal_candidates
 from src.database import MatchDatabase
 from src.auto_calibrate import auto_calibrate
 
@@ -54,6 +55,10 @@ def main():
                    help="détection automatique des coins du terrain (pas de clic manuel)")
     p.add_argument("--homography", default="",
                    help="chemin vers un fichier .npy d'homographie à utiliser")
+    p.add_argument("--half-starts", default="0",
+                   help="temps vidéo (s) du coup d'envoi de chaque mi-temps, "
+                        "séparés par des virgules (défaut: 0, la vidéo commence "
+                        "au coup d'envoi et ne contient qu'une mi-temps)")
     p.add_argument("--debug", action="store_true",
                    help="affiche les statistiques détaillées de détection")
     args = p.parse_args()
@@ -163,10 +168,16 @@ def main():
     db.init()
 
     cap = cv2.VideoCapture(args.video)
+    video_fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
     duration_s = (
         cap.get(cv2.CAP_PROP_FRAME_COUNT) / max(cap.get(cv2.CAP_PROP_FPS), 1)
     )
     cap.release()
+
+    # Buts possibles à confirmer par le club (formation de coup d'envoi)
+    half_starts = [float(v) for v in args.half_starts.split(",") if v.strip()]
+    goal_cands = goal_candidates.find(tracks, fps=video_fps, half_starts_s=half_starts)
+    print(f"  Buts possibles à confirmer : {len(goal_cands)}")
 
     quality_report = quality.compute_quality(
         tracks_pitch=tracks,
@@ -226,6 +237,7 @@ def main():
         match_label=args.label,
         team_event_totals=tet,
         out_path=args.out,
+        goal_candidates=goal_cands,
     )
 
     print(f"\nTerminé !")

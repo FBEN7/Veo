@@ -1779,6 +1779,15 @@ out (`goals_v6.json`):
 - The candidate cell and the rules were studied on these halves; the
   owner's matches remain the test.
 
+**In the product (2026-11-12):** `src/goal_candidates.py` (the frozen rule;
+synthetic self-check in `run_tests.py --controls`), a "Possible Goals — to
+confirm" page in `src/report.py`, and `main.py --half-starts` (video time of
+each half's kick-off, default 0). `goals_v6/equivalence.py`: on the 20
+halves the module gives the research rule's runs and scorers exactly (0
+halves differ; 41 / 41, scorer 39 / 41). Open: the half's start must be its
+kick-off (ends from its first 10 s, 60-s exclusion); a recording that
+starts earlier or holds both halves needs `--half-starts` or a detector.
+
 ### Who made the pass (`passer/`; exploratory, CPU only)
 
 The actor of each labelled BAS action, from detections only, scored apart

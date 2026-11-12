@@ -284,12 +284,55 @@ def build_payload(tracks: pd.DataFrame, phys: pd.DataFrame, tilt: dict,
     }
 
 
+def _goal_candidates_page(story: list, styles: dict, cands: list[dict]) -> None:
+    """Possible goals for the club to confirm (src/goal_candidates.py)."""
+    from src.goal_candidates import mmss
+    story.append(Paragraph("Possible Goals — to confirm", styles["h1"]))
+    story.append(Spacer(1, 0.3*cm))
+    if not cands:
+        story.append(Paragraph("No kick-off formation was found after the start of "
+                               "each half: no possible goal to confirm.", styles["body"]))
+        return
+    data = [["#", "Half", "Kick-off formation at", "Goal to look for between",
+             "Proposed scorer", "Goal?"]]
+    for i, c in enumerate(cands, 1):
+        team = c["proposed_scorer"]
+        data.append([str(i), str(c["half"]), mmss(c["formation_from_s"]),
+                     f'{mmss(c["goal_between_s"][0])} – {mmss(c["goal_between_s"][1])}',
+                     team.replace("team_", "Team ") if team else "?", "yes / no"])
+    t = Table(data, colWidths=[0.8*cm, 1.2*cm, 3.6*cm, 4.4*cm, 3*cm, 2*cm], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("GRID", (0, 0), (-1, -1), 0.5, GREY_LIGHT),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT_BG]),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.4*cm))
+    story.append(Paragraph(
+        "<b>How to read this page:</b> after a goal, both teams walk back to their own "
+        "halves for the kick-off. Each row is such a formation; the goal, if there was "
+        "one, lies 10-60 s before it (times are video times). Most rows are not goals "
+        "(other stoppages look the same): watch each window, keep the goals and "
+        "correct the scorer if needed. On ten test matches the list held 40 of 41 "
+        "goals with about 11 rows per match, and the proposed scorer was right on 39 "
+        "of 41.", ParagraphStyle(
+            "GoalNote", parent=getSampleStyleSheet()["Normal"], fontSize=9,
+            backColor=colors.HexColor("#fff3cd"), borderPadding=8, borderColor="#D4A017")))
+
+
 def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, Any]],
              best_worst: dict, tilt: dict, possession: dict, ball_rate: float,
              quality_report: dict[str, Any] | None = None,
              match_label: str = "Match", team_event_totals: dict | None = None,
-             out_path: str = "output/report.pdf") -> str:
-    """Generate spec-compliant PDF report."""
+             out_path: str = "output/report.pdf",
+             goal_candidates: list[dict] | None = None) -> str:
+    """Generate spec-compliant PDF report.
+
+    goal_candidates: src.goal_candidates.find's list; when given, a page
+    lists them for the club to confirm (None leaves the page out)."""
     
     # Get duration
     import cv2
@@ -389,7 +432,11 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
             styles["small"]))
     
     story.append(PageBreak())
-    
+
+    if goal_candidates is not None:
+        _goal_candidates_page(story, styles, goal_candidates)
+        story.append(PageBreak())
+
     # PAGE 3: FIELD OCCUPATION
     story.append(Paragraph("Field Occupation & Territorial Balance", styles["h1"]))
     story.append(Spacer(1, 0.3*cm))
