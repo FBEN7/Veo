@@ -1,0 +1,19 @@
+{
+ "title": "goals v8: the possible-goals rule with a minimum of players present",
+ "written": "2026-11-12, before any number with the change is computed",
+ "owner request": "2026-11-12: option 1 (the club enters each half's kick-off time); the half-time inside a whole-match file must not add candidates",
+ "why": "goals_v7 (simulated whole recordings, true starts): the few people on the pitch at half-time form chance 'formations', 3.8-5.6 extra candidates per match. A share computed on 1-3 people is noise.",
+ "change": "src/goal_candidates.find: a 1-s sample counts for the formation only if >= 6 team-labelled players are present (n, as match_periods); below that its share is missing (it breaks a run). Nothing else changes (cell T 0.75 / R none / N 3, attack_end, 10-60 s).",
+ "measures": {
+  "20 halves, frozen cell (in-sample)": "restartable goals hit, candidates and false runs per match, scorer right (attack_end), against goals_v6 (41/41, 11.3, 7.2, 39/41)",
+  "20 halves, held out": "goals_v5's formation-only leave-one-match-out over T x R x N with the same key, against goals_v5 (40/41, 7.1 false runs per match)",
+  "simulated recordings (goals_v7's build, V0-V3, seeds unchanged, true starts)": "candidates inside the half-time per match; hits, false runs and right scorers of the list"
+ },
+ "bar (adopt the change if all hold)": [
+  "frozen cell: hits 41/41 and scorer right >= 39/41",
+  "held out: hits >= 40/41 and false runs per match <= 7.1",
+  "simulated: half-time candidates <= 0.5 per match in every variant"
+ ],
+ "cost": "local CPU, minutes",
+ "what this cannot show": "real half-times (who stays on the pitch, children playing, kit labels of non-players); the owner's recordings are the test"
+}
