@@ -2686,3 +2686,30 @@ clips + windows (new), leave one match out, 3 seeds (`negatives.json`):
 - Next (owner 2026-11-13: "avoid false alarms, run the analysis"):
   `shots_learn/diagnose/` (plan + addendum hashed): errors by our ball's
   state, and the spotter refitted with the annotation ball (upper bound).
+
+### Shots: where the errors come from (`shots_learn/diagnose/`, 2026-11-13)
+
+`plan.json` + `addendum1.json` (hashed first). Arm O = the negatives "new"
+spotter; arm T = the same, refitted with the ball replaced by the annotated
+action positions, interpolated in time (held at the first / last action).
+Leave one match out, 3 seeds, whole-match extrapolation (`diagnose.json`):
+
+| arm | recall 0.60: false alarms / match, precision | recall 0.80: false alarms / match, precision |
+|---|---|---|
+| O, our ball | 60, 0.21 | 205, 0.10 |
+| T, annotation ball | 28, 0.37 | 74, **0.23** |
+
+- **Primary (recall 0.80): T - O = +0.13 [+0.04, +0.18]; reading per the
+  plan: "ball is not enough"** (T < 0.50). A better ball doubles the
+  precision but leaves it far from the owner's 0.80.
+- Caveat both ways: the annotation ball sits exactly on every action
+  (optimistic) but moves in straight lines between them, so it lacks a
+  shot's real flight (speed, height) that separates it from a cross or a
+  long pass (pessimistic). It shows that knowing where the ball is at each
+  action is not enough; it does not test a real 3-D ball tracker.
+- Our ball at the 268 shots: > 3 m from the action on 150 (56%), <= 3 m on
+  102, none on 16. Miss rate 24% when > 3 m vs 13% when <= 3 m.
+- 769 false alarms (clips + windows, pooled): nearest action PASS 173,
+  DRIVE 128, none within 2 s 117, CROSS 94, SHOT 89, OUT 79, GOAL 25;
+  our ball > 3 m from that action on 423 of 652. 114 (15%) sit within 2 s
+  of a real shot or goal (duplicates or timing), the rest are other play.

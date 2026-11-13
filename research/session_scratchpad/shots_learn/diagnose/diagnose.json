@@ -1,0 +1,125 @@
+{
+ "plan sha256": {
+  "plan.json": "bf6aff8278085fad870f234e907c9493fe54254a472cff8b375adf8dca8038ef",
+  "addendum1.json": "e281ab22022e2bc8ba484a89ea1b98493b7c7e2ed35b8229c0eaa025e13d6352"
+ },
+ "units": {
+  "clips": 249,
+  "windows": 47
+ },
+ "arm T: columns dropped (empty or constant)": [
+  "has_0",
+  "b_conf_0",
+  "c_max_0",
+  "c_n_0",
+  "has_-12",
+  "c_max_-12",
+  "has_-6",
+  "c_max_-6",
+  "has_-2",
+  "c_max_-2",
+  "has_+2",
+  "c_max_+2",
+  "has_+6",
+  "c_max_+6",
+  "has_+12",
+  "c_max_+12",
+  "has_frac_1s",
+  "has_frac_pm3"
+ ],
+ "primary: whole-match precision at clip recall 0.80, T - O": 0.13,
+ "95% bootstrap over matches": [
+  0.037,
+  0.182
+ ],
+ "bootstrap draws used": 5000,
+ "reading": "ball is not enough",
+ "operating points": {
+  "O (our ball)": {
+   "0.6": {
+    "clips: recall": 0.602,
+    "clips: precision": 0.568,
+    "windows: false alarms per minute": 0.587,
+    "whole match: shots found per match": 16.2,
+    "whole match: false alarms per match": 60.1,
+    "whole match: precision": 0.212,
+    "threshold": 0.8183
+   },
+   "0.8": {
+    "clips: recall": 0.803,
+    "clips: precision": 0.299,
+    "windows: false alarms per minute": 1.899,
+    "whole match: shots found per match": 21.6,
+    "whole match: false alarms per match": 205.2,
+    "whole match: precision": 0.095,
+    "threshold": 0.5435
+   }
+  },
+  "T (annotation ball)": {
+   "0.6": {
+    "clips: recall": 0.602,
+    "clips: precision": 0.743,
+    "windows: false alarms per minute": 0.275,
+    "whole match: shots found per match": 16.2,
+    "whole match: false alarms per match": 28.0,
+    "whole match: precision": 0.366,
+    "threshold": 0.8847
+   },
+   "0.8": {
+    "clips: recall": 0.803,
+    "clips: precision": 0.512,
+    "windows: false alarms per minute": 0.66,
+    "whole match: shots found per match": 21.6,
+    "whole match: false alarms per match": 74.3,
+    "whole match: precision": 0.225,
+    "threshold": 0.5565
+   }
+  }
+ },
+ "decomposition (arm O at its recall-0.80 threshold)": {
+  "true shots": {
+   "n": 268,
+   "by our ball (found / missed)": {
+    "no ball": {
+     "found": 11,
+     "missed": 5
+    },
+    "ball > 3 m": {
+     "found": 114,
+     "missed": 36
+    },
+    "ball <= 3 m": {
+     "found": 89,
+     "missed": 13
+    }
+   }
+  },
+  "false alarms": {
+   "n": 769,
+   "by where": {
+    "clips": 507,
+    "windows": 262
+   },
+   "by nearest action": {
+    "PASS": 173,
+    "DRIVE": 128,
+    "none within 2 s": 117,
+    "CROSS": 94,
+    "SHOT": 89,
+    "OUT": 79,
+    "BALL PLAYER BLOCK": 26,
+    "GOAL": 25,
+    "HIGH PASS": 20,
+    "PLAYER SUCCESSFUL TACKLE": 9,
+    "HEADER": 5,
+    "THROW IN": 4
+   },
+   "by our ball at that action": {
+    "-": 117,
+    "ball <= 3 m": 200,
+    "ball > 3 m": 423,
+    "no ball": 29
+   }
+  }
+ }
+}
