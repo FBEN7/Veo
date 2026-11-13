@@ -1,0 +1,104 @@
+{
+ "plan_v2 sha256": "2c052419861ac33cd5c77e136e02b7b51041b58a03421f7bdb937cbe94fe5be9",
+ "units": 27,
+ "128057": {
+  "before": {
+   "coverage": 0.543,
+   "coverage any team": 0.62,
+   "fills": 0,
+   "fill precision": null,
+   "identity continuity (weighted)": 0.764
+  },
+  "after": {
+   "coverage": 0.571,
+   "coverage any team": 0.66,
+   "fills": 7085,
+   "fill precision": 0.194,
+   "identity continuity (weighted)": 0.748
+  }
+ },
+ "132831": {
+  "before": {
+   "coverage": 0.58,
+   "coverage any team": 0.632,
+   "fills": 0,
+   "fill precision": null,
+   "identity continuity (weighted)": 0.832
+  },
+  "after": {
+   "coverage": 0.745,
+   "coverage any team": 0.819,
+   "fills": 16549,
+   "fill precision": 0.514,
+   "identity continuity (weighted)": 0.813
+  }
+ },
+ "who made the action (rule C, metres)": {
+  "all": {
+   "before": {
+    "n": 533,
+    "right": 159,
+    "share": 0.298,
+    "wilson": [
+     0.261,
+     0.338
+    ],
+    "given": 0.865
+   },
+   "after": {
+    "n": 533,
+    "right": 159,
+    "share": 0.298,
+    "wilson": [
+     0.261,
+     0.338
+    ],
+    "given": 0.878
+   }
+  },
+  "128057": {
+   "before": {
+    "n": 178,
+    "right": 65,
+    "share": 0.365,
+    "wilson": [
+     0.298,
+     0.438
+    ],
+    "given": 0.882
+   },
+   "after": {
+    "n": 178,
+    "right": 65,
+    "share": 0.365,
+    "wilson": [
+     0.298,
+     0.438
+    ],
+    "given": 0.916
+   }
+  },
+  "132831": {
+   "before": {
+    "n": 355,
+    "right": 94,
+    "share": 0.265,
+    "wilson": [
+     0.222,
+     0.313
+    ],
+    "given": 0.856
+   },
+   "after": {
+    "n": 355,
+    "right": 94,
+    "share": 0.265,
+    "wilson": [
+     0.222,
+     0.313
+    ],
+    "given": 0.859
+   }
+  }
+ }
+}

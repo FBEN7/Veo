@@ -1,0 +1,37 @@
+{
+ "plan_v3 sha256": "1ef887721221f5c65ac1cdbcae925f37bc13f1518ddaa63d65f3e17a6a7e27ff",
+ "detections (old -> new)": "labelled 0.861 -> 0.857, right among labelled 0.851 -> 0.895",
+ "events' team (method A)": "0.697 -> 0.735 on 1,266 matched events",
+ "ceiling": {
+  "with a team label": 0.5221,
+  "label is the truth's side": 0.453,
+  "right among labelled": 0.8677
+ },
+ "test": {
+  "share of the left side's passes": {
+   "mean abs error, ours": 0.0708,
+   "constant 0.5": 0.0971,
+   "ours - constant, 95% over matches": [
+    -0.0857,
+    0.0292
+   ],
+   "shown": false
+  },
+  "pass success rate per team": {
+   "mean abs error, ours": 0.2452,
+   "constant (other matches' rate)": 0.0614,
+   "ours - constant, 95% over matches": [
+    0.1277,
+    0.2427
+   ],
+   "shown": false
+  },
+  "pass counts per team (descriptive)": {
+   "median relative error, ours": 0.1451,
+   "our total split 50/50": 0.1986
+  }
+ },
+ "decision": "not shown: the share error falls to 0.071 against 0.097 for 0.5, but the interval [-0.086, +0.029] includes 0; the success rate is worse than a constant (0.245 vs 0.061). Kit teams are better (detections +4.4 points among labelled, events +3.8) but not enough for passes per team. Not reported as measured.",
+ "diagnostic (exploratory, unsealed clips, old labels)": "for 1,637 truth passes and carries, our nearest player detection to the actor is beyond 3 m on 0.381 (median 2.07 m, p75 4.59 m; the truth's own positions are approximate, footpoint/diag), 'other' on 0.079, labelled on 0.54",
+ "why the success rate fails": "it needs two consecutive events' teams right: at 0.73 each, the pair agrees about 0.61 of the time, so success is underestimated by construction"
+}

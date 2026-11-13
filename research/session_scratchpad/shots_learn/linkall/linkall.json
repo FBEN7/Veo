@@ -1,0 +1,60 @@
+{
+ "plan sha256": "0fc343c93159a1de29e7c19ab18cedd9bebd67cf7a3fdd97b8f27a335b1ec720",
+ "units": 249,
+ "ball rows (all units)": {
+  "old ball rows": 49950,
+  "new ball rows": 131840
+ },
+ "variants": {
+  "v4": {
+   "AP per seed": [
+    0.6081,
+    0.6035,
+    0.6025
+   ],
+   "AP of the seed average": 0.6121,
+   "hits at the rate threshold": 162,
+   "labels": 269,
+   "AP per match": {
+    "117092": 0.382,
+    "117093": 0.829,
+    "118575": 0.587,
+    "118576": 0.609,
+    "118577": 0.7,
+    "118578": 0.533,
+    "128057": 0.52,
+    "128058": 0.881,
+    "132831": 0.497,
+    "132877": 0.66
+   }
+  },
+  "linkall": {
+   "AP per seed": [
+    0.6185,
+    0.6138,
+    0.603
+   ],
+   "AP of the seed average": 0.6157,
+   "hits at the rate threshold": 160,
+   "labels": 269,
+   "AP per match": {
+    "117092": 0.407,
+    "117093": 0.776,
+    "118575": 0.662,
+    "118576": 0.594,
+    "118577": 0.603,
+    "118578": 0.537,
+    "128057": 0.562,
+    "128058": 0.839,
+    "132831": 0.571,
+    "132877": 0.733
+   }
+  }
+ },
+ "AP difference (linkall - v4)": 0.0036,
+ "95% bootstrap over matches": [
+  -0.0352,
+  0.0502
+ ],
+ "bar met (>= +0.04, lower bound > 0)": false
+}

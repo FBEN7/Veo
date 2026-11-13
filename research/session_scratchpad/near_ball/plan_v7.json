@@ -1,0 +1,22 @@
+{
+ "plan": "near_ball plan_v7: a fixed confidence threshold of 0.20 against each clip's auto-tuned conf_player, at the roster cap (S4), on the 9 matches",
+ "date": "2026-11-03, after v6.json; before any computation below",
+ "known before": {
+  "v6 (S1)": "actor detected 0.859 (A, 0.20) vs 0.779 (A', each clip's conf_player), +0.081 [+0.063, +0.102]; unmatched per action frame 5.93 vs 3.80 (guard failed at S1)",
+  "v4 (S4, A only)": "A at S4 on 2,254 actions: actor detected 0.8465, control 0.9278, unmatched per action frame 5.597, same track +-1 s 0.8141"
+ },
+ "arms": {
+  "A": "plan_v4's A files (trk/<unit>_A.parquet), rows with in_s4",
+  "A'": "the same kernel code as plan_v4's A (track_kernel.py: track(d, every=False), inside_pitch margin 10, track_kit_features, track_depth, assign_teams_v2 with FIXED_VIEW_KIT_FEATURE and the core, filter_players), on the GPU pass's boxes with conf >= the unit's conf_player (profile.json of <run>/shots_v3s_link, embedded in the kernel); no team rule for short tracks (as the pipeline). Kaggle CPU kernel veo-nearball-track-v7."
+ },
+ "units": "the 221 units of plan_v6 (conf_player >= 0.10)",
+ "scoring": "score_v4.unit, cell (A, S4), on stages.parquet's actions of those units; A and A' each fed as the 'A' file",
+ "measures": {
+  "primary": "actor detected at S4, A - A'; 95% bootstrap over matches (score_v4.boot: 5,000, seed 0, paired); per match",
+  "guards": "unmatched detections per action frame at S4, A <= 1.2 x A'; control at S4, A >= A' - 0.01",
+  "also": "same track +-1 s of detected actors, both arms; per match"
+ },
+ "bar": "gain >= 0.03 and lower bound > 0, and both guards hold",
+ "what it decides": "bar met: propose to the owner the fixed-view player threshold at 0.20 instead of auto_tune's conf_player (a code change, not made by this plan). Not met: report which part failed; no change.",
+ "caveats stated in advance": "M9 (132831) was detected at imgsz 3840 in the original, at 4096 here; its A - A' is the threshold's effect at 4096"
+}

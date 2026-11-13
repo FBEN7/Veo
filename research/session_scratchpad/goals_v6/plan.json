@@ -1,0 +1,20 @@
+{
+ "title": "goals v6: the scoring team proposed for each possible goal (semi-automatic list)",
+ "written": "2026-11-12, before any of the new team rules below is computed",
+ "owner request": "2026-11-12: option 1 (a list of possible goals that the club confirms); about 11 candidates per match accepted; the scoring team proposed by the report and correctable by the club",
+ "why": "goals_v5 (registered) failed: the whistle does not separate kick-offs from live play. Formation only (kick-off ends, 10-60 s) found 40/41 restartable goals held out at 7.1 false runs per match (~11 candidates per match), which the owner accepts. Its team rule (kick_spot) is right on 0.68 of in-sample hits at the 41/41 cell (goals_v5/reading_tradeoff.json), under the owner's 0.9.",
+ "data": "the 20 halves of the 10 SoccerTrack v2 matches, the 1-fps people scans (.cache/formation_scan/, unchanged), BAS GOALs and actions; loading as goals_v5/score.py (kick-off ends, MATCH_S 10-60 s). M7 / M9 opened through src/unseal.py, reason 'development use, seal lifted 2026-11-05'.",
+ "candidates": "formation-only runs (goals_v3's runs, kick-off ends) at one cell of goals_v5's T x R x N grid, the cell chosen on all 20 halves by goals_v5's 'without the whistle' key (hits, then fewest false runs, then larger T, smaller R (None last), smaller N). This is the product's candidate rule; reported: hits, candidates per match.",
+ "team rules (each names the team that kicks off; the other scored)": {
+  "kick_spot": "goals_v3's: the team-labelled person nearest the spot at the run's last sample",
+  "attack_end": "formation.scorer_attack_end: the half holding the people's mean x over the 10-40 s before the run start conceded",
+  "spot_vote": "over the run's samples, the team of the team-labelled person nearest the spot; majority over the samples where that person is within 3 m (all samples if none); ties to kick_spot",
+  "circle_count": "team-labelled persons within 9.15 m of the spot summed over the run's samples; the team with more kicks off; ties to kick_spot",
+  "circle_count_last10": "circle_count over the run's last 10 samples"
+ },
+ "choice": "leave one match out: the rule with the most right teams on the other 9 matches' hits (ties in the order listed), scored on the held-out match's hits; pooled",
+ "bar": "proposed team right on >= 0.9 of held-out hits (the owner's team bar)",
+ "also reported": ["each rule's right share on all hits (in-sample)", "per match: hits, right teams, chosen rule", "share of hits where the rule gives no team"],
+ "cost": "local CPU, seconds; no video, no GPU, no Kaggle",
+ "what this cannot show": "these halves have been used to choose the candidate cell and studied before; the owner's own matches remain the test"
+}

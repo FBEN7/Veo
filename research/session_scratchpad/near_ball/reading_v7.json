@@ -1,0 +1,60 @@
+{
+ "status": "exploratory, not registered; read after v7.json",
+ "A' vs the original S4 (plan_v3), same actions": {
+  "actions": 2230,
+  "original": 0.7664,
+  "A'": 0.77,
+  "same kind": 0.9767
+ },
+ "per match": {
+  "117093": {
+   "original": 0.775,
+   "A'": 0.782,
+   "same kind": 0.993
+  },
+  "118575": {
+   "original": 0.724,
+   "A'": 0.747,
+   "same kind": 0.968
+  },
+  "118576": {
+   "original": 0.838,
+   "A'": 0.836,
+   "same kind": 0.998
+  },
+  "118577": {
+   "original": 0.732,
+   "A'": 0.732,
+   "same kind": 0.973
+  },
+  "118578": {
+   "original": 0.688,
+   "A'": 0.719,
+   "same kind": 0.962
+  },
+  "128057": {
+   "original": 0.663,
+   "A'": 0.651,
+   "same kind": 0.988
+  },
+  "128058": {
+   "original": 0.721,
+   "A'": 0.721,
+   "same kind": 1.0
+  },
+  "132831": {
+   "original": 0.832,
+   "A'": 0.804,
+   "same kind": 0.88
+  },
+  "132877": {
+   "original": 0.819,
+   "A'": 0.819,
+   "same kind": 0.993
+  }
+ },
+ "7 matches with the grass test": {
+  "original": 0.7648,
+  "A'": 0.7719
+ }
+}

@@ -1,0 +1,13 @@
+{
+ "protocol": "protocol_v4r.json (sha256 5e4ab2a09ec10fe4b182d50213e7739747cb2478d3453534f70080e6299e29ae)",
+ "kernel": "francoisbernard/veo-ball-v4r v1, 2 x T4, 3,459 s",
+ "primary": {"v4r.600": "hit@4 after the kick 0.338 -> 0.432 on 317 frames (81 shots), +0.095 [+0.064, +0.127]: passes (second use of these frames)",
+             "v4r.300 (reported)": "+0.085 [+0.055, +0.116]"},
+ "guard window st2_118578_2nd_f037500 (187 verified balls)": {"v3b": "hit@4 0.984, hit@1 0.941", "v4rA.600": "hit@4 0.979 (-0.005), hit@1 0.872 (-0.069)", "v4rB.600": "hit@4 0.973 (-0.011), hit@1 0.872 (-0.069)",
+   "verdict": "hit@4 passes; hit@1 fails for both (more than 0.05 lost)"},
+ "none frames (73, other fold's v4r.600)": "candidate in crop 0.863 -> 0.918 (+0.055): fails (limit +0.05); at >= 0.10 (indicative) 0.288 -> 0.507",
+ "spent guard st2_118578_2nd_f015000 (reported)": "hit@4 1.000 -> 0.992 / 0.985, hit@1 0.955 -> 0.902 / 0.910 (v4: 0.955 / 0.970 and 0.865)",
+ "decision": "v4r is NOT better under the registered rule (hit@1 on the guard, and false candidates in empty crops); nothing adopted; ball_v3b.1500 stays.",
+ "reading": "Distillation removed most of v4's hit@4 loss on ordinary play (-0.5 / -1.1 points instead of -4.5 / -3.0) for a slightly smaller shot gain (+9.5 instead of +11.4 points), but the ball still loses first place to another object in about 7% more ordinary frames, and empty crops get a candidate more often. Fine-tuning one detector for both jobs keeps trading one for the other.",
+ "checkpoints": ".cache/ball_v4/ball_v4r* (not in git; also in the kernel's output)"
+}

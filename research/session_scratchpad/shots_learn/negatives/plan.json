@@ -1,0 +1,27 @@
+{
+ "title": "shots: the v4 spotter retrained with ordinary play (windows away from every shot)",
+ "written": "2026-11-12, before any window is drawn, cut or run",
+ "owner request": "2026-11-12: option 1 (retrain with ordinary play, ~10 h of Kaggle GPU)",
+ "why": "shots_learn/realistic (registered): on 18 min of ordinary play the v4 spotter, trained on shot clips only, fires 0.89 false alarms per minute; extrapolated to a match, precision 0.16 at recall 0.60. It has never seen ordinary play.",
+ "windows": {
+  "draw": "numpy default_rng(20261112); per half of the 10 matches, 2 windows of 4,500 frames (3 min), start uniform over [3,000, half frames - 6,000], redrawn (up to 1,000 tries) until the window lies >= 750 frames (30 s) from every shot clip's cut range (clips_train.json, clips_test.json, kaggle/shot_clips_dev.json), from the 7 cached dev windows and from the other window of the half; the draw order is the matches in E.MATCHES order, half 1 then 2",
+  "labels": "BAS SHOT / GOAL inside a window (none expected: every one has a clip); any found is kept and reported",
+  "count": "40 windows, 120 min of ordinary play"
+ },
+ "processing": "as the shot clips (shots_learn/batches.py): cut here (st.cut_clip, crf 18), uploaded as private datasets in batches of 10, run on Kaggle by kaggle/run_windows.py (players stride 2, teams, v3b ball stride 1 with --allow-seen on the 6 matches v3 was trained on, metric_step) from the current veo-code dataset (2026-10-27: no grass test on players for a fixed view, unlike the clips of 8 matches); then here: the ball relinked without its grass test (ball_grass/relink.py's link) and v4 features (learn_v4.features_v4). Windows that fail on Kaggle are reported, not rerun more than once.",
+ "models": {
+  "baseline": "v4 as in realistic/run.py: for a held-out match, HistGradientBoosting (eval_ap's settings) fitted on the other matches' 249-unit clips, seeds 0-2, probabilities averaged",
+  "new": "the same, fitted on the other matches' clips plus their windows (new and the 7 dev windows; windows are all-negative frames)"
+ },
+ "evaluation (leave one match out, both models)": {
+  "near shots": "the held-out match's clips: detections (eval_ap.detections, 2-s matching) -> recall and false alarms near shots",
+  "ordinary play": "the held-out match's windows (new + dev): false alarms per minute",
+  "whole match": "as realistic/run.py: found = clip hits; false alarms = clip false alarms + the pooled window rate x (92 min x 10 - clip minutes); precision = found / (found + false alarms)",
+  "operating points": "per model, the threshold where the pooled clips' recall first reaches 0.60, and where it reaches 0.80; the full curve also reported"
+ },
+ "primary": "whole-match precision at clip recall 0.60, new - baseline, with a 95% bootstrap over matches (5,000 draws, seed 0)",
+ "adopt the new training if": "the precision gain at recall 0.60 is >= +0.10 with the interval above 0",
+ "also reported": ["the owner's bar (recall 0.80 with whole-match precision 0.80): met or not", "per match", "windows' labelled shots, if any"],
+ "cost": "~10 h of Kaggle T4 x2 (about 14.5 min per 3-min window), cutting here ~a few hours of CPU, uploads ~8 GB in 4 datasets",
+ "what this cannot show": "the 120 min are SoccerTrack's matches, all already used; the owner's matches remain the test"
+}

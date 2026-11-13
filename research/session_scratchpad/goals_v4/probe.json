@@ -1,0 +1,165 @@
+{
+ "plan sha256": "57f957118f86d76ca6e44366b0faf6ee6c4167ce7e4fdb60491dce1ae924cae6",
+ "halves": 20,
+ "live-play samples": 775,
+ "arms": {
+  "Y1": {
+   "per conf": {
+    "0.05": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.1": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.2": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.3": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.5": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    }
+   },
+   "c*": 0.05,
+   "recall at c*": 0.0,
+   "live rate at c*": 0.0,
+   "detect s per sample (median over halves)": 0.119
+  },
+  "Y2": {
+   "per conf": {
+    "0.05": {
+     "kick-off recall": 0.05,
+     "kick-off halves": 1,
+     "live rate": 0.0013
+    },
+    "0.1": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.2": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.3": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.5": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    }
+   },
+   "c*": 0.05,
+   "recall at c*": 0.05,
+   "live rate at c*": 0.0013,
+   "detect s per sample (median over halves)": 0.27449999999999997
+  },
+  "Y3": {
+   "per conf": {
+    "0.05": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.1": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.2": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.3": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.5": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    }
+   },
+   "c*": 0.05,
+   "recall at c*": 0.0,
+   "live rate at c*": 0.0,
+   "detect s per sample (median over halves)": 0.5765
+  },
+  "H": {
+   "per conf": {
+    "0.05": {
+     "kick-off recall": 0.05,
+     "kick-off halves": 1,
+     "live rate": 0.0052
+    },
+    "0.1": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0039
+    },
+    "0.2": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.3": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    },
+    "0.5": {
+     "kick-off recall": 0.0,
+     "kick-off halves": 0,
+     "live rate": 0.0
+    }
+   },
+   "c*": 0.05,
+   "recall at c*": 0.05,
+   "live rate at c*": 0.0052,
+   "detect s per sample (median over halves)": 0.11549999999999999
+  }
+ },
+ "chosen arm": "Y2",
+ "chosen c*": 0.05,
+ "go (recall at c* >= 0.75)": false,
+ "per half (chosen arm at c*, kick-off found)": {
+  "117092_1": false,
+  "117092_2": false,
+  "117093_1": false,
+  "117093_2": false,
+  "118575_1": false,
+  "118575_2": true,
+  "118576_1": false,
+  "118576_2": false,
+  "118577_1": false,
+  "118577_2": false,
+  "118578_1": false,
+  "118578_2": false,
+  "128057_1": false,
+  "128057_2": false,
+  "128058_1": false,
+  "128058_2": false,
+  "132831_1": false,
+  "132831_2": false,
+  "132877_1": false,
+  "132877_2": false
+ },
+ "decode s per half (median)": 86.0
+}

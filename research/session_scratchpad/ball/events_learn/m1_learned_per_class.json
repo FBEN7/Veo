@@ -1,0 +1,56 @@
+{
+ "test_E0": {
+  "pass": {
+   "TP": 61,
+   "events": 91,
+   "labels": 212,
+   "precision": 0.67,
+   "recall": 0.288,
+   "F1": 0.403
+  },
+  "carry": {
+   "TP": 83,
+   "events": 197,
+   "labels": 153,
+   "precision": 0.421,
+   "recall": 0.542,
+   "F1": 0.474
+  }
+ },
+ "test_E2": {
+  "pass": {
+   "TP": 82,
+   "events": 140,
+   "labels": 212,
+   "precision": 0.586,
+   "recall": 0.387,
+   "F1": 0.466
+  },
+  "carry": {
+   "TP": 79,
+   "events": 174,
+   "labels": 153,
+   "precision": 0.454,
+   "recall": 0.516,
+   "F1": 0.483
+  }
+ },
+ "test_L1": {
+  "pass": {
+   "TP": 163,
+   "events": 257,
+   "labels": 212,
+   "precision": 0.634,
+   "recall": 0.769,
+   "F1": 0.695
+  },
+  "carry": {
+   "TP": 100,
+   "events": 175,
+   "labels": 153,
+   "precision": 0.571,
+   "recall": 0.654,
+   "F1": 0.61
+  }
+ }
+}

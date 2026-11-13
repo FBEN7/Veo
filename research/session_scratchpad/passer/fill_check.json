@@ -1,0 +1,152 @@
+{
+ "fill 0.0 s": {
+  "passes": {
+   "n": 1847,
+   "detected (ceiling)": 0.806,
+   "A": {
+    "right": 467,
+    "share right": 0.253,
+    "wilson": [
+     0.234,
+     0.273
+    ],
+    "coverage": 0.349,
+    "precision": 0.724
+   },
+   "B": {
+    "right": 523,
+    "share right": 0.283,
+    "wilson": [
+     0.263,
+     0.304
+    ],
+    "coverage": 0.408,
+    "precision": 0.695
+   }
+  },
+  "all actions": {
+   "n": 3599,
+   "detected (ceiling)": 0.8,
+   "A": {
+    "right": 926,
+    "share right": 0.257,
+    "wilson": [
+     0.243,
+     0.272
+    ],
+    "coverage": 0.359,
+    "precision": 0.717
+   },
+   "B": {
+    "right": 1033,
+    "share right": 0.287,
+    "wilson": [
+     0.272,
+     0.302
+    ],
+    "coverage": 0.422,
+    "precision": 0.681
+   }
+  }
+ },
+ "fill 0.5 s": {
+  "passes": {
+   "n": 1847,
+   "detected (ceiling)": 0.806,
+   "A": {
+    "right": 459,
+    "share right": 0.249,
+    "wilson": [
+     0.229,
+     0.269
+    ],
+    "coverage": 0.345,
+    "precision": 0.721
+   },
+   "B": {
+    "right": 518,
+    "share right": 0.28,
+    "wilson": [
+     0.26,
+     0.301
+    ],
+    "coverage": 0.416,
+    "precision": 0.674
+   }
+  },
+  "all actions": {
+   "n": 3599,
+   "detected (ceiling)": 0.8,
+   "A": {
+    "right": 920,
+    "share right": 0.256,
+    "wilson": [
+     0.242,
+     0.27
+    ],
+    "coverage": 0.355,
+    "precision": 0.721
+   },
+   "B": {
+    "right": 1031,
+    "share right": 0.286,
+    "wilson": [
+     0.272,
+     0.301
+    ],
+    "coverage": 0.432,
+    "precision": 0.664
+   }
+  }
+ },
+ "fill 1.0 s": {
+  "passes": {
+   "n": 1847,
+   "detected (ceiling)": 0.806,
+   "A": {
+    "right": 461,
+    "share right": 0.25,
+    "wilson": [
+     0.23,
+     0.27
+    ],
+    "coverage": 0.349,
+    "precision": 0.715
+   },
+   "B": {
+    "right": 523,
+    "share right": 0.283,
+    "wilson": [
+     0.263,
+     0.304
+    ],
+    "coverage": 0.43,
+    "precision": 0.658
+   }
+  },
+  "all actions": {
+   "n": 3599,
+   "detected (ceiling)": 0.8,
+   "A": {
+    "right": 926,
+    "share right": 0.257,
+    "wilson": [
+     0.243,
+     0.272
+    ],
+    "coverage": 0.361,
+    "precision": 0.712
+   },
+   "B": {
+    "right": 1040,
+    "share right": 0.289,
+    "wilson": [
+     0.274,
+     0.304
+    ],
+    "coverage": 0.449,
+    "precision": 0.643
+   }
+  }
+ }
+}

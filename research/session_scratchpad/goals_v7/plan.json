@@ -1,0 +1,26 @@
+{
+ "title": "goals v7: the kick-offs of a whole recording (warm-up, half-time), for the possible-goals list",
+ "written": "2026-11-12, after one look at live-play separation on the 20 halves (median 0.58, p95 0.75, share >= 0.9 on 1% of samples) and at team-centroid order (inverted for most of 118577 1st, so not used); before any detector output",
+ "owner request": "2026-11-12: option 2 (one file for the match, or a recording that starts before the kick-off): detect the kick-offs automatically",
+ "why": "src/goal_candidates.py needs each half's kick-off time (ends from its first 10 s, 60-s exclusion). SoccerTrack halves start at the kick-off; the owner's recordings do not.",
+ "detector (src/match_periods.py)": {
+  "samples": "1-s samples of team-labelled players (goal_candidates' sampling); n = players present; s = own-half share with team 1 defending x < 0; sep = max(s, 1 - s)",
+  "periods of play": "stretches where the centred 61-s rolling median of n is >= 6; stretches less than 180 s apart merged; kept if >= 15 min long and their median sep < 0.8 (warm-ups keep the teams apart)",
+  "one long period": "a kept period over 60 min is split at the time that best separates the orientation of strongly separated samples (s >= 0.85 one way, <= 0.15 the other), both sides >= 20 min; kept if >= 0.8 of the strong samples on each side agree",
+  "kick-off": "in each period (or part), the end of the first run of >= 3 samples with sep >= 0.75 and n >= 6 starting within the period's first 180 s (searched from 120 s before the period start); if none, the period start"
+ },
+ "check on SoccerTrack (simulation, all 10 matches)": {
+  "timeline": "a whole recording built from the 1-fps scans: [pre-match] + half 1 + [half-time] + half 2; half 2's team names aligned so that the team defending x < 0 in half 1 (kick-off ends) defends x > 0 in half 2 (the teams change ends)",
+  "variants": {
+   "V0": "no pre-match; half-time 12 min with 0-3 people at random",
+   "V1": "10 min warm-up (11 players per team at random in the half it defends in half 1, redrawn each second), 6 min empty, 45 s kick-off formation (half 1's first-sample positions held, 0.5 m jitter); half-time as V0, then 45 s formation from half 2's first sample",
+   "V2": "V1 with the warm-up in the opposite halves",
+   "V3": "V1 with a half-time of 12 min with 14 people at random over the whole pitch (no drop in presence)"
+  },
+  "truth": "the first sample of each half's scan",
+  "measures": "per kick-off, detected - truth (s); the possible-goals list with the detected starts against the list with the true starts (hits on restartable goals, false runs, scorers right)",
+  "bar": "every kick-off within 10 s on all 40 recordings, and the list's hits, false runs and right scorers equal to the true-start list's"
+ },
+ "cost": "local CPU, minutes; no video",
+ "what this cannot show": "real warm-ups, line-ups and half-times: the pre-match and half-time segments are synthetic; the owner's recordings are the test"
+}

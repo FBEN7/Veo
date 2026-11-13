@@ -99,6 +99,15 @@ CONTROLS = [
      "two kits of one hue, one dull, and a bench at the touchline larger "
      "than either team: the fixed-view rule finds both teams and leaves "
      "the bench and referee out, where the default names the bench a team"),
+    ("possible goals from the kick-off formation",
+     [sys.executable, "-m", "src.goal_candidates"],
+     "a goal followed by its kick-off formation listed once with the right "
+     "scorer at three strides, the scorer following the team names, no "
+     "entry without a formation, and two halves with swapped ends"),
+    ("kick-offs of a whole recording",
+     [sys.executable, "-m", "src.match_periods"],
+     "a recording with a warm-up, two halves and a half-time off or on the "
+     "pitch: both kick-offs found within 10 s, the warm-up dropped"),
     ("ball height from its flight",
      [sys.executable, "-m", "src.ball_height"],
      "a cross and a long ball recognised as in the air and a pass as on "

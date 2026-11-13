@@ -1,0 +1,166 @@
+{
+ "plan sha256": "2f672ef8bcf4e7d0dabed51747d14b741122910fb934e77dee26de39d71ee26d",
+ "units": 249,
+ "distance per team, mean relative error": {
+  "ours": 0.0963,
+  "constant rate": 0.0503,
+  "ours - constant, 95% over matches": [
+   0.0069,
+   0.0856
+  ],
+  "shown": false,
+  "ours with the truth's teams (descriptive)": 0.1206
+ },
+ "left side's share of the distance, mean abs error": {
+  "ours": 0.0067,
+  "constant 0.5": 0.0083,
+  "ours - constant, 95% over matches": [
+   -0.0085,
+   0.0043
+  ],
+  "shown": false,
+  "ours with the truth's teams (descriptive)": 0.0179
+ },
+ "per match (m)": {
+  "117092": {
+   "left": {
+    "ours": 13721.3,
+    "ours_true_teams": 14747.7,
+    "truth": 16956.7,
+    "seconds": 858.0
+   },
+   "right": {
+    "ours": 14553.0,
+    "ours_true_teams": 14133.7,
+    "truth": 16980.4,
+    "seconds": 858.0
+   }
+  },
+  "117093": {
+   "left": {
+    "ours": 18853.9,
+    "ours_true_teams": 18828.0,
+    "truth": 20060.6,
+    "seconds": 891.0
+   },
+   "right": {
+    "ours": 18837.5,
+    "ours_true_teams": 17579.3,
+    "truth": 19844.7,
+    "seconds": 891.0
+   }
+  },
+  "118575": {
+   "left": {
+    "ours": 13779.0,
+    "ours_true_teams": 14030.9,
+    "truth": 14980.2,
+    "seconds": 759.0
+   },
+   "right": {
+    "ours": 13878.7,
+    "ours_true_teams": 12837.4,
+    "truth": 15328.2,
+    "seconds": 759.0
+   }
+  },
+  "118576": {
+   "left": {
+    "ours": 22277.0,
+    "ours_true_teams": 22769.0,
+    "truth": 24328.9,
+    "seconds": 1287.0
+   },
+   "right": {
+    "ours": 22956.8,
+    "ours_true_teams": 21403.0,
+    "truth": 25146.0,
+    "seconds": 1287.0
+   }
+  },
+  "118577": {
+   "left": {
+    "ours": 16751.3,
+    "ours_true_teams": 16974.9,
+    "truth": 19257.0,
+    "seconds": 957.0
+   },
+   "right": {
+    "ours": 16031.0,
+    "ours_true_teams": 14978.8,
+    "truth": 19103.7,
+    "seconds": 957.0
+   }
+  },
+  "118578": {
+   "left": {
+    "ours": 15865.6,
+    "ours_true_teams": 15065.1,
+    "truth": 17935.7,
+    "seconds": 924.0
+   },
+   "right": {
+    "ours": 15348.8,
+    "ours_true_teams": 16402.3,
+    "truth": 18515.1,
+    "seconds": 924.0
+   }
+  },
+  "128057": {
+   "left": {
+    "ours": 5318.9,
+    "ours_true_teams": 4767.6,
+    "truth": 5986.7,
+    "seconds": 330.0
+   },
+   "right": {
+    "ours": 5863.9,
+    "ours_true_teams": 5473.5,
+    "truth": 6630.8,
+    "seconds": 330.0
+   }
+  },
+  "128058": {
+   "left": {
+    "ours": 16915.7,
+    "ours_true_teams": 18133.5,
+    "truth": 18682.4,
+    "seconds": 858.0
+   },
+   "right": {
+    "ours": 16849.1,
+    "ours_true_teams": 15916.8,
+    "truth": 18004.2,
+    "seconds": 858.0
+   }
+  },
+  "132831": {
+   "left": {
+    "ours": 11203.2,
+    "ours_true_teams": 11291.3,
+    "truth": 11880.2,
+    "seconds": 528.0
+   },
+   "right": {
+    "ours": 10348.8,
+    "ours_true_teams": 9645.5,
+    "truth": 11186.5,
+    "seconds": 528.0
+   }
+  },
+  "132877": {
+   "left": {
+    "ours": 15765.8,
+    "ours_true_teams": 14892.9,
+    "truth": 16268.6,
+    "seconds": 825.0
+   },
+   "right": {
+    "ours": 15705.8,
+    "ours_true_teams": 14340.6,
+    "truth": 15849.7,
+    "seconds": 825.0
+   }
+  }
+ }
+}

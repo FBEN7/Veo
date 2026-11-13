@@ -1,0 +1,5 @@
+{
+ "what": "the optimised steps (players with --calibrated, ball on a range) against the same two clips run before (kernel veo-gpu-run v5 vs v6, 2026-10-21)",
+ "st2_128057_1st_f004663 (ball range 350-1076)": {"tracks.parquet": "equal", "events_v1/tracks_teams.parquet": "equal", "events_v1/tracks_merged.parquet": "equal", "events_v1/events.json": "equal (24 events)", "v3 rows in the range": "5808 / 5808, max logit diff 0.0", "time players / ball (s)": "207 / 128, was 560 / 220"},
+ "st2_132831_2nd_f005307 (ball whole clip)": {"tracks.parquet": "equal", "events_v1/tracks_teams.parquet": "equal", "events_v1/tracks_merged.parquet": "equal", "events_v1/events.json": "equal (16 events)", "v3 rows": "11408 / 11408, max logit diff 0.0", "time players (s)": "273, was 851"}
+}

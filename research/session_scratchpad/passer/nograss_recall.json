@@ -1,0 +1,34 @@
+{
+ "gpu 128057 tracks.parquet": {
+  "recall": 0.903,
+  "precision": 0.705
+ },
+ "gpu 128057 metric_v3s_link.parquet": {
+  "recall": 0.895,
+  "precision": 0.777
+ },
+ "gpu 132831 tracks.parquet": {
+  "recall": 0.65,
+  "precision": 0.79
+ },
+ "gpu 132831 metric_v3s_link.parquet": {
+  "recall": 0.647,
+  "precision": 0.82
+ },
+ "gpu_nograss 128057 tracks.parquet": {
+  "recall": 0.903,
+  "precision": 0.697
+ },
+ "gpu_nograss 128057 metric_v3s_link.parquet": {
+  "recall": 0.895,
+  "precision": 0.777
+ },
+ "gpu_nograss 132831 tracks.parquet": {
+  "recall": 0.903,
+  "precision": 0.658
+ },
+ "gpu_nograss 132831 metric_v3s_link.parquet": {
+  "recall": 0.882,
+  "precision": 0.725
+ }
+}

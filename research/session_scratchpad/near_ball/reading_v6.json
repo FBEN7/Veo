@@ -1,0 +1,83 @@
+{
+ "status": "exploratory, not registered; read after v6.json",
+ "A' (replay at each clip's conf_player) vs the original S1 (plan_v3), same actions": [
+  {
+   "match": "117093",
+   "actions": 275,
+   "original S1": 0.782,
+   "A' S1": 0.782,
+   "same kind": 1.0
+  },
+  {
+   "match": "118575",
+   "actions": 217,
+   "original S1": 0.733,
+   "A' S1": 0.756,
+   "same kind": 0.977
+  },
+  {
+   "match": "118576",
+   "actions": 421,
+   "original S1": 0.841,
+   "A' S1": 0.841,
+   "same kind": 1.0
+  },
+  {
+   "match": "118577",
+   "actions": 257,
+   "original S1": 0.743,
+   "A' S1": 0.747,
+   "same kind": 0.988
+  },
+  {
+   "match": "118578",
+   "actions": 263,
+   "original S1": 0.722,
+   "A' S1": 0.722,
+   "same kind": 1.0
+  },
+  {
+   "match": "128057",
+   "actions": 86,
+   "original S1": 0.663,
+   "A' S1": 0.663,
+   "same kind": 1.0
+  },
+  {
+   "match": "128058",
+   "actions": 251,
+   "original S1": 0.725,
+   "A' S1": 0.725,
+   "same kind": 1.0
+  },
+  {
+   "match": "132831",
+   "actions": 184,
+   "original S1": 0.864,
+   "A' S1": 0.832,
+   "same kind": 0.918
+  },
+  {
+   "match": "132877",
+   "actions": 276,
+   "original S1": 0.83,
+   "A' S1": 0.83,
+   "same kind": 0.993
+  }
+ ],
+ "all": {
+  "actions": 2230,
+  "original": 0.7785,
+  "A'": 0.7785,
+  "same kind": 0.9888
+ },
+ "7 matches with the grass test in the original": {
+  "actions": 1960,
+  "original": 0.7755,
+  "A' (no grass test)": 0.7786
+ },
+ "reading": [
+  "The replay at each clip's threshold reproduces the original on 98.9% of actions; M9 (imgsz 3840 in the original, 4096 here) is the exception (0.918).",
+  "The grass test on players cost the actor 0.3 points on the 7 matches that had it: the tracker stage's loss in plan_v3 is the auto-tuned threshold."
+ ]
+}

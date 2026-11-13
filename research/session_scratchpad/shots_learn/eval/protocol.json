@@ -1,0 +1,17 @@
+{
+ "name": "a steadier measure for the shots spotter",
+ "registered": "2026-10-30, before any of these numbers is computed",
+ "why": "the rate-matched counts (nested leave-one-match-out, threshold set to as many detections as shots) moved single matches by up to 5 hits for a null change (shots_learn/hybrid/cv_control.json); the spotter's model also draws a random 10% early-stopping split (HistGradientBoosting, early stopping on above 10,000 rows), fixed at seed 0 so far",
+ "measure": {
+  "out-of-fold probabilities": "leave-one-match-out over the 10 matches (no inner loop: no threshold is chosen), learn.model() with random_state = seed",
+  "detections": "per unit, every peak of the smoothed probability (learn_shots.peaks, NMS 1 s, threshold 0) with its smoothed value as score",
+  "event AP": "all units' detections pooled and sorted by score; a detection is right if a not-yet-matched shot label of its unit lies within 2 s (the nearest); AP = sum over right detections of the precision at their rank / number of labels",
+  "also": "AP per match; the counts at the pooled rate threshold (as many detections as labels) for reference"
+ },
+ "noise study": {
+  "seeds": [0, 1, 2],
+  "variants (features already cached)": {"v4": "features_v4 on the v3b tracks (gpu_shots3)", "control": "features_v4 on the hybrid control tracks (v3b rows through the hybrid's steps: a null change)", "hybrid": "features_v4 on the hybrid tracks", "candB": "v4 + cues from v3b candidates (shots_cand/B)", "candC": "v4 + cues from v4r candidates (shots_cand/C)"},
+  "reported": ["per variant: pooled AP per seed, mean and spread", "per variant against v4: AP difference on seed-averaged probabilities, 95% bootstrap over matches (5,000 draws, seed 0, paired)", "the null change (control - v4) in AP against the same in counts, as the noise floor"]
+ },
+ "use": "if AP's null-change spread is clearly smaller than the counts', AP on seed-averaged probabilities becomes the measure for future spotter comparisons (registered per study); past decisions stand as registered, their re-scoring here is exploratory"
+}

@@ -1,0 +1,10 @@
+{
+ "test": "M7 / M9 again after the players are re-detected without the grass test (outline 0 px; kaggle/m9_players.json)",
+ "registered": "2026-10-27, before the new runs return",
+ "inputs": "the 27 M7 / M9 clips' new players (players-only GPU run, same v3 ball rows), metric_step.py as before; results in .cache/gpu_nograss/<w>/",
+ "measures": [
+  "player recall and precision by feet matching (every 10th frame), old vs new, per match",
+  "rule C (src/passer.py) on M7 / M9 exactly as m7m9_score.py; reference: the failed registered test, 0.348 [0.309, 0.388]"
+ ],
+ "reading": "exploratory (the registered M7 / M9 test was already read once); the bar of m7m9_protocol.json (lower bound >= 0.45) is reported, not re-claimed as a registered pass"
+}

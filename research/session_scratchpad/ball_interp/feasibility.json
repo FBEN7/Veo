@@ -1,0 +1,203 @@
+{
+ "plan sha256": "d4558ed99b5665e6f3ee08c935c518f1bd347ec702384f9f17d38dcc540a6194",
+ "st2_118578_2nd_f015000": {
+  "base (link)": {
+   "n ball frames": 133,
+   "coverage": 0.955,
+   "hit 12px": 0.947,
+   "precision 12px": 0.992,
+   "precision 30px": 0.992,
+   "unknown frames given": 0.39
+  },
+  "fill line <= 0.5 s": {
+   "n ball frames": 133,
+   "coverage": 1.0,
+   "hit 12px": 0.97,
+   "precision 12px": 0.97,
+   "precision 30px": 0.97,
+   "unknown frames given": 0.966
+  },
+  "fill feet+line <= 0.5 s": {
+   "n ball frames": 133,
+   "coverage": 1.0,
+   "hit 12px": 0.962,
+   "precision 12px": 0.962,
+   "precision 30px": 0.962,
+   "unknown frames given": 0.966
+  },
+  "fill line <= 1.0 s": {
+   "n ball frames": 133,
+   "coverage": 1.0,
+   "hit 12px": 0.97,
+   "precision 12px": 0.97,
+   "precision 30px": 0.97,
+   "unknown frames given": 1.0
+  },
+  "fill feet+line <= 1.0 s": {
+   "n ball frames": 133,
+   "coverage": 1.0,
+   "hit 12px": 0.962,
+   "precision 12px": 0.962,
+   "precision 30px": 0.962,
+   "unknown frames given": 1.0
+  },
+  "fill line <= 2.0 s": {
+   "n ball frames": 133,
+   "coverage": 1.0,
+   "hit 12px": 0.97,
+   "precision 12px": 0.97,
+   "precision 30px": 0.97,
+   "unknown frames given": 1.0
+  },
+  "fill feet+line <= 2.0 s": {
+   "n ball frames": 133,
+   "coverage": 1.0,
+   "hit 12px": 0.962,
+   "precision 12px": 0.962,
+   "precision 30px": 0.962,
+   "unknown frames given": 1.0
+  },
+  "simulated occlusion, line": {
+   "hole 0.5 s": {
+    "n": 126,
+    "recovered (any)": 0.857,
+    "within 12px": 0.579,
+    "within 30px": 0.675,
+    "median error px": 5.5,
+    "by kind": {
+     "line": 108,
+     "none": 18
+    }
+   },
+   "hole 1.0 s": {
+    "n": 126,
+    "recovered (any)": 0.825,
+    "within 12px": 0.262,
+    "within 30px": 0.492,
+    "median error px": 22.7,
+    "by kind": {
+     "line": 104,
+     "none": 22
+    }
+   },
+   "hole 2.0 s": {
+    "n": 126,
+    "recovered (any)": 0.794,
+    "within 12px": 0.079,
+    "within 30px": 0.19,
+    "median error px": 67.0,
+    "by kind": {
+     "line": 100,
+     "none": 26
+    }
+   }
+  },
+  "simulated occlusion, feet+line": {
+   "hole 0.5 s": {
+    "n": 126,
+    "recovered (any)": 0.857,
+    "within 12px": 0.421,
+    "within 30px": 0.571,
+    "median error px": 15.0,
+    "by kind": {
+     "line": 69,
+     "feet": 39,
+     "none": 18
+    }
+   },
+   "hole 1.0 s": {
+    "n": 126,
+    "recovered (any)": 0.825,
+    "within 12px": 0.183,
+    "within 30px": 0.421,
+    "median error px": 28.7,
+    "by kind": {
+     "line": 79,
+     "feet": 25,
+     "none": 22
+    }
+   },
+   "hole 2.0 s": {
+    "n": 126,
+    "recovered (any)": 0.794,
+    "within 12px": 0.063,
+    "within 30px": 0.19,
+    "median error px": 67.0,
+    "by kind": {
+     "line": 91,
+     "none": 26,
+     "feet": 9
+    }
+   }
+  }
+ },
+ "st2_118578_2nd_f037500": {
+  "base (link)": {
+   "n ball frames": 187,
+   "coverage": 0.952,
+   "hit 12px": 0.941,
+   "precision 12px": 0.989,
+   "precision 30px": 0.994,
+   "unknown frames given": 0.5
+  },
+  "fill line <= 0.5 s": {
+   "n ball frames": 187,
+   "coverage": 1.0,
+   "hit 12px": 0.963,
+   "precision 12px": 0.963,
+   "precision 30px": 0.973,
+   "unknown frames given": 0.978
+  },
+  "fill line <= 1.0 s": {
+   "n ball frames": 187,
+   "coverage": 1.0,
+   "hit 12px": 0.963,
+   "precision 12px": 0.963,
+   "precision 30px": 0.973,
+   "unknown frames given": 1.0
+  },
+  "fill line <= 2.0 s": {
+   "n ball frames": 187,
+   "coverage": 1.0,
+   "hit 12px": 0.963,
+   "precision 12px": 0.963,
+   "precision 30px": 0.973,
+   "unknown frames given": 1.0
+  },
+  "simulated occlusion, line": {
+   "hole 0.5 s": {
+    "n": 176,
+    "recovered (any)": 0.812,
+    "within 12px": 0.551,
+    "within 30px": 0.716,
+    "median error px": 7.3,
+    "by kind": {
+     "line": 143,
+     "none": 33
+    }
+   },
+   "hole 1.0 s": {
+    "n": 176,
+    "recovered (any)": 0.807,
+    "within 12px": 0.25,
+    "within 30px": 0.489,
+    "median error px": 19.4,
+    "by kind": {
+     "line": 142,
+     "none": 34
+    }
+   },
+   "hole 2.0 s": {
+    "n": 176,
+    "recovered (any)": 0.773,
+    "within 12px": 0.057,
+    "within 30px": 0.165,
+    "median error px": 67.0,
+    "by kind": {
+     "line": 136,
+     "none": 40
+    }
+   }
+  }
+ }
+}

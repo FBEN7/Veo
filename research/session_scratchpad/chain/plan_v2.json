@@ -1,0 +1,17 @@
+{
+ "plan": "chain plan v2: when our ball is not within 3 m of the action (chain S1 fails), is the right ball among the detector's candidates (a selection problem) or not (a detection problem)?",
+ "date": "2026-11-05, after chain.json and reading_ball_miss.json; before any computation below",
+ "data": "the same 2,257 actions and their S1 from chain.parquet; the ball candidates of each unit's v3s_rows.parquet (the v3s detector's ~4 candidates per frame, frames 350-1075, every frame; the linked ball is always one of them), projected to pitch metres exactly as the pipeline does (src/pixel_scale.to_pitch_metres with the match's release calibration; checked identical on the linked rows)",
+ "per action, frames f - 4 .. f + 4": {
+  "candidate near": "some candidate within 3 m of the action's position",
+  "top candidate near": "in some frame, the candidate with the highest confidence is within 3 m"
+ },
+ "categories (of all actions)": {
+  "linked ok": "S1",
+  "selection, top-1": "not S1, and a top candidate near",
+  "selection, lower rank": "not S1, a candidate near but never the top one",
+  "detection": "not S1, no candidate near"
+ },
+ "reported": "the shares, overall, per action kind, per match; bootstrap over matches (5,000, seed 0) for selection (both) minus detection",
+ "reading rule": "selection (both) larger than detection, with the interval of the difference above 0: work on selection and linking first (CPU, no retraining); detection larger, interval below 0: work on the detector first (GPU); otherwise both"
+}

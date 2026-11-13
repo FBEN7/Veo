@@ -1,0 +1,20 @@
+{
+ "question": "Why does the gap between our detections' foot point and the truth box's bottom centre change sign from match to match (footpoint.json: median du -6.3 .. +6.9 px)? Truth labels (timing or image frame) or our detector?",
+ "status": "diagnostic, CPU, written before any number below is computed (owner, 2026-11-01); no fix is adopted from it",
+ "data": {
+  "clips": "the shots clips of the eight unsealed matches with truth (all but M1, whose boxes are in another frame, and the sealed M7 / M9): .cache/gpu/<w>/output_<w>/metric_v3s_link.parquet against data/shot_clips/soccertrack_v2/<w>_gt.parquet",
+  "windows": "the 3-min windows with a local video and detections (data/soccertrack_v2, .cache/gpu/<w>/metric_v3s_link.parquet), for the picture check",
+  "pairs": "player detections every 10th frame, matched to truth persons by feet at lag 0 (eval_soccertrack_v2.match_feet, 43 px); the person is then followed in the truth at other lags"
+ },
+ "tests": {
+  "A timing": "per clip, median image distance from our foot point at frame f to the same person's truth bottom centre at frame f + k, k = -12 .. +12; the best k per clip, and the share of each match's per-match median du explained by the best k",
+  "B motion": "per clip, the slope of du on the truth person's horizontal image velocity (px per frame): a slope s means the labels lag our frames by about s frames",
+  "C spatial": "after the best lag, du and dv against image position (affine in u, v): fitted on half of a match's clips and tested on the other half, against the same fitted on the other matches (as footpoint.json)",
+  "D picture": "per window, one frame, crops of the truth box (green) and ours (red) on six players spread across the panorama, enlarged; looked at for which box sits on the player's feet"
+ },
+ "readings": {
+  "labels' timing": "best k is not 0 on many clips and moving to it removes most of the per-match du: the measured error is partly the labels', the fix belongs to the evaluation",
+  "labels' frame": "no lag, but the offset is a smooth per-match function of (u, v) that holds within a match and not across, and the picture shows the truth box off the players",
+  "our detector": "the picture shows our box off the feet, the truth on them; a per-match offset then means detector bias that depends on the camera"
+ }
+}

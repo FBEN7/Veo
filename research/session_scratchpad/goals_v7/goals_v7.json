@@ -1,0 +1,1448 @@
+{
+ "sha256": {
+  "plan.json": "d3fb04f197fbe4deb80ea6d7e85e3e02d2bc1f9a21368e087382a913115fab2e",
+  "addendum1.json": "37750d712d0e7f5c8c5f4b2c1275d4632068c6694383b98082878ff74497ca1c"
+ },
+ "recordings": 40,
+ "by variant": {
+  "V0": {
+   "recordings with both kick-offs within 10 s": 9,
+   "lists equal": 9,
+   "half-time candidates (true starts), per match": 5.6
+  },
+  "V1": {
+   "recordings with both kick-offs within 10 s": 5,
+   "lists equal": 9,
+   "half-time candidates (true starts), per match": 3.8
+  },
+  "V2": {
+   "recordings with both kick-offs within 10 s": 5,
+   "lists equal": 9,
+   "half-time candidates (true starts), per match": 5.6
+  },
+  "V3": {
+   "recordings with both kick-offs within 10 s": 4,
+   "lists equal": 7,
+   "half-time candidates (true starts), per match": 0.1
+  }
+ },
+ "kick-off error s, all found": {
+  "median |e|": 3.0,
+  "max |e|": 2204.0
+ },
+ "bar met (every kick-off within 10 s, lists equal)": false,
+ "per recording": [
+  {
+   "match": "117092",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    4.0,
+    2.0
+   ],
+   "truth s": [
+    0,
+    3415
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 8,
+    "scorer right": 3,
+    "candidates": 11
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 8,
+    "scorer right": 3,
+    "candidates": 11
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 3
+  },
+  {
+   "match": "117092",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    4.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4465
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 10,
+    "scorer right": 3,
+    "candidates": 13
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 10,
+    "scorer right": 3,
+    "candidates": 13
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "117092",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    4.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4465
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 9,
+    "scorer right": 3,
+    "candidates": 12
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 9,
+    "scorer right": 3,
+    "candidates": 12
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 4
+  },
+  {
+   "match": "117092",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    4.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4465
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 5,
+    "scorer right": 3,
+    "candidates": 8
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 5,
+    "scorer right": 3,
+    "candidates": 8
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "117093",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    0.0,
+    2.0
+   ],
+   "truth s": [
+    0,
+    3425
+   ],
+   "how": [
+    "presence, period start",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 10,
+    "scorer right": 3,
+    "candidates": 14
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 10,
+    "scorer right": 3,
+    "candidates": 14
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 6
+  },
+  {
+   "match": "117093",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    -32.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4475
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 7,
+    "scorer right": 3,
+    "candidates": 11
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 7,
+    "scorer right": 3,
+    "candidates": 11
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 3
+  },
+  {
+   "match": "117093",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    -35.0,
+    -40.0
+   ],
+   "truth s": [
+    1005,
+    4475
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 9,
+    "scorer right": 3,
+    "candidates": 13
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 9,
+    "scorer right": 3,
+    "candidates": 13
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "117093",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    -41.0,
+    -34.0
+   ],
+   "truth s": [
+    1005,
+    4475
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 4,
+    "scorer right": 3,
+    "candidates": 8
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 4,
+    "scorer right": 3,
+    "candidates": 8
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "118575",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    2.0
+   ],
+   "truth s": [
+    0,
+    3594
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 35,
+    "scorer right": 3,
+    "candidates": 38
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 35,
+    "scorer right": 3,
+    "candidates": 38
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 9
+  },
+  {
+   "match": "118575",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    -40.0
+   ],
+   "truth s": [
+    1005,
+    4644
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 32,
+    "scorer right": 3,
+    "candidates": 35
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 32,
+    "scorer right": 3,
+    "candidates": 35
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 6
+  },
+  {
+   "match": "118575",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4644
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 29,
+    "scorer right": 3,
+    "candidates": 32
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 29,
+    "scorer right": 3,
+    "candidates": 32
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 3
+  },
+  {
+   "match": "118575",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    2204.0
+   ],
+   "truth s": [
+    1005,
+    4644
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 26,
+    "scorer right": 3,
+    "candidates": 29
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 31,
+    "scorer right": 3,
+    "candidates": 34
+   },
+   "lists equal": false,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "118576",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    0.0,
+    0.0
+   ],
+   "truth s": [
+    0,
+    3633
+   ],
+   "how": [
+    "presence, period start",
+    "presence, period start"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 5,
+    "scorer right": 5,
+    "candidates": 10
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 5,
+    "scorer right": 5,
+    "candidates": 10
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "118576",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    0.0,
+    0.0
+   ],
+   "truth s": [
+    1005,
+    4683
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 4,
+    "scorer right": 5,
+    "candidates": 9
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 4,
+    "scorer right": 5,
+    "candidates": 9
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 4
+  },
+  {
+   "match": "118576",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    -26.0,
+    0.0
+   ],
+   "truth s": [
+    1005,
+    4683
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 5,
+    "scorer right": 5,
+    "candidates": 10
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 5,
+    "scorer right": 5,
+    "candidates": 10
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "118576",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    0.0,
+    0.0
+   ],
+   "truth s": [
+    1005,
+    4683
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 0,
+    "scorer right": 5,
+    "candidates": 5
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 0,
+    "scorer right": 5,
+    "candidates": 5
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "118577",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    2.0
+   ],
+   "truth s": [
+    0,
+    3617
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 13,
+    "scorer right": 3,
+    "candidates": 17
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 13,
+    "scorer right": 3,
+    "candidates": 17
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 6
+  },
+  {
+   "match": "118577",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    -38.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4667
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 8,
+    "scorer right": 3,
+    "candidates": 13
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 8,
+    "scorer right": 3,
+    "candidates": 13
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 2
+  },
+  {
+   "match": "118577",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    2.0
+   ],
+   "truth s": [
+    1005,
+    4667
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 13,
+    "scorer right": 3,
+    "candidates": 18
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 13,
+    "scorer right": 3,
+    "candidates": 18
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 7
+  },
+  {
+   "match": "118577",
+   "variant": "V3",
+   "kick-offs found": 1,
+   "error s": null,
+   "truth s": [
+    1005,
+    4667
+   ],
+   "how": [
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 7,
+    "scorer right": 3,
+    "candidates": 11
+   },
+   "list, detected starts": {
+    "hits": 2,
+    "restartable": 4,
+    "false runs": 0,
+    "scorer right": 1,
+    "candidates": 2
+   },
+   "lists equal": false,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "118578",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    0.0,
+    4.0
+   ],
+   "truth s": [
+    0,
+    3534
+   ],
+   "how": [
+    "presence, period start",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 6,
+    "scorer right": 4,
+    "candidates": 10
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 6,
+    "scorer right": 4,
+    "candidates": 10
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 4
+  },
+  {
+   "match": "118578",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    1.0,
+    4.0
+   ],
+   "truth s": [
+    1005,
+    4584
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 5,
+    "scorer right": 4,
+    "candidates": 9
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 5,
+    "scorer right": 4,
+    "candidates": 9
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 3
+  },
+  {
+   "match": "118578",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    1.0,
+    4.0
+   ],
+   "truth s": [
+    1005,
+    4584
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 11,
+    "scorer right": 4,
+    "candidates": 15
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 11,
+    "scorer right": 4,
+    "candidates": 15
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 9
+  },
+  {
+   "match": "118578",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    1.0,
+    4.0
+   ],
+   "truth s": [
+    1005,
+    4584
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 2,
+    "scorer right": 4,
+    "candidates": 6
+   },
+   "list, detected starts": {
+    "hits": 4,
+    "restartable": 4,
+    "false runs": 2,
+    "scorer right": 4,
+    "candidates": 6
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "128057",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    2.0,
+    3.0
+   ],
+   "truth s": [
+    0,
+    3425
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 13,
+    "scorer right": 5,
+    "candidates": 18
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 13,
+    "scorer right": 5,
+    "candidates": 18
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 9
+  },
+  {
+   "match": "128057",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    -10.0,
+    3.0
+   ],
+   "truth s": [
+    1005,
+    4475
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 7,
+    "scorer right": 5,
+    "candidates": 12
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 7,
+    "scorer right": 5,
+    "candidates": 12
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 3
+  },
+  {
+   "match": "128057",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    -38.0,
+    3.0
+   ],
+   "truth s": [
+    1005,
+    4475
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 11,
+    "scorer right": 5,
+    "candidates": 16
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 11,
+    "scorer right": 5,
+    "candidates": 16
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 7
+  },
+  {
+   "match": "128057",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    -33.0,
+    3.0
+   ],
+   "truth s": [
+    1005,
+    4475
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 4,
+    "scorer right": 5,
+    "candidates": 9
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 4,
+    "scorer right": 5,
+    "candidates": 9
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "128058",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    0.0
+   ],
+   "truth s": [
+    0,
+    3479
+   ],
+   "how": [
+    "presence, formation",
+    "presence, period start"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 6,
+    "scorer right": 5,
+    "candidates": 11
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 6,
+    "scorer right": 5,
+    "candidates": 11
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 3
+  },
+  {
+   "match": "128058",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    1.0
+   ],
+   "truth s": [
+    1005,
+    4529
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 8,
+    "scorer right": 5,
+    "candidates": 13
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 8,
+    "scorer right": 5,
+    "candidates": 13
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "128058",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    1.0
+   ],
+   "truth s": [
+    1005,
+    4529
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 9,
+    "scorer right": 5,
+    "candidates": 14
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 9,
+    "scorer right": 5,
+    "candidates": 14
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 6
+  },
+  {
+   "match": "128058",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    1.0
+   ],
+   "truth s": [
+    1005,
+    4529
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 3,
+    "scorer right": 5,
+    "candidates": 8
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 3,
+    "scorer right": 5,
+    "candidates": 8
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  },
+  {
+   "match": "132831",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    13.0,
+    70.0
+   ],
+   "truth s": [
+    0,
+    3431
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 21,
+    "scorer right": 5,
+    "candidates": 26
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 20,
+    "scorer right": 5,
+    "candidates": 25
+   },
+   "lists equal": false,
+   "true-start candidates inside the half-time": 6
+  },
+  {
+   "match": "132831",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    13.0,
+    70.0
+   ],
+   "truth s": [
+    1005,
+    4481
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 17,
+    "scorer right": 5,
+    "candidates": 22
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 16,
+    "scorer right": 5,
+    "candidates": 21
+   },
+   "lists equal": false,
+   "true-start candidates inside the half-time": 2
+  },
+  {
+   "match": "132831",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    -7.0,
+    70.0
+   ],
+   "truth s": [
+    1005,
+    4481
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 19,
+    "scorer right": 5,
+    "candidates": 24
+   },
+   "list, detected starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 18,
+    "scorer right": 5,
+    "candidates": 23
+   },
+   "lists equal": false,
+   "true-start candidates inside the half-time": 4
+  },
+  {
+   "match": "132831",
+   "variant": "V3",
+   "kick-offs found": 1,
+   "error s": null,
+   "truth s": [
+    1005,
+    4481
+   ],
+   "how": [
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 16,
+    "scorer right": 5,
+    "candidates": 21
+   },
+   "list, detected starts": {
+    "hits": 2,
+    "restartable": 5,
+    "false runs": 28,
+    "scorer right": 2,
+    "candidates": 30
+   },
+   "lists equal": false,
+   "true-start candidates inside the half-time": 1
+  },
+  {
+   "match": "132877",
+   "variant": "V0",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    0.0
+   ],
+   "truth s": [
+    0,
+    3428
+   ],
+   "how": [
+    "presence, formation",
+    "presence, period start"
+   ],
+   "dropped": [],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 11,
+    "scorer right": 3,
+    "candidates": 14
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 11,
+    "scorer right": 3,
+    "candidates": 14
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "132877",
+   "variant": "V1",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    -19.0
+   ],
+   "truth s": [
+    1005,
+    4478
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 11,
+    "scorer right": 3,
+    "candidates": 14
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 11,
+    "scorer right": 3,
+    "candidates": 14
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 5
+  },
+  {
+   "match": "132877",
+   "variant": "V2",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    -28.0
+   ],
+   "truth s": [
+    1005,
+    4478
+   ],
+   "how": [
+    "presence, formation",
+    "presence, formation"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 12,
+    "scorer right": 3,
+    "candidates": 15
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 12,
+    "scorer right": 3,
+    "candidates": 15
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 6
+  },
+  {
+   "match": "132877",
+   "variant": "V3",
+   "kick-offs found": 2,
+   "error s": [
+    3.0,
+    -37.0
+   ],
+   "truth s": [
+    1005,
+    4478
+   ],
+   "how": [
+    "split, formation",
+    "split, formation in the new ends"
+   ],
+   "dropped": [
+    "shorter than 15 min"
+   ],
+   "list, true starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 6,
+    "scorer right": 3,
+    "candidates": 9
+   },
+   "list, detected starts": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 6,
+    "scorer right": 3,
+    "candidates": 9
+   },
+   "lists equal": true,
+   "true-start candidates inside the half-time": 0
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "question": "Owner's idea (2026-10-26): every player is always on the pitch, so a detected player can be followed through the detector's misses. Offline stitching of the pipeline's tracklets per team, gaps filled in pitch metres.",
+ "status": "exploratory, CPU, written before any run",
+ "units": "the M7 (128057) and M9 (132831) shots clips (27), their v3s_link pitch tracks; truth through src/unseal.py",
+ "stitching": "per team (team_A / team_B; 'other' left out), tracklet ends linked to later tracklet starts by one assignment (Hungarian): feasible if the gap <= 5 s and the distance <= 2 m + 8 m/s x gap; cost = distance + 0.5 x gap (s); chains get a slot id; gaps filled linearly at the players' frames",
+ "metrics (truth: players and goalkeepers, every 10th frame)": {
+  "coverage": "truth persons with a position of their team within 3 m (before: detections; after: detections + fills)",
+  "fill precision": "filled positions within 3 m of a truth person of the same side",
+  "identity continuity": "per truth person, the share of its matched frames on its most frequent track (before) / slot (after)",
+  "who made the action": "rule C (src/passer.actor) on the stitched tracks vs the original ones, the actor's position matched to the truth in pitch metres (3 m) for both, actions inside the ball range"
+ },
+ "worth pursuing if": "M9 coverage +10 points or more with fill precision >= 0.80, and C's share right not lower"
+}

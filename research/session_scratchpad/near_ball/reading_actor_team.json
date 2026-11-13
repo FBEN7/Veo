@@ -1,0 +1,27 @@
+{
+ "status": "exploratory, not registered; after v7.json",
+ "actions": 2230,
+ "label of the actor's box (share of actions)": {
+  "A": {
+   "team_A": 0.3888,
+   "team_B": 0.348,
+   "not detected": 0.1534,
+   "other": 0.1099
+  },
+  "A'": {
+   "team_B": 0.3399,
+   "team_A": 0.3354,
+   "not detected": 0.23,
+   "other": 0.0946
+  }
+ },
+ "actor detected with a team label": {
+  "A": 0.7368,
+  "A'": 0.6753
+ },
+ "gained by A (A' not detected), label in A": {
+  "team_A": 89,
+  "team_B": 65,
+  "other": 34
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "source": "Kaggle kernel francoisbernard/veo-gpu-bench version 6 (2026-10-20, 207.7 s), bench.json copied from its Output tab",
+ "gpu": "Tesla T4",
+ "torch": "2.11.0+cu128",
+ "cpus": 4,
+ "window": "st2_117093_1st_f015000",
+ "players": [
+  {"half": false, "frames": 300, "s_per_frame": 0.09953128002, "decode_s_per_frame": 0.009228617070000004, "persons_mean": 70.82},
+  {"half": true, "frames": 300, "s_per_frame": 0.048877975006666644, "decode_s_per_frame": 0.009378064516666692, "persons_mean": 77.19}
+ ],
+ "ball_gpu": {"device": "cuda", "frames": 500, "wall_s": 58.62957457900001, "wall_s_per_frame": 0.11725914915800001, "forward_s_per_frame": 0.049275846412000536, "forwards": 500},
+ "ball_cpu": {"device": "cpu", "frames": 40, "wall_s": 37.51877724899998, "wall_s_per_frame": 0.9379694312249995, "forward_s_per_frame": 0.7961904233749962, "forwards": 40},
+ "gpu_vs_cpu": {"rows_gpu": 320, "rows_cpu": 320, "max_abs_logit_diff": 5.364418029785156e-06, "max_px_diff": 0.0005547254850394134}
+}

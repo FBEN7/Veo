@@ -1,0 +1,246 @@
+{
+ "protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
+ "frozen_goals sha256": "7b43342ec4821963fcbe698b206751a413a6bbaae68ae64950ada46b5c321fe2",
+ "rule": {
+  "T": 0.85,
+  "N": 2,
+  "team rule": "kick_spot"
+ },
+ "primary": {
+  "hits": 4,
+  "restartable goals": 8,
+  "hit rate wilson95": [
+   0.215,
+   0.785
+  ],
+  "false runs": 2,
+  "minutes": 183.8,
+  "false runs per 90 min": 0.98
+ },
+ "secondary": {
+  "team right (frozen rule)": 2,
+  "team right (all rules)": {
+   "kick_spot": 2,
+   "attack_end": 4
+  },
+  "goal-time error s (run start - 22 s - goal)": {
+   "median": 1.4,
+   "mean abs": 3.7
+  },
+  "random-time baseline hits": {
+   "mean": 0.21,
+   "q975": 1,
+   "p >= observed": 0.0
+  }
+ },
+ "success": {
+  "hits >= 7/8": false,
+  "false runs <= 1": false,
+  "team right on all hits but one": false,
+  "all": false
+ },
+ "halves": [
+  {
+   "half": "117092_1st",
+   "minutes": 44.9,
+   "ends": {
+    "team_B": -1,
+    "team_A": 1
+   },
+   "runs": [
+    [
+     43000,
+     43075
+    ],
+    [
+     59675,
+     59750
+    ]
+   ],
+   "restartable_goals": [
+    42406,
+    59245
+   ],
+   "missed_by_construction": [
+    67275
+   ],
+   "matches": [
+    {
+     "goal_frame": 42406,
+     "goal_side": "left",
+     "restartable": true,
+     "run": [
+      43000,
+      43075
+     ],
+     "delay_s": 23.76,
+     "kick_spot": "team_A",
+     "kick_spot_right": false,
+     "attack_end": "team_B",
+     "attack_end_right": true
+    },
+    {
+     "goal_frame": 59245,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      59675,
+      59750
+     ],
+     "delay_s": 17.2,
+     "kick_spot": "team_A",
+     "kick_spot_right": true,
+     "attack_end": "team_A",
+     "attack_end_right": true
+    }
+   ],
+   "hits": 2,
+   "false_runs": 0,
+   "matched_non_restartable": 0,
+   "team_right": {
+    "kick_spot": 1,
+    "attack_end": 2
+   },
+   "false_run_list": [],
+   "goal-time error s": [
+    1.8,
+    -4.8
+   ]
+  },
+  {
+   "half": "117092_2nd",
+   "minutes": 45.0,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "runs": [
+    [
+     58525,
+     58725
+    ]
+   ],
+   "restartable_goals": [
+    57951
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 57951,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      58525,
+      58725
+     ],
+     "delay_s": 22.96,
+     "kick_spot": "team_A",
+     "kick_spot_right": false,
+     "attack_end": "team_B",
+     "attack_end_right": true
+    }
+   ],
+   "hits": 1,
+   "false_runs": 0,
+   "matched_non_restartable": 0,
+   "team_right": {
+    "kick_spot": 0,
+    "attack_end": 1
+   },
+   "false_run_list": [],
+   "goal-time error s": [
+    1.0
+   ]
+  },
+  {
+   "half": "132831_2nd",
+   "minutes": 45.6,
+   "ends": {
+    "team_B": -1,
+    "team_A": 1
+   },
+   "runs": [
+    [
+     5075,
+     5100
+    ]
+   ],
+   "restartable_goals": [
+    6082,
+    61071,
+    64015
+   ],
+   "missed_by_construction": [],
+   "matches": [],
+   "hits": 0,
+   "false_runs": 1,
+   "matched_non_restartable": 0,
+   "team_right": {
+    "kick_spot": 0,
+    "attack_end": 0
+   },
+   "false_run_list": [
+    [
+     5075,
+     5100
+    ]
+   ],
+   "goal-time error s": []
+  },
+  {
+   "half": "118577_2nd",
+   "minutes": 48.3,
+   "ends": {
+    "team_A": -1,
+    "team_B": 1
+   },
+   "runs": [
+    [
+     33975,
+     34000
+    ],
+    [
+     45200,
+     45675
+    ]
+   ],
+   "restartable_goals": [
+    3865,
+    33247
+   ],
+   "missed_by_construction": [],
+   "matches": [
+    {
+     "goal_frame": 33247,
+     "goal_side": "right",
+     "restartable": true,
+     "run": [
+      33975,
+      34000
+     ],
+     "delay_s": 29.12,
+     "kick_spot": "team_B",
+     "kick_spot_right": true,
+     "attack_end": "team_B",
+     "attack_end_right": true
+    }
+   ],
+   "hits": 1,
+   "false_runs": 1,
+   "matched_non_restartable": 0,
+   "team_right": {
+    "kick_spot": 1,
+    "attack_end": 1
+   },
+   "false_run_list": [
+    [
+     45200,
+     45675
+    ]
+   ],
+   "goal-time error s": [
+    7.1
+   ]
+  }
+ ]
+}

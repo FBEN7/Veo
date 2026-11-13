@@ -1,0 +1,24 @@
+{
+ "title": "shots: where the false alarms and the misses come from (ball or model)",
+ "written": "2026-11-13, before the analysis is run; negatives/score.py was still fitting (its result not read)",
+ "owner request": "2026-11-13: avoid false alarms; 'lance l'analyse' of where each error comes from",
+ "question": "Is our ball the limit of the v4 shots spotter? (a) for each error, what our linked ball was doing; (b) the spotter re-fitted with a ball as good as the annotation, same matches, same protocol.",
+ "data": "the 249 shot-clip units (eval_ap.units(), tree .cache/gpu_shots3) and the 47 ordinary-play windows (negatives: 40 new in .cache/gpu_neg_tree + 7 dev in .cache/gpu_shots_windows); labels SHOT / GOAL (learn_shots.labels); the annotated actions of each unit's events.csv (all labels, pitch metres, centre-spot origin)",
+ "arms": {
+  "O (our ball)": "v4 features as they are (metric_v3s_link.parquet ball rows, v3s candidates)",
+  "T (annotation ball)": "the same features with the ball rows replaced by the annotated action positions interpolated linearly in time between consecutive actions (frames between the unit's first and last action with a position; none outside), confidence 1, and no v3s candidates (c_max, c_n missing); players, teams and goal geometry unchanged. An upper bound: the ball is exactly where each action was annotated and moves straight between actions"
+ },
+ "fit and evaluation (both arms)": "negatives/score.py's 'new' model and evaluation unchanged: leave one match out, HistGradientBoosting with eval_ap's settings, seeds 0-2 averaged, trained on the other matches' clips + windows; detections by eval_ap (peaks, 2-s matching); whole-match precision = found / (found + clip false alarms + pooled window false alarms per minute x (92 min x 10 - clip minutes)); operating points where the pooled clips' recall first reaches 0.60 and 0.80",
+ "primary": "whole-match precision at clip recall 0.80, T - O, with a 95% bootstrap over matches (5,000 draws, seed 0)",
+ "reading": {
+  "ball is the lever": "T reaches whole-match precision >= 0.50 at recall 0.80, and T - O >= +0.20 with the interval above 0",
+  "ball is not enough": "T below 0.50 at recall 0.80: even a ball as good as the annotation leaves the spotter far from the owner's bar; the limit is the model / features / data",
+  "in between": "reported as such"
+ },
+ "decomposition (arm O, at its recall-0.80 threshold)": {
+  "true shots (found / missed)": "our linked ball within +-0.5 s of the shot frame: none; nearest > 3 m from the shot's annotated position; <= 3 m",
+  "false alarms (clips and windows)": "the nearest annotated action within +-2 s (its label, or none), and our linked ball at that action: none / > 3 m / <= 3 m"
+ },
+ "cost": "local CPU, ~1-2 h; no GPU",
+ "what this cannot show": "the owner's camera and matches; an annotation ball is not a detector anyone has"
+}

@@ -1,0 +1,614 @@
+{
+ "units": 223,
+ "plan sha256": "b1ff6326d1e6dfffc89229a90a8b334e82c91d468fdbc2d3fc1d94d3315181f6",
+ "unseen": {
+  "passes (primary)": {
+   "n": 214,
+   "detected (ceiling)": 0.28,
+   "A": {
+    "right": 13,
+    "share right": 0.061,
+    "wilson": [
+     0.036,
+     0.101
+    ],
+    "coverage": 0.327,
+    "precision": 0.186
+   },
+   "B": {
+    "right": 16,
+    "share right": 0.075,
+    "wilson": [
+     0.047,
+     0.118
+    ],
+    "coverage": 0.43,
+    "precision": 0.174
+   }
+  },
+  "all actions": {
+   "n": 418,
+   "detected (ceiling)": 0.278,
+   "A": {
+    "right": 24,
+    "share right": 0.057,
+    "wilson": [
+     0.039,
+     0.084
+    ],
+    "coverage": 0.337,
+    "precision": 0.17
+   },
+   "B": {
+    "right": 33,
+    "share right": 0.079,
+    "wilson": [
+     0.057,
+     0.109
+    ],
+    "coverage": 0.433,
+    "precision": 0.182
+   }
+  },
+  "per label": {
+   "BALL PLAYER BLOCK": {
+    "n": 7,
+    "detected (ceiling)": 0.143,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.354
+     ],
+     "coverage": 0.714,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.354
+     ],
+     "coverage": 0.714,
+     "precision": 0.0
+    }
+   },
+   "CROSS": {
+    "n": 15,
+    "detected (ceiling)": 0.0,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      -0.0,
+      0.204
+     ],
+     "coverage": 0.4,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 1,
+     "share right": 0.067,
+     "wilson": [
+      0.012,
+      0.298
+     ],
+     "coverage": 0.6,
+     "precision": 0.111
+    }
+   },
+   "DRIVE": {
+    "n": 153,
+    "detected (ceiling)": 0.314,
+    "A": {
+     "right": 11,
+     "share right": 0.072,
+     "wilson": [
+      0.041,
+      0.124
+     ],
+     "coverage": 0.288,
+     "precision": 0.25
+    },
+    "B": {
+     "right": 15,
+     "share right": 0.098,
+     "wilson": [
+      0.06,
+      0.155
+     ],
+     "coverage": 0.366,
+     "precision": 0.268
+    }
+   },
+   "FREE KICK": {
+    "n": 2,
+    "detected (ceiling)": 0.5,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.658
+     ],
+     "coverage": 0.5,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.658
+     ],
+     "coverage": 0.5,
+     "precision": 0.0
+    }
+   },
+   "HEADER": {
+    "n": 2,
+    "detected (ceiling)": 0.0,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.658
+     ],
+     "coverage": 0.5,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.658
+     ],
+     "coverage": 0.5,
+     "precision": 0.0
+    }
+   },
+   "HIGH PASS": {
+    "n": 18,
+    "detected (ceiling)": 0.278,
+    "A": {
+     "right": 1,
+     "share right": 0.056,
+     "wilson": [
+      0.01,
+      0.258
+     ],
+     "coverage": 0.389,
+     "precision": 0.143
+    },
+    "B": {
+     "right": 3,
+     "share right": 0.167,
+     "wilson": [
+      0.058,
+      0.392
+     ],
+     "coverage": 0.389,
+     "precision": 0.429
+    }
+   },
+   "PASS": {
+    "n": 181,
+    "detected (ceiling)": 0.304,
+    "A": {
+     "right": 12,
+     "share right": 0.066,
+     "wilson": [
+      0.038,
+      0.112
+     ],
+     "coverage": 0.315,
+     "precision": 0.211
+    },
+    "B": {
+     "right": 12,
+     "share right": 0.066,
+     "wilson": [
+      0.038,
+      0.112
+     ],
+     "coverage": 0.42,
+     "precision": 0.158
+    }
+   },
+   "PLAYER SUCCESSFUL TACKLE": {
+    "n": 10,
+    "detected (ceiling)": 0.1,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      -0.0,
+      0.278
+     ],
+     "coverage": 0.4,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      -0.0,
+      0.278
+     ],
+     "coverage": 0.5,
+     "precision": 0.0
+    }
+   },
+   "SHOT": {
+    "n": 25,
+    "detected (ceiling)": 0.12,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.133
+     ],
+     "coverage": 0.52,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 2,
+     "share right": 0.08,
+     "wilson": [
+      0.022,
+      0.25
+     ],
+     "coverage": 0.72,
+     "precision": 0.111
+    }
+   },
+   "THROW IN": {
+    "n": 5,
+    "detected (ceiling)": 0.4,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      -0.0,
+      0.434
+     ],
+     "coverage": 0.6,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      -0.0,
+      0.434
+     ],
+     "coverage": 0.6,
+     "precision": 0.0
+    }
+   }
+  }
+ },
+ "seen by v3": {
+  "passes": {
+   "n": 1847,
+   "detected (ceiling)": 0.806,
+   "A": {
+    "right": 467,
+    "share right": 0.253,
+    "wilson": [
+     0.234,
+     0.273
+    ],
+    "coverage": 0.349,
+    "precision": 0.724
+   },
+   "B": {
+    "right": 523,
+    "share right": 0.283,
+    "wilson": [
+     0.263,
+     0.304
+    ],
+    "coverage": 0.408,
+    "precision": 0.695
+   }
+  },
+  "all actions": {
+   "n": 3599,
+   "detected (ceiling)": 0.8,
+   "A": {
+    "right": 926,
+    "share right": 0.257,
+    "wilson": [
+     0.243,
+     0.272
+    ],
+    "coverage": 0.359,
+    "precision": 0.717
+   },
+   "B": {
+    "right": 1033,
+    "share right": 0.287,
+    "wilson": [
+     0.272,
+     0.302
+    ],
+    "coverage": 0.422,
+    "precision": 0.681
+   }
+  },
+  "per label": {
+   "BALL PLAYER BLOCK": {
+    "n": 78,
+    "detected (ceiling)": 0.641,
+    "A": {
+     "right": 10,
+     "share right": 0.128,
+     "wilson": [
+      0.071,
+      0.22
+     ],
+     "coverage": 0.462,
+     "precision": 0.278
+    },
+    "B": {
+     "right": 13,
+     "share right": 0.167,
+     "wilson": [
+      0.1,
+      0.265
+     ],
+     "coverage": 0.603,
+     "precision": 0.277
+    }
+   },
+   "CROSS": {
+    "n": 119,
+    "detected (ceiling)": 0.538,
+    "A": {
+     "right": 34,
+     "share right": 0.286,
+     "wilson": [
+      0.212,
+      0.373
+     ],
+     "coverage": 0.504,
+     "precision": 0.567
+    },
+    "B": {
+     "right": 37,
+     "share right": 0.311,
+     "wilson": [
+      0.235,
+      0.399
+     ],
+     "coverage": 0.563,
+     "precision": 0.552
+    }
+   },
+   "DRIVE": {
+    "n": 1356,
+    "detected (ceiling)": 0.833,
+    "A": {
+     "right": 371,
+     "share right": 0.274,
+     "wilson": [
+      0.251,
+      0.298
+     ],
+     "coverage": 0.346,
+     "precision": 0.791
+    },
+    "B": {
+     "right": 412,
+     "share right": 0.304,
+     "wilson": [
+      0.28,
+      0.329
+     ],
+     "coverage": 0.402,
+     "precision": 0.756
+    }
+   },
+   "FREE KICK": {
+    "n": 19,
+    "detected (ceiling)": 0.947,
+    "A": {
+     "right": 7,
+     "share right": 0.368,
+     "wilson": [
+      0.191,
+      0.59
+     ],
+     "coverage": 0.421,
+     "precision": 0.875
+    },
+    "B": {
+     "right": 4,
+     "share right": 0.211,
+     "wilson": [
+      0.085,
+      0.433
+     ],
+     "coverage": 0.421,
+     "precision": 0.5
+    }
+   },
+   "HEADER": {
+    "n": 7,
+    "detected (ceiling)": 0.143,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.354
+     ],
+     "coverage": 0.143,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.354
+     ],
+     "coverage": 0.286,
+     "precision": 0.0
+    }
+   },
+   "HIGH PASS": {
+    "n": 191,
+    "detected (ceiling)": 0.791,
+    "A": {
+     "right": 53,
+     "share right": 0.277,
+     "wilson": [
+      0.219,
+      0.345
+     ],
+     "coverage": 0.335,
+     "precision": 0.828
+    },
+    "B": {
+     "right": 55,
+     "share right": 0.288,
+     "wilson": [
+      0.228,
+      0.356
+     ],
+     "coverage": 0.361,
+     "precision": 0.797
+    }
+   },
+   "PASS": {
+    "n": 1537,
+    "detected (ceiling)": 0.828,
+    "A": {
+     "right": 380,
+     "share right": 0.247,
+     "wilson": [
+      0.226,
+      0.269
+     ],
+     "coverage": 0.339,
+     "precision": 0.729
+    },
+    "B": {
+     "right": 431,
+     "share right": 0.28,
+     "wilson": [
+      0.259,
+      0.303
+     ],
+     "coverage": 0.401,
+     "precision": 0.699
+    }
+   },
+   "PLAYER SUCCESSFUL TACKLE": {
+    "n": 58,
+    "detected (ceiling)": 0.638,
+    "A": {
+     "right": 16,
+     "share right": 0.276,
+     "wilson": [
+      0.178,
+      0.402
+     ],
+     "coverage": 0.362,
+     "precision": 0.762
+    },
+    "B": {
+     "right": 12,
+     "share right": 0.207,
+     "wilson": [
+      0.123,
+      0.328
+     ],
+     "coverage": 0.379,
+     "precision": 0.545
+    }
+   },
+   "SHOT": {
+    "n": 187,
+    "detected (ceiling)": 0.738,
+    "A": {
+     "right": 55,
+     "share right": 0.294,
+     "wilson": [
+      0.233,
+      0.363
+     ],
+     "coverage": 0.551,
+     "precision": 0.534
+    },
+    "B": {
+     "right": 69,
+     "share right": 0.369,
+     "wilson": [
+      0.303,
+      0.44
+     ],
+     "coverage": 0.701,
+     "precision": 0.527
+    }
+   },
+   "THROW IN": {
+    "n": 47,
+    "detected (ceiling)": 0.362,
+    "A": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.076
+     ],
+     "coverage": 0.17,
+     "precision": 0.0
+    },
+    "B": {
+     "right": 0,
+     "share right": 0.0,
+     "wilson": [
+      0.0,
+      0.076
+     ],
+     "coverage": 0.191,
+     "precision": 0.0
+    }
+   }
+  }
+ },
+ "unseen passes per match": {
+  "117092": {
+   "n": 214,
+   "detected (ceiling)": 0.28,
+   "A": {
+    "right": 13,
+    "share right": 0.061,
+    "wilson": [
+     0.036,
+     0.101
+    ],
+    "coverage": 0.327,
+    "precision": 0.186
+   },
+   "B": {
+    "right": 16,
+    "share right": 0.075,
+    "wilson": [
+     0.047,
+     0.118
+    ],
+    "coverage": 0.43,
+    "precision": 0.174
+   }
+  }
+ }
+}

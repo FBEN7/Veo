@@ -1,0 +1,15 @@
+{
+ "written": "2026-10-21, after frozen_shots.json was written and hashed; diagnostic only, chooses nothing",
+ "dev units": "34 (8 windows, 26 clips), 32 SHOT/GOAL labels after the M7 overlap mask",
+ "frozen choice": "SHOT_MIN_KMH 40, SHOT_MAX_DIST_FROM_GOAL_M 35, SHOT_MOUTH_MARGIN_M 3: F1 0.053 (1 hit, 5 false, 31 missed); no cell of the grid hits more than 1 of 32",
+ "where the shots go (recall at 2 s, events)": {
+  "grid loosest (30 km/h, 35 m, mouth 5 m), team filter on": "1/32, 9",
+  "same, team filter off": "2/32, 21",
+  "off grid: 30 km/h, 50 m, no mouth rule, team filter on": "3/32, 80",
+  "same, team filter off": "10/32, 150",
+  "off grid: 10 km/h, 50 m, no mouth rule, team filter on": "11/32, 254",
+  "same, team filter off": "21/32, 506"
+ },
+ "reading": "the data are sound (two teams and an attacked goal on every clip, ball on 25-60% of detected frames); the registered rule is too strict for the linked v3 ball at stride 2, and the attacked-goal team filter removes about half of what remains. Recall only rises with many times more events than labels: no usable operating point on dev.",
+ "test": "the registered success needs recall >= 16/29 on M1; dev reaches at most 1/32 inside the grid"
+}

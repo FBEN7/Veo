@@ -1,0 +1,5 @@
+{
+ "written": "2026-11-02, after plan.json and before any feature, event or number was computed",
+ "why": "the clips' ball rows cover frames 350-1075 only (about 29 s of each 57-s clip): the spotter has no ball input outside",
+ "change": "everything (features, labels, events, truth passes and their next actions) is restricted to frames 350-1075 of each clip; a next action after frame 1075 counts as none"
+}

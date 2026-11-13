@@ -1382,6 +1382,1097 @@ result-neutral):
 - Retuning a handful of hand rules is not the lever. Learned events, or
   a much larger tuning set, are what is left.
 
+### M1's camera refitted, the test rerun (amendment 2; exploratory)
+
+**Corrected after an adversarial review.** The first version of this section
+said that M1's calibration was broken and that the other releases were
+imperfect too. Both claims were wrong. The checks below are the corrected
+reading.
+
+**The fault is a frame mismatch, not a bad calibration.**
+- The release calibration agrees with the release's own labels. The truth's
+  box feet, projected, land a median 0.36-0.41 m from the truth's positions
+  on all four M1 windows, which is the same as on other matches.
+- M1's labels, boxes and homography alike, sit in a different pixel frame
+  from the video:
+  - 99% of the truth's box feet are at v <= 960-1040;
+  - our detections reach v ~1510-1670.
+- No vertical affine maps the one onto the other: the best still leaves a
+  median of 42-63 px.
+- Our detections' feet, projected with the release, sit a median 1.8-1.9 m
+  from the truth's positions; only 0.24-0.32 of them fall within 3 m.
+
+**The refit (`calib_fix/fit_players.py`) is a warp, not a camera.**
+- What it fits: the inverse homography and K's vertical intrinsics, against
+  the truth's positions on 1st f001500 and 2nd f000000.
+- What it does: it brings our detections' feet to a median 0.64-0.67 m on
+  the two other windows. One-to-one matching gives the same median (about
+  0.9 m near the goals).
+- Why it is not a camera:
+  - its parameters are non-physical: fy goes from 946 to 70,026;
+  - the homography's u column shrinks to 1-7%;
+  - it maps our player boxes' bottoms, foot-point bias included, and
+    nothing else.
+- **Do not use it for ball, shot or goal geometry.**
+- A physical fix would fit the camera to the release's pitch-line outline,
+  which is in the video's frame (`src/soccertrack_v2.py`).
+
+**The other releases are fine; our foot point is not** (`.cache/calib_diag/`
+holds refits of M6/M7/M9, kept only as evidence; do not use them).
+- The release projects the truth's box feet to 0.30-0.50 m on M6, M7 and M9.
+- Our detections' feet sit 0.9-1.4 m off. The difference is our detector's
+  foot point:
+  - our boxes are taller (median crop_h 43-51 px against the truth's 40-45);
+  - they sit a median ~20 px from the truth's feet in the image, which is
+    metres at the panorama's ends.
+- The refits there make the truth's feet worse: 2.55 m on M6's 2nd half,
+  and 13.7 m near the goals.
+- ~~So position accuracy is limited by the detector's foot point.~~
+  **Withdrawn (2026-11-01, `footpoint/diag/`):** the gap is mostly the
+  truth's own box placement, not our foot point (see "Why the foot-point
+  gap is match-specific" below).
+
+**The M1 events test rerun** under the refit (same frozen code and rules,
+`m1_cf_*.json`). This is exploratory:
+- the amendment came about 5 h after the registered result had been read;
+- it was fitted on the player truth of two of the four test windows.
+
+The registered primary stays the release run: **not shown**.
+
+| setup | F1 at 1 s, release → refit | above chance, release → refit |
+|---|---|---|
+| E0 | 0.420 → 0.441 | +0.097 → +0.111 |
+| E1 | 0.450 → 0.460 | +0.108 → +0.120 |
+| E2 | 0.468 → 0.474 | +0.109 → +0.111 |
+
+- E2 minus E0 is +0.033, 95% [-0.024, +0.090]; E1 minus E0 is +0.019
+  [-0.038, +0.074]. Same reading: not shown.
+- The positions were worth about +0.01-0.02 in F1 on every setup. They are
+  not what holds events back.
+
+### Learned events: shown better than the rules on M1 (`events_learn/`)
+
+**The model (`learn.py`):** per detection frame, features of the ball and
+of the players around it, with offsets of up to ±12 frames. One
+gradient-boosted classifier per class answers "a pass / a carry starts
+within 0.24 s". Events are the peaks of its smoothed probability, at least
+0.6 s apart.
+- The threshold per class is set by event rate: it is chosen so that the
+  training matches' own out-of-fold events number as many as their labels.
+- An earlier choice maximised F1 on the scored folds themselves. It was
+  optimistic (+0.240 against +0.205 on three windows), so it was dropped.
+
+**Training:** 9 windows of M2, M3, M4, M6 (both halves), M7, M8, M9 and M10,
+450 pass + carry labels. The ball input is v3, static points dropped, linked.
+
+**Cross-validation:** nested, leaving one match out. Pooled F1 at 1 s is
+0.673 against a chance of 0.269, or **+0.405** above chance.
+- On the windows whose ball v3 never trained on: M7 +0.43, M9 +0.20.
+- On M6 2nd, which was in v3's selection set: +0.48.
+- The other windows come from matches v3 trained on, so their ball is
+  better than on new footage.
+
+**The M1 test** (`m1_learned_registration.json`, registered before any M1
+feature was computed):
+- This is a second use of M1, on the owner's choice; it is weaker
+  evidence than fresh footage.
+- It runs under M1's refit, like the E0 rerun it is compared with.
+- It was scored once.
+
+| setup | events | F1 at 1 s | chance | above chance |
+|---|---|---|---|---|
+| E0 rules (current) | 288 | 0.441 | 0.330 | +0.111 |
+| E2 rules (retuned) | 314 | 0.474 | 0.363 | +0.111 |
+| **L1 learned** | 432 | **0.660** | 0.407 | **+0.253** |
+
+- **Primary: L1 minus E0 is +0.219 in F1, 95% [+0.166, +0.271] over 72
+  blocks. Shown.** L1 minus E2 is +0.186 [+0.131, +0.238].
+- L1 is above chance by +0.23 to +0.28 on each of the four windows,
+  2nd f027000 included, where the rules fell to chance.
+- Per class (`m1_learned_per_class.json`):
+
+  | class | precision, E0 → L1 | recall, E0 → L1 | F1, E0 → L1 |
+  |---|---|---|---|
+  | passes | 0.67 → 0.63 | 0.29 → 0.77 | 0.40 → 0.70 |
+  | carries | 0.42 → 0.57 | 0.54 → 0.65 | 0.47 → 0.61 |
+
+- **What this does not show:**
+  - who made the action: the player is not scored;
+  - whether a pass succeeded, or how far it went;
+  - anything on footage of another camera or club.
+
+  Per-player counts still need identities.
+
+### Goals by the kick-off formation, and the shot ball gate (`shots_goals/`)
+
+**Protocol** (`protocol.json`, `protocol_notes.json`, `gate_recheck.json`; all
+hashed before use):
+- **The rule:** a goal is followed by a kick-off. Before it, the people of
+  both teams stand in their own halves. A formation run is a stretch of 1-s
+  samples where the share of people in their own half is at least T, for at
+  least N samples. A run matches a goal if it starts 15-60 s after it.
+- **Choice on ground truth** (14 dev halves): T 0.85, N 2. It finds 26 of 26
+  goals, with 0 false runs in 656 min; random times find about 1.
+- **Re-choice on the dev half's detections** (M7 2nd, 1-fps yolov8s scan):
+  the same T 0.85, N 2, 5/5 goals, 0 false runs. Frozen in
+  `frozen_goals.json`.
+
+**The registered test** (`goals_test.json`, scored once): 4 test halves, 8
+restartable goals, 184 min.
+
+| half | goals | hits | false runs |
+|---|---|---|---|
+| M1 1st | 2 | 2 | 0 |
+| M1 2nd | 1 | 1 | 0 |
+| M9 2nd | 3 | 0 | 1 |
+| M5 2nd | 2 | 1 | 1 |
+| **total** | **8** | **4** (Wilson [0.22, 0.79]) | **2** (0.98 per 90 min) |
+
+- **Fails all three registered criteria:**
+  - 7/8 hits needed; 4/8 found.
+  - At most 1 false run allowed; 2 occurred.
+  - The scoring team had to be right on every hit but one; it was right on
+    2 of 4.
+- Random-time runs find 0.21 goals on average (p = 0 for 4).
+- **Team rule:** the frozen rule (the person nearest the spot kicks off) is
+  right 2/4 times. The other rule (where play was in the 10-40 s before) is
+  right 4/4, as it was 5/5 on dev. The frozen choice was a grid-order tie on
+  ground truth.
+- **Why it fails (descriptive, after the test):**
+  - **M9 2nd:** the two detected "teams" have almost the same mean x
+    (-1.2 and -2.2 m). Kit clustering did not separate them, and the share
+    peaks at 0.82-0.88 after its goals.
+  - **M5 2nd:** one goal had 2 samples at or above 0.85, but not
+    consecutive. The false run is a 19-s stoppage.
+  - **M1:** clean peaks (0.94-1.0).
+- **So the rule holds where teams are told apart, and team assignment is
+  the limit.** Next:
+  - teams per track rather than per detection, or a split per sample
+    robust to label swaps;
+  - the second team rule;
+  - a test on halves not yet used.
+
+**The shot ball gate:**
+- **The question:** is the ball seen near the shooter and along the shot,
+  on footage v3 never trained on?
+- **Data:** 26 attempts on M7 1st and M9 2nd. v3 runs on [-1, +2.2] s; the
+  painted marks are dropped.
+- **The criterion:** at least 2 frames with a candidate within 4 m of the
+  shooter, and at least 2 frames within 4 m of the shooter-to-goal segment.
+- **Result: GO, 19/26 reachable** (Wilson [0.54, 0.86]). By half: M7 1st
+  3/10, M9 2nd 16/16.
+- **A placebo** pairs one attempt's candidates with another attempt's
+  geometry. It is reachable on 0.07 (M7) and 0.15 (M9) of pairs, so the
+  hits are not clutter.
+- **The reproducibility check failed** on one attempt. The planning agent's
+  read-only measurement of M9 f2296 was wrong: its ball moves 5 m towards
+  the goal in 0.2 s. This was recorded in `gate_recheck.json` before any
+  scoring.
+- **The shots test is registered** (`protocol_shots.json`): dev on the gate
+  clips, then all 29 M1 attempts, recall at 2 s. Its dev failed and the
+  test was not run (below).
+
+### GPU on Kaggle (`research/session_scratchpad/kaggle/`)
+
+- **Setup:** private Kaggle kernels driven by the Kaggle API from here, T4
+  x2, no internet (wheels, weights and resnet18 come in a private dataset).
+  Data go up as private datasets (CC BY 4.0). M7 / M9 clips are cut here
+  through `src/unseal.py` (every opening logged); `VEO_UNSEAL` never leaves
+  this machine, and the test-match guard is lifted on Kaggle only for the
+  units listed in `opened.json` (owner decision).
+- **Speed:** yolov8s at full width 0.10 s/frame (fp32), the v3 ball 0.12
+  s/frame, against 1.0-1.6 and ~1.2 on CPU. A whole 3-minute window
+  (players, teams and events_v1, dense v3) takes about 14.5 min with the
+  players and the ball on separate GPUs, about 2.5 h on CPU. A 57-s clip
+  still costs ~10 min (fixed costs per run).
+- **GPU equals CPU:** on 7 windows the player rows, tracks, teams and
+  events_v1 are identical to the CPU runs (one extra player row in
+  ~40,000 on M6 1st); the v3 rows are identical where a CPU run exists (max
+  shift 0.0008 px). `compare_*.json`.
+- **Backend note** (`backend_note.json` + addendum, hashed before the
+  shots dev): all on T4 fp32, supervision 0.30.9, ultralytics 8.4.183.
+
+### Shots (`protocol_shots.json`): the dev fails, the test is not run
+
+- **Dev:** 8 windows and the 26 gate attempts as clips (-15 s / +10 s,
+  cut with 400 frames each side for v3's background; owner decision), all
+  on the T4. Two M7 attempts lie both in a clip and in the M7 window: they
+  count once, in their clip.
+- **Frozen** (`frozen_shots.json`): 40 km/h, 35 m, mouth margin 3 m.
+  **Dev F1 0.053: 1 of 32 attempts found, 5 false shots.** No cell of the
+  80 finds more than 1.
+- **Why** (`shots_dev_diagnostic.json`, after the freeze): the data are
+  sound (both teams and an attacked goal on every clip, the ball on 25-60%
+  of detected frames). The rule is too strict for the linked v3 ball, and
+  the attacked-goal filter removes about half of what remains. Off the
+  grid, recall rises only with 15-25 times more events than shots (21/32
+  with 506 events).
+- **The M1 test was not run** (owner decision, `shots_decision.json`): it
+  needs 16/29, and dev reaches 1/32. This is a deviation from the
+  protocol; no M1 shot output exists.
+- **So shots are not available from this rule.** A later attempt needs a
+  different detector (for example the learned spotter extended to shots),
+  a team filter that does not rest on kit clustering, and a new
+  registration.
+
+### Learned shot spotter, tested on M5 (`shots_learn/`)
+
+- **Protocol** (`protocol.json`, hashed before any data): the learned
+  pass/carry spotter's features plus goal geometry, one class 'shot';
+  trained on the clips around all 210 SHOT/GOAL of M1, M2, M3, M4, M6, M8,
+  M10 (194 clips) plus 7 windows; test M5 (29 clips, 33 attempts), batches
+  in a registered random order with an early stop when success is out of
+  reach (owner decision). Success: recall >= 18/33 at 2 s and precision >=
+  0.50. All on the Kaggle T4 (clips cut here, ~1.2 min each, uploaded).
+- **Dev** (nested leave-one-match-out, 216 shots): recall 0.54, precision
+  0.52; gate (0.45 / 0.40) passed; frozen (threshold 0.825). Weak on M1
+  (7/29) and M6 (8/30), strong on M2 (24/29) and M8 (22/29).
+- **Test: fails by one shot.** Recall **17/33 = 0.52** (Wilson [0.35,
+  0.68]); precision **0.61** (17 of 28). The early stop never fired. The
+  rule on the same spans: 2/33.
+- **Disclosed:** v3 was trained on M5 (its provenance), so the ball ran
+  with --allow-seen; M5's shot frames were read to plan the clips.
+- **Reading:** the learned spotter finds about half the shots at about 60%
+  precision, far above the rule, but it is not shown to reach the
+  registered bar. Next: more training shots (M7 / M9 are spent), the
+  shooter's identity, and a stronger ball near the goals.
+
+### Goals, revisited (`goals_v2/`, `teams/`; exploratory, no GPU)
+
+- **The teams are not the cause of M9's misses.** The 1-fps scan of M9 2nd
+  (re-run here) has its teams right on 0.977 of matched outfield players;
+  per-detection kit clustering is accurate pooled over the half (0.98).
+  The earlier reading ("teams not separated") came from the half-mean x,
+  which is close for both teams in a one-sided half (-9.0 / -3.7 m in the
+  ground truth).
+- **The registered rule is right on the ground truth**: 41/41 restartable
+  goals of the 20 halves, 0 false runs (M9's shares 0.91-0.96). The test's
+  misses come from the detections' share (0.82-0.88 on M9: team errors
+  and positions across the halfway line, 13-17 of 22 people seen).
+- **A kick-off cue (a detection within 3 m of the centre spot) with T
+  0.80**, chosen on the scans of M5 2nd and M9 2nd (5/5, 0 false there,
+  against 1/5, 2 false), was frozen before the M1 scans ended and then
+  **failed on M1: 0/3**, where the registered rule gets 3/3. On the ground
+  truth it is also worse (37/41, 4 false). Not adopted.
+- **So the goals rule stays as registered**; what would help is a cleaner
+  detection share (fewer team errors near the halfway line, more players
+  seen), not a new rule.
+- **Per-detection teams beat per-track teams** on 7 windows (smoothed over
+  +-2 s of the same track: 0.92-0.98 against 0.79-0.93): a candidate for
+  the main pipeline (needs the GPU to recompute kit features on clips).
+
+### Goals on all 20 halves (`goals_v3/`, 2026-11-07; registered, CPU only)
+
+`plan.json` (hashed first): the kick-off formation rule on 1-fps yolov8s
+scans of all 20 halves (16 new, ~1.5 h each on 2 local lanes), its cell
+(T, R, N) chosen by `goals_v2/explore.choose` on 9 matches and scored on
+the 10th. Bar: restartable goals found >= 0.95 and <= 1 false run per
+match; scoring team right on >= 0.9 of hits (`kick_spot`). `goals_v3.json`.
+
+| | found | false runs | per match | team right |
+|---|---|---|---|---|
+| held out (cell chosen on 9 matches) | 34 / 41 (0.83) | 85 | 8.5 | 27 / 34 (0.79) |
+| registered cell (T 0.85, N 2), all halves | 30 / 41 | 37 | 3.7 | 20 / 30 |
+| random times, same run counts | 4.3 mean (95th pct 7) | | | |
+
+- **Bar not met** (found and false runs both fail; team fails too). The
+  rule is far above chance, so the formation signal is real.
+- The chosen cell is almost always T 0.75, R 5 m, N 2 (looser than the
+  registered T 0.85): it finds more goals at the cost of false runs.
+- False runs are concentrated: 118575 26, 132831 16, 118577 14; 118576
+  has 1. Misses: 118577 2/4, 118578 2/4, 132877 1/3.
+- On the ground truth the same rule is 41/41 with 0 false runs, so the
+  gap is the detections' share (team labels near the halfway line and
+  people not seen), as `goals_v2/` found on M9.
+
+**Why the false runs** (exploratory, `false_runs.py`,
+`reading_false_runs.json`, `reading_false_runs_extra.json`, `extra/`):
+- Scan and truth are aligned in time (best lag 0 s on all 20 halves).
+- **One half has its ends inverted**: on 118577 1st the half's mean x
+  puts the teams at the wrong ends (share correlation with the truth
+  -0.67): 13 false runs and 2 misses. Ends from the first 10 s of the half
+  are right on 20/20; held out with them: 32/41, 69 false runs (6.9 per
+  match), team 29/32. More robust, far from the bar.
+- Of the 85 false runs, 14 are formation-like moments in the truth too (at
+  the chosen T, mostly 0.75); 71 come from the detections: we see ~13 of
+  22 people (12 matched); on 40 the people we see are in formation in the
+  truth (the unseen are not); on 34 true teams bring the share below T.
+- **They fall in live play**: median 1.7 s after the last labelled action
+  and 1.4 s before the next, whereas a goal is followed by >= 15 s with no
+  action. A dead-ball cue would separate them, but 1-fps people do not
+  give it: run length (hits median 5 s, false 2 s) and crowd speed
+  (1.18 vs 1.57 m/s; keeping 32/34 hits keeps 59/85 false) are weak.
+- Misses: 2 from the inverted half; 3 runs start 11-14 s after the goal,
+  just before the 15 s window; 2 below T. Wrong team (7): the run's last
+  sample comes before the kick-off is set (the truth's nearest person is
+  also 2-6 m from the spot).
+- The truth has no ball, so a ball-at-the-centre-spot cue cannot be
+  checked on it.
+
+### Goals v4: a ball on the centre spot (`goals_v4/`, 2026-11-11)
+
+`plan.json` (hashed first): formation runs (kick-off ends, window 10-60 s)
+kept only with a ball near the spot; a stage-1 probe on the 20 half-start
+kick-offs picks the detector and decides go (>= 15/20 at a live-play rate
+<= 3%). **No go** (`probe.json`): yolov8s sports ball (crop x1/x2/x3) and
+the v3b heatmap find the ball within 2 m of the spot on 0-1 of 20; stage 2
+is not run. The ball there is ~4-5 px, white on the white halfway line,
+~35 m from the camera, often under the kicker. Exploratory
+(`reading_probe_and_audio.json`): the half videos carry audio (AAC 48 kHz);
+on 4 restartable goals of 117093 the strongest whistle-like sound (2.5-4.5
+kHz) lies within 2 s of the kick-off action every time. Unknown: whistles in
+live play, hence what a formation + whistle rule would remove.
+
+### Goals v5: formation + the referee's whistle (`goals_v5/`, 2026-11-11)
+
+`plan.json` (hashed first): formation runs (kick-off ends, window 10-60 s)
+kept only if a whistle event (0.1-s bins, score = 2.5-4.5 kHz energy share
+x ln tonality, >= the half's q-quantile for >= L s) starts in the run or up
+to B s after it; grid T x R x N x q x L x B, leave one match out
+(`goals_v5.json`; audio of 20 halves streamed once, ~2 h on two CPU lanes).
+
+| held out, 10 matches | restartable goals found | false runs / match | team right |
+|---|---|---|---|
+| formation + whistle | 16 / 41 (0.39) | 1.5 | 0.63 (kick_whistle), 0.69 (kick_spot) |
+| formation only (kick-off ends, 10-60 s) | 40 / 41 | 7.1 | |
+| random times, same kept counts | 1.5 (p95 4) | | |
+
+- **Fails the bar** (0.95, <= 1 false per match, team 0.9). The cell chosen
+  on all matches sits at the grid's edge (q 0.99, B 10).
+- **M1 (117092) and M9 (132831) have silent audio** (every sample 0, both
+  halves): 8 of the 41 goals cannot be heard. On the 8 audible matches,
+  16 / 33.
+- Exploratory (`reading_ko_whistle.json`): on audible matches the loudest
+  whistle score within +-3 s of the kick-off action reaches the half's top
+  1% on 73% of the restartable goals (top 5%: 91%), against 29% (71%) for
+  random 6-s windows; 22% of 30-s live-play stretches hold an event. The
+  whistle is there at most kick-offs, but this crude detector also fires in
+  live play (fouls, crowd, other pitches), so it cannot carry the rule alone.
+- Not registered, but on record: kick-off ends + the 10-60 s window alone
+  take goals_v3's 34 / 41 at 8.5 false per match to 40 / 41 at 7.1.
+
+### Goals v6: a list of possible goals, the team proposed (`goals_v6/`, 2026-11-12)
+
+Owner's choice (2026-11-12): semi-automatic. The report lists possible goals
+(about 11 per match accepted), the club confirms each; the scoring team is
+proposed and correctable. Candidates: formation only, kick-off ends, 10-60 s,
+the cell chosen on all 20 halves (T 0.75, R none, N 3): 41 / 41 restartable
+goals in-sample, 11.3 candidates and 7.2 false per match (held out in
+goals_v5: 40 / 41, 7.1). In-sample trade-off (`goals_v5/reading_tradeoff.json`):
+~7 candidates per match find 39 / 41, ~5 find 31 / 41.
+
+`plan.json` (hashed first): five team rules, one chosen leaving one match
+out (`goals_v6.json`):
+
+| team rule (in-sample, 41 hits) | right |
+|---|---|
+| kick_spot (nearest to the spot at the run's end) | 0.68 |
+| **attack_end** (the half holding the people's mean x 10-40 s before the run conceded) | **0.95** |
+| spot_vote (nearest to the spot, majority over the run) | 0.93 |
+| circle_count (more people within 9.15 m of the spot kicks off) | 0.24 |
+| circle_count, last 10 s | 0.32 |
+
+- **Held out: 39 / 41 (0.95), the bar (0.9) is met**; attack_end is chosen
+  in every fold.
+- circle_count is mostly inverted: at these samples the scoring team has
+  more people near the spot (not what a kick-off implies); not pursued.
+- The candidate cell and the rules were studied on these halves; the
+  owner's matches remain the test.
+
+**In the product (2026-11-12):** `src/goal_candidates.py` (the frozen rule;
+synthetic self-check in `run_tests.py --controls`), a "Possible Goals — to
+confirm" page in `src/report.py`, and `main.py --half-starts` (video time of
+each half's kick-off, default 0). `goals_v6/equivalence.py`: on the 20
+halves the module gives the research rule's runs and scorers exactly (0
+halves differ; 41 / 41, scorer 39 / 41). Open: the half's start must be its
+kick-off (ends from its first 10 s, 60-s exclusion); a recording that
+starts earlier or holds both halves needs `--half-starts` or a detector.
+
+### Goals v7: the kick-offs of a whole recording (`goals_v7/`, 2026-11-12; fails)
+
+Owner's case: one file per match, or a recording that starts before the
+kick-off. `src/match_periods.py` (plan.json + addendum1.json, hashed first;
+the addendum fixed the kick-off after a split, found by the module's own
+synthetic check): periods of play from the players present, warm-ups
+dropped by their separation, a long period split where the ends flip, the
+kick-off at the end of the period's first formation. Checked on 40
+recordings simulated from the scans (`simulate.py`, `goals_v7.json`): half 1
++ half-time + half 2, with no pre-match (V0), a synthetic warm-up and a
+45-s formation held from each half's first sample (V1, V2: warm-up in the
+other halves), and V1 with 14 people on the pitch at half-time (V3).
+
+| variant | both kick-offs within 10 s | goal list equal to the true-start list |
+|---|---|---|
+| V0 | 9 / 10 | 9 / 10 |
+| V1 | 5 / 10 | 9 / 10 |
+| V2 | 5 / 10 | 9 / 10 |
+| V3 | 4 / 10 | 7 / 10 |
+
+- **Fails the bar** (every kick-off within 10 s, lists equal). Most misses
+  are 20-40 s early: the held formation (each half's first sample, where
+  the share is already near 0.75: 0-5 s at the real start) breaks into
+  pieces and the first piece is taken. Harmless for the goal list (34 / 40
+  equal), but against the plan.
+- M9 (132831) has no formation at its kick-offs (share < 0.75 from the
+  first second): the first restart is taken, 13-70 s late.
+- V3: the split is refused on 118577 and 132831; on 118575 the second
+  half's formation is missed and a later one (2,204 s on) is taken.
+- Found on the way: when the half-time is in the file, the goal rule lists
+  its few people's chance formations, 3.8-5.6 extra candidates per match
+  (V0-V2, true starts). The rule needs a minimum of players present, or the
+  half-time cut out.
+
+**Owner (2026-11-12): the club enters each half's kick-off time** (`main.py
+--half-starts 0:00,52:30`; the report shows the times used and warns when
+a video over 65 min has only one). `match_periods` stays out of main.py.
+
+### Goals v8: a minimum of players present (`goals_v8/`, 2026-11-12; adopted)
+
+`plan.json` (hashed first): a 1-s sample counts for the formation only with
+>= 6 team-labelled players present. `goals_v8.json`:
+
+| | without | with >= 6 |
+|---|---|---|
+| frozen cell, 20 halves (in-sample) | 41 / 41, 11.3 per match, scorer 39 / 41 | 41 / 41, 11.2, 39 / 41 |
+| held out (formation only, LOMO) | 40 / 41, 7.1 false per match | 40 / 41, 7.0 |
+| half-time candidates per match, simulated V0 / V1 / V2 / V3 | 5.6 / 3.8 / 5.6 / 0.1 | 0 / 0 / 0 / 0.1 |
+
+- The bar holds (no goal lost, half-time candidates <= 0.5 per match):
+  **adopted** in `src/goal_candidates.py` (MIN_PRESENT 6). Real half-times
+  (children on the pitch, people in kits) are untested.
+
+### Who made the pass (`passer/`; exploratory, CPU only)
+
+The actor of each labelled BAS action, from detections only, scored apart
+from event detection (`plan.json`, hashed before scoring; `addendum1.json`:
+two fixes after the first runs, rules unchanged). Rule A: at the label
+frame, the v3s_link ball within 0.2 s and the player detection nearest it
+in metres, if within 3 m. Rule B: the best (player, frame) over -0.4/+0.2 s.
+Truth: the detection's ground-truth person (feet; M1 in pitch metres under
+the refit) against the label's player_id.
+
+| | n | right, end to end (A) | precision (A) | coverage (A) | ceiling |
+|---|---|---|---|---|---|
+| passes, matches v3 was trained on | 1847 | 0.253 [0.234, 0.273] | 0.724 | 0.349 | 0.806 |
+| all actions, same matches | 3599 | 0.257 | 0.717 | 0.359 | 0.800 |
+| passes, M1 (unseen) | 214 | 0.061 [0.036, 0.101] | 0.186 | 0.327 | 0.280 |
+
+- **Correction (2026-10-26, `ball_range.json`):** the clips' ball was
+  detected only on local frames 350-1075 (the per-clip cost cut); half of
+  the labelled actions sit in the margins, where no ball exists. Inside
+  the ball range rule A is right on **0.487** of all actions (passes
+  0.502), precision 0.717, coverage 0.679; the table above counts the
+  margins.
+- **The ball is the bottleneck.** On the seen matches the linked ball is
+  there within 0.2 s of only 47% of the actions; given a ball, a player is
+  within 3 m 77% of the time and is the right one 72% (82% when the
+  labelled player is detected at all). Rule B adds 3 points.
+- **M1 is not measurable here:** the labelled player is matched to a
+  detection on 28% of its actions (80% elsewhere), so attribution and
+  evaluation errors cannot be told apart (M1's camera and truth boxes are
+  off). M7 / M9 have no linked ball track for their clips: not scored.
+- The seen-match figures are optimistic (v3 trained on those matches).
+
+### Inferring the ball in gaps (`ball_interp/`; quick feasibility, CPU)
+
+Two M6 windows, 320 hand-verified balls (v3 trained on M6). The link
+(`src/ball_link.py`, a Viterbi that already skips up to 5 frames) covers
+0.95 of them at precision 0.99. Linear filling of its gaps:
+
+- **Real frames:** coverage 1.00, precision 0.96-0.97 (12 px).
+- **Simulated occlusions** (detections removed around verified balls),
+  within 30 px: 0.5 s holes 0.70, 1 s 0.49, 2 s 0.18. Following the
+  player's feet instead of the line is worse (0.57 at 0.5 s).
+- **Who passed:** no gain (rule A 0.253 -> 0.249 / 0.250 with 0.5 / 1 s
+  fills): the gaps around actions are mostly longer than 1 s.
+- So filling works for short gaps only. The "2-3x more frames" of a
+  direct link is explained (`passer/ball_range.json`): the pipeline links
+  on the players' frames only (every 2nd frame) and cuts candidates below
+  p 0.10 first (about 1.25x); no later stage loses balls. Rerun inside the
+  ball range (`passer/fill_check_range.json`, 936 passes): still no gain.
+  Rule A 0.500 -> 0.491 / 0.494 with 0.5 / 1 s fills; rule B 0.558 ->
+  0.552 / 0.556 (coverage 0.81 -> 0.85, precision 0.69 -> 0.65: the added
+  actors are mostly wrong). Inside the range the limits are precision
+  (28% wrong when someone is named) and the ceiling (23% of labelled
+  players never matched to a detection), not ball gaps.
+- **Why rule A names the wrong player** (`passer/diagnose.json`; 367 wrong
+  of 1293 named, in range, seen matches): an opponent 61%, a teammate
+  22%, a detection with no truth person 17%. The labelled player is not
+  detected at that frame in 44% of them. When it is, it is a median 3.3 m
+  from the ball against 1.45 m for the named one, within 1 m of it in
+  41% (contests). In 65% the labelled player is the nearest at some
+  instant within +-1 s, most often 0.2-0.4 s before the label (the label
+  sits slightly after the touch).
+- **Rule C, possession** (`passer/possession.json`; the track most often
+  nearest the ball over a window, votes at every players' frame): on the
+  same 1905 actions, A 0.486, B 0.540, C [-0.4, +0.2] s **0.568** [0.546,
+  0.590] (passes 0.586), precision 0.681, coverage 0.834. Paired with B:
+  90 actions gained, 65 lost (sign test p ~0.05). Longer windows cover
+  more but lose precision. The window is chosen in-sample on matches v3
+  was trained on: a small gain, not shown on a held-out match.
+  **Adopted as the default** (owner, 2026-10-26): `src/passer.py`, and
+  `events_learn/learn.py apply` now writes each event's `actor_track`
+  (smoke test on M6 2nd f015000: 67 of 68 events get an actor; its team
+  is the event's team in 55 of 67).
+- **Registered test on M7 / M9** (`passer/m7m9_protocol.json`, hashed
+  before their pitch tracks existed; `m7m9_test.json`): **fails.** C
+  0.348 [0.309, 0.388] of 552 actions (bar: lower bound 0.45), passes
+  0.354; B 0.332, A 0.277 (C >= B holds: 16 gained, 11 lost). Precision
+  0.40 against 0.68 on the seen matches. By match: M7 0.532 (close to
+  the seen matches), M9 0.253 (ceiling 0.54: the labelled player matched
+  to a detection on 54% of actions, 73% on M7, 78% seen). The in-sample
+  0.57 does not carry to unseen matches; M9 is the weak one.
+
+
+### Foot-point correction (`footpoint/`; CPU, fails)
+
+A model of the image offset from our detection's foot point to the truth
+box's bottom centre (`plan.json`, hashed before fitting), leave one match
+out on 224 shots clips (all matches but M1), 621k matched pairs, error in
+pitch metres:
+
+- **Registered model (box + image position):** pooled median 1.46 ->
+  1.35 m, p90 6.0 -> 4.5 m, but four held-out matches get worse (M6 1.68 ->
+  2.95, M7 1.85 -> 2.73, M9 1.16 -> 2.09, M10 1.70 -> 2.66). Not adopted.
+- **Box-only variant** (exploratory, `addendum1.json`): pooled median 1.57,
+  worse.
+- The per-match offsets differ in sign (du -6.3 .. +6.9 px): the gap
+  between our boxes and the truth's is match-specific, so a correction
+  learned on other matches does not transfer.
+
+### Player on the ball (`near_ball/`; option B; CPU diagnostic)
+
+`plan.json` (hashed first). 2,257 labelled actions of the shots clips of 9
+matches (M1 left out), image-space matching as eval_soccertrack_v2:
+
+| actor | share |
+|---|---|
+| detected | 0.767 |
+| taken by a neighbour (a detection within 43 px went to someone else) | 0.113 |
+| missed (no detection within 43 px) | 0.121 |
+
+- Other outfield players on the same frames are detected at 0.884: the
+  player on the ball is 12 points harder. 9.7% of the actors' detections
+  hold two persons. Headers 0.14, throw-ins 0.44, crosses 0.54.
+- Detected actors sit a median 1.59 m from the truth's position (28%
+  beyond 3 m): the earlier "38% beyond 3 m" mixes misses and positions.
+- Within +-1 s of a detected action, 20% of the frames put the actor on
+  another track.
+- Reading: detection in crowds is the lever, then tracking (GPU next,
+  budget 10 h).
+
+**Detector variants** (`plan_v2.json`, hashed first; Kaggle GPU kernel
+`veo-nearball-det`, ~1.2 h; `variants.json`). Raw detections on the
+action frames, feet inside the outline, same matching:
+
+| variant | actor detected | taken | missed | unmatched / frame |
+|---|---|---|---|---|
+| V0 yolov8s, conf 0.20, IoU 0.70 | 0.867 | 0.067 | 0.065 | 2.97 |
+| V1 NMS IoU 0.85 | 0.896 | 0.040 | 0.064 | 6.37 (guard) |
+| V2 conf 0.10 | 0.902 | 0.040 | 0.058 | 4.66 (guard) |
+| V3 yolov8m | 0.877 | 0.059 | 0.064 | 2.80 |
+| V4 yolov8x | 0.887 | 0.049 | 0.063 | 2.71 |
+| V5 TTA | 0.896 | 0.045 | 0.059 | 4.93 (guard) |
+
+- **Selected V4, +0.020 [+0.009, +0.030] over V0: under the 0.03 bar, no
+  pipeline run.** The variants that gain more do it with 1.6-2.1x the
+  false detections.
+- Exploratory (not registered): the same yolov8s finds the actor on 0.867
+  of the actions, the pipeline's output on 0.767. On 11.3% of the actions
+  the raw detector has the actor and the pipeline does not (5.4% missed,
+  5.9% given to a neighbour); the reverse is 1.3%. **The loss is after
+  detection** (tracking, filters), 5x what a bigger model gives.
+
+**Pipeline stages** (`plan_v3.json` + addendum 1, hashed first;
+`stages.json`, `reading_v3.json`; CPU). Actor detected at each cached
+stage, same actions and matching:
+
+| stage | actor detected | control |
+|---|---|---|
+| S0 raw detector | 0.867 | 0.940 |
+| S1 tracker (ByteTrack) | 0.778 | 0.893 |
+| S2 team labels | 0.778 | 0.893 |
+| S3 unassigned dropped | 0.775 | 0.892 |
+| S4 roster cap (11 per label) | 0.766 | 0.884 |
+| S5 output | 0.766 | 0.884 |
+
+- **The tracker stage is the loss: 10.2 of the 11.4 points** (roster cap
+  0.9, unassigned team 0.3). It costs the actor 8.9 points, the other
+  players 4.8; per match 1.1 (M9) to 15.1 (M7). Correction: on 7 of the 9
+  matches (197 units, tracked before 2026-10-27) that stage also held a
+  grass test on players, since turned off for a fixed view. plan_v4
+  separates the two.
+- Exploratory: of the actions lost by the tracker, 81% have the actor's
+  raw box absent from its output; 43% of those boxes overlap another
+  detection (16% for actors kept). The tracker writes only detections
+  matched to an activated track: the first detection of a track and the
+  loser of a crowded IoU assignment are dropped.
+- Lever: write every detection (unmatched ones under a new id) and leave
+  them to the re-joining step. Needs every frame's detections, not cached
+  here (a GPU pass, or the original runs' caches if Kaggle has them).
+
+**Tracker variants** (`plan_v4.json` + addenda 1, 2, hashed first;
+`v4.json`; GPU 2.6 h for the detections on 223 units, then the tracker and
+player steps replayed on Kaggle CPU). Same 2,254 actions and matching:
+
+| variant | S1 | S3 | S4 | control S4 | unmatched / frame S4 | same track ±1 s |
+|---|---|---|---|---|---|---|
+| A: matched detections only (the pipeline) | 0.859 | 0.856 | 0.847 | 0.928 | 5.60 | 0.814 |
+| A2: A + teams for short tracks | | 0.859 | 0.849 | 0.928 | 5.63 | 0.812 |
+| B2: every detection + that rule | 0.890 | 0.890 | 0.878 | 0.939 | 6.56 | 0.756 |
+
+- Primary, B2 - A at S4: **+0.032 [+0.026, +0.038]**, positive on 9 of 9
+  matches (+0.012 to +0.051). Guards hold (unmatched 6.56 <= 1.2 x 5.60;
+  control 0.939 >= 0.918). **The bar is met**, by 0.2 points.
+  Decomposition: A2 - A +0.003, B2 - A2 +0.029; the gain is the unmatched
+  detections, not their teams.
+- **The reproduction fails** (addendum 1): on M7 / M9, which had no grass
+  test, A should equal the original; it gives 0.804 at S4 against 0.778.
+  Exploratory (`reading_v4.json`): it is not one shift (M7 S1 0.791 vs
+  0.663, M9 0.848 vs 0.864). So A is a replay, not the pipeline as it ran,
+  and on the 7 other matches A - original (+0.088 at S4, 5.3 to 15.2 per
+  match) is not the grass test's cost alone.
+- Not registered, but it matters for the report: B2's added boxes are
+  one-frame ids, and a detected actor keeps one track over ±1 s on 0.756
+  (A 0.814). Before the pipeline takes B2: join those boxes to tracks, and
+  explain the reproduction gap.
+
+**The replay gap is the confidence threshold** (`plan_v5.json`, hashed
+first; `v5.json`; local CPU, M7's 10 units). The original runs feed the
+tracker the boxes above each clip's auto-tuned `conf_player`
+(`auto_tune`, 0.08 to 0.5 over the 223 units, 0.4 or 0.5 on 156 of them);
+plan_v4 used 0.20 everywhere. Replayed at each clip's own threshold (A'),
+M7 is reproduced exactly:
+
+| M7, 86 actions | actor detected at S1 |
+|---|---|
+| original (O) | 0.663 |
+| A' (replay, the clip's threshold) | 0.663 |
+| A (replay, 0.20) | 0.791 |
+
+- A' and O share 98.5% or more of their boxes (IoU >= 0.9, both ways) in
+  every unit. The GPU pass reproduces the original detections; the
+  tracker's start at frame 300 does not matter.
+- So plan_v3's "tracker stage" loss (S0 at 0.20, then S1) is mostly the
+  threshold, not ByteTrack: at a fixed 0.20 the tracker costs the actor
+  0.8 points (A S1 0.859 vs S0 0.867). plan_v4's A is the pipeline at 0.20,
+  not as run; B2 - A (+3.2) holds against a 0.20 pipeline. The grass
+  test's cost on the 7 other matches is still mixed with the threshold
+  (separated below: 0.3 points).
+- The lever is the threshold itself: on M7, 0.20 instead of the
+  auto-tuned value gives +12.8 points at S1. Not registered yet: its cost
+  in false detections, on all 9 matches. M9 (imgsz 3840, not reproduced
+  here) is not covered.
+
+**A fixed 0.20 against the auto-tuned threshold, at the tracker stage**
+(`plan_v6.json`, hashed first; `v6.json`; local CPU; 221 units, 2,230
+actions; 2 units with conf_player 0.08 left out):
+
+| tracker output (S1) | actor detected | control | unmatched / action frame |
+|---|---|---|---|
+| A': each clip's conf_player (the pipeline) | 0.779 | 0.898 | 3.80 |
+| A: 0.20 | 0.859 | 0.935 | 5.93 |
+
+- A - A': **+0.081 [+0.063, +0.102]**, positive on 9 of 9 matches (+0.016
+  on M9, whose clips already sit at 0.20, to +0.129). **The bar is met.**
+- **The false-detection guard fails at S1**: 5.93 unmatched boxes per
+  action frame against 3.80 (1.56x, the guard is 1.2x). The plan reads S1
+  as not the output: the roster cap removes boxes, so the next step is the
+  same comparison at S4, whatever this guard says.
+- Exploratory (`reading_v6.json`): A' gives the original S1's verdict on
+  98.9% of the actions (M9, at another imgsz, 91.8%). On the 7 matches that
+  had the grass test on players, A' without it gives 0.779, the original
+  0.776: **that test cost 0.3 points.** plan_v3's tracker-stage loss is the
+  auto-tuned threshold.
+
+**The same at the roster cap** (`plan_v7.json`, hashed first; `v7.json`;
+Kaggle CPU 52 min for A', local scoring; same 221 units, 2,230 actions):
+
+| roster cap (S4) | actor detected | control | unmatched / action frame | same track ±1 s |
+|---|---|---|---|---|
+| A': each clip's conf_player (the pipeline) | 0.770 | 0.893 | 3.61 | 0.803 |
+| A: 0.20 | 0.847 | 0.927 | 5.58 | 0.814 |
+
+- A - A': +0.077 [+0.060, +0.096], positive on 9 of 9 matches (+0.016 on
+  M9 to +0.122). The gain clears 0.03, but **the false-detection guard
+  fails again**: 5.58 against 3.61 unmatched boxes per action frame
+  (1.54x; the guard is 1.2x). Control holds (+0.034). **The bar is not
+  met: no change to the pipeline.**
+- The roster cap removes few of the extra boxes (S1 5.93 to S4 5.58 at
+  0.20): the trade is +7.7 points on the actor for about two more
+  unmatched boxes per frame, which a report counts.
+- Exploratory (`reading_v7.json`): A' gives the original S4's verdict on
+  97.7% of the actions (original 0.766, A' 0.770; M9 88%).
+- Open: what the extra boxes are (duplicates of a matched player, people
+  off the truth, spurious) and what they cost in the report's figures. A
+  threshold chosen on these 9 matches would need matches it was not
+  chosen on.
+
+**What the extra boxes are** (exploratory, not registered, read after
+`v7.json`: `extra_boxes.py`, `actor_team.py`, `reading_extra_boxes.json`,
+`reading_actor_team.json`). The boxes unmatched at S4 that only A has,
+2.0 per action frame (the guard's gap):
+
+- 90% have their foot outside the pitch outline (in its 10-px margin), and
+  58% have no truth person within 100 px: people on the touchline
+  (assistant referees and staff are not in the truth). 34% lie 60 to 87 px
+  from a player (a box on a person, its foot off), 8% are a second box on
+  a matched player. Confidence: median 0.32.
+- 96% carry the team label "other": the team figures do not count them.
+  Unmatched boxes with a team label: 0.74 per action frame for A vs 0.59
+  for A' (1.24x); with the foot inside the outline: 2.03 vs 1.81 (1.12x).
+- The actor's box carries a team label on 0.737 of the actions for A vs
+  0.675 for A' (+6.2 points); of the 188 actions A gains, 154 have a team
+  label (whether it is the right team is not checked).
+- So the registered guard (every unmatched box) mostly counts touchline
+  people the report ignores. A guard on what the report uses would be
+  near the 1.2x line (1.24x on team-labelled boxes). Chosen after seeing
+  these data, such a guard needs its own plan, and ideally matches not
+  used here.
+
+**Closed (owner, 2026-11-05): the pipeline keeps the auto-tuned
+threshold.** No other annotated matches exist. M1 (117092), the only
+match never used, cannot be brought into our video's pixels
+(`m1/reading_m1.json`, gate before a plan; no GPU used). Its calibration
+fits the truth's frame (0.3-0.4 m), not the video's (2.9-3.8 m). The best
+image mapping (degree-3 polynomial, fit on frames 0-298) finds 52% of its
+players on frames 1126-1424, against 89% elsewhere, and none in the lower
+image, near the camera. The trade on record: a fixed 0.20 gives +6.2
+points on the actor with a team label, for 1.24x the team-labelled
+unmatched boxes, measured on data already seen.
+
+### Distance per team (`team_distance/`; CPU, fails)
+
+`plan.json` (hashed first): on the 249 clips (frames 300-1125), each
+team's distance = 10 x the mean 1-s speed of its detections (tracks
+smoothed over 1 s, per-detection kit teams), each second; the truth's
+outfield path lengths at the same 1-s scale; per match against a constant
+rate (the other matches' metres per team-second).
+
+| per match | ours | constant | ours - constant, 95% |
+|---|---|---|---|
+| distance per team, relative error | 0.096 | 0.050 | [+0.007, +0.086] |
+| left side's share, abs error | 0.0067 | 0.0083 (0.5) | [-0.0085, +0.0043] |
+
+- **Not shown; the distance is worse than a constant.** Ours is below the
+  truth in all 20 team-matches (truth / ours 1.01-1.24): the 1-s speeds of
+  the players we track miss the fast or unseen ones. With the truth's
+  teams it is no better (0.121), so the team labels are not the cause.
+- The teams' shares are about 0.5 in every match: a team's distance over a
+  period mostly measures the period's length here.
+
+### Passes per team (`team_passes/`; CPU, fails)
+
+Team statistics only for now (owner, 2026-11-02). The learned pass /
+carry spotter (`events_learn/learn.py`, nested leave one match out) on the
+249 shots clips' ball range (frames 350-1075, `addendum1.json`), an
+event's team = the nearest player's at its frame; per match against
+constants (`plan.json`, hashed first):
+
+| per match | ours | constant | ours - constant, 95% |
+|---|---|---|---|
+| left side's share of the passes, abs error | 0.087 | 0.097 (0.5) | [-0.062, +0.038] |
+| team pass success rate, abs error | 0.199 | 0.061 (other matches) | [+0.092, +0.184] |
+
+- Neither is shown; counts per team are no better than our total split
+  50 / 50 (median relative error 0.20 both).
+- Why (exploratory): our passes within 1 s of a truth pass carry the
+  right team only 68% of the time, so consecutive events flip teams and
+  our success rates sit 0.1-0.3 below the truth's.
+- **The event's team rule is not the limit** (`plan_v2.json`, hashed
+  first; 1,266 of our events matched to the truth's): the nearest player
+  at the event frame 0.70, the possession rule's actor track 0.68, a team
+  vote over -0.4 / +0.2 s 0.69 (the last two leave 16-19% without a team).
+  The test with the first is unchanged (fails).
+- **The players' team labels are:** the detection nearest the truth actor
+  has a team label (not 'other') on 0.52 of passes and carries, the right
+  one on 0.79 of those. Per-detection kit teams (0.92-0.98 on windows) need
+  the GPU on the clips.
+- **Per-detection kit teams on the clips** (`plan_v3.json`, hashed first;
+  kit colours on a Kaggle CPU kernel, 249 clips, 33 min; det_smooth per
+  clip): our detections' team right among labelled 0.851 -> 0.895
+  (labelled 0.86 both), our events' team 0.697 -> 0.735. The test: share
+  error 0.071 against 0.097 for 0.5, [-0.086, +0.029], **not shown**;
+  success rate 0.245 against 0.061, worse. Counts per team: median
+  relative error 0.145 against 0.199 for our total split 50 / 50
+  (descriptive).
+- The success rate needs two consecutive events' teams right (about 0.61
+  of pairs at 0.73 each): it is underestimated by construction.
+- Near the ball (exploratory): our nearest detection to the truth actor is
+  beyond 3 m on 38% of passes and carries (median 2.1 m; the truth's own
+  positions are approximate), 'other' on 8%.
+
+### Why the foot-point gap is match-specific (`footpoint/diag/`; CPU)
+
+Diagnostic (`plan.json`, hashed before any number), 197 unsealed shots
+clips (M7 / M9 not opened), 551k pairs, plus a picture check on 7 windows:
+
+- **Not timing:** each clip's best lag scatters around 0 (mostly -3..+3
+  frames, no match consistent); moving to it leaves the pooled error at
+  1.47 m.
+- **Per-match shape:** an affine offset in (u, v) learned on half of a
+  match's clips helps its other half on M6 (1.68 -> 1.33 m) and M10
+  (1.70 -> 1.23 m), but hurts them when learned on other matches (2.35,
+  2.27 m). About 1.2-1.4 m remain even within a match.
+- **Pictures** (`pictures/`): our boxes sit on the players, their bottom
+  on the feet. The truth boxes are fixed-height (36-48 px), often wider
+  than the player, their bottom 10-25 px above or beside the feet, some on
+  empty grass.
+- **Reading:** the 1.2-1.7 m gap is mostly the truth's own placement,
+  which differs per match. Our foot point is not shown to be the limit, and
+  this truth cannot measure our position error below about 1.2 m. A
+  correction against it learns the truth's errors (as above). Measuring
+  our real error needs independent foot points (owner clicks on ~150
+  crops).
+
+### Following players through misses (`stitch/`; CPU, v1 fails)
+
+Owner's idea: every player is always on the pitch, so a player can be
+followed through the detector's misses. v1 (`plan.json`, hashed first):
+per team, tracklet ends linked to later starts (Hungarian, <= 5 s, 8 m/s),
+gaps filled linearly, on the 27 M7 / M9 clips.
+
+- Few links (268 / 326 filled positions), and the fills are mostly wrong
+  (precision 0.26 on M7, 0.38 on M9); coverage unchanged (0.49 / 0.51 in
+  pitch metres at 3 m); rule C worse (0.298 -> 0.265, not a clean
+  comparison: v1 drops the tracks with team "other").
+- **But the misses are short:** 77-78% of a player's missed time is in runs
+  of 5 s or less (M9 21% <= 1 s). The idea stands; v1 is too weak: it does
+  not fill the gaps inside a track, and its team labels are noisy.
+- **v2** (`plan_v2.json`, hashed before running; `stitch_v2.json`): team
+  per tracklet, every tracklet kept, gaps inside tracks filled too.
+  - M9: coverage 0.580 -> **0.745** (any team 0.632 -> 0.819), but fill
+    precision 0.51; identity continuity 0.83 -> 0.81.
+  - M7: coverage 0.543 -> 0.571, fill precision 0.19 (fills of tracks that
+    are not players: M7 has more detections than people).
+  - Who made the action, rule C: unchanged (0.298 both; M7 0.365, M9 0.265).
+  - Against its bar (M9 +10 points with fill precision >= 0.80): coverage
+    yes, precision no. Not adopted; the coverage gain on M9 is real, but
+    half the filled positions are not on a player.
+- **v3** (`plan_v3.json`; fills only for slots that are surely players:
+  team A/B, >= 4 s, inside the pitch): M9 coverage 0.580 -> **0.725**,
+  fill precision **0.64**; M7 0.543 -> 0.568, fill precision 0.38; rule C
+  0.298 -> 0.300. Bar not met (0.80). For scale, the detections themselves
+  score 0.82 (M9) and 0.60 (M7) on the same precision metric: the M9 fills
+  are worse than detections but not far, the bar was stricter than the
+  detections. Not adopted as is.
+
+### Why the detector misses M9's players (`kaggle/m9_players*`; GPU bench)
+
+Single-frame person detections on every 25th frame of 3 M9 clips and 1 M7
+clip, yolov8s (the pipeline's) and yolov8m, scored against the truth
+(players and goalkeepers; referees count as false):
+
+| setting (yolov8s) | M9 recall | M9 precision | M7 recall | M7 precision |
+|---|---|---|---|---|
+| conf 0.20 + grass filter (pipeline) | 0.701 | 0.775 | 0.959 | 0.627 |
+| conf 0.20, no grass filter | 0.938 | 0.596 | 0.959 | 0.618 |
+| conf 0.10 + grass filter | 0.719 | 0.640 | 0.970 | 0.523 |
+| **conf 0.20 + pitch outline (0 px) instead of grass** | **0.936** | 0.695 | 0.951 | **0.876** |
+
+- **The grass filter is the cause on M9**: it drops a quarter of the
+  real players. A lower threshold or yolov8m (M9 0.706) does not help.
+- Keeping detections whose feet are inside the release's pitch outline
+  instead recovers them (0.70 -> 0.94) and is cleaner on M7 too.
+- **Done** (`src/detect_track_hybrid.py`, `score_soccernet.py`: no grass
+  test on players when a fixed view has an outline; runs at --pitch-margin
+  0, players-only, `.cache/gpu_nograss/`). Re-measure
+  (`passer/nograss_protocol.json`, hashed before the runs returned):
+  - player recall (pitch tracks, feet): M9 0.647 -> **0.882** (precision
+    0.82 -> 0.73), M7 unchanged (0.895);
+  - who made the action, rule C: unchanged, 0.348 [0.309, 0.388] (M7 0.532,
+    M9 0.253), although M9's ceiling rose 0.54 -> 0.83;
+  - why: on M9 the linked ball sits a median 10 box heights from the
+    labelled player at the label (M7 1.0, seen matches 0.6), with no
+    constant time shift: **M9's ball track is now the limit**
+    (`passer/nograss_test.json`).
+
+### The ball's grass test (`ball_grass/`; CPU)
+
+On M9 the v3 detector proposes the true ball (45 of 47 verified frames on
+the clip overlapping the verified window, confidence ~0.7), but
+`ball_pitch_filter.filter_ball_by_pitch` drops it: the true ball's grass
+fraction is a median 0.10 there (M5's candidates 0.9), so 76% of its
+candidates fall under the 0.40 bar. Relinked without that test
+(`plan.json`, hashed first; outline kept), on 191 clips:
+
+| rule C, who made the action | before | without the ball's grass test |
+|---|---|---|
+| matches v3 was trained on (1544 actions) | 0.569 | 0.571 |
+| **M7 / M9 (552)** | 0.348 [0.309, 0.388] | **0.582 [0.540, 0.622]** |
+| M7 | 0.532 | 0.532 |
+| M9 | 0.253 | **0.607** |
+| M9 verified balls hit (39) | 9 | 38 |
+
+- Adopted (bar: M7 / M9 up, seen matches not down by more than a point):
+  for a fixed view with an outline the ball's grass test is off
+  (`score_soccernet.run_pipeline` and `merged_from_cached`).
+- M7 / M9 had been used for the registered test (`passer/m7m9_test.json`,
+  fails at 0.348); 0.582 clears that test's bar (0.45) but is exploratory,
+  not a registered pass.
+
+### Learned shots with the grass tests off (`shots_learn/v3/`; exploratory)
+
+The v2 spotter, unchanged, on 249 clips of all ten matches, nested
+leave-one-match-out, old pitch tracks against the relinked ones (no grass
+test on the ball; M7 / M9 also with the no-grass players), plan hashed
+before any feature (`plan.json`, `cv_v3.json`):
+
+| | hits | false | missed | recall | precision |
+|---|---|---|---|---|---|
+| old tracks | 151 | 146 | 118 | 0.561 | 0.508 |
+| no grass tests | 150 | 126 | 119 | 0.558 | 0.543 |
+
+- Hits new - old: -1, 95% [-17, +14] over matches: no change in recall;
+  20 fewer false shots. M9 4 -> 7 hits, M7 7 -> 9; M6, M10 and M8 lose a few.
+- The shot spotter's limit is not the ball's grass test.
+- **Why shots are missed** (`missed.py`, `missed.json`; 118 of 269):
+  - no ball tracked within 1 s of the shot: 54 (50 outside M1, which is
+    nearly blind: 3 of 29);
+  - the model fired but not within 2 s, or merged with another peak: 24;
+  - the ball was tracked but the model saw no shot: 25 (long shots: median
+    23 m from goal);
+  - the model was just under its threshold: 15.
+  - Missed shots have the ball tracked a median 35% of the second around
+    them (hits 50%), a slower top speed (19 vs 28 m/s) and sit further
+    from goal (12.7 vs 8.8 m).
+
+### The ball near the goals (`ball_goal/`; CPU, descriptive)
+
+Plan hashed first (`plan.json`); `measure.json`.
+
+- **Hand-verified balls** (M6 / M7 / M9 windows, 508 frames): near a goal
+  (within 16.5 m of the goal line, 81 frames) the detector proposes the
+  ball on 0.99 of them, top-1 0.93, linked 0.90; elsewhere 0.98 / 0.84 /
+  0.84. On frames where a person saw the ball, near-goal balls are not
+  harder.
+- **At the labelled shots** (242, all matches but M1; something within
+  one box height of the shooter's feet within +-0.4 s):
+
+| | candidate there | with confidence >= 0.10 | linked |
+|---|---|---|---|
+| shots near a goal (159) | 0.98 | **0.74** | 0.69 |
+| shots elsewhere (82) | 0.99 | 0.96 | 0.94 |
+| passes near a goal (377) | 0.90 | -- | 0.71 |
+
+- So near the goals the detector does propose a candidate at the
+  shooter's feet, but with low confidence (0.63 candidates >= 0.10 per
+  frame there, 1.05 elsewhere): the 0.10 cut before the link drops it a
+  quarter of the time. Caveat: a low-confidence candidate at the feet may
+  be a boot, not the ball.
+- Levers: a lower or zone-dependent confidence cut (CPU, to test against
+  the verified balls for false picks), or a detector more confident on
+  small far balls (GPU: tiles, or retraining on near-goal clicks).
+
+### A lower ball confidence cut near the goals (`ball_tau/`; CPU, not adopted)
+
+Plan hashed first (`plan.json`). Stage 1, four cuts (cut and link tau):
+
+| variant | verified balls hit | wrong picks | shots near a goal, linked ball at the feet | elsewhere |
+|---|---|---|---|---|
+| t10 (current) | 0.846 | 0.069 | 0.692 | 0.939 |
+| t05 | 0.866 | 0.075 | 0.780 | 0.951 |
+| t02 | 0.884 | 0.085 | 0.811 | 0.963 |
+| **zone03** (0.03 within 16.5 m of a goal line, 0.10 elsewhere) | 0.846 | 0.071 | **0.855** | 0.927 |
+
+Stage 2 on the chosen zone03 (`stage2_*.json`):
+- shot spotter (v3, 249 clips, nested leave-one-match-out): 148 hits,
+  139 false, 121 missed, against 150 / 126 / 119: **no gain** (bar: hits up);
+- who made the action (rule C): seen matches 0.571 -> 0.577, M7 / M9
+  0.582 -> 0.578.
+- Not adopted. The ball is now at the shooter's feet on 86% of near-goal
+  shots instead of 69%, yet the spotter finds no more shots: its limit is
+  elsewhere (what the ball does after the kick, or the model itself).
+
+### Is the ball tracked after the kick? (`shot_flight/`; CPU, descriptive)
+
+The 1.5 s after each labelled shot (239 shots, M1 out; hit / missed by the
+v3 spotter), plan hashed first (`plan.json`, `flight.json`):
+
+| | hit (147) | missed (92) |
+|---|---|---|
+| frames with a linked ball | 0.31 | 0.25 |
+| linked ball 3 m+ closer to the goal line than the shooter | **0.70** | **0.45** |
+| frames with a v3 candidate 3 m+ closer to the goal than the shooter | 0.60 | 0.38 |
+| shooter's distance to the goal line (m) | 13.7 | 11.8 |
+
+- The ball in flight is tracked on a third of the frames at best, even
+  for the shots that are found.
+- On missed shots the ball is seen heading to goal less than half the
+  time, and the detector itself proposes nothing toward the goal on most
+  frames: the fast ball after the kick, often from close range, is what
+  the detector misses (blur, a few px), not the ball at the feet.
+
+### Learned shots v4: the players' reactions (`shots_learn/v4/`; exploratory)
+
+v2 features plus ball-free reactions (plan hashed before any feature;
+`cv_v4.json`): for the goal with more players within 25 m, the keeper
+proxy's speed before t and its top speed / lateral speed in the next 1 s,
+players within 20 m of that goal (count, speed and run toward the goal,
+before / after), and all players' mean speed before / after (speeds
+clipped at 12 m/s against track switches). Same 249 clips and tracks as v3,
+nested leave-one-match-out:
+
+| | hits | false | missed | recall | precision |
+|---|---|---|---|---|---|
+| v2 features | 150 | 126 | 119 | 0.558 | 0.543 |
+| **v4 (+ reactions)** | **165** | **113** | **104** | **0.613** | **0.594** |
+
+- Hits +15, 95% [-3, +34] over matches: a gain on both recall and
+  precision, but the interval includes zero (ten matches).
+- Gains on M2, M5, M6, M8, M10 (+2 to +7); M1 -2 and M7 -3.
+- The best shot spotter so far; every match has been used, so this is
+  cross-validated evidence only.
+
+### Distance and possession (`events_stats/`; descriptive, weak evidence)
+
+**The report's estimators, as they are** (`stats_eval.py`; M6 2nd, M7, M9;
+v3 ball, static filtered, linked):
+- Distance: ×2 the truth in total (7.7 / 6.5 / 7.0 km against
+  3.6 / 3.6 / 3.4). Position jitter at 25 fps adds up.
+- Possession (`possession_proxy`): the left side's share is wrong by
+  0.23-0.27.
+
+**Retuned on those three windows** (`stats_fix.py`, `stats_fix_tune.json`):
+- **Distance:** a centred moving average of 1 s, then a sample every 1 s.
+  The per-person median error falls from 0.32 to 0.046.
+  - **The comparison is circular.** The truth's reference is the same
+    1 s / 1 s estimator, because its positions sit on a 1.05 × 0.68 m grid
+    and jitter too. Path length depends on the sampling scale.
+  - What this shows is that our positions give the same path length as the
+    truth's at a 1 s scale. It does not show that this is the distance run,
+    which a 1 s path underestimates on turns.
+  - It is measured with a perfect identity, on the frames where a
+    detection was matched to the person.
+- **Possession:** the team of the nearest player within 4 m of the ball, at
+  every frame with a ball, with no ball-speed gate. The error falls to
+  0.086, in-sample. A constant 0.5 scores 0.148 there.
+
+**On M1 under the refit**, with detections matched to persons in pitch
+metres within 3 m (`--pitch`; M1's truth boxes are in another frame):
+
+| window | distance error (1 s / 1 s) | distance error (every frame) | possession error, retuned | possession error, current proxy | possession error, constant 0.5 |
+|---|---|---|---|---|---|
+| 1st f001500 (*) | 0.035 | 0.62 | 0.008 | 0.078 | 0.100 |
+| 1st f024000 | 0.020 | 0.56 | 0.084 | 0.050 | 0.015 |
+| 2nd f000000 (*) | 0.033 | 0.80 | 0.028 | 0.016 | 0.143 |
+| 2nd f027000 | 0.035 | 0.89 | 0.299 | 0.435 | 0.052 |
+
+(*) used by the refit, so in-sample for the positions.
+
+- **Distance:** the 1 s scale holds on M1, with the caveats above. The
+  matched frames cover 0.52-0.74 of the truth's distance.
+- **Per-player km over all frames, with our identities**, is the product's
+  number. It is not measured yet, and identities are the limit.
+- **Possession: not shown better than a constant 0.5.** The mean errors
+  are 0.105 (retuned), 0.145 (current) and 0.078 (constant 0.5).
+- The 2nd f027000 window is far off for both rules, and is also where E2
+  fell to chance. The cause is not yet found; team assignment is the first
+  suspect.
+- A fair possession test needs finer units (30 s bins, or frame-level
+  agreement with dead time excluded), a paired comparison with a constant,
+  and tuning leave-one-match-out.
+
 ## Next
 
 0. **Balls at rest by the goals** (seen on M9, judged B*). Find them
@@ -1427,3 +2518,198 @@ result-neutral):
    be gated by running speed. A re-ID model would need far more distinct
    people than the 60 here -- the test matches M7 and M9, or other
    footage -- or larger crops.
+
+### The chain ball -> player on the ball -> team (`chain/`; local CPU)
+
+`plan.json` + addendum 1 (hashed first; the addendum fixes a frame
+mismatch found when every share came out ~0: our x / y have the corner
+origin). 2,257 labelled actions of the 223 shot clips, 9 matches (M7 / M9
+now development data, owner 2026-11-05). Per action: our ball within 3 m
+and 0.16 s of the action, our player nearest that ball, its team.
+
+| link | share of actions | given the previous link |
+|---|---|---|
+| S1 our ball within 3 m | 0.506 | |
+| S2 our player nearest it is the actor | 0.343 | 0.68 |
+| S3 that player has a team | 0.307 | 0.90 |
+| S4 the team is right | 0.273 | 0.89 |
+| end to end: the nearest player's team is the actor's (a teammate counts) | **0.345 [0.324, 0.368]** | |
+
+- Swapping one link for the truth: **the ball +0.252 [+0.226, +0.278]**,
+  the team +0.008 [-0.016, +0.029], the player -0.059 (an artefact: the
+  2-m pitch matching finds the actor on 0.49 of actions, against 0.77 in
+  the image; the truth's positions are approximate, 1.2-1.7 m). **The
+  ball is the link to work on first.** With our ball within 3 m, the team
+  is right on 0.68 of the actions; without it, no answer.
+- Exploratory (`reading_ball_miss.json`): within 0.16 s of the action, a
+  ball row of ours exists but lies more than 3 m away on 31% of actions
+  (median 5.9 m, quartiles 4.0-10.6), and there is no ball row at all on
+  12% (the nearest is a median 0.32 s away). The ball is mostly placed
+  wrong, more often than it is missing.
+
+**Selection or detection** (`plan_v2.json`, hashed first; `cand.json`).
+For the actions where our linked ball is not within 3 m, the detector's
+own candidates (about 4 per frame, the linked ball always one of them),
+within 0.16 s:
+
+| category | share of actions |
+|---|---|
+| linked ball within 3 m | 0.506 |
+| selection: a frame's top candidate is within 3 m, the link chose otherwise | 0.150 |
+| selection: a lower-ranked candidate is within 3 m | 0.087 |
+| detection: no candidate within 3 m | 0.257 |
+
+- Selection minus detection: -0.020 [-0.069, +0.032]. By the plan's
+  rule, **both matter**: the linking step loses 15 points that the
+  detector had at the top of a frame (CPU work, no retraining); the
+  detector misses the ball near the action on a quarter of the actions
+  (retraining, GPU). Shots and other actions are worse (linked 0.31,
+  detection 0.33).
+- Exploratory (`reading_sel_split.json`): the linker sees only candidates
+  with confidence 0.10 or more (`kaggle/metric_step.py`: top 4 a frame,
+  tau 0.10, c_null 1, c_static 2, the pipeline's players for the static
+  penalty). Of the 23.7% "selection" actions, 14.1 points have their near
+  candidate below 0.10 (median 0.072: never seen by the linker), 9.7
+  points at 0.10 or more (seen, another chosen or none). The ball the link
+  gets right is confident (median 0.95). So most of "selection" is the
+  detector's confidence at the action (the ball at the feet, in contact):
+  lowering tau would let it in, with every other weak candidate.
+
+**Linking variants** (`plan_v3.json`, hashed first; `link_variants.json`;
+local CPU). 24 variants of `src/ball_link.link`'s inputs (even frames or
+all frames; tau 0.10, 0.05, 0.03, 0.01; a bonus of 0, 1 or 2 in logit for
+candidates within 1.5 m of a player's feet), each chosen on 8 matches and
+scored on the 9th:
+
+- Held out, end to end 0.352 against 0.343 for the pipeline's variant:
+  **+0.008 [+0.000, +0.017]**. Every fold chose all frames, at a tau of
+  0.05 or lower. **Under the 0.03 bar: no change to the pipeline.**
+- Guard: the ball after the kick on the owner's 366 clicks, hit 0.415
+  against 0.336, so it holds. Part of that rise is the odd frames: half
+  the clicks are on odd frames, which the pipeline never links.
+- The reproduction checks fail, narrowly. 11 of 223 units relink 1 to 18
+  ball rows differently from the stored ones, and a tie between two
+  equally near frames breaks otherwise. 20 actions of 2,257 change their
+  ball-within-3-m test and 12 their end to end (0.3434 vs 0.3451). All
+  variants are scored the same way, so their differences hold.
+- Reading: the linker is not where the ball's +0.25 lies. The near ball
+  is too weak in the detector (median confidence 0.07) for any linking
+  rule to pick it out of the noise.
+
+**A learned "who has the ball"** (`plan_v4.json`, hashed first;
+`possessor.json`; local CPU). Per action, a gradient-boosted score over our
+players (distance to the linked ball now and nearest in time, the raw
+candidates' confidence near the feet within 0.24 s, speed, neighbours,
+team label), trained on 8 matches and scored on the 9th, against rules
+that, like it, run without the truth:
+
+| team at the ball, 2,257 actions | share |
+|---|---|
+| B1: nearest player to the linked ball (pipeline) | 0.538 |
+| B2: B1, else the linked ball nearest in time (1 s) | 0.595 |
+| B3: nearest player to the top raw candidate | 0.549 |
+| learned (held out) | **0.601** (actor itself 0.571) |
+
+- Learned minus B2: +0.007 [-0.003, +0.017]. **Under the 0.03 bar.**
+  B1 here is not chain.json's 0.345, which needed the ball within 3 m of
+  the true action position.
+- Exploratory (`reading_ceiling.json`): **with the true action position**,
+  our nearest detection has the right team on 0.597, the same as the rules.
+  It has a team label on 0.864 of the actions, and the label is right on
+  only 0.690 of those, far below the ~0.9 seen away from the ball.
+  With a perfect label it would be 0.720: in contact, the nearest player
+  is often an opponent. **Near the ball the limit is now the team labels
+  (31% wrong) and the duels, more than the ball.**
+
+### Shots on the relinked ball (`shots_learn/linkall/`; local CPU)
+
+`plan.json` (hashed first): the v4 spotter's features on the ball relinked
+with all frames (tau 0.03, no feet bonus: chain plan v3's variant, chosen
+there for the team at the ball, not for shots), eval_ap's measure (10
+matches left out in turn, 3 seeds). The new ball has 2.6x the rows
+(131,840 vs 49,950).
+
+- Event AP 0.616 vs v4's 0.612: **+0.004 [-0.035, +0.050]**, under the
+  +0.04 bar: no change. Hits at the rate threshold 160 vs 162 of 269.
+  Per match the change runs from -0.10 (M5) to +0.08 (M9), as noisy as
+  the null change.
+- A better-linked ball after the kick (chain plan v3's guard) does not make
+  a better shot spotter: the spotter's limit is elsewhere.
+
+### Shots in ordinary play: the spotter's real precision (`shots_learn/realistic/`, 2026-11-12)
+
+Every shots measure so far ran on clips cut -15 s / +10 s around labelled
+shots, far denser in shots than a match. `plan.json` (hashed first): the v4
+spotter (fitted on the other matches' clips, 3 seeds) on the 7 cached dev
+windows of ordinary play (18 min with features, 6 labelled shots; never
+used for v4), then extrapolated to a 92-min match with the clips' own
+recall and false alarms (`realistic.json`):
+
+| threshold | recall (clips) | precision (clips) | false alarms / min of play | false alarms / match | precision, whole match |
+|---|---|---|---|---|---|
+| rate threshold (0.76) | 0.60 | 0.60 | 0.89 [0.51, 1.44] | 83 [52, 128] | **0.16** [0.11, 0.24] |
+| recall 0.80 (0.53) | 0.80 | 0.33 | 1.89 [1.31, 2.64] | 198 [151, 259] | **0.10** [0.08, 0.13] |
+
+- **The clips hid the false alarms.** In ordinary play the spotter fires
+  about once a minute; over a match that is 5x the shots it finds. The
+  0.59-0.61 precision of every earlier report holds only on shot-dense
+  clips. The 6 labelled shots in the windows were all found.
+- Against the owner's bar (80% found, 80% of alerts right) the gap is not
+  a few points: precision is 0.10-0.16 on a whole match. A list to
+  confirm, as for goals, would hold 100-220 rows per match.
+- Small sample (18 min, 7 matches); the intervals are Poisson on the
+  windows' count only.
+
+### Shots: the spotter retrained with ordinary play (`shots_learn/negatives/`, 2026-11-12/13)
+
+Owner's option 1. `plan.json` + `addendum1.json` (hashed first): 40 windows
+of 3 min drawn at random away from every shot clip (120 min, 10 matches),
+run on Kaggle (4 batches + the one rerun the plan allows: 118577 needed
+`--allow-seen`, the checkpoint was trained on it; M7/M9 windows went through
+`opened.json`); all 40 ran. The v4 spotter fitted on clips only (baseline) vs
+clips + windows (new), leave one match out, 3 seeds (`negatives.json`):
+
+| model | recall (clips) | false alarms / min of play | false alarms / match | precision, whole match |
+|---|---|---|---|---|
+| baseline, recall 0.60 | 0.60 | 0.65 | 63 | 0.20 |
+| new, recall 0.60 | 0.60 | 0.59 | 60 | 0.21 |
+| baseline, recall 0.80 | 0.80 | 1.79 | 190 | 0.10 |
+| new, recall 0.80 | 0.80 | 1.90 | 205 | 0.10 |
+
+- **Primary: +0.008 [-0.028, +0.044] at recall 0.60: not adopted** (bar
+  +0.10 with the interval above 0). Showing the model ordinary play does not
+  teach it to tell a shot from the rest: the features do not hold the
+  difference.
+- With 138 min of windows (vs 18) the baseline's whole-match precision is
+  0.20 at recall 0.60 (0.16 on the 18 min). Owner's bar not met by either.
+- 11 BAS shots fell inside the windows (shots with no clip); kept as labels.
+- Next (owner 2026-11-13: "avoid false alarms, run the analysis"):
+  `shots_learn/diagnose/` (plan + addendum hashed): errors by our ball's
+  state, and the spotter refitted with the annotation ball (upper bound).
+
+### Shots: where the errors come from (`shots_learn/diagnose/`, 2026-11-13)
+
+`plan.json` + `addendum1.json` (hashed first). Arm O = the negatives "new"
+spotter; arm T = the same, refitted with the ball replaced by the annotated
+action positions, interpolated in time (held at the first / last action).
+Leave one match out, 3 seeds, whole-match extrapolation (`diagnose.json`):
+
+| arm | recall 0.60: false alarms / match, precision | recall 0.80: false alarms / match, precision |
+|---|---|---|
+| O, our ball | 60, 0.21 | 205, 0.10 |
+| T, annotation ball | 28, 0.37 | 74, **0.23** |
+
+- **Primary (recall 0.80): T - O = +0.13 [+0.04, +0.18]; reading per the
+  plan: "ball is not enough"** (T < 0.50). A better ball doubles the
+  precision but leaves it far from the owner's 0.80.
+- Caveat both ways: the annotation ball sits exactly on every action
+  (optimistic) but moves in straight lines between them, so it lacks a
+  shot's real flight (speed, height) that separates it from a cross or a
+  long pass (pessimistic). It shows that knowing where the ball is at each
+  action is not enough; it does not test a real 3-D ball tracker.
+- Our ball at the 268 shots: > 3 m from the action on 150 (56%), <= 3 m on
+  102, none on 16. Miss rate 24% when > 3 m vs 13% when <= 3 m.
+- 769 false alarms (clips + windows, pooled): nearest action PASS 173,
+  DRIVE 128, none within 2 s 117, CROSS 94, SHOT 89, OUT 79, GOAL 25;
+  our ball > 3 m from that action on 423 of 652. 114 (15%) sit within 2 s
+  of a real shot or goal (duplicates or timing), the rest are other play.

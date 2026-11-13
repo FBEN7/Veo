@@ -1,0 +1,157 @@
+{
+ "yolov8m.pt": {
+  "M7": {
+   "conf 0.20 + grass (pipeline)": {
+    "truth": 1276,
+    "dets": 2116,
+    "matched": 1239,
+    "recall": 0.971,
+    "precision": 0.586
+   },
+   "conf 0.20, no grass": {
+    "truth": 1276,
+    "dets": 2179,
+    "matched": 1239,
+    "recall": 0.971,
+    "precision": 0.569
+   },
+   "conf 0.10 + grass": {
+    "truth": 1276,
+    "dets": 2553,
+    "matched": 1255,
+    "recall": 0.984,
+    "precision": 0.492
+   },
+   "conf 0.05 + grass": {
+    "truth": 1276,
+    "dets": 3238,
+    "matched": 1258,
+    "recall": 0.986,
+    "precision": 0.389
+   }
+  },
+  "M9": {
+   "conf 0.20 + grass (pipeline)": {
+    "truth": 3828,
+    "dets": 3818,
+    "matched": 2704,
+    "recall": 0.706,
+    "precision": 0.708
+   },
+   "conf 0.20, no grass": {
+    "truth": 3828,
+    "dets": 7446,
+    "matched": 3624,
+    "recall": 0.947,
+    "precision": 0.487
+   },
+   "conf 0.10 + grass": {
+    "truth": 3828,
+    "dets": 4830,
+    "matched": 2731,
+    "recall": 0.713,
+    "precision": 0.565
+   },
+   "conf 0.05 + grass": {
+    "truth": 3828,
+    "dets": 6029,
+    "matched": 2744,
+    "recall": 0.717,
+    "precision": 0.455
+   }
+  }
+ },
+ "yolov8s.pt": {
+  "M7": {
+   "conf 0.20 + grass (pipeline)": {
+    "truth": 1276,
+    "dets": 1952,
+    "matched": 1224,
+    "recall": 0.959,
+    "precision": 0.627
+   },
+   "conf 0.20, no grass": {
+    "truth": 1276,
+    "dets": 1979,
+    "matched": 1224,
+    "recall": 0.959,
+    "precision": 0.618
+   },
+   "conf 0.10 + grass": {
+    "truth": 1276,
+    "dets": 2365,
+    "matched": 1238,
+    "recall": 0.97,
+    "precision": 0.523
+   },
+   "conf 0.05 + grass": {
+    "truth": 1276,
+    "dets": 3238,
+    "matched": 1255,
+    "recall": 0.984,
+    "precision": 0.388
+   }
+  },
+  "M9": {
+   "conf 0.20 + grass (pipeline)": {
+    "truth": 3828,
+    "dets": 3465,
+    "matched": 2685,
+    "recall": 0.701,
+    "precision": 0.775
+   },
+   "conf 0.20, no grass": {
+    "truth": 3828,
+    "dets": 6021,
+    "matched": 3591,
+    "recall": 0.938,
+    "precision": 0.596
+   },
+   "conf 0.10 + grass": {
+    "truth": 3828,
+    "dets": 4301,
+    "matched": 2753,
+    "recall": 0.719,
+    "precision": 0.64
+   },
+   "conf 0.05 + grass": {
+    "truth": 3828,
+    "dets": 5656,
+    "matched": 2794,
+    "recall": 0.73,
+    "precision": 0.494
+   }
+  }
+ },
+ "yolov8s, outline instead of grass (CPU, same detections)": {
+  "M9": {
+   "conf 0.20 + grass (pipeline)": [
+    0.701,
+    0.775
+   ],
+   "conf 0.20 + outline 0 px": [
+    0.936,
+    0.695
+   ],
+   "conf 0.20 + outline 50 px": [
+    0.938,
+    0.616
+   ]
+  },
+  "M7": {
+   "conf 0.20 + grass (pipeline)": [
+    0.959,
+    0.627
+   ],
+   "conf 0.20 + outline 0 px": [
+    0.951,
+    0.876
+   ],
+   "conf 0.20 + outline 50 px": [
+    0.959,
+    0.634
+   ]
+  },
+  "columns": "[recall, precision]; truth = players and goalkeepers (referees count as false detections)"
+ }
+}
