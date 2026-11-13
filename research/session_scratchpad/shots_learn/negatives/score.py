@@ -126,9 +126,11 @@ def stats(per, ms, recall_at):
 
 def at(per, ms, t):
     n_lab = sum(per[m]["n_lab"] for m in ms)
-    found = sum(int(per[m]["clip_det"].query("score >= @t").right.sum()) for m in ms)
-    fa_c = sum(int((~per[m]["clip_det"].query("score >= @t").right).sum()) for m in ms)
-    fa_w = sum(int((~per[m]["win_det"].query("score >= @t").right).sum()) for m in ms)
+    def above(d):
+        return d[d.score >= t].right.astype(bool)
+    found = sum(int(above(per[m]["clip_det"]).sum()) for m in ms)
+    fa_c = sum(int((~above(per[m]["clip_det"])).sum()) for m in ms)
+    fa_w = sum(int((~above(per[m]["win_det"])).sum()) for m in ms)
     wmin = sum(per[m]["win_min"] for m in ms)
     rate = fa_w / wmin if wmin else float("nan")
     rest = len(ms) * MATCH_MIN - sum(per[m]["clip_min"] for m in ms)
@@ -176,6 +178,8 @@ def main():
                              "clip_min": sum(minutes(dc[k][0]) for k in targets if k in dc),
                              "win_min": sum(minutes(dw[k][0]) for k in wn)}
         print("match", m, "done", flush=True)
+    import pickle
+    (ROOT / ".cache/shots_negatives_per.pkl").write_bytes(pickle.dumps(per))   # the fits, to re-read without refitting
     res = {}
     for model in per:
         res[model] = {"recall 0.60": stats(per[model], matches, 0.60), "recall 0.80": stats(per[model], matches, 0.80),
