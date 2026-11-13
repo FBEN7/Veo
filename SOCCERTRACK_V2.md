@@ -2659,3 +2659,30 @@ recall and false alarms (`realistic.json`):
   confirm, as for goals, would hold 100-220 rows per match.
 - Small sample (18 min, 7 matches); the intervals are Poisson on the
   windows' count only.
+
+### Shots: the spotter retrained with ordinary play (`shots_learn/negatives/`, 2026-11-12/13)
+
+Owner's option 1. `plan.json` + `addendum1.json` (hashed first): 40 windows
+of 3 min drawn at random away from every shot clip (120 min, 10 matches),
+run on Kaggle (4 batches + the one rerun the plan allows: 118577 needed
+`--allow-seen`, the checkpoint was trained on it; M7/M9 windows went through
+`opened.json`); all 40 ran. The v4 spotter fitted on clips only (baseline) vs
+clips + windows (new), leave one match out, 3 seeds (`negatives.json`):
+
+| model | recall (clips) | false alarms / min of play | false alarms / match | precision, whole match |
+|---|---|---|---|---|
+| baseline, recall 0.60 | 0.60 | 0.65 | 63 | 0.20 |
+| new, recall 0.60 | 0.60 | 0.59 | 60 | 0.21 |
+| baseline, recall 0.80 | 0.80 | 1.79 | 190 | 0.10 |
+| new, recall 0.80 | 0.80 | 1.90 | 205 | 0.10 |
+
+- **Primary: +0.008 [-0.028, +0.044] at recall 0.60: not adopted** (bar
+  +0.10 with the interval above 0). Showing the model ordinary play does not
+  teach it to tell a shot from the rest: the features do not hold the
+  difference.
+- With 138 min of windows (vs 18) the baseline's whole-match precision is
+  0.20 at recall 0.60 (0.16 on the 18 min). Owner's bar not met by either.
+- 11 BAS shots fell inside the windows (shots with no clip); kept as labels.
+- Next (owner 2026-11-13: "avoid false alarms, run the analysis"):
+  `shots_learn/diagnose/` (plan + addendum hashed): errors by our ball's
+  state, and the spotter refitted with the annotation ball (upper bound).

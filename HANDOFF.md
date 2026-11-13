@@ -36,7 +36,7 @@ The 15 target statistics are listed in the status doc.
 
 **Status doc (French, update it after each result):** Claude Docs at
 https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
-- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 90.
+- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 91.
 - Tables:
   - module table `.1860`;
   - stats table `.11947` (status enum `c07b100f-0db3`: 0 Abouti, 1 Partiel,
@@ -79,6 +79,7 @@ statistic; options: semi-automatic product, players near the ball, new data).
 | Shots spotter measure (`shots_learn/eval/`) | Event AP of leave-one-match-out peaks, probabilities averaged over 3 seeds (`eval_ap.py`). Null change (control - v4): AP +0.006 [-0.020, +0.038], half the counts' interval (recall [-0.052, +0.063]). **Now the measure for spotter comparisons** (`decision.json`). Track noise remains: a null change moves M9 by 0.17 AP; a real gain needs about +0.04 AP. Re-scored, exploratory: hybrid -0.004 [-0.046, +0.046], cues B +0.026 [-0.013, +0.054], C +0.020 [-0.020, +0.057]. v4 AP 0.612. |
 | Shots on the relinked ball (`shots_learn/linkall/`, 2026-11-06) | v4 spotter on the ball relinked with all frames (tau 0.03): event AP 0.616 vs 0.612, +0.004 [-0.035, +0.050], under the +0.04 bar: no change. |
 | Shots in ordinary play (`shots_learn/realistic/`, 2026-11-12) | Plan hashed. v4 spotter on 7 cached dev windows of ordinary play (18 min, never used for v4): **0.89 false alarms per minute** at the rate threshold, so extrapolated to a match **83 false alarms for 16 shots found: precision 0.16** [0.11, 0.24]; at recall 0.80, 198 per match, precision 0.10. Every earlier precision (0.59-0.61) was on shot-dense clips only. |
+| Shots retrained with ordinary play (`shots_learn/negatives/`, 2026-11-13) | Plan hashed; 40 random 3-min windows away from shots (120 min), all run on Kaggle (one rerun: 118577 needs --allow-seen, M7/M9 via opened.json). v4 on clips + windows vs clips only, LOMO: whole-match precision at recall 0.60 **0.21 vs 0.20, +0.008 [-0.028, +0.044]: not adopted**; at recall 0.80 0.10 both (~200 false alarms per match). The features do not separate shots from the rest. Next: `shots_learn/diagnose/` (errors by ball state; refit with the annotation ball). |
 | Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly
