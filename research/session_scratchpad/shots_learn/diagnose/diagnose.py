@@ -154,6 +154,10 @@ def main():
     dc = {u["name"]: (S.V4.features_v4(u), LS.labels(u), u["match"]) for u in UNITS}
     cols = LS.cols_of(dc)
     dw = S.window_data(new_names + S.DEV_WINDOWS, TREE_T)
+    allx = pd.concat([v[0][cols] for v in (*dc.values(), *dw.values())])
+    dropped = [c for c in cols if allx[c].nunique(dropna=True) < 2]   # no candidates, ball always present
+    cols = [c for c in cols if c not in dropped]
+    print("arm T: columns dropped (empty or constant):", dropped, flush=True)
     matches = sorted({x[2] for x in dc.values()})
     per_t = {}
     for m in matches:
@@ -187,6 +191,7 @@ def main():
                else "ball is not enough" if pt < 0.50 else "in between")
     t_o = res["O (our ball)"][0.80]["threshold"]
     out = {"plan sha256": sha, "units": {"clips": len(dc), "windows": len(dw)},
+           "arm T: columns dropped (empty or constant)": dropped,
            "primary: whole-match precision at clip recall 0.80, T - O": round(gain, 3),
            "95% bootstrap over matches": ci, "bootstrap draws used": len(diffs), "reading": reading,
            "operating points": {a: {str(r): v for r, v in x.items()} for a, x in res.items()},
