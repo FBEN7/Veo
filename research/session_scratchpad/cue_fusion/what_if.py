@@ -66,8 +66,13 @@ def main():
                 ">= 80 px, low": {b: (round(lo, 3), obs[">=80"][1]) for b in obs},
                 ">= 80 px, high": {b: (round(hi, 3), obs[">=80"][1]) for b in obs}}
     out = {"sha256": sha, "rates (correct, wrong) per band, per variant": variants, "results": {}}
+    parts = HERE / "what_if_parts"  # one file per finished variant (a restart skips them)
+    parts.mkdir(exist_ok=True)
     for name, rates in variants.items():
-        out["results"][name] = run(seg, Z, lineup, rates)
+        f = parts / f"{name.replace(' ', '_').replace('>=', 'ge')}.json"
+        if not f.exists():
+            f.write_text(json.dumps(run(seg, Z, lineup, rates)))
+        out["results"][name] = json.loads(f.read_text())
         print(name, out["results"][name], flush=True)
     need = [n for n in ("all 60-80 px", "all >= 80 px") if all(out["results"][n][m]["fusion"] >= 0.80 for m in ("117093", "132831"))]
     out["smallest band reaching 0.80 on both"] = need[0] if need else None
