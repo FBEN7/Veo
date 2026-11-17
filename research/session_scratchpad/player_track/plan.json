@@ -1,0 +1,17 @@
+{
+ "title": "identity step 1: re-track our player detections in pitch metres (fixed camera), ignoring the image tracker's ids",
+ "written": "2026-11-17, before any re-tracking is run",
+ "owner request": "2026-11-17: distance per player needed; order agreed: pass accuracy, then the identity project step by step",
+ "facts before": "player_stitch: a player's main track holds 0.29 of his 3 min (2-m matching; 0.34 at 3 m), 17% identity mixing inside tracks; stitching whole fragments fails; with a perfect identity our detections give his distance to ~4-5%",
+ "data": "the 47 ordinary-play windows; our player detections as stored in metric_v3s_link (the image tracker's kept detections: frame, pitch x / y, kit team team_A / team_B / other); track ids ignored",
+ "split": "dev matches 117092, 117093, 118575, 118576, 118577 (settings chosen there); test matches 118578, 128057, 128058, 132831, 132877 (reported, settings frozen)",
+ "re-tracker (T)": "frame by frame (every stored frame); each track an alpha-beta filter in metres (alpha 0.5, beta 0.2); Hungarian between active tracks' predictions and the frame's detections, cost = distance + 1.5 m if the detection's kit team differs from the track's (team_A vs team_B) + 0.5 m if the detection is 'other'; allowed if distance <= gate + 7 m/s x time since the track's last hit; a track unmatched for longer than the coast time ends; unmatched detections start tracks; a track's team = the majority of its kit labels",
+ "grid (dev only)": {"gate (m)": [1.0, 1.5, 2.5], "coast (s)": [2, 5, 10]},
+ "choice on dev": "the cell with the highest (continuity median - mixing median)",
+ "arms": {"U": "the image tracker's tracks (as player_stitch)", "T": "the re-tracker", "T+S": "T, then player_stitch's stitching (unchanged)"},
+ "measures": "player_stitch's (continuity, pieces, mixing, distance on the main trajectory's span within 5%), with the truth matched within 3 m (the truth's positions are 1.2-1.7 m off; 2 m also reported)",
+ "primary (test matches)": "continuity median and mixing median of the best of T and T+S, against U",
+ "step target": "continuity median >= 0.80 with mixing median <= 0.05 on the test matches",
+ "cost": "local CPU, ~1-2 h",
+ "what this cannot show": "a whole match; appearance cues (the video is not used: step 2 if needed)"
+}
