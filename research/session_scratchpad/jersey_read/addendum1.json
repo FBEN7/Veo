@@ -1,0 +1,16 @@
+{
+ "title": "identity step 2a, addendum 1",
+ "written": "2026-11-17, after the first sheets were cut and before any reading is written or the key is looked at",
+ "why": [
+  "the truth boxes do not frame the players: their sizes are near constant within a window (bh 43 px for all players at a frame of 117093, 31-45 px on 132831) and they sit offset from the players (drawn on frame 500 of 117093 and 132831); so part 1's box heights and the bands measure nothing, and the first crops cut players in half",
+  "our detections frame them well (foot point px_raw / py_raw, box crop_w x crop_h, drawn on 132831 2nd f005307)",
+  "one invalid sheet (part2_0) was looked at to find this; no reading was written and the key was not opened; all first sheets are deleted"
+ ],
+ "changes": {
+  "part 1": "our player detections (team_A / team_B) on the 47 windows: box height crop_h in native pixels; median, p10, p90 per match; share with crop_h >= 40, 60, 80 px",
+  "crops (parts 2 and 3)": "per sampled frame, truth outfield players matched one to one to our team-labelled player detections (Hungarian on pitch distance, kept within 2 m, and no other truth player within 3 m of the detection); the crop is our detection box padded 15% each side, x4; the label is the matched truth player's number",
+  "bands": "by our box height crop_h: < 40, 40-60, 60-80, >= 80 px",
+  "part 3 segments": "a truth player matched as above at all 10 sampled frames (2 s apart)"
+ },
+ "unchanged": "videos, sample sizes, seed, reading protocol, measures, decision rule"
+}
