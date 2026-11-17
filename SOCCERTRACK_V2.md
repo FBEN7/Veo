@@ -2796,3 +2796,25 @@ people matched within 2 m (`stitch.json`):
   about 4-5% over 3 min (better over a match if errors average); **the
   blocker is identity**: the main track still holds only 0.34-0.37 of a
   player's 3 min, with ~19% mixing.
+
+### Pass accuracy per team, ordinary play (`pass_accuracy/`, 2026-11-17)
+
+Owner 2026-11-17: pass accuracy % per team, must beat a constant (the
+truth's team accuracies here are 0.70-0.89, sd 0.05: a fixed 83% is within
+10 points on 19 of 20 teams). `plan.json` (hashed first), 47 windows pooled
+per match (20 team-matches). P = possession chain: holder = nearest
+team-labelled player within 4 m of our ball; a pass = holder spell then
+another track >= 5 m away within 4 s; success if the same team;
+Pc = P minus its leave-one-match-out bias (`pass_accuracy.json`):
+
+| | C (constant) | P | Pc |
+|---|---|---|---|
+| mean abs error, points | **4.3** | 20.4 | 7.7 |
+| team-matches within 10 / 5 points | 19 / 11 | 1 / 0 | 14 / 8 |
+
+- **Fails: Pc - C = +0.034 [+0.013, +0.058]**, worse than the constant.
+  P sits 8-36 points below the truth (median -20): in contact the holder
+  flips to an opponent near our (often misplaced) ball, read as a failed
+  pass. Pass counts are off by 28% (median).
+- Same limit as before (`team_passes/`): the ball and the team at the ball.
+  No pass accuracy in the report for now.

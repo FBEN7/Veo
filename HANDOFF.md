@@ -36,7 +36,7 @@ The 15 target statistics are listed in the status doc.
 
 **Status doc (French, update it after each result):** Claude Docs at
 https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
-- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 95.
+- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 96.
 - Tables:
   - module table `.1860`;
   - stats table `.11947` (status enum `c07b100f-0db3`: 0 Abouti, 1 Partiel,
@@ -84,6 +84,7 @@ statistic; options: semi-automatic product, players near the ball, new data).
 | Shots option B probe (`shots_learn/tdeed_probe/`, 2026-11-17) | Plan hashed. T-DEED SoccerNetBall_challenge1 (GPL code; NDA-trained weights, measurement only) zero-shot on a virtual broadcast camera cut from the panorama, 249 clips + 47 windows on Kaggle: whole-match precision **0.02 at recall 0.60 (v4 0.21)**, ~800 false alarms per match: fails. It sees some actions above chance (throw-in AP 0.32 vs 0.02 random, high pass 0.29 vs 0.06), shots barely (0.11 vs 0.05). Fine-tuning on SoccerTrack not tested. |
 | Possession v2 (`possession_v2/`, 2026-11-17; owner: shots stopped, possession = time share, bar 5 points) | Plan hashed. 47 ordinary-play windows (138 min). Per window: learned L 0.101 vs 0.5 0.153, **L - C -0.051 [-0.095, -0.010], adopted per the plan**; ball rule R 0.121. **Per match (~10 min pooled), the owner's unit: R within 5 points on 9/10 matches (mean 2.8), L 5/10, constant 5/10** (truth 0.39-0.61). R is the product estimator to keep; L has a per-match bias. Next: pass accuracy %, distance per player (identity). |
 | Distance per player: stitching (`player_stitch/`, 2026-11-17; owner: per player needed, fixed camera) | Plan hashed. 47 windows, 1,048 player-windows: main track holds 0.29 of a player's 3 min (9 pieces, 17% identity mixing inside tracks); a global end-to-start stitching gives 0.30 and more mixing: **fails**. Oracle identity on our detections: within 5% on 0.38 (2-m matching), 0.55-0.58 at 3-4 m (truth positions are 1.2-1.7 m off; exploratory), median error 4-5%. **Identity is the blocker**, not detection: the tracker switches in contact. |
+| Pass accuracy per team (`pass_accuracy/`, 2026-11-17; owner: must beat a constant) | Plan hashed. 47 windows, 20 team-matches; truth 0.70-0.89 (sd 0.05). Possession chain from our ball: 20 points below the truth (median); bias-corrected 7.7 points vs constant 4.3: **Pc - C +0.034 [+0.013, +0.058], fails**. Holder flips in contact near a misplaced ball. Next (owner-agreed order): identity project. |
 | Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly
