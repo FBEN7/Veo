@@ -1,0 +1,18 @@
+{
+ "title": "pass accuracy % per team, ordinary play: a possession-chain estimator against a constant",
+ "written": "2026-11-17, before any figure of this estimator is computed (the truth's team accuracies on these windows were looked at: 0.70-0.89, sd 0.052)",
+ "owner request": "2026-11-17: pass accuracy % per team; it must beat a constant (a fixed 83% is within 10 points on 19 of 20 teams here)",
+ "units": "the 47 ordinary-play windows (138 min, 10 matches), pooled per match: 20 team-matches (~10 min of each match)",
+ "truth": "BAS actions with a side, sorted; a pass = PASS, HIGH PASS or CROSS; it succeeds if the next action is by the same side and is not OUT; a window's last action is not judged. Accuracy per team-match = successes / passes over its windows",
+ "our teams -> sides": "as possession_v2 (matched detections, evaluation only)",
+ "estimators": {
+  "C": "constant: the truth's pooled accuracy of the other matches (leave one match out), the same for both teams",
+  "P (possession chain)": "per player frame, the holder = the nearest team-labelled player (track) within 4 m of our ball (possession_v2's rule R, no hold); spells = runs of the same holder track, merged over gaps <= 0.4 s, kept if >= 0.4 s; a pass = a spell of team T followed within 4 s by a spell of another track whose start lies >= 5 m from the first spell's end position; it succeeds if the next spell's team is T. Accuracy per team = successes / passes",
+  "Pc (P bias-corrected)": "P minus the median of (P - truth) over the other matches' team-matches (leave one match out)"
+ },
+ "primary": "mean absolute error of the team accuracy over the 20 team-matches, Pc - C, 95% bootstrap over matches (5,000 draws, seed 0)",
+ "beats the constant if": "Pc - C < 0 with the interval below 0",
+ "also reported": ["P - C", "pass counts per team: ours vs the truth (median relative error)", "team-matches within 10 points and within 5 points, per estimator"],
+ "cost": "local CPU, < 1 h",
+ "what this cannot show": "whole matches; the owner's camera"
+}
