@@ -2713,3 +2713,29 @@ Leave one match out, 3 seeds, whole-match extrapolation (`diagnose.json`):
   DRIVE 128, none within 2 s 117, CROSS 94, SHOT 89, OUT 79, GOAL 25;
   our ball > 3 m from that action on 423 of 652. 114 (15%) sit within 2 s
   of a real shot or goal (duplicates or timing), the rest are other play.
+
+### Shots, option B probe: a pretrained video spotter, zero-shot (`shots_learn/tdeed_probe/`, 2026-11-17)
+
+`plan.json` (hashed first). T-DEED (GPL-3.0), checkpoint SoccerNetBall_challenge1
+(SoccerNet action spotting, 500 broadcast matches, then ball actions, 7 matches;
+NDA-trained: measurement only), the same 12 classes as SoccerTrack's labels,
+run on a broadcast-like virtual camera (0.35 of the panorama's width, centred
+on our players' median, smoothed) over the 249 clips and 47 windows on Kaggle
+(T4, ~1.5 + 2.5 h); no SoccerTrack training (`probe.json`):
+
+| | recall 0.60 | recall 0.80 |
+|---|---|---|
+| false alarms / min of play | 8.4 | 15.9 |
+| false alarms / match | 793 | 1,487 |
+| whole-match precision | **0.02** (v4: 0.21) | 0.014 (v4: 0.10) |
+
+- **Primary fails by 10x**: zero-shot, the model is no shots spotter on our
+  video. P(SHOT) stays tiny (thresholds 0.002-0.004).
+- Event AP per class (2-s matching) vs random scores through the same
+  pipeline: throw-in 0.32 vs 0.02, high pass 0.29 vs 0.06, out 0.18 vs 0.05,
+  cross 0.14 vs 0.04, shot 0.11 vs 0.05, goal 0.05 vs 0.01, pass 0.67 vs 0.40,
+  drive 0.66 vs 0.40. The script's rule ("transfer fails" when pass and drive
+  are under 2x random) fires; in plain terms the model sees some of the game
+  in these crops (dead-ball restarts best), far too little for shots.
+- What it cannot show: the same model fine-tuned on SoccerTrack (10 matches,
+  12 classes, more than SoccerNet's 7), the only real test of option B.
