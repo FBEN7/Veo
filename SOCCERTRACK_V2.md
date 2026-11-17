@@ -2739,3 +2739,31 @@ on our players' median, smoothed) over the 249 clips and 47 windows on Kaggle
   in these crops (dead-ball restarts best), far too little for shots.
 - What it cannot show: the same model fine-tuned on SoccerTrack (10 matches,
   12 classes, more than SoccerNet's 7), the only real test of option B.
+
+### Possession v2: share of time on the ball, ordinary play (`possession_v2/`, 2026-11-17)
+
+Owner 2026-11-17: shots stopped; possession = share of time on the ball,
+bar within 5 points. `plan.json` (hashed first). 47 windows of ordinary play
+(138 min, 10 matches). Truth per frame from the BAS actions (live time only:
+gaps over 6 s and after OUT excluded). C = 0.5; R = the team of the nearest
+team-labelled player within 4 m of our ball, held 2 s; L = per-second
+classifier on the teams' shapes and R's cues, leave one match out
+(`possession.json`, `per_window.csv`):
+
+| | C (0.5) | R (ball rule) | L (learned) |
+|---|---|---|---|
+| per window (3 min): mean abs error of the share | 0.153 | 0.121 | **0.101** |
+| per match (~10 min of live play pooled): mean error, points | 4.9 | **2.8** | 5.1 |
+| matches within 5 points | 5 / 10 | **9 / 10** | 5 / 10 |
+
+- **Primary (per window): L - C = -0.051 [-0.095, -0.010]: adopted per the
+  plan.** R - C -0.032 [-0.080, +0.011]. L names the team on the ball on
+  74% of live seconds.
+- **But at the match level, the owner's unit, the ball rule R is best**:
+  within 5 points on 9 of 10 matches, mean 2.8 points; L carries a
+  per-match bias (up to 12 points) that does not average out, R's 3-min
+  errors do. The truth's shares range 0.39-0.61 per match, so the constant
+  fails half the matches.
+- Limits: ~10 min per match, not whole matches; the 4-m radius was set on
+  M6/M7/M9 windows (events_stats); a confirming test needs whole matches
+  (the owner's, eventually).

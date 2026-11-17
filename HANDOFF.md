@@ -36,7 +36,7 @@ The 15 target statistics are listed in the status doc.
 
 **Status doc (French, update it after each result):** Claude Docs at
 https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
-- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 93.
+- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 94.
 - Tables:
   - module table `.1860`;
   - stats table `.11947` (status enum `c07b100f-0db3`: 0 Abouti, 1 Partiel,
@@ -82,6 +82,7 @@ statistic; options: semi-automatic product, players near the ball, new data).
 | Shots retrained with ordinary play (`shots_learn/negatives/`, 2026-11-13) | Plan hashed; 40 random 3-min windows away from shots (120 min), all run on Kaggle (one rerun: 118577 needs --allow-seen, M7/M9 via opened.json). v4 on clips + windows vs clips only, LOMO: whole-match precision at recall 0.60 **0.21 vs 0.20, +0.008 [-0.028, +0.044]: not adopted**; at recall 0.80 0.10 both (~200 false alarms per match). The features do not separate shots from the rest. Next: `shots_learn/diagnose/` (errors by ball state; refit with the annotation ball). |
 | Shots: where the errors come from (`shots_learn/diagnose/`, 2026-11-13) | Plan + addendum hashed. Spotter refitted with the annotation ball (actions interpolated): whole-match precision at recall 0.80 **0.23 vs 0.10 (+0.13 [+0.04, +0.18]): ball is not enough** (bar 0.50); recall 0.60 0.37 vs 0.21. Our ball > 3 m from the action on 56% of shots (miss rate 24% vs 13%). False alarms: passes, carries, crosses, outs; 15% within 2 s of a real shot. Caveat: the annotation ball has no real flight (speed, height). |
 | Shots option B probe (`shots_learn/tdeed_probe/`, 2026-11-17) | Plan hashed. T-DEED SoccerNetBall_challenge1 (GPL code; NDA-trained weights, measurement only) zero-shot on a virtual broadcast camera cut from the panorama, 249 clips + 47 windows on Kaggle: whole-match precision **0.02 at recall 0.60 (v4 0.21)**, ~800 false alarms per match: fails. It sees some actions above chance (throw-in AP 0.32 vs 0.02 random, high pass 0.29 vs 0.06), shots barely (0.11 vs 0.05). Fine-tuning on SoccerTrack not tested. |
+| Possession v2 (`possession_v2/`, 2026-11-17; owner: shots stopped, possession = time share, bar 5 points) | Plan hashed. 47 ordinary-play windows (138 min). Per window: learned L 0.101 vs 0.5 0.153, **L - C -0.051 [-0.095, -0.010], adopted per the plan**; ball rule R 0.121. **Per match (~10 min pooled), the owner's unit: R within 5 points on 9/10 matches (mean 2.8), L 5/10, constant 5/10** (truth 0.39-0.61). R is the product estimator to keep; L has a per-match bias. Next: pass accuracy %, distance per player (identity). |
 | Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly
