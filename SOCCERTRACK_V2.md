@@ -2767,3 +2767,32 @@ classifier on the teams' shapes and R's cues, leave one match out
 - Limits: ~10 min per match, not whole matches; the 4-m radius was set on
   M6/M7/M9 windows (events_stats); a confirming test needs whole matches
   (the owner's, eventually).
+
+### Distance per player: stitching our tracks into players (`player_stitch/`, 2026-11-17)
+
+Owner 2026-11-17: distance per player is needed; the camera is fixed, so a
+player should be followable without being identified. `plan.json` (hashed
+first), 47 ordinary-play windows (1,048 player-windows of 3 min), truth
+people matched within 2 m (`stitch.json`):
+
+| | unstitched (U) | stitched (S) |
+|---|---|---|
+| share of a player's 3 min on his main trajectory (median) | 0.29 | 0.30 |
+| trajectories per player in 3 min (median) | 9 | 8 |
+| identity mixing inside the main trajectory (median) | 0.17 | 0.28 |
+| distance on the main trajectory's span: within 5% | 0.43 | 0.39 |
+
+- **Stitching fails**: one global end-to-start assignment (same kit team,
+  gap <= 10 s, reachable at 7 m/s) links about half the fragments but adds
+  identity mixing and no continuity. Our tracks are already mixed (17% of a
+  track's matched samples belong to another player): the tracker switches
+  identities in contact, so stitching whole fragments carries the switches.
+- Oracle identity on our detections (whole window): within 5% on 0.375,
+  ours / truth 0.92; reading per the plan: "detections limit".
+- **Exploratory, the matching radius** (`reading_radius.json`; the truth's
+  positions are 1.2-1.7 m off): within 3 m / 4 m the oracle is within 5% on
+  0.55 / 0.58 of player-windows, median error 0.049 / 0.040, no bias at 4 m.
+  So with a perfect identity our detections give a player's distance to
+  about 4-5% over 3 min (better over a match if errors average); **the
+  blocker is identity**: the main track still holds only 0.34-0.37 of a
+  player's 3 min, with ~19% mixing.
