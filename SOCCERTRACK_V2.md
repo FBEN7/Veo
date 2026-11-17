@@ -2906,3 +2906,26 @@ a number); per slot, Hungarian over the lineup (`fusion.json`):
 - Reading: on this footage (players ~49 px) per-player identity is not
   reachable with these cues; the lever is resolution (numbers readable
   from ~80 px).
+
+#### What-if: a finer camera (`cue_fusion/plan2.json`, `what_if.json`)
+
+No public fixed full-pitch footage is finer (SoccerTrack v1 and TeamTrack
+are released at 6500 x 1000, players ~38 px). So the fusion above was
+re-run with every crop's number read at one size band's rates (cues kept at
+today's sizes; same segments, 200 draws). 117093 / 132831:
+
+| number reads as if players were | segments identified | numbers alone | players' distance within 5% |
+|---|---|---|---|
+| today's sizes (reference) | 0.58 / 0.62 | 0.55 / 0.46 | 21% / 10% |
+| 60-80 px | **0.91 / 0.89** | 0.85 / 0.80 | 47% / 26% |
+| >= 80 px | **0.98 / 0.97** | 0.96 / 0.95 | **78% / 62%** |
+| >= 80 px, read rate at its 95% low / high | 0.93-0.99 / 0.91-0.99 | | 53-95% / 32-88% |
+
+- The 80% segment target is reached from 60-80 px; a player's distance
+  needs ~98% of segments right, i.e. >= 80 px, and even then 62-78% of
+  players are within 5% on these short windows (a whole match should
+  average out part of it: not measured).
+- Ceiling (perfect pieces, simulated reads from 30 crops per band). Camera
+  requirement on this evidence: players >= 80 px tall everywhere on the
+  pitch, far side included (SoccerTrack v2: median 49 px, far side ~35 px,
+  so about 2 x its linear resolution there).
