@@ -65,10 +65,12 @@ def stage(src):
     raise SystemExit("stage not ready")
 
 
-def push():
+def push(only=None):
     units = json.loads((SCRATCH / "tdeed_stage/units.json").read_text())
     for slug, names, ds in (("veo-gpu-run", [u["name"] for u in units if u["span"]], CLIP_DS),
                             ("veo-gpu-run2", [u["name"] for u in units if not u["span"]], WIN_DS)):
+        if only and slug != only:
+            continue
         d = SCRATCH / f"tdeed_kernel_{slug}"
         shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
@@ -82,4 +84,4 @@ def push():
 
 
 if __name__ == "__main__":
-    {"stage": lambda: stage(sys.argv[2]), "push": push}[sys.argv[1]]()
+    {"stage": lambda: stage(sys.argv[2]), "push": lambda: push(sys.argv[2] if len(sys.argv) > 2 else None)}[sys.argv[1]]()
