@@ -2818,3 +2818,33 @@ Pc = P minus its leave-one-match-out bias (`pass_accuracy.json`):
   pass. Pass counts are off by 28% (median).
 - Same limit as before (`team_passes/`): the ball and the team at the ball.
   No pass accuracy in the report for now.
+
+### Distance per player, identity step 1: re-tracking in pitch metres (`player_track/`, 2026-11-17)
+
+Owner 2026-11-17: distance per player needed ("the camera is fixed, a player
+can be followed all the time"). `plan.json` + `addendum1.json` (hashed before
+any test-match run; the addendum swaps continuity, capped by detection
+coverage, for **identity share** = a player's matched samples on his main
+trajectory / all his matched samples, adds beta to the grid and sets 117092
+aside: our positions do not meet the truth there). Re-tracker T: alpha-beta
+per track in metres, Hungarian per frame with kit-team penalties, coast.
+Settings chosen on dev (4 matches): beta 0.05, gate 4 m, coast 2 s. Test
+matches 118578, 128057, 128058, 132831, 132877, truth within 3 m
+(`retrack.json`):
+
+| arm | identity share | mixing | pieces / player (~3 min) | distance on main span within 5% |
+|---|---|---|---|---|
+| U (image tracker) | 0.52 | 0.18 | 9 | 46% |
+| **T (re-tracker)** | **0.54** | **0.10** | 9 | 52% |
+| T + stitching | 0.59 | 0.24 | 8 | 45% |
+
+- **Target (identity share >= 0.80, mixing <= 0.05) not met.** T halves the
+  mixing but leaves a player's track in ~9 pieces per 3 min; stitching joins
+  pieces only by mixing players. Same reading at 2 m.
+- Ceiling of positions alone: across all 24 dev cells identity share stays
+  <= 0.57; lowering mixing (to 0.02) costs identity share. Players meet,
+  cross and vanish (detections cover ~65% of frames); position and kit team
+  cannot say who comes out.
+- Conclusion: following a player all match from positions is not reachable
+  with these detections. Step 2 needs appearance from the video (per-player
+  look, possibly shirt numbers), GPU, and a licence check on any re-ID model.
