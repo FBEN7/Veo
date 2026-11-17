@@ -1,0 +1,27 @@
+{
+ "title": "distance per player: stitching our track fragments into players (fixed camera, no identification), first test on ordinary play",
+ "written": "2026-11-17, before any stitching is run",
+ "owner request": "2026-11-17: distance per player is needed; 'the camera is fixed so we should be able to follow a player all the time even if he is not formally identified'; bar within 5%",
+ "facts before": "on the 47 windows (3 min) a true player is matched to our detections 63% of the time (median) and split over 6 of our tracks (p90 10); his longest track covers 30% of the window; our tracks last 27.5 s (median)",
+ "units": "the 47 ordinary-play windows (138 min, 10 matches), our player detections and tracks as in metric_v3s_link (pitch metres, kit teams); truth = the GT people (player_id, centre origin, every frame)",
+ "fragments": "our tracks with >= 5 detections; team = majority of their kit labels (team_A, team_B, other); positions smoothed by a centred 1-s mean",
+ "stitching (S)": "one global assignment (Hungarian) of fragment ends to fragment starts of the same team class: gap g in [-0.4, 10] s; predicted point = end point + end velocity (last 1 s) x min(max(g, 0), 1 s); allowed if the start lies within 2 m + 7 m/s x max(g, 0) of it; cost = distance / (2 + 7 max(g, 0)) + 0.05 g; a fragment end may stay unlinked at cost 1.0; links chained into trajectories (overlapping frames: the earlier fragment's dropped)",
+ "baselines": {
+  "U (unstitched)": "our tracks as they are",
+  "O (oracle identity)": "every detection matched to the player (Hungarian <= 2 m, each frame used) joined into one path: the ceiling of our detections with a perfect identity"
+ },
+ "measures (per player-window, truth player = the one a trajectory is matched to most)": {
+  "continuity": "share of the player's window covered by his dominant trajectory (the one matched to him most), U vs S",
+  "pieces": "number of trajectories matched to him (>= 2 matched samples), U vs S",
+  "swaps": "share of a dominant trajectory's matched samples that belong to another player (identity mixing), S",
+  "distance on the dominant trajectory": "path length (gaps interpolated linearly, centred 1-s mean, sampled every 1 s) vs the truth player's over the same span: median absolute relative error and share within 5%, U vs S",
+  "distance, oracle": "O's path over the whole window vs the truth's: median abs relative error, share within 5%"
+ },
+ "reading": {
+  "stitching works on 3 min": "S's continuity median >= 0.80 and its distance within 5% on >= 70% of player-windows",
+  "detections limit": "O itself misses 5% on most players: identity is not the only limit",
+  "otherwise": "reported; what breaks (gaps, crowds, swaps) read from the fragments"
+ },
+ "cost": "local CPU, < 1 h",
+ "what this cannot show": "a whole match (needs whole-match tracking on the GPU, ~7 h per match); the owner's camera"
+}
