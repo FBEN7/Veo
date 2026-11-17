@@ -2848,3 +2848,32 @@ matches 118578, 128057, 128058, 132831, 132877, truth within 3 m
 - Conclusion: following a player all match from positions is not reachable
   with these detections. Step 2 needs appearance from the video (per-player
   look, possibly shirt numbers), GPU, and a licence check on any re-ID model.
+
+### Identity step 2a: are shirt numbers readable? (`jersey_read/`, 2026-11-17)
+
+Owner 2026-11-17: option A, measure number readability first (products such
+as Veo identify players by shirt number). `plan.json` + `addendum1.json`
+(hashed first; the addendum frames crops with our detections: the dataset's
+truth boxes are near-constant in size and offset from the players).
+Readings by eye (Claude) on x4 crops, blind, committed (`readings.json`,
+sha256) before scoring (`score.json`).
+
+- Player size (our boxes, 47 windows): median **49 px** tall; 28% of
+  player-frames >= 60 px, 10% >= 80 px.
+- Single crops, 30 per band (117093, 118576, 132831):
+
+| box height | read correctly | wrong among read |
+|---|---|---|
+| < 40 px | 0% | - |
+| 40-60 px | 3% | 2 of 3 |
+| 60-80 px | 27% | 2 of 10 |
+| >= 80 px | 43% | 1 of 14 |
+
+- 20-s segments (10 crops 2 s apart): **8 / 12 had a correct read, 2 / 12 a
+  wrong one** (36 read 35; 6 read 16): **fails the registered rule**
+  (>= 6 correct and <= 1 wrong). A majority vote would have fixed one of
+  the two; a trained reader might do better, but not where players are
+  < 60 px (72% of the time): there numbers are not on the image.
+- Reading: on this footage numbers can label a player only near the
+  camera. The owner's camera decides: player height in pixels on his
+  footage, set against this table, says whether numbers are usable.
