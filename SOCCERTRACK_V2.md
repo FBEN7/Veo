@@ -2877,3 +2877,32 @@ sha256) before scoring (`score.json`).
 - Reading: on this footage numbers can label a player only near the
   camera. The owner's camera decides: player height in pixels on his
   footage, set against this table, says whether numbers are usable.
+
+### Identity step 2b: numbers + lineup + look cues (`cue_fusion/`, 2026-11-17)
+
+Owner 2026-11-17: cross the cues (15 is close to 16; height, hair, shoes)
+with the lineup the club enters; quick CPU test first. `plan.json` (hashed
+first). Segments = a truth-matched player over a 20-s slot (a perfect
+tracker's pieces: a ceiling), 117093 (138), 132831 (390), 118576 (26).
+Cues per segment: height relative to the expected height at that image
+position; Lab colours of hair, shorts, socks, shoes (grass removed).
+Numbers simulated from `jersey_read`'s per-band rates (~50% of segments get
+a number); per slot, Hungarian over the lineup (`fusion.json`):
+
+| | 117093 | 132831 |
+|---|---|---|
+| (a) cues alone, rank-1 among ~10 team-mates (chance ~0.10) | 0.46 | 0.50 |
+| height only / colours only | 0.18 / 0.37 | 0.15 / 0.46 |
+| (b) numbers + lineup, no cues: segments identified | 0.55 | 0.46 |
+| **(b) numbers + lineup + cues** | **0.58** | **0.62** |
+| players' distance within 5% (fusion) | 21% | 10% |
+
+- **Target (>= 0.80 on both) not met.** Colours carry the cues (4-5 x
+  chance); height is near chance at these sizes. Cues add 3-16 points over
+  numbers alone, not enough: a player's distance stays wrong by > 5% for
+  80-90% of players.
+- Not used here: position continuity between pieces. But this ceiling
+  assumes perfect pieces; real ones mix players.
+- Reading: on this footage (players ~49 px) per-player identity is not
+  reachable with these cues; the lever is resolution (numbers readable
+  from ~80 px).
