@@ -119,7 +119,15 @@ def run(only=None):
         if not s.get("uploaded"):
             t = time.time()
             for w in b:
-                cut(w)
+                for attempt in range(5):   # the proxy resets long transfers now and then: retry with backoff
+                    try:
+                        cut(w)
+                        break
+                    except Exception as e:  # noqa: BLE001
+                        if attempt == 4:
+                            raise
+                        print(f"cut {w['name']}: {type(e).__name__}, retry {attempt + 1}", flush=True)
+                        time.sleep(30 * 2 ** attempt)
             mark(k, cut=True, cut_s=round(time.time() - t), windows=[w["name"] for w in b])
             d = STAGE / f"b{k}"
             shutil.rmtree(d, ignore_errors=True)
