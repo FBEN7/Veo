@@ -47,7 +47,8 @@ def windows():
         starts = list(range(0, n, LEN))
         spans = [[a, min(a + LEN, n)] for a in starts]
         if spans[-1][1] - spans[-1][0] < MIN_REST and len(spans) > 1:
-            spans[-2][1] = spans.pop()[1]
+            last = spans.pop()
+            spans[-1][1] = last[1]
         for a, b in spans:
             out.append({"name": f"st2_{MATCH}_{'1st' if half == 1 else '2nd'}_f{a:06d}", "half": half, "start": a, "frames": b - a})
     return out
