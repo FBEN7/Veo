@@ -2929,3 +2929,31 @@ today's sizes; same segments, 200 draws). 117093 / 132831:
   requirement on this evidence: players >= 80 px tall everywhere on the
   pitch, far side included (SoccerTrack v2: median 49 px, far side ~35 px,
   so about 2 x its linear resolution there).
+
+### Possession on a whole match (`possession_match/plan.json`, `addendum1.json`, `possession_match.json`)
+
+Owner request 2026-11-18: confirm possession on a whole match. 128057 (M7,
+never seen by the ball checkpoint), both halves tiled in 31 windows of
+3 min, run on Kaggle with `run_windows.py` unchanged (~7.5 h of GPU); the
+possession_v2 rule R frozen. 31/31 windows ran, 100% of live time covered.
+Addendum 1 (before any score): the team on the left in the 1st half rotates
+its players, so in the last 8 windows of the 2nd half its side is taken as
+the opposite of the other team's (no window where both disagree).
+
+| share of live time, team on the left in the 1st half | truth | R | error R | error constant 0.5 |
+|---|---|---|---|---|
+| **the match (52.8 live min)** | 0.577 | 0.565 | **1.2 pts** | 7.7 pts |
+| half 1 / half 2 | 0.604 / 0.550 | 0.590 / 0.541 | 1.4 / 0.9 | 10.4 / 5.0 |
+| 15-min periods (6 full ones) | | | 1.4, 6.5, 4.6, 0.4, 1.5, 2.7 | 14.2, 17.5, 1.5, 11.4, 0.7, 4.9 |
+
+- **Primary met**: 1.2 points against a 5-point bar on one full match.
+  Per 15-min period: 5 of 6 within 5 points (6.5 in the 2nd quarter of the
+  1st half; the 0.8-min tail after 90' is at 7.0).
+- Teams stay the same across windows: linking each window's teams to the
+  first window's by mean kit agrees with the truth in 30 of 31 windows.
+- Team distance (descriptive): ours 95 / 98 km against 104 / 108 km in the
+  truth (errors 8.0% / 9.5%, both under-estimates); the other matches'
+  constant rate gives 8.1% / 3.4%. Still not better than a constant: same
+  verdict as 2026-11-02.
+- Limits: one match; the truth's sides come from the BAS actions (sparse
+  labels, not frame-level possession).

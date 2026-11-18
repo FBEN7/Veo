@@ -18,18 +18,26 @@ ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "research/session_scratchpad/possession_v2"))
 import possession as P  # noqa: E402  (truth, side_map, rule: frozen)
-import drive as D  # noqa: E402
+import importlib.util  # noqa: E402
+
+# possession.py puts tdeed_probe (which has its own drive.py) first on sys.path: load ours by path
+_spec = importlib.util.spec_from_file_location("pm_drive", HERE / "drive.py")
+D = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(D)
 
 FPS, PERIOD = 25, 22500
 CODE = {"left": 1, "right": 2}
 
 
 def check():
-    want = (HERE / "plan.json.sha256").read_text().split()[0]
-    got = hashlib.sha256((HERE / "plan.json").read_bytes()).hexdigest()
-    if got != want:
-        raise SystemExit("plan.json does not match its sha256")
-    return got
+    out = {}
+    for name in ("plan.json", "addendum1.json"):
+        want = (HERE / f"{name}.sha256").read_text().split()[0]
+        got = hashlib.sha256((HERE / name).read_bytes()).hexdigest()
+        if got != want:
+            raise SystemExit(f"{name} does not match its sha256")
+        out[name] = got
+    return out
 
 
 def speeds(p):
@@ -99,20 +107,27 @@ def main():
     if not unsealed(D.MATCH, "possession on a whole match: score 128057 (development use, seal lifted 2026-11-05)"):
         raise SystemExit("VEO_UNSEAL needed")
     wins = D.windows()
-    # the team on the left in the 1st half, by the truth's player ids
-    t1 = set()
+    # addendum 1: both sides' 1st-half player ids (T1 = left in the 1st half, T2 = right)
+    t1, t2 = set(), set()
     for w in wins:
         if w["half"] == 1:
             gt = pd.read_parquet(D.DATA / f"{w['name']}_gt.parquet")
             t1 |= set(gt[(gt.side == "left") & (gt.role == "player")].player_id)
-    rows, failed, skipped, kits = [], [], [], {}
+            t2 |= set(gt[(gt.side == "right") & (gt.role == "player")].player_id)
+    rows, failed, skipped, kits, clash, by_t2 = [], [], [], {}, [], []
     for w in wins:
         name, n = w["name"], w["frames"]
         gt = pd.read_parquet(D.DATA / f"{name}_gt.parquet")
         ev = pd.read_csv(D.DATA / f"{name}_events.csv")
         tr = P.truth(ev, n)
         g1 = gt[gt.player_id.isin(t1) & (gt.role == "player")]
-        t1_side = g1.side.mode().iloc[0]
+        g2 = gt[gt.player_id.isin(t2) & (gt.role == "player")]
+        s2 = g2.side.mode().iloc[0] if len(g2) else None
+        t1_side = g1.side.mode().iloc[0] if len(g1) else ("right" if s2 == "left" else "left")
+        if not len(g1):
+            by_t2.append(name)
+        elif s2 == t1_side:
+            clash.append(name)
         row = {"window": name, "half": w["half"], "period": f"{w['half']}-{w['start'] // PERIOD}", "live": int((tr > 0).sum()),
                "t1_truth": int((tr == CODE[t1_side]).sum()), "t1_side": t1_side}
         tp = truth_path(gt, n)
@@ -175,7 +190,7 @@ def main():
         tru, our, secs = ok[tc].sum(), ok[oc].sum(), ok.seconds.sum()
         td[t] = {"truth (km)": round(tru / 1000, 2), "ours (km)": round(our / 1000, 2), "ours rel. error": round(abs(our - tru) / tru, 3),
                  "constant (km)": round(rate * secs / 1000, 2), "constant rel. error": round(abs(rate * secs - tru) / tru, 3)}
-    out = {"plan sha256": sha, "windows": len(d), "ran": len(ok), "failed": failed, "skipped (no side mapping)": skipped,
+    out = {"sha256": sha, "T1 side from T2's (no T1 player on the pitch)": by_t2, "T1 and T2 on the same side": clash, "windows": len(d), "ran": len(ok), "failed": failed, "skipped (no side mapping)": skipped,
            "live time covered": round(float(ok.live.sum() / d.live.sum()), 3),
            "primary: the match": match, "confirmed (error <= 5 points)": bool(match["error R (points)"] <= 5.0),
            "per half": halves, "per 15-min period": periods,

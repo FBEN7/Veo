@@ -36,7 +36,7 @@ The 15 target statistics are listed in the status doc.
 
 **Status doc (French, update it after each result):** Claude Docs at
 https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
-- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 101.
+- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 102.
 - Tables:
   - module table `.1860`;
   - stats table `.11947` (status enum `c07b100f-0db3`: 0 Abouti, 1 Partiel,
@@ -89,6 +89,7 @@ statistic; options: semi-automatic product, players near the ball, new data).
 | Identity step 2a: shirt-number readability (`jersey_read/`, 2026-11-17; owner: option A) | Plan + addendum hashed (truth boxes do not frame players: our detections used). Players median 49 px tall (28% >= 60 px). Blind reading of x4 crops: correct 0% < 40 px, 3% 40-60, 27% 60-80, 43% >= 80. 20-s segments: 8/12 correct, 2/12 wrong: **fails the rule (<= 1 wrong)**. Numbers only near the camera on this footage. Next: player height in pixels on the owner's camera (owner's call). |
 | Identity step 2b: numbers + lineup + look cues (`cue_fusion/`, 2026-11-17; owner: cross the cues, lineup entered by the club) | Plan hashed. Truth 20-s segments (ceiling), numbers simulated from jersey_read. Cues alone rank-1 among ~10 team-mates 0.46-0.50 (colours carry it, height ~chance). Fusion identifies 0.58 / 0.62 of segments (numbers alone 0.55 / 0.46); players' distance within 5%: 21% / 10%. **Target 0.80 not met.** Lever: resolution (numbers from ~80 px). |
 | Identity step 2b what-if: a finer camera (`cue_fusion/plan2.json`, 2026-11-17; owner: run the simulation) | Plan hashed. No finer public footage (SoccerTrack v1 / TeamTrack released at 6500 x 1000, ~38 px). Number reads at one band's rates: segments identified 0.91 / 0.89 at 60-80 px, **0.98 / 0.97 at >= 80 px**; players' distance within 5%: 47% / 26% and 78% / 62%. Camera need: players >= 80 px everywhere (~2 x SoccerTrack v2 on the far side). Ceiling: perfect pieces. |
+| Possession on a whole match (`possession_match/`, 2026-11-18; owner: confirm on one match) | Plan hashed, addendum 1 (teams across halftime by both sides' ids, before any score). 128057, 31 windows of 3 min, all ran (~7.5 h Kaggle GPU). Live-time share of one team: truth 0.577, R 0.565, **error 1.2 pts** (constant 0.5: 7.7); halves 1.4 / 0.9; 15-min periods 5 of 6 within 5 pts (worst 6.5). Kit links teams across windows 30/31. Team distance still not better than a constant (8.0% / 9.5% vs 8.1% / 3.4%). |
 | Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly
