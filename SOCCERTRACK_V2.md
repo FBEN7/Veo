@@ -2992,3 +2992,36 @@ smoothed over 1 s); 15 halves, live stretches only (52-71% of frames).
 - Zoomed views make players 86-128 px tall at 30-45 deg, above the ~80 px
   shirt numbers need -- but only if Veo's panorama holds that detail
   natively (an upscaled crop is not sharper).
+
+### Per-player counts from shirt numbers on a follow-cam (`actor_id/plan.json`, `actor_id.json`)
+
+Owner request 2026-11-19: shots, successful passes and tackles per player,
+within +/- 1 per player, fully automatic, on the follow-cam. A ceiling:
+every action detected, every player tracked while in view; the actor looked
+at every 2 s within +/- W s of the action, each look read at jersey_read's
+per-band rates by his height in a 1080p output (independent looks, a wrong
+read is a team-mate's number, the most-read number wins); followcam_sim's
+camera; 8 matches (230 shots, 6,500 successful passes, 233 tackles), 200
+draws. Best view (30 deg, +/- 6 s):
+
+| | right player | players within +/- 1 (all) | ... (with >= 1 action) |
+|---|---|---|---|
+| shots | 0.63 | **0.93** | 0.85 |
+| tackles | 0.83 | **0.99** | 0.98 |
+| successful passes | 0.81 | 0.30 | 0.30 |
+| *post hoc: give everyone 0* | | shots 0.79, tackles 0.78, passes 0.03 | 0.53 / 0.58 / 0.02 |
+
+- The fixed bar (>= 90% of players within +/- 1) is met for shots and
+  tackles, not for passes. The post-hoc "zero for everyone" line (not in
+  the plan, added because +/- 1 is easy on small counts) shows most of the
+  shots / tackles margin comes from players with 0-1 actions; among players
+  who did act, attribution lifts within +/- 1 from 0.53 to 0.85 (shots) and
+  0.58 to 0.98 (tackles).
+- Passes: +/- 1 needs ~97% of a player's 20-60 passes right; the ceiling
+  gets 81% of passes to the right player. Out of reach by shirt numbers.
+- The tight view matters: at 60 deg the right-player share halves (shots
+  0.31, tackles 0.50).
+- Optimistic on every count: detection assumed perfect (shot detection is
+  at F1 0.05 today), looks 2 s apart taken as independent, panorama read
+  rates applied to an upscaled crop, and the simulated camera aims at the
+  actor by construction.

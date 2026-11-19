@@ -1,0 +1,16 @@
+{
+ "written": "2026-11-19, before any number of this study is computed",
+ "owner request": "2026-11-19: shots, successful passes and tackles per player, within +/- 1 action per player, fully automatic (no manual check), on Veo's follow-cam view only",
+ "question": "a ceiling for the attribution: with every action detected perfectly and every player tracked perfectly while in view, how often does reading shirt numbers on a follow-cam give each player's counts within +/- 1?",
+ "data": "the 15 halves of followcam_sim (SoccerTrack v2 GSR + BAS, M7 / M9 not used)",
+ "camera": "followcam_sim's camera unchanged (pinhole at the halfway line, 3 m back, 6 m high, 16:9, aimed at the action-based ball proxy smoothed over 1 s); horizontal view 30, 45, 60 degrees",
+ "actions": {
+  "shots": "SHOT, and GOAL when no SHOT by the same player in the 2 s before it",
+  "successful passes": "PASS, HIGH PASS, CROSS whose next action with a side is by the same side within 6 s and is not OUT",
+  "tackles": "PLAYER SUCCESSFUL TACKLE"
+ },
+ "reads": "the actor is looked at every 2 s (the spacing of jersey_read part 3) from W s before to W s after the action, W = 2 or 6, at the looks where he is in view; each look reads his number right with p_correct and wrong with p_wrong, by his projected height in a 1080-px output (1.8 m tall), at jersey_read part 2's per-band rates (<40 px: 0 / 0; 40-60: 0.033 / 0.067; 60-80: 0.267 / 0.067; >=80: 0.433 / 0.033); looks are independent; a wrong read is another number of his team's lineup (uniform); the action goes to the number read most often, none if no read or a tie",
+ "draws": 200,
+ "measures": "per action type: share of actions attributed to the right player; share of players who played (player, match) whose attributed count is within +/- 1 of the truth; the same among players with at least one true action",
+ "reading (fixed now)": "met for an action type if >= 90% of the players who played are within +/- 1 at one of the views; this is a ceiling (perfect detection, perfect tracking in view, panorama read rates applied to an upscaled crop): failing it means the follow-cam cannot do it by shirt numbers alone"
+}

@@ -1,0 +1,14 @@
+{
+ "shots": {
+  "zero for everyone: players within +/- 1 (all who played)": 0.788,
+  "(with >= 1 true action)": 0.527
+ },
+ "successful passes": {
+  "zero for everyone: players within +/- 1 (all who played)": 0.025,
+  "(with >= 1 true action)": 0.021
+ },
+ "tackles": {
+  "zero for everyone: players within +/- 1 (all who played)": 0.781,
+  "(with >= 1 true action)": 0.581
+ }
+}
