@@ -2957,3 +2957,38 @@ the opposite of the other team's (no window where both disagree).
   verdict as 2026-11-02.
 - Limits: one match; the truth's sides come from the BAS actions (sparse
   labels, not frame-level possession).
+
+### Follow-cam ceiling (`followcam_sim/plan.json`, `followcam_sim.json`)
+
+Owner request 2026-11-19: try the report on Veo's follow-cam view. No real
+follow-cam file could be had: YouTube refuses downloads from this server
+(bot check, then 403 / 429), nothing on Dailymotion, Wikimedia Commons,
+archive.org or Vimeo, and Veo's share links are view-only. Kept for a
+download from a personal computer: "Full Match Volsungur Vs Sindri VEO"
+(YouTube `CqL3iTdRUlg`, CC BY, 1080p). Meanwhile, a CPU ceiling from
+SoccerTrack v2's truth -- not Veo's camera, whose framing rule is not
+public: a pinhole camera at the halfway line (3 m back, 6 m high, 16:9)
+aimed at a ball proxy (the actors' positions interpolated between actions,
+smoothed over 1 s); 15 halves, live stretches only (52-71% of frames).
+
+| horizontal view | 30 deg | 45 deg | 60 deg |
+|---|---|---|---|
+| players in view (of 22) | 8.4 | 12.0 | 14.8 |
+| possession: players within 4 m of the ball all in view | 0.99 | 1.00 | 1.00 |
+| passes: passer and next actor in view | 1.00 | 1.00 | 1.00 |
+| a player's path in view (median) | 39% | 56% | 69% |
+| players with >= 95% of their path in view | 0% | 0% | 0% |
+| a team's path in view (median) | 38% | 55% | 68% |
+| player height in a 1080p output (upper bound) | 128 px | 86 px | 64 px |
+
+- Possession and passes at ~100% are **circular**: the simulated camera aims
+  at the very players who make the actions. All it says is that a camera
+  following the ball well sees what possession and passes need; how well
+  Veo's camera follows the ball is the open question, and only real
+  footage answers it.
+- **Distances (per player and per team) are out of reach** from the
+  follow-cam: at best 69% of a player's path is in view, no player reaches
+  95%.
+- Zoomed views make players 86-128 px tall at 30-45 deg, above the ~80 px
+  shirt numbers need -- but only if Veo's panorama holds that detail
+  natively (an upscaled crop is not sharper).
