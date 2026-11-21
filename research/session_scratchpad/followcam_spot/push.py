@@ -66,7 +66,7 @@ def push(name, epochs, epoch_frames, warmup):
     d = SCR / f"kernel_{name}"
     shutil.rmtree(d, ignore_errors=True)
     d.mkdir(parents=True)
-    (d / "kernel.py").write_text((HERE / "kernel.py").read_text().replace("__PARAMS__", json.dumps(p)))
+    (d / "kernel.py").write_text((HERE / "kernel.py").read_text().replace("__PARAMS__", repr(p)))
     (d / "kernel-metadata.json").write_text(json.dumps({
         "id": f"{OWNER}/{SLUG}", "title": SLUG, "code_file": "kernel.py", "language": "python", "kernel_type": "script",
         "is_private": True, "enable_gpu": True, "enable_internet": True, "dataset_sources": [f"{OWNER}/{DS}"],
