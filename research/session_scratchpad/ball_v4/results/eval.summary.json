@@ -1,0 +1,246 @@
+{
+ "A/v3b": {
+  "ball frames": 212,
+  "hit1": 0.212,
+  "hit4": 0.297,
+  "conf10": 0.269,
+  "after kick (k>=1) hit4": 0.279,
+  "missed shots hit4": 0.263,
+  "none frames": 36,
+  "fp_any": 0.917,
+  "fp10": 0.444
+ },
+ "A/v4A.300": {
+  "ball frames": 212,
+  "hit1": 0.34,
+  "hit4": 0.448,
+  "conf10": 0.401,
+  "after kick (k>=1) hit4": 0.419,
+  "missed shots hit4": 0.406,
+  "none frames": 36,
+  "fp_any": 1.0,
+  "fp10": 0.417
+ },
+ "A/v4A.600": {
+  "ball frames": 212,
+  "hit1": 0.377,
+  "hit4": 0.453,
+  "conf10": 0.41,
+  "after kick (k>=1) hit4": 0.424,
+  "missed shots hit4": 0.414,
+  "none frames": 36,
+  "fp_any": 0.972,
+  "fp10": 0.361
+ },
+ "A/v4B.300": {
+  "ball frames": 212,
+  "hit1": 0.311,
+  "hit4": 0.415,
+  "conf10": 0.396,
+  "after kick (k>=1) hit4": 0.378,
+  "missed shots hit4": 0.376,
+  "none frames": 36,
+  "fp_any": 1.0,
+  "fp10": 0.611
+ },
+ "A/v4B.600": {
+  "ball frames": 212,
+  "hit1": 0.307,
+  "hit4": 0.429,
+  "conf10": 0.392,
+  "after kick (k>=1) hit4": 0.395,
+  "missed shots hit4": 0.398,
+  "none frames": 36,
+  "fp_any": 0.972,
+  "fp10": 0.639
+ },
+ "B/v3b": {
+  "ball frames": 176,
+  "hit1": 0.358,
+  "hit4": 0.443,
+  "conf10": 0.318,
+  "after kick (k>=1) hit4": 0.407,
+  "missed shots hit4": 0.373,
+  "none frames": 37,
+  "fp_any": 0.811,
+  "fp10": 0.135
+ },
+ "B/v4A.300": {
+  "ball frames": 176,
+  "hit1": 0.426,
+  "hit4": 0.534,
+  "conf10": 0.449,
+  "after kick (k>=1) hit4": 0.517,
+  "missed shots hit4": 0.434,
+  "none frames": 37,
+  "fp_any": 0.811,
+  "fp10": 0.378
+ },
+ "B/v4A.600": {
+  "ball frames": 176,
+  "hit1": 0.438,
+  "hit4": 0.534,
+  "conf10": 0.455,
+  "after kick (k>=1) hit4": 0.517,
+  "missed shots hit4": 0.434,
+  "none frames": 37,
+  "fp_any": 0.811,
+  "fp10": 0.432
+ },
+ "B/v4B.300": {
+  "ball frames": 176,
+  "hit1": 0.472,
+  "hit4": 0.574,
+  "conf10": 0.511,
+  "after kick (k>=1) hit4": 0.566,
+  "missed shots hit4": 0.458,
+  "none frames": 37,
+  "fp_any": 0.892,
+  "fp10": 0.324
+ },
+ "B/v4B.600": {
+  "ball frames": 176,
+  "hit1": 0.489,
+  "hit4": 0.574,
+  "conf10": 0.534,
+  "after kick (k>=1) hit4": 0.566,
+  "missed shots hit4": 0.458,
+  "none frames": 37,
+  "fp_any": 0.892,
+  "fp10": 0.378
+ },
+ "guard/v3b": {
+  "ball frames": 39,
+  "hit1": 0.282,
+  "hit4": 0.308,
+  "conf10": 0.256,
+  "after kick (k>=1) hit4": 0.242,
+  "missed shots hit4": 0.158,
+  "none frames": 4,
+  "fp_any": 1.0,
+  "fp10": 0.25
+ },
+ "guard/v4A.300": {
+  "ball frames": 39,
+  "hit1": 0.333,
+  "hit4": 0.41,
+  "conf10": 0.282,
+  "after kick (k>=1) hit4": 0.364,
+  "missed shots hit4": 0.316,
+  "none frames": 4,
+  "fp_any": 1.0,
+  "fp10": 0.25
+ },
+ "guard/v4A.600": {
+  "ball frames": 39,
+  "hit1": 0.385,
+  "hit4": 0.436,
+  "conf10": 0.308,
+  "after kick (k>=1) hit4": 0.394,
+  "missed shots hit4": 0.368,
+  "none frames": 4,
+  "fp_any": 1.0,
+  "fp10": 0.25
+ },
+ "guard/v4B.300": {
+  "ball frames": 39,
+  "hit1": 0.385,
+  "hit4": 0.436,
+  "conf10": 0.282,
+  "after kick (k>=1) hit4": 0.394,
+  "missed shots hit4": 0.316,
+  "none frames": 4,
+  "fp_any": 1.0,
+  "fp10": 0.25
+ },
+ "guard/v4B.600": {
+  "ball frames": 39,
+  "hit1": 0.41,
+  "hit4": 0.462,
+  "conf10": 0.333,
+  "after kick (k>=1) hit4": 0.424,
+  "missed shots hit4": 0.368,
+  "none frames": 4,
+  "fp_any": 1.0,
+  "fp10": 0.25
+ },
+ "guard_w/v3b": {
+  "ball frames": 133,
+  "hit1": 0.955,
+  "hit4": 1.0,
+  "conf10": 0.94,
+  "after kick (k>=1) hit4": NaN,
+  "missed shots hit4": NaN,
+  "none frames": 0,
+  "fp_any": null,
+  "fp10": null
+ },
+ "guard_w/v4A.300": {
+  "ball frames": 133,
+  "hit1": 0.857,
+  "hit4": 0.97,
+  "conf10": 0.865,
+  "after kick (k>=1) hit4": NaN,
+  "missed shots hit4": NaN,
+  "none frames": 0,
+  "fp_any": null,
+  "fp10": null
+ },
+ "guard_w/v4A.600": {
+  "ball frames": 133,
+  "hit1": 0.865,
+  "hit4": 0.955,
+  "conf10": 0.872,
+  "after kick (k>=1) hit4": NaN,
+  "missed shots hit4": NaN,
+  "none frames": 0,
+  "fp_any": null,
+  "fp10": null
+ },
+ "guard_w/v4B.300": {
+  "ball frames": 133,
+  "hit1": 0.872,
+  "hit4": 0.977,
+  "conf10": 0.925,
+  "after kick (k>=1) hit4": NaN,
+  "missed shots hit4": NaN,
+  "none frames": 0,
+  "fp_any": null,
+  "fp10": null
+ },
+ "guard_w/v4B.600": {
+  "ball frames": 133,
+  "hit1": 0.865,
+  "hit4": 0.97,
+  "conf10": 0.925,
+  "after kick (k>=1) hit4": NaN,
+  "missed shots hit4": NaN,
+  "none frames": 0,
+  "fp_any": null,
+  "fp10": null
+ },
+ "primary": {
+  "v4.300": {
+   "frames": 317,
+   "shots": 81,
+   "v3b hit4": 0.338,
+   "v4 hit4": 0.442,
+   "difference": 0.104,
+   "95% interval": [
+    0.072,
+    0.137
+   ]
+  },
+  "v4.600": {
+   "frames": 317,
+   "shots": 81,
+   "v3b hit4": 0.338,
+   "v4 hit4": 0.451,
+   "difference": 0.114,
+   "95% interval": [
+    0.08,
+    0.15
+   ]
+  }
+ }
+}

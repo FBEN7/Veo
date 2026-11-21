@@ -1,0 +1,200 @@
+{
+ "plan sha256": "9468dcba087c0d450ded62bc2b27c0f293eb8f2c11e2db0f6a48e32ff0611d94",
+ "addendum1 sha256": "de4372fb848089b1f940b053d0dfd2da8d32d21a61681a803a2bb808ceda1471",
+ "units": 223,
+ "actions": 2257,
+ "shares (of all actions)": {
+  "S1 ball found": 0.5055,
+  "actor detected": 0.4931,
+  "S2 nearest is actor": 0.3425,
+  "S3 team given": 0.307,
+  "S4 team right": 0.2725,
+  "end to end": 0.3451,
+  "swap ball": 0.5968,
+  "swap player": 0.2867,
+  "swap team": 0.3527
+ },
+ "conditional": {
+  "S2 | S1": 0.6775,
+  "S3 | S2": 0.8965,
+  "S4 | S3": 0.8874
+ },
+ "end to end": {
+  "value": 0.3451,
+  "95% over matches": [
+   0.3238,
+   0.3681
+  ]
+ },
+ "swap gains over end to end": {
+  "swap ball": {
+   "value": 0.2517,
+   "95% over matches": [
+    0.2263,
+    0.278
+   ]
+  },
+  "swap player": {
+   "value": -0.0585,
+   "95% over matches": [
+    -0.0652,
+    -0.0521
+   ]
+  },
+  "swap team": {
+   "value": 0.0075,
+   "95% over matches": [
+    -0.0159,
+    0.0294
+   ]
+  }
+ },
+ "per kind": {
+  "carry": {
+   "S1 ball found": 0.5691,
+   "actor detected": 0.5479,
+   "S2 nearest is actor": 0.4096,
+   "S3 team given": 0.375,
+   "S4 team right": 0.3311,
+   "end to end": 0.4162,
+   "swap ball": 0.6636,
+   "swap player": 0.3431,
+   "swap team": 0.4215,
+   "actions": 752
+  },
+  "other": {
+   "S1 ball found": 0.3107,
+   "actor detected": 0.3379,
+   "S2 nearest is actor": 0.1361,
+   "S3 team given": 0.1202,
+   "S4 team right": 0.1066,
+   "end to end": 0.1791,
+   "swap ball": 0.4989,
+   "swap player": 0.1293,
+   "swap team": 0.1451,
+   "actions": 441
+  },
+  "pass": {
+   "S1 ball found": 0.5414,
+   "actor detected": 0.5188,
+   "S2 nearest is actor": 0.3806,
+   "S3 team given": 0.3365,
+   "S4 team right": 0.2998,
+   "end to end": 0.3637,
+   "swap ball": 0.5902,
+   "swap player": 0.312,
+   "swap team": 0.39,
+   "actions": 1064
+  }
+ },
+ "per match": {
+  "117093": {
+   "S1 ball found": 0.5418,
+   "actor detected": 0.5382,
+   "S2 nearest is actor": 0.3855,
+   "S3 team given": 0.3673,
+   "S4 team right": 0.3236,
+   "end to end": 0.3891,
+   "swap ball": 0.6036,
+   "swap player": 0.3273,
+   "swap team": 0.3964,
+   "actions": 275
+  },
+  "118575": {
+   "S1 ball found": 0.5342,
+   "actor detected": 0.5068,
+   "S2 nearest is actor": 0.3744,
+   "S3 team given": 0.2831,
+   "S4 team right": 0.2466,
+   "end to end": 0.3059,
+   "swap ball": 0.5297,
+   "swap player": 0.2603,
+   "swap team": 0.379,
+   "actions": 219
+  },
+  "118576": {
+   "S1 ball found": 0.5154,
+   "actor detected": 0.5487,
+   "S2 nearest is actor": 0.3848,
+   "S3 team given": 0.3349,
+   "S4 team right": 0.2779,
+   "end to end": 0.3468,
+   "swap ball": 0.6057,
+   "swap player": 0.2945,
+   "swap team": 0.3895,
+   "actions": 421
+  },
+  "118577": {
+   "S1 ball found": 0.4436,
+   "actor detected": 0.4825,
+   "S2 nearest is actor": 0.3074,
+   "S3 team given": 0.2685,
+   "S4 team right": 0.2568,
+   "end to end": 0.3191,
+   "swap ball": 0.572,
+   "swap player": 0.2724,
+   "swap team": 0.3268,
+   "actions": 257
+  },
+  "118578": {
+   "S1 ball found": 0.4905,
+   "actor detected": 0.384,
+   "S2 nearest is actor": 0.2776,
+   "S3 team given": 0.2662,
+   "S4 team right": 0.2281,
+   "end to end": 0.3118,
+   "swap ball": 0.6008,
+   "swap player": 0.2357,
+   "swap team": 0.2966,
+   "actions": 263
+  },
+  "128057": {
+   "S1 ball found": 0.5233,
+   "actor detected": 0.4302,
+   "S2 nearest is actor": 0.2674,
+   "S3 team given": 0.2558,
+   "S4 team right": 0.2442,
+   "end to end": 0.3488,
+   "swap ball": 0.6047,
+   "swap player": 0.3023,
+   "swap team": 0.2791,
+   "actions": 86
+  },
+  "128058": {
+   "S1 ball found": 0.6056,
+   "actor detected": 0.5299,
+   "S2 nearest is actor": 0.4064,
+   "S3 team given": 0.3546,
+   "S4 team right": 0.3187,
+   "end to end": 0.4024,
+   "swap ball": 0.5976,
+   "swap player": 0.3347,
+   "swap team": 0.4143,
+   "actions": 251
+  },
+  "132831": {
+   "S1 ball found": 0.5109,
+   "actor detected": 0.5435,
+   "S2 nearest is actor": 0.3424,
+   "S3 team given": 0.3207,
+   "S4 team right": 0.2989,
+   "end to end": 0.375,
+   "swap ball": 0.6033,
+   "swap player": 0.3152,
+   "swap team": 0.3533,
+   "actions": 184
+  },
+  "132877": {
+   "S1 ball found": 0.412,
+   "actor detected": 0.4252,
+   "S2 nearest is actor": 0.2757,
+   "S3 team given": 0.2658,
+   "S4 team right": 0.2425,
+   "end to end": 0.3156,
+   "swap ball": 0.6379,
+   "swap player": 0.2525,
+   "swap team": 0.2824,
+   "actions": 301
+  }
+ }
+}

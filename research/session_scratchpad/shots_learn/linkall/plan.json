@@ -1,0 +1,8 @@
+{
+ "plan": "shots, linkall: the v4 spotter on the ball relinked with all frames (tau 0.03, no feet bonus)",
+ "date": "2026-11-06, before any computation below",
+ "known before": "eval/eval_ap.json: v4 event AP 0.612 (seed average), a real change needs about +0.04 (eval/decision.json); chain/link_variants.json: the variant (all frames, tau 0.03, b 0) was chosen on all 9 matches for the team at the ball, and on the owner's clicks it finds the ball after the kick 0.434 vs 0.336. Nothing about shots was tuned on it",
+ "variant": "per unit of eval_ap.units() (249 clips, 10 matches), the ball rows of gpu_shots3's metric_v3s_link.parquet replaced by src/ball_link.link on v3s_rows.parquet's candidates on every frame with confidence >= 0.03, the top 4 a frame, c_null 1, c_static 2, the pipeline's player rows, fps 25; the new rows put on the pitch by src/pixel_scale.to_pitch_metres (px_raw / py_raw kept); everything else as gpu_shots3 (players, teams, v3s_rows). Tree: .cache/gpu_shots_linkall",
+ "measure": "eval/protocol.json's: learn_v4.features_v4 on that tree, leave-one-match-out probabilities with seeds 0, 1, 2, event AP of the seed-averaged probabilities; the difference to v4's (cached) with a 95% bootstrap over matches (5,000, seed 0, paired); per match; the counts at the rate threshold for reference",
+ "bar": "AP difference >= +0.04 with the interval's lower bound > 0: the relinked ball goes into the shots pipeline (proposed to the owner). Otherwise no change"
+}

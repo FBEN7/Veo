@@ -1,0 +1,19 @@
+{
+ "title": "shots, option B feasibility: a pretrained video action spotter (T-DEED, SoccerNet ball actions) on our panoramic video, no training on SoccerTrack",
+ "written": "2026-11-17, before any T-DEED output on SoccerTrack is seen",
+ "owner request": "2026-11-13: option B, 'lance l'essai de faisabilité'",
+ "model": "T-DEED (Xarles et al., CVsports 2024; code GPL-3.0, github.com/arturxe2/T-DEED), checkpoint SoccerNetBall_challenge1 (Google Drive folder of the repo; sha256 f7b5cee134a2cfffc5b76922bbf528fe24cb6cc35c550dba23b9eb1bd4ff3d35): RegNetY-002 + GSF, encoder-decoder, pretrained on SoccerNet action spotting (500 broadcast matches) then the 2024 ball action spotting set (7 broadcast matches); the same 12 classes as SoccerTrack v2's labels; input 796 x 448 RGB, every 2nd frame, clips of 100, overlap 75 (its inference.py)",
+ "licence note": "measurement only. The checkpoint was trained on SoccerNet videos obtained under an NDA; using it (or a model fine-tuned from it) in the product needs that question settled. Code GPL-3.0.",
+ "virtual camera (fixed here, not tuned)": "broadcast-like crop of the panorama: per frame, centre = median image position of our detected players (metric_v3s_link px_raw / py_raw, cls player), interpolated to every frame, smoothed by a centred rolling median of 2 s then a rolling mean of 1 s; crop width 0.35 x the video width, height = width x 448 / 796, clamped inside the image; scaled to 796 x 448",
+ "units": "as shots_learn/diagnose arm O: the 249 shot-clip units (eval_ap.units(), scored on their span) and the 47 ordinary-play windows (negatives: 40 new + 7 dev); every unit's whole video is run, frames outside a clip's span are dropped before scoring",
+ "score": "per sampled frame, P(SHOT) + P(GOAL) from the model's softmax (averaged over overlapping clips as its inference); detections, flags and whole-match extrapolation exactly as negatives/score.py (eval_ap.detections on the frames' scores, 2-s matching, clips' recall, window false alarms per minute x (92 min x 10 - clip minutes)); no fitting, so every match is held out",
+ "primary": "whole-match precision at clip recall 0.60, compared with our v4 spotter (diagnose arm O: 0.212); also at recall 0.80 (arm O 0.095)",
+ "sanity": "event AP (2-s matching) of each of the 12 classes over the clips and windows, with the unit's own labels; PASS and DRIVE (the most frequent) tell whether the model sees the game at all in these crops",
+ "reading": {
+  "promising": "precision at recall 0.60 >= 0.21 with no SoccerTrack training: fine-tuning on SoccerTrack is worth its cost",
+  "transfer fails": "PASS and DRIVE AP near their chance level: the crops / domain break the model; zero-shot says nothing about fine-tuning, which is then the only real test",
+  "in between": "reported as such; the owner decides on fine-tuning (cost, licence)"
+ },
+ "compute": "Kaggle T4 (2 kernels: clips, windows), no internet; inputs: the existing clip and window datasets, a small stage dataset (T-DEED code, checkpoint, crop centres)",
+ "what this cannot show": "the owner's camera; a model fine-tuned on SoccerTrack"
+}

@@ -1,0 +1,7 @@
+{
+ "title": "goals v7, addendum 1: the second half's kick-off after a split",
+ "written": "2026-11-12, after src/match_periods.py's own synthetic self-check and before any SoccerTrack recording is built or scored",
+ "found": "in the synthetic match with 14 people on the pitch at half-time, the split's score is flat from the last strong sample of the old ends to the first of the new ones, and chance strong samples (in live play and among the half-time crowd) put its maximum inside half 1 (3330 s, truth 4650 s). The plan's kick-off search (from 120 s before the part start to 180 s after) then finds no formation and returns the split time.",
+ "change": "after a split, the second part's kick-off is the end of the first run of >= 3 samples, starting at or after the split time, with n >= 6 and the own-half share under the second part's ends >= 0.75 (s <= 0.25 when the first part's strong samples had s >= 0.85, and the reverse); if none, the split time. Everything else in plan.json is unchanged, the bar included.",
+ "plan.json sha256": "see plan.json.sha256"
+}

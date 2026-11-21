@@ -1,0 +1,8 @@
+{
+ "title": "shots diagnose, addendum 1: the annotation ball is present on every frame",
+ "written": "2026-11-13, after a check of the annotation ball on one clip and one window and of the 274 shots' action sequences, before any fit or evaluation of arm T",
+ "why": "as planned, the annotation ball stops at the unit's last action with a position. 51 of 274 shots are their clip's last positioned action (the clip ends 10 s after the shot, the restart is later), so the ball would vanish right after them: a 'last action of the clip' cue that no ball detector gives, which would inflate arm T. Our ball (arm O) is present on 74% of frames of the checked clip; the annotation ball on 60%.",
+ "change": "arm T's ball: before the unit's first positioned action it stays at that action's position, after the last positioned action at that one's position; between actions unchanged (linear in time). The ball is then present on every frame of every unit; speed 0 outside the actions.",
+ "still optimistic": "after a shot that ends the clip the ball stops (speed 0) where the shot was taken; a real ball would fly on. Arm T remains an upper bound, read as such.",
+ "unchanged": "everything else in plan.json"
+}

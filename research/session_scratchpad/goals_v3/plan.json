@@ -1,0 +1,11 @@
+{
+ "plan": "goals v3: the kick-off formation rule on our 1-fps detections of all 20 halves, its cell chosen leaving one match out, against the owner's product bar",
+ "date": "2026-11-06, while the 16 missing scans run; before any of them is read",
+ "known before": "goals_v2/explore_gt.json: on the truth the registered rule finds 41 of 41 restartable goals with 0 false runs; shots_goals/goals_test.json: on the 4 test halves' scans (M1 x2, M5 2nd, M9 2nd) 4 of 8 hits, 2 false runs; goals_v2/on_detections.json (exploratory, M5 2nd and M9 2nd) and m1_check.json (M1) were read; the other 16 halves' detections have never been scored",
+ "data": "the 1-fps scans of shots_goals/formation_scan.py (same scan key) of the 20 halves of the 10 matches, .cache/formation_scan/<match>_<half>.parquet; the people as goals_v2/on_detections.half_det (team_A / team_B within |x| <= 54.5 m, |y| <= 36 m); goals and actions from the BAS events",
+ "rule": "goals_v2/explore.runs (share of team-labelled people in their own half >= T, nearest to the centre spot within R m when R is set, >= N consecutive samples; runs in the first 60 s dropped, runs < 20 s apart merged) on the grid explore.GRID (T x R x N); a run matches a GOAL 15-60 s before its start (formation.match_runs); hits on restartable goals; false runs = unmatched runs",
+ "selection": "leave one match out: for each match, the cell explore.choose picks on the other 9 matches' halves (most hits, then fewest false runs, then higher T, then smaller R), applied to the held-out match",
+ "primary (owner's bar for goals)": "held out, pooled over the 10 matches: restartable goals found >= 0.95, and false runs <= 1 per match on average",
+ "also reported": "per match hits / restartable goals / false runs; the scoring team right on hits by kick_spot (the owner's bar is per team: right on >= 0.9 of hits counts as meeting it); goals that are not restartable (a kick-off rule cannot see them); the random-time baseline (formation.random_baseline); the registered cell (T 0.85, N 2, no R) on all 20 halves",
+ "what it decides": "met: the rule, with the cell chosen on all 10 matches, is proposed for the report's goals (final test on the owner's own matches); not met: report where it fails"
+}

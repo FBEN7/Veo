@@ -1,0 +1,243 @@
+{
+ "plan sha256": {
+  "plan.json": "78f8bc1aaf22b959cd5e85d197e20c93d054f58c87043a019416580f53da1c3f",
+  "addendum1.json": "51d2638a4f3bf7c6b5487bf6bf7e5c9accde89ea8ad5537969e99202cfa4c8d8"
+ },
+ "dev grid (T, 3 m)": {
+  "beta 0.2, gate 1.0 m, coast 2 s": {
+   "identity share median": 0.423,
+   "continuity median": 0.314,
+   "mixing median": 0.017,
+   "pieces median": 14.0,
+   "distance on main span within 5%": 0.661
+  },
+  "beta 0.2, gate 1.0 m, coast 5 s": {
+   "identity share median": 0.454,
+   "continuity median": 0.334,
+   "mixing median": 0.054,
+   "pieces median": 13.0,
+   "distance on main span within 5%": 0.467
+  },
+  "beta 0.2, gate 1.0 m, coast 10 s": {
+   "identity share median": 0.47,
+   "continuity median": 0.334,
+   "mixing median": 0.074,
+   "pieces median": 13.0,
+   "distance on main span within 5%": 0.367
+  },
+  "beta 0.2, gate 1.5 m, coast 2 s": {
+   "identity share median": 0.448,
+   "continuity median": 0.329,
+   "mixing median": 0.025,
+   "pieces median": 12.0,
+   "distance on main span within 5%": 0.613
+  },
+  "beta 0.2, gate 1.5 m, coast 5 s": {
+   "identity share median": 0.456,
+   "continuity median": 0.337,
+   "mixing median": 0.069,
+   "pieces median": 12.0,
+   "distance on main span within 5%": 0.487
+  },
+  "beta 0.2, gate 1.5 m, coast 10 s": {
+   "identity share median": 0.467,
+   "continuity median": 0.348,
+   "mixing median": 0.084,
+   "pieces median": 11.0,
+   "distance on main span within 5%": 0.362
+  },
+  "beta 0.2, gate 2.5 m, coast 2 s": {
+   "identity share median": 0.475,
+   "continuity median": 0.353,
+   "mixing median": 0.045,
+   "pieces median": 11.0,
+   "distance on main span within 5%": 0.573
+  },
+  "beta 0.2, gate 2.5 m, coast 5 s": {
+   "identity share median": 0.498,
+   "continuity median": 0.355,
+   "mixing median": 0.08,
+   "pieces median": 10.0,
+   "distance on main span within 5%": 0.513
+  },
+  "beta 0.2, gate 2.5 m, coast 10 s": {
+   "identity share median": 0.492,
+   "continuity median": 0.364,
+   "mixing median": 0.148,
+   "pieces median": 10.0,
+   "distance on main span within 5%": 0.384
+  },
+  "beta 0.2, gate 4.0 m, coast 2 s": {
+   "identity share median": 0.481,
+   "continuity median": 0.36,
+   "mixing median": 0.083,
+   "pieces median": 10.0,
+   "distance on main span within 5%": 0.528
+  },
+  "beta 0.2, gate 4.0 m, coast 5 s": {
+   "identity share median": 0.501,
+   "continuity median": 0.36,
+   "mixing median": 0.157,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.457
+  },
+  "beta 0.2, gate 4.0 m, coast 10 s": {
+   "identity share median": 0.524,
+   "continuity median": 0.384,
+   "mixing median": 0.158,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.44
+  },
+  "beta 0.05, gate 1.0 m, coast 2 s": {
+   "identity share median": 0.441,
+   "continuity median": 0.331,
+   "mixing median": 0.021,
+   "pieces median": 12.0,
+   "distance on main span within 5%": 0.628
+  },
+  "beta 0.05, gate 1.0 m, coast 5 s": {
+   "identity share median": 0.468,
+   "continuity median": 0.343,
+   "mixing median": 0.045,
+   "pieces median": 12.0,
+   "distance on main span within 5%": 0.455
+  },
+  "beta 0.05, gate 1.0 m, coast 10 s": {
+   "identity share median": 0.488,
+   "continuity median": 0.36,
+   "mixing median": 0.079,
+   "pieces median": 12.0,
+   "distance on main span within 5%": 0.367
+  },
+  "beta 0.05, gate 1.5 m, coast 2 s": {
+   "identity share median": 0.476,
+   "continuity median": 0.35,
+   "mixing median": 0.03,
+   "pieces median": 11.0,
+   "distance on main span within 5%": 0.611
+  },
+  "beta 0.05, gate 1.5 m, coast 5 s": {
+   "identity share median": 0.491,
+   "continuity median": 0.367,
+   "mixing median": 0.07,
+   "pieces median": 10.0,
+   "distance on main span within 5%": 0.518
+  },
+  "beta 0.05, gate 1.5 m, coast 10 s": {
+   "identity share median": 0.527,
+   "continuity median": 0.389,
+   "mixing median": 0.117,
+   "pieces median": 10.0,
+   "distance on main span within 5%": 0.397
+  },
+  "beta 0.05, gate 2.5 m, coast 2 s": {
+   "identity share median": 0.503,
+   "continuity median": 0.371,
+   "mixing median": 0.052,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.563
+  },
+  "beta 0.05, gate 2.5 m, coast 5 s": {
+   "identity share median": 0.517,
+   "continuity median": 0.386,
+   "mixing median": 0.125,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.487
+  },
+  "beta 0.05, gate 2.5 m, coast 10 s": {
+   "identity share median": 0.533,
+   "continuity median": 0.398,
+   "mixing median": 0.158,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.457
+  },
+  "beta 0.05, gate 4.0 m, coast 2 s": {
+   "identity share median": 0.531,
+   "continuity median": 0.383,
+   "mixing median": 0.072,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.563
+  },
+  "beta 0.05, gate 4.0 m, coast 5 s": {
+   "identity share median": 0.566,
+   "continuity median": 0.409,
+   "mixing median": 0.158,
+   "pieces median": 8.0,
+   "distance on main span within 5%": 0.5
+  },
+  "beta 0.05, gate 4.0 m, coast 10 s": {
+   "identity share median": 0.574,
+   "continuity median": 0.414,
+   "mixing median": 0.208,
+   "pieces median": 8.0,
+   "distance on main span within 5%": 0.442
+  }
+ },
+ "chosen": "beta 0.05, gate 4.0 m, coast 2 s",
+ "test matches": {
+  "3 m": {
+   "U": {
+    "identity share median": 0.521,
+    "continuity median": 0.386,
+    "mixing median": 0.176,
+    "pieces median": 9.0,
+    "distance on main span within 5%": 0.464
+   },
+   "T": {
+    "identity share median": 0.539,
+    "continuity median": 0.388,
+    "mixing median": 0.095,
+    "pieces median": 9.0,
+    "distance on main span within 5%": 0.519
+   },
+   "T+S": {
+    "identity share median": 0.588,
+    "continuity median": 0.427,
+    "mixing median": 0.242,
+    "pieces median": 8.0,
+    "distance on main span within 5%": 0.453
+   }
+  },
+  "2 m": {
+   "U": {
+    "identity share median": 0.546,
+    "continuity median": 0.321,
+    "mixing median": 0.15,
+    "pieces median": 8.0,
+    "distance on main span within 5%": 0.463
+   },
+   "T": {
+    "identity share median": 0.561,
+    "continuity median": 0.335,
+    "mixing median": 0.074,
+    "pieces median": 8.0,
+    "distance on main span within 5%": 0.534
+   },
+   "T+S": {
+    "identity share median": 0.603,
+    "continuity median": 0.357,
+    "mixing median": 0.224,
+    "pieces median": 7.0,
+    "distance on main span within 5%": 0.453
+   }
+  }
+ },
+ "primary (test, 3 m)": {
+  "best arm": "T",
+  "U": {
+   "identity share median": 0.521,
+   "continuity median": 0.386,
+   "mixing median": 0.176,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.464
+  },
+  "T": {
+   "identity share median": 0.539,
+   "continuity median": 0.388,
+   "mixing median": 0.095,
+   "pieces median": 9.0,
+   "distance on main span within 5%": 0.519
+  }
+ },
+ "step target met (identity share >= 0.80, mixing <= 0.05)": false
+}

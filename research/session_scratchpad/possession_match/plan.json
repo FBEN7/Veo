@@ -1,0 +1,16 @@
+{
+ "title": "possession on a whole match (128057, M7): the frozen ball rule R against the truth",
+ "written": "2026-11-18, before any window of this match is cut for this study",
+ "owner request": "2026-11-18: confirm possession on whole matches; one match (~7 h of Kaggle GPU); team distance re-measured on it without a dedicated study (it failed on 2026-11-02: 9.6% vs 5.0% for a constant)",
+ "match": "128057 (M7): the first by id of the two matches the ball checkpoint (ball_v3b.1500.pt) never saw (128057, 132831); sealed, opened through src/unseal.py (development use, seal lifted 2026-11-05)",
+ "windows": "each half tiled from frame 0 in 4,500-frame windows (half lengths from .cache/formation_scan: 67,625 and 70,350 frames); a remainder under 1,500 frames joins the previous window, else it is its own window: 15 + 16 = 31 windows",
+ "pipeline": "research/session_scratchpad/kaggle/run_windows.py unchanged (players yolov8s stride 2, teams, events_v1, ball v3b, metric_step v3s_link) on Kaggle T4 x2, batches of 8 windows on the two kernels; one rerun of failed windows; windows still failing are reported and left out (the share of live time covered is reported)",
+ "truth": "possession_v2 truth() per window (BAS actions with a side, live time: a gap > 6 s or after OUT is dead); the teams are followed across halftime by the truth's player ids (a side's players in the 1st half)",
+ "R": "possession_v2 rule() unchanged (nearest team-labelled player within 4 m of our ball, held 2 s); our teams -> sides per window by possession_v2 side_map (matched detections, evaluation only)",
+ "primary": "the match: one team's share of live time, pooled over the windows' frames: |R - truth| in points; confirmed if <= 5 points",
+ "also reported": ["the same per half and per 15-min period", "the constant 0.5's error", "windows skipped (no side mapping) or failed, live time covered",
+  "team consistency across windows (descriptive): each window's team_A / team_B linked to window 1's by nearest mean kit feature (team_features.json); share of windows where that link agrees with the truth's mapping",
+  "team distance (descriptive): the 2026-11-02 estimator (10 x the mean 1-s speed of a team's detections, tracks smoothed over 1 s, per second) against the truth's outfield path lengths at the same scale, per team over the match, and team_distance.json's constant rate"],
+ "what this cannot show": "other matches (one match: a confirmation, not an estimate of the spread); the owner's camera",
+ "cost": "~7.5 h Kaggle GPU (31 x ~14.5 min), ~2 h local cutting, ~6 GB uploaded in batches"
+}

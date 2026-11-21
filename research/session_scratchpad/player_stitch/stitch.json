@@ -1,0 +1,271 @@
+{
+ "plan sha256": "ac75f533627326cc466c140c41647a8185703ad7dbbd3c93eb314af83d48bc50",
+ "player-windows": 1048,
+ "U (unstitched)": {
+  "continuity median": 0.291,
+  "continuity mean": 0.328,
+  "pieces per player median": 9.0,
+  "swaps (mixing) median / mean": [
+   0.168,
+   0.233
+  ],
+  "dominant span s median": 112.0,
+  "distance on dominant span: median abs rel error": 0.059,
+  "within 5%": 0.427
+ },
+ "S (stitched)": {
+  "continuity median": 0.302,
+  "continuity mean": 0.339,
+  "pieces per player median": 8.0,
+  "swaps (mixing) median / mean": [
+   0.284,
+   0.312
+  ],
+  "dominant span s median": 155.5,
+  "distance on dominant span: median abs rel error": 0.069,
+  "within 5%": 0.386
+ },
+ "O (oracle identity, whole window)": {
+  "median abs rel error": 0.08,
+  "within 5%": 0.375,
+  "ours / truth median": 0.921
+ },
+ "reading": "detections limit",
+ "links per window": {
+  "st2_117092_1st_f024810": {
+   "fragments": 110,
+   "links": 47,
+   "trajectories": 63
+  },
+  "st2_117092_1st_f018910": {
+   "fragments": 117,
+   "links": 58,
+   "trajectories": 59
+  },
+  "st2_117092_2nd_f025846": {
+   "fragments": 127,
+   "links": 66,
+   "trajectories": 61
+  },
+  "st2_117092_2nd_f003372": {
+   "fragments": 143,
+   "links": 73,
+   "trajectories": 70
+  },
+  "st2_117093_1st_f061613": {
+   "fragments": 117,
+   "links": 51,
+   "trajectories": 66
+  },
+  "st2_117093_1st_f006629": {
+   "fragments": 91,
+   "links": 37,
+   "trajectories": 54
+  },
+  "st2_117093_2nd_f030964": {
+   "fragments": 88,
+   "links": 28,
+   "trajectories": 60
+  },
+  "st2_117093_2nd_f050835": {
+   "fragments": 96,
+   "links": 28,
+   "trajectories": 68
+  },
+  "st2_118575_1st_f031986": {
+   "fragments": 102,
+   "links": 38,
+   "trajectories": 64
+  },
+  "st2_118575_1st_f048759": {
+   "fragments": 101,
+   "links": 40,
+   "trajectories": 61
+  },
+  "st2_118575_2nd_f005396": {
+   "fragments": 93,
+   "links": 29,
+   "trajectories": 64
+  },
+  "st2_118575_2nd_f024224": {
+   "fragments": 111,
+   "links": 46,
+   "trajectories": 65
+  },
+  "st2_118576_1st_f040180": {
+   "fragments": 61,
+   "links": 18,
+   "trajectories": 43
+  },
+  "st2_118576_2nd_f020796": {
+   "fragments": 112,
+   "links": 39,
+   "trajectories": 73
+  },
+  "st2_118577_1st_f028291": {
+   "fragments": 81,
+   "links": 16,
+   "trajectories": 65
+  },
+  "st2_118577_1st_f012519": {
+   "fragments": 81,
+   "links": 26,
+   "trajectories": 55
+  },
+  "st2_118577_2nd_f021635": {
+   "fragments": 99,
+   "links": 27,
+   "trajectories": 72
+  },
+  "st2_118577_2nd_f047405": {
+   "fragments": 111,
+   "links": 43,
+   "trajectories": 68
+  },
+  "st2_118578_1st_f039746": {
+   "fragments": 113,
+   "links": 46,
+   "trajectories": 67
+  },
+  "st2_118578_1st_f005654": {
+   "fragments": 81,
+   "links": 30,
+   "trajectories": 51
+  },
+  "st2_118578_2nd_f035133": {
+   "fragments": 108,
+   "links": 53,
+   "trajectories": 55
+  },
+  "st2_128057_1st_f008778": {
+   "fragments": 98,
+   "links": 31,
+   "trajectories": 67
+  },
+  "st2_128057_1st_f036192": {
+   "fragments": 94,
+   "links": 33,
+   "trajectories": 61
+  },
+  "st2_128057_2nd_f027577": {
+   "fragments": 103,
+   "links": 39,
+   "trajectories": 64
+  },
+  "st2_128057_2nd_f034678": {
+   "fragments": 70,
+   "links": 15,
+   "trajectories": 55
+  },
+  "st2_128058_1st_f003755": {
+   "fragments": 70,
+   "links": 19,
+   "trajectories": 51
+  },
+  "st2_128058_1st_f058689": {
+   "fragments": 111,
+   "links": 44,
+   "trajectories": 67
+  },
+  "st2_128058_2nd_f035662": {
+   "fragments": 96,
+   "links": 36,
+   "trajectories": 60
+  },
+  "st2_128058_2nd_f023456": {
+   "fragments": 138,
+   "links": 67,
+   "trajectories": 71
+  },
+  "st2_132831_1st_f055436": {
+   "fragments": 146,
+   "links": 71,
+   "trajectories": 75
+  },
+  "st2_132831_1st_f016629": {
+   "fragments": 104,
+   "links": 35,
+   "trajectories": 69
+  },
+  "st2_132831_2nd_f014460": {
+   "fragments": 122,
+   "links": 45,
+   "trajectories": 77
+  },
+  "st2_132831_2nd_f023525": {
+   "fragments": 99,
+   "links": 31,
+   "trajectories": 68
+  },
+  "st2_132877_1st_f036329": {
+   "fragments": 68,
+   "links": 17,
+   "trajectories": 51
+  },
+  "st2_132877_1st_f023440": {
+   "fragments": 62,
+   "links": 18,
+   "trajectories": 44
+  },
+  "st2_132877_2nd_f022379": {
+   "fragments": 93,
+   "links": 39,
+   "trajectories": 54
+  },
+  "st2_132877_2nd_f008190": {
+   "fragments": 104,
+   "links": 43,
+   "trajectories": 61
+  },
+  "st2_117092_2nd_f035421": {
+   "fragments": 154,
+   "links": 80,
+   "trajectories": 74
+  },
+  "st2_117093_2nd_f042330": {
+   "fragments": 88,
+   "links": 31,
+   "trajectories": 57
+  },
+  "st2_118578_1st_f022997": {
+   "fragments": 94,
+   "links": 30,
+   "trajectories": 64
+  },
+  "st2_117093_1st_f015000": {
+   "fragments": 90,
+   "links": 26,
+   "trajectories": 64
+  },
+  "st2_118575_1st_f015000": {
+   "fragments": 91,
+   "links": 27,
+   "trajectories": 64
+  },
+  "st2_118576_1st_f030000": {
+   "fragments": 65,
+   "links": 21,
+   "trajectories": 44
+  },
+  "st2_118578_1st_f030000": {
+   "fragments": 82,
+   "links": 27,
+   "trajectories": 55
+  },
+  "st2_118578_2nd_f015000": {
+   "fragments": 85,
+   "links": 22,
+   "trajectories": 63
+  },
+  "st2_128058_1st_f030000": {
+   "fragments": 90,
+   "links": 29,
+   "trajectories": 61
+  },
+  "st2_132877_1st_f015000": {
+   "fragments": 84,
+   "links": 25,
+   "trajectories": 59
+  }
+ }
+}

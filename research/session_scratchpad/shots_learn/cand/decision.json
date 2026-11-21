@@ -1,0 +1,8 @@
+{
+ "protocol": "protocol.json (sha256 f3cc70807a6365012065cdb76b162bfbdc33e27a3af0379affbf43b9c0996a4b)",
+ "counts [found, false, missed]": {"v4 spotter (cv_v4.json)": [165, 113, 104], "B: + cues from v3b's candidates": [175, 127, 94], "C: + cues from v4r's candidates": [174, 131, 95]},
+ "primary: C - B": "hits -1 [-11, +9], false alarms +4 [-6, +15]: v4r's candidates add nothing over v3b's; nothing adopted",
+ "reported": {"B - v4": "hits +10 [0, +22], false alarms +14: not shown (the interval touches 0, false alarms rise more than hits), and of the size the hybrid's control moved by plumbing alone (+2 hits, +11 false alarms); part of it may be the window cover cue, which carries the earlier spotter's out-of-fold probabilities (stacking), not the candidates",
+              "C - v4": "hits +9 [-1, +19], false alarms +18 [+3, +34]"},
+ "conclusion": "Across v4, v4r, the hybrid ball and these cues, the clicked shot balls do not turn into more shots found: v4r sees more balls in flight but its extra information does not survive into the spotter. This line (detector retraining for shots) is closed."
+}

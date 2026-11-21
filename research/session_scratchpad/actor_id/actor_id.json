@@ -1,0 +1,147 @@
+{
+ "plan sha256": "88f278ae0c67172ac9424ce370a2cd4f0d958e46089e9a578ea36f80841eb71d",
+ "matches": 8,
+ "actions": {
+  "shots": 230,
+  "successful passes": 6500,
+  "tackles": 233
+ },
+ "action counts": {
+  "shots": {
+   "max per player-match (pooled ids)": 13
+  },
+  "successful passes": {
+   "max per player-match (pooled ids)": 254
+  },
+  "tackles": {
+   "max per player-match (pooled ids)": 9
+  }
+ },
+ "met (>= 90% of players within +/- 1 at one view)": {
+  "shots": true,
+  "successful passes": false,
+  "tackles": true
+ },
+ "results": {
+  "30 deg, +/- 2 s": {
+   "shots": {
+    "actions attributed to the right player": 0.506,
+    "players within +/- 1 (all who played)": 0.899,
+    "players within +/- 1 (with >= 1 true action)": 0.779,
+    "looks in view per action (mean)": 1.55
+   },
+   "successful passes": {
+    "actions attributed to the right player": 0.683,
+    "players within +/- 1 (all who played)": 0.194,
+    "players within +/- 1 (with >= 1 true action)": 0.191,
+    "looks in view per action (mean)": 2.4
+   },
+   "tackles": {
+    "actions attributed to the right player": 0.692,
+    "players within +/- 1 (all who played)": 0.96,
+    "players within +/- 1 (with >= 1 true action)": 0.927,
+    "looks in view per action (mean)": 2.47
+   }
+  },
+  "30 deg, +/- 6 s": {
+   "shots": {
+    "actions attributed to the right player": 0.628,
+    "players within +/- 1 (all who played)": 0.934,
+    "players within +/- 1 (with >= 1 true action)": 0.854,
+    "looks in view per action (mean)": 2.61
+   },
+   "successful passes": {
+    "actions attributed to the right player": 0.813,
+    "players within +/- 1 (all who played)": 0.303,
+    "players within +/- 1 (with >= 1 true action)": 0.3,
+    "looks in view per action (mean)": 4.25
+   },
+   "tackles": {
+    "actions attributed to the right player": 0.829,
+    "players within +/- 1 (all who played)": 0.986,
+    "players within +/- 1 (with >= 1 true action)": 0.975,
+    "looks in view per action (mean)": 4.42
+   }
+  },
+  "45 deg, +/- 2 s": {
+   "shots": {
+    "actions attributed to the right player": 0.43,
+    "players within +/- 1 (all who played)": 0.884,
+    "players within +/- 1 (with >= 1 true action)": 0.745,
+    "looks in view per action (mean)": 1.67
+   },
+   "successful passes": {
+    "actions attributed to the right player": 0.599,
+    "players within +/- 1 (all who played)": 0.174,
+    "players within +/- 1 (with >= 1 true action)": 0.17,
+    "looks in view per action (mean)": 2.62
+   },
+   "tackles": {
+    "actions attributed to the right player": 0.559,
+    "players within +/- 1 (all who played)": 0.922,
+    "players within +/- 1 (with >= 1 true action)": 0.859,
+    "looks in view per action (mean)": 2.59
+   }
+  },
+  "45 deg, +/- 6 s": {
+   "shots": {
+    "actions attributed to the right player": 0.587,
+    "players within +/- 1 (all who played)": 0.925,
+    "players within +/- 1 (with >= 1 true action)": 0.835,
+    "looks in view per action (mean)": 3.13
+   },
+   "successful passes": {
+    "actions attributed to the right player": 0.758,
+    "players within +/- 1 (all who played)": 0.271,
+    "players within +/- 1 (with >= 1 true action)": 0.268,
+    "looks in view per action (mean)": 5.04
+   },
+   "tackles": {
+    "actions attributed to the right player": 0.721,
+    "players within +/- 1 (all who played)": 0.958,
+    "players within +/- 1 (with >= 1 true action)": 0.926,
+    "looks in view per action (mean)": 4.97
+   }
+  },
+  "60 deg, +/- 2 s": {
+   "shots": {
+    "actions attributed to the right player": 0.169,
+    "players within +/- 1 (all who played)": 0.829,
+    "players within +/- 1 (with >= 1 true action)": 0.625,
+    "looks in view per action (mean)": 1.69
+   },
+   "successful passes": {
+    "actions attributed to the right player": 0.388,
+    "players within +/- 1 (all who played)": 0.134,
+    "players within +/- 1 (with >= 1 true action)": 0.131,
+    "looks in view per action (mean)": 2.72
+   },
+   "tackles": {
+    "actions attributed to the right player": 0.361,
+    "players within +/- 1 (all who played)": 0.872,
+    "players within +/- 1 (with >= 1 true action)": 0.762,
+    "looks in view per action (mean)": 2.67
+   }
+  },
+  "60 deg, +/- 6 s": {
+   "shots": {
+    "actions attributed to the right player": 0.314,
+    "players within +/- 1 (all who played)": 0.855,
+    "players within +/- 1 (with >= 1 true action)": 0.681,
+    "looks in view per action (mean)": 3.37
+   },
+   "successful passes": {
+    "actions attributed to the right player": 0.523,
+    "players within +/- 1 (all who played)": 0.193,
+    "players within +/- 1 (with >= 1 true action)": 0.189,
+    "looks in view per action (mean)": 5.49
+   },
+   "tackles": {
+    "actions attributed to the right player": 0.504,
+    "players within +/- 1 (all who played)": 0.905,
+    "players within +/- 1 (with >= 1 true action)": 0.828,
+    "looks in view per action (mean)": 5.33
+   }
+  }
+ }
+}

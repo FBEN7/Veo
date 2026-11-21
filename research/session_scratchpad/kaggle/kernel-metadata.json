@@ -1,0 +1,13 @@
+{
+  "id": "francoisbernard/veo-gpu-bench",
+  "title": "veo-gpu-bench",
+  "code_file": "kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": false,
+  "dataset_sources": ["francoisbernard/veo-st2-bench"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

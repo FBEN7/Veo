@@ -1,0 +1,371 @@
+{
+ "plan_v3 sha256": "1ef887721221f5c65ac1cdbcae925f37bc13f1518ddaa63d65f3e17a6a7e27ff",
+ "clips without kit colours (old labels kept)": [],
+ "detections within 3 m of a truth person (old, new)": {
+  "old": {
+   "rows": 53438,
+   "with a team label": 0.8606,
+   "right among labelled": 0.8508,
+   "right of all": 0.7322
+  },
+  "new": {
+   "rows": 53438,
+   "with a team label": 0.8574,
+   "right among labelled": 0.895,
+   "right of all": 0.7674
+  }
+ },
+ "ceiling (new labels)": {
+  "with a team label": 0.5221,
+  "label is the truth's side": 0.453,
+  "right among labelled": 0.8677
+ },
+ "events' team accuracy, method A with kit teams": 0.7346,
+ "matched events": 1266,
+ "test (primary)": {
+  "share of the left side's passes": {
+   "mean abs error, ours": 0.0708,
+   "constant 0.5": 0.0971,
+   "ours - constant, 95% over matches": [
+    -0.0857,
+    0.0292
+   ],
+   "shown": false
+  },
+  "pass success rate per team": {
+   "mean abs error, ours": 0.2452,
+   "constant (other matches' rate)": 0.0614,
+   "ours - constant, 95% over matches": [
+    0.1277,
+    0.2427
+   ],
+   "shown": false
+  },
+  "pass counts per team (descriptive)": {
+   "median relative error, ours": 0.1451,
+   "our total split 50/50": 0.1986
+  },
+  "per match": {
+   "117092": {
+    "ours": {
+     "left": 68,
+     "right": 50,
+     "no team": 2,
+     "success": {
+      "left": [
+       41,
+       55
+      ],
+      "right": [
+       20,
+       42
+      ]
+     }
+    },
+    "truth": {
+     "left": 60,
+     "right": 44,
+     "no team": 0,
+     "success": {
+      "left": [
+       43,
+       58
+      ],
+      "right": [
+       31,
+       42
+      ]
+     }
+    }
+   },
+   "117093": {
+    "ours": {
+     "left": 111,
+     "right": 38,
+     "no team": 0,
+     "success": {
+      "left": [
+       82,
+       100
+      ],
+      "right": [
+       11,
+       26
+      ]
+     }
+    },
+    "truth": {
+     "left": 94,
+     "right": 34,
+     "no team": 0,
+     "success": {
+      "left": [
+       82,
+       92
+      ],
+      "right": [
+       27,
+       34
+      ]
+     }
+    }
+   },
+   "118575": {
+    "ours": {
+     "left": 55,
+     "right": 53,
+     "no team": 1,
+     "success": {
+      "left": [
+       28,
+       46
+      ],
+      "right": [
+       23,
+       47
+      ]
+     }
+    },
+    "truth": {
+     "left": 36,
+     "right": 58,
+     "no team": 0,
+     "success": {
+      "left": [
+       25,
+       36
+      ],
+      "right": [
+       39,
+       53
+      ]
+     }
+    }
+   },
+   "118576": {
+    "ours": {
+     "left": 108,
+     "right": 68,
+     "no team": 0,
+     "success": {
+      "left": [
+       57,
+       93
+      ],
+      "right": [
+       31,
+       60
+      ]
+     }
+    },
+    "truth": {
+     "left": 80,
+     "right": 121,
+     "no team": 0,
+     "success": {
+      "left": [
+       64,
+       78
+      ],
+      "right": [
+       107,
+       117
+      ]
+     }
+    }
+   },
+   "118577": {
+    "ours": {
+     "left": 59,
+     "right": 45,
+     "no team": 0,
+     "success": {
+      "left": [
+       28,
+       46
+      ],
+      "right": [
+       15,
+       36
+      ]
+     }
+    },
+    "truth": {
+     "left": 63,
+     "right": 57,
+     "no team": 0,
+     "success": {
+      "left": [
+       50,
+       63
+      ],
+      "right": [
+       44,
+       56
+      ]
+     }
+    }
+   },
+   "118578": {
+    "ours": {
+     "left": 59,
+     "right": 44,
+     "no team": 0,
+     "success": {
+      "left": [
+       34,
+       47
+      ],
+      "right": [
+       18,
+       36
+      ]
+     }
+    },
+    "truth": {
+     "left": 68,
+     "right": 52,
+     "no team": 0,
+     "success": {
+      "left": [
+       52,
+       62
+      ],
+      "right": [
+       40,
+       52
+      ]
+     }
+    }
+   },
+   "128057": {
+    "ours": {
+     "left": 28,
+     "right": 8,
+     "no team": 0,
+     "success": {
+      "left": [
+       17,
+       22
+      ],
+      "right": [
+       1,
+       7
+      ]
+     }
+    },
+    "truth": {
+     "left": 22,
+     "right": 13,
+     "no team": 0,
+     "success": {
+      "left": [
+       21,
+       22
+      ],
+      "right": [
+       9,
+       11
+      ]
+     }
+    }
+   },
+   "128058": {
+    "ours": {
+     "left": 80,
+     "right": 58,
+     "no team": 1,
+     "success": {
+      "left": [
+       37,
+       65
+      ],
+      "right": [
+       25,
+       50
+      ]
+     }
+    },
+    "truth": {
+     "left": 58,
+     "right": 58,
+     "no team": 0,
+     "success": {
+      "left": [
+       40,
+       54
+      ],
+      "right": [
+       45,
+       55
+      ]
+     }
+    }
+   },
+   "132831": {
+    "ours": {
+     "left": 35,
+     "right": 59,
+     "no team": 1,
+     "success": {
+      "left": [
+       13,
+       30
+      ],
+      "right": [
+       32,
+       51
+      ]
+     }
+    },
+    "truth": {
+     "left": 37,
+     "right": 51,
+     "no team": 0,
+     "success": {
+      "left": [
+       26,
+       33
+      ],
+      "right": [
+       47,
+       50
+      ]
+     }
+    }
+   },
+   "132877": {
+    "ours": {
+     "left": 88,
+     "right": 56,
+     "no team": 0,
+     "success": {
+      "left": [
+       60,
+       80
+      ],
+      "right": [
+       29,
+       47
+      ]
+     }
+    },
+    "truth": {
+     "left": 91,
+     "right": 51,
+     "no team": 0,
+     "success": {
+      "left": [
+       78,
+       89
+      ],
+      "right": [
+       39,
+       49
+      ]
+     }
+    }
+   }
+  }
+ }
+}

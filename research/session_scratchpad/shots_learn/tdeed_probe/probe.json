@@ -1,0 +1,94 @@
+{
+ "plan sha256": "ea24e3aaa156a667c42a7a4d12db904aa74e128e3f4ec95573db5649c55c4454",
+ "units scored": {
+  "clips": 249,
+  "windows": 47
+ },
+ "units missing": [],
+ "primary: whole-match precision at clip recall 0.60 (arm O 0.212)": 0.02,
+ "at recall 0.80 (arm O 0.095)": 0.014,
+ "highest clip recall reached": 1.0,
+ "reading": "transfer fails",
+ "operating points": {
+  "0.6": {
+   "clips: recall": 0.602,
+   "clips: precision": 0.126,
+   "windows: false alarms per minute": 8.366,
+   "whole match: shots found per match": 16.2,
+   "whole match: false alarms per match": 792.6,
+   "whole match: precision": 0.02,
+   "threshold": 0.0037
+  },
+  "0.8": {
+   "clips: recall": 0.803,
+   "clips: precision": 0.099,
+   "windows: false alarms per minute": 15.862,
+   "whole match: shots found per match": 21.6,
+   "whole match: false alarms per match": 1486.7,
+   "whole match: precision": 0.014,
+   "threshold": 0.0024
+  }
+ },
+ "sanity: event AP per class": {
+  "PASS": {
+   "labels": 2289,
+   "AP": 0.669,
+   "AP of random scores": 0.399
+  },
+  "DRIVE": {
+   "labels": 2095,
+   "AP": 0.663,
+   "AP of random scores": 0.396
+  },
+  "HEADER": {
+   "labels": 12,
+   "AP": 0.002,
+   "AP of random scores": 0.014
+  },
+  "HIGH PASS": {
+   "labels": 273,
+   "AP": 0.286,
+   "AP of random scores": 0.061
+  },
+  "OUT": {
+   "labels": 235,
+   "AP": 0.177,
+   "AP of random scores": 0.053
+  },
+  "CROSS": {
+   "labels": 168,
+   "AP": 0.137,
+   "AP of random scores": 0.042
+  },
+  "THROW IN": {
+   "labels": 86,
+   "AP": 0.32,
+   "AP of random scores": 0.022
+  },
+  "SHOT": {
+   "labels": 241,
+   "AP": 0.111,
+   "AP of random scores": 0.049
+  },
+  "BALL PLAYER BLOCK": {
+   "labels": 117,
+   "AP": 0.047,
+   "AP of random scores": 0.027
+  },
+  "PLAYER SUCCESSFUL TACKLE": {
+   "labels": 92,
+   "AP": 0.03,
+   "AP of random scores": 0.022
+  },
+  "FREE KICK": {
+   "labels": 38,
+   "AP": 0.014,
+   "AP of random scores": 0.016
+  },
+  "GOAL": {
+   "labels": 39,
+   "AP": 0.05,
+   "AP of random scores": 0.008
+  }
+ }
+}

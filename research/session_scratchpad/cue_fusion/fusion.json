@@ -1,0 +1,82 @@
+{
+ "plan sha256": "ede82841657fc023f8f53f0c78f3f59051cb7415628eec8cf5b3551aa37cdcb2",
+ "segments per match": {
+  "117093": 138,
+  "118576": 32,
+  "132831": 390
+ },
+ "box height median per match (px)": {
+  "117093": 52.4,
+  "118576": 67.1,
+  "132831": 53.3
+ },
+ "(a) cues alone, rank-1 among team-mates [rank-1, segments]": {
+  "all cues": {
+   "117093": [
+    0.457,
+    138
+   ],
+   "118576": [
+    0.269,
+    26
+   ],
+   "132831": [
+    0.5,
+    390
+   ]
+  },
+  "height only": {
+   "117093": [
+    0.181,
+    138
+   ],
+   "118576": [
+    0.154,
+    26
+   ],
+   "132831": [
+    0.151,
+    390
+   ]
+  },
+  "colours only": {
+   "117093": [
+    0.37,
+    138
+   ],
+   "118576": [
+    0.231,
+    26
+   ],
+   "132831": [
+    0.464,
+    390
+   ]
+  },
+  "team-mates per team (median)": 10.0
+ },
+ "(b) fusion, mean of 200 draws: segment identity, numbered share, players' distance within 5%": {
+  "117093": {
+   "fusion": 0.582,
+   "no cues": 0.552,
+   "numbered": 0.499,
+   "dist fusion": 0.21,
+   "dist no cues": 0.105
+  },
+  "118576": {
+   "fusion": 0.694,
+   "no cues": 0.699,
+   "numbered": 0.679,
+   "dist fusion": 0.509,
+   "dist no cues": 0.499
+  },
+  "132831": {
+   "fusion": 0.618,
+   "no cues": 0.462,
+   "numbered": 0.506,
+   "dist fusion": 0.098,
+   "dist no cues": 0.032
+  }
+ },
+ "worth building (fusion >= 0.80 on 117093 and 132831)": false
+}

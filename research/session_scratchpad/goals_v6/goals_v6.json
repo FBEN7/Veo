@@ -1,0 +1,533 @@
+{
+ "plan sha256": "e8ebf38dd63ac80bfdd431657d45fd85a510b68785109af082f357b20c5bc0e4",
+ "candidate cell": {
+  "T": 0.75,
+  "R": null,
+  "N": 3
+ },
+ "candidates per match": 11.3,
+ "false runs per match": 7.2,
+ "restartable goals hit": 41,
+ "held out: proposed team right": "39 / 41",
+ "held out share": 0.9512,
+ "bar met (>= 0.9)": true,
+ "in-sample right share per rule": {
+  "kick_spot": 0.6829,
+  "attack_end": 0.9512,
+  "spot_vote": 0.9268,
+  "circle_count": 0.2439,
+  "circle_count_last10": 0.3171
+ },
+ "no team per rule": {
+  "kick_spot": 0,
+  "attack_end": 0,
+  "spot_vote": 0,
+  "circle_count": 0,
+  "circle_count_last10": 0
+ },
+ "per match": {
+  "117092": {
+   "hits": 3,
+   "right": 3,
+   "rule": "attack_end"
+  },
+  "117093": {
+   "hits": 4,
+   "right": 3,
+   "rule": "attack_end"
+  },
+  "118575": {
+   "hits": 3,
+   "right": 3,
+   "rule": "attack_end"
+  },
+  "118576": {
+   "hits": 5,
+   "right": 5,
+   "rule": "attack_end"
+  },
+  "118577": {
+   "hits": 4,
+   "right": 3,
+   "rule": "attack_end"
+  },
+  "118578": {
+   "hits": 4,
+   "right": 4,
+   "rule": "attack_end"
+  },
+  "128057": {
+   "hits": 5,
+   "right": 5,
+   "rule": "attack_end"
+  },
+  "128058": {
+   "hits": 5,
+   "right": 5,
+   "rule": "attack_end"
+  },
+  "132831": {
+   "hits": 5,
+   "right": 5,
+   "rule": "attack_end"
+  },
+  "132877": {
+   "hits": 3,
+   "right": 3,
+   "rule": "attack_end"
+  }
+ },
+ "per hit": [
+  {
+   "match": "117092",
+   "half": "117092_1",
+   "goal frame": 42406,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "117092",
+   "half": "117092_1",
+   "goal frame": 59245,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "117092",
+   "half": "117092_2",
+   "goal frame": 57951,
+   "want": "team_B",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "117093",
+   "half": "117093_1",
+   "goal frame": 35312,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "117093",
+   "half": "117093_1",
+   "goal frame": 59377,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "117093",
+   "half": "117093_2",
+   "goal frame": 37808,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": false,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "117093",
+   "half": "117093_2",
+   "goal frame": 48711,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118575",
+   "half": "118575_1",
+   "goal frame": 10347,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118575",
+   "half": "118575_1",
+   "goal frame": 46640,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118575",
+   "half": "118575_1",
+   "goal frame": 64913,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118576",
+   "half": "118576_1",
+   "goal frame": 9157,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118576",
+   "half": "118576_1",
+   "goal frame": 64745,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118576",
+   "half": "118576_2",
+   "goal frame": 31505,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": false,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118576",
+   "half": "118576_2",
+   "goal frame": 54995,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118576",
+   "half": "118576_2",
+   "goal frame": 58310,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118577",
+   "half": "118577_1",
+   "goal frame": 36394,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118577",
+   "half": "118577_1",
+   "goal frame": 48206,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": false,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118577",
+   "half": "118577_2",
+   "goal frame": 3865,
+   "want": "team_B",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118577",
+   "half": "118577_2",
+   "goal frame": 33247,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118578",
+   "half": "118578_1",
+   "goal frame": 45891,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "118578",
+   "half": "118578_2",
+   "goal frame": 5194,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118578",
+   "half": "118578_2",
+   "goal frame": 18095,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "118578",
+   "half": "118578_2",
+   "goal frame": 48329,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128057",
+   "half": "128057_2",
+   "goal frame": 2281,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": false,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128057",
+   "half": "128057_2",
+   "goal frame": 37445,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128057",
+   "half": "128057_2",
+   "goal frame": 46853,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128057",
+   "half": "128057_2",
+   "goal frame": 53874,
+   "want": "team_B",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128057",
+   "half": "128057_2",
+   "goal frame": 67790,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128058",
+   "half": "128058_1",
+   "goal frame": 49292,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": true
+  },
+  {
+   "match": "128058",
+   "half": "128058_1",
+   "goal frame": 50726,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "128058",
+   "half": "128058_1",
+   "goal frame": 66516,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128058",
+   "half": "128058_2",
+   "goal frame": 14541,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "128058",
+   "half": "128058_2",
+   "goal frame": 18598,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "132831",
+   "half": "132831_1",
+   "goal frame": 3106,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "132831",
+   "half": "132831_1",
+   "goal frame": 54131,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "132831",
+   "half": "132831_2",
+   "goal frame": 6082,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "132831",
+   "half": "132831_2",
+   "goal frame": 61071,
+   "want": "team_A",
+   "kick_spot": false,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "132831",
+   "half": "132831_2",
+   "goal frame": 64015,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "132877",
+   "half": "132877_1",
+   "goal frame": 32579,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": false,
+   "circle_count": true,
+   "circle_count_last10": true
+  },
+  {
+   "match": "132877",
+   "half": "132877_1",
+   "goal frame": 55349,
+   "want": "team_B",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  },
+  {
+   "match": "132877",
+   "half": "132877_2",
+   "goal frame": 14404,
+   "want": "team_A",
+   "kick_spot": true,
+   "attack_end": true,
+   "spot_vote": true,
+   "circle_count": false,
+   "circle_count_last10": false
+  }
+ ]
+}

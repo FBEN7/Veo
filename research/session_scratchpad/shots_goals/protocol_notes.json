@@ -1,0 +1,36 @@
+{
+ "protocol": "protocol.json sha256 1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd (unchanged)",
+ "written": "2026-10-19, after the ground-truth dev choice and the code review, before any detection of M7 2nd or any test half is scanned, and before the gate runs",
+ "notes": [
+  {
+   "what": "order of the gate and the goals test",
+   "why": "132831 half 2 (M9 2nd) is both a goals test half and 16 of the gate's 26 attempts",
+   "decision": "the goals rule is frozen (frozen_goals.json, hashed) before the gate reads anything of M9 2nd. No goals parameter depends on the gate; the gate's clips ([-1, +2.2] s around shots) do not overlap the formation runs (15-60 s after goals)."
+  },
+  {
+   "what": "extra dev check on 8 windows, not 9",
+   "why": "the 9th processed window (st2_132831_2nd_f030000) lies in a goals test half",
+   "decision": "skipped; the check is reported only"
+  },
+  {
+   "what": "team rule tie",
+   "why": "at the chosen cell (T 0.85, N 2) both rules are right on 25 of 26 goals; the registered ordering does not separate them",
+   "decision": "kick_spot, first in the registered grid; attack_end is better on ground truth at T 0.80 (24 vs 22), which the M7 re-choice could reach: both are reported on the test, kick_spot is primary"
+  },
+  {
+   "what": "people counted on detections",
+   "why": "the protocol counts players and goalkeepers; on detections goalkeepers and referees mostly fall in team 'other', and off-pitch people can carry a team label",
+   "decision": "on detections the share counts team_A / team_B people within |x| <= 54.5 m and |y| <= 36 m; 'other' is dropped. Ground truth unchanged."
+  },
+  {
+   "what": "xG on test halves",
+   "why": "xg_gt.py read each side's mean x over the whole half on the 4 test halves (to find the attacked goal), slightly more than 'shooter positions at shot frames'",
+   "decision": "accepted and disclosed: nothing per-half or per-shot of a test half was written, and no goals parameter uses it"
+  },
+  {
+   "what": "defended end",
+   "why": "'its mean x over the half' read as each team's own sign puts both teams on one end in 6 of 18 halves",
+   "decision": "the team with the lower half-mean x defends the left end (x < 0), in every script (xG, formation, gate)"
+  }
+ ]
+}

@@ -1,0 +1,15 @@
+{
+ "clips": 16,
+ "(a) per clip, median accuracy": 0.981,
+ "(b) pooled over the half": {
+  "accuracy": 0.98,
+  "coverage": 0.85
+ },
+ "(c) 10-min blocks, accuracy per block": [
+  0.977,
+  0.983,
+  0.972,
+  0.984,
+  0.985
+ ]
+}

@@ -1,0 +1,9 @@
+{
+ "plan sha256": "b40e2c28f4c61204719aaff4124fabb2239030c4a0a0f774599363a47bb66e33",
+ "A timing": "no lag: per-clip best lags scatter around 0 (most within -3..+3, no match consistent), slopes of du on velocity -0.4..+0.8; moving each clip to its best lag leaves the pooled error unchanged (1.469 -> 1.473 m)",
+ "C spatial": "an affine offset in (u, v) learned on half a match's clips helps its other half on M6 (1.68 -> 1.33 m) and M10 (1.70 -> 1.23 m), and makes them worse when learned on the other matches (2.35, 2.27 m): the gap is a per-match property; even within a match about 1.2-1.4 m remain",
+ "D picture": "on all 7 windows our boxes sit on the players and their bottom on the feet; the truth boxes are fixed-height (36-48 px), often wider than the player, and their bottom is 10-25 px above or beside the feet, some on empty grass (pictures/)",
+ "reading": "labels' frame (plan readings): the measured 1.2-1.7 m gap is mostly the truth's own placement, which differs per match; our foot point is not shown to be the limit. SoccerTrack's truth cannot measure our position error below about 1.2 m",
+ "consequence": "the earlier statement 'position accuracy is limited by the detector's foot point' (SOCCERTRACK_V2.md, calibration) is withdrawn; a foot-point correction against this truth would learn the truth's per-match errors (as footpoint.json found)",
+ "to measure our real error": "independent foot points: the owner clicks the feet on about 150 player crops spread over matches and image positions; our foot point and the truth's are then scored against the clicks"
+}

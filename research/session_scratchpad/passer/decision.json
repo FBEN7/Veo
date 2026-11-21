@@ -1,0 +1,6 @@
+{
+ "date": "2026-10-26",
+ "decision (owner)": "rule C, possession over -0.4 / +0.2 s, is the default actor rule",
+ "code": "src/passer.py (actor, attach); matches possession.py's C [-0.4, +0.2] s on 28 of 28 actions checked",
+ "evidence": "possession.json: 0.568 [0.546, 0.590] of 1905 actions, passes 0.586, precision 0.681; in-sample window choice on matches v3 was trained on, no held-out match"
+}

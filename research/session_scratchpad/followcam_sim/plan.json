@@ -1,0 +1,19 @@
+{
+ "written": "2026-11-19, before any number of this study is computed",
+ "owner request": "2026-11-19: try the report on Veo's follow-cam view. No real Veo follow-cam file can be had for now (YouTube refuses this server, no club yet); the owner chose the approximate simulation: a CPU ceiling from SoccerTrack v2's truth. It is not Veo's camera: SoccerTrack v2 is a fixed BePro panorama and Veo's framing rule is not public.",
+ "question": "with a virtual camera that follows the ball, how much of what the report needs stays in view? A ceiling: everything inside the view is seen perfectly, nothing outside it.",
+ "data": "SoccerTrack v2 GSR (every person, every frame) and BAS actions cached in the repository: 117092 (1st half only), 117093, 118575, 118576, 118577, 118578, 128058, 132877 = 15 halves. M7 / M9 (sealed) not used.",
+ "camera": "pinhole, at the halfway line, 3 m behind the near touchline (the side pitch y grows towards, per src.soccertrack_v2.y_towards_camera), 6 m high, 16:9 frame; horizontal field of view 30, 45 or 60 degrees (three variants: tight, medium, wide; nothing tuned); aimed at the ball proxy smoothed by a centred 25-frame (1 s) rolling mean",
+ "ball proxy": "the actor's pitch position at each BAS action with a side, linearly interpolated to the next action when possession_v2 truth() counts the stretch as live (gap <= 6 s, not after OUT); frames outside those stretches are not scored",
+ "in view": "the point projects inside the frame (exact perspective projection)",
+ "sampling": "every 5th frame of the scored frames",
+ "measures": {
+  "possession": "share of scored frames where every player (outfield or goalkeeper) within 4 m of the ball proxy is in view; frames with none within 4 m reported apart",
+  "passes": "PASS, HIGH PASS and CROSS followed by another action within 6 s: share where the passer (at the pass frame) and the next action's actor (at its frame) are both in view; also by distance between the two (< 15, 15-30, >= 30 m)",
+  "players in view": "mean number of the 22 in view per scored frame",
+  "player distance": "per player and half: positions smoothed over 1 s, sampled each second; over the seconds whose both ends are scored frames, the share of path length walked with the player in view at both ends; median over players, and share of players with >= 95% in view (a distance within 5% without extrapolation needs about that)",
+  "team distance": "the same, pooled per side and half (median over side-halves)",
+  "player size in a 1080-px-high output (descriptive)": "median projected height of in-view players (1.8 m tall); a view finer than the panorama's native detail is upscaled, not sharper, so this is an upper bound"
+ },
+ "reading (fixed now)": "possession or passes are worth a test on real follow-cam footage if >= 90% observable at one of the three views; per-player or per-team distance needs >= 95% of path in view"
+}

@@ -1,0 +1,23 @@
+{
+ "title": "possession (share of time on the ball) on ordinary play: the ball rule, a learned estimator from the teams' shapes, a constant",
+ "written": "2026-11-17, before any possession figure on these windows is computed",
+ "owner request": "2026-11-17: after shots (stopped), possession, pass accuracy %, distance per player; possession = share of time on the ball, bar within 5 points",
+ "units": "the 47 ordinary-play windows of 3 min (shots_learn/negatives: 40 new + 7 dev; 138 min, 10 matches), our pipeline's outputs as relinked there (metric_v3s_link: players with kit teams, our ball, pitch metres)",
+ "truth (per frame, live time only)": "BAS actions sorted by frame; between two consecutive actions: dead (excluded) if the first is OUT or the gap exceeds 6 s; else the first action's side if both are the same side, else the first half of the gap to the first's side and the second half to the second's; frames before the first or after the last action excluded. Share = left frames / live frames",
+ "our teams -> sides": "per window, our team_A / team_B mapped to left / right by majority over detections matched to the truth's people (Hungarian on pitch metres within 2 m, every 25th frame); evaluation only",
+ "estimators": {
+  "C": "constant 0.5",
+  "R (ball rule, as events_stats retuned)": "per frame with our ball, the team of the nearest team-labelled player within 4 m; held up to 2 s; share over the frames with a team (0.5 if none)",
+  "L (learned)": "per second, HistGradientBoosting (default settings, seed 0) predicting P(team_A on the ball) from team_A-minus-team_B and per-team features: labelled players, centroid x / y, spread x / y, convex-hull area (one frame per second), distance between the centroids, and R's frame fractions for A / B / none and ball-to-nearest distances; trained on the live seconds of the other matches' windows (truth side via the mapping), leave one match out; share = mean P(A) over all the window's seconds"
+ },
+ "primary": "per window (47), absolute error of the left share, L - C, mean over windows, 95% bootstrap over matches (5,000 draws, seed 0)",
+ "adopt L if": "L - C <= -0.03 with the interval below 0",
+ "also reported": [
+  "R - C the same way",
+  "per match (its windows pooled, ~14 min): absolute error in points for C, R, L, and how many matches are within 5 points (the owner's bar)",
+  "per-second accuracy of L's side on live seconds",
+  "the truth's spread of shares (per window, per match): a constant can only be wrong by that much"
+ ],
+ "cost": "local CPU, < 1 h",
+ "what this cannot show": "whole matches (14 min per match here), the owner's camera"
+}

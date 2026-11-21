@@ -1,0 +1,8 @@
+{
+ "name": "Learned shots with the grass tests off (exploratory; owner decision 2026-10-27)",
+ "written": "2026-10-27, before any v3 feature is computed",
+ "change": "the v2 shot spotter (v2/learn_v2.py, features and nested leave-one-match-out unchanged) on pitch tracks without the ball's grass test (ball_grass/relink.py; M7 / M9 also with the no-grass players)",
+ "units": "the v2 units that have a relinked track in both arms (old tracks vs relinked), same units, same labels",
+ "comparison": "recall and precision at 2 s pooled and per match, hits new - old with a paired bootstrap over matches (as v2)",
+ "status": "every match has been used; this is cross-validated evidence only, no test claim"
+}

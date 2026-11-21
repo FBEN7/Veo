@@ -1,0 +1,109 @@
+{
+ "plan sha256": "4c81821cd1085cd73a4ee9c52fc783e6c5fd85715d7a588cf40fb1c383e1799d",
+ "min_present 0": {
+  "frozen cell (in-sample)": {
+   "hits": "41 / 41",
+   "candidates per match": 11.3,
+   "false runs per match": 7.2,
+   "scorer right": "39 / 41",
+   "_hits": 41,
+   "_right": 39
+  },
+  "held out (formation only, LOMO)": {
+   "hits": 40,
+   "restartable": 41,
+   "false runs": 71,
+   "false runs per match": 7.1
+  },
+  "simulated recordings, true starts": {
+   "V0": {
+    "half-time candidates": "56",
+    "hits": 41,
+    "false runs": 128,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 5.6
+   },
+   "V1": {
+    "half-time candidates": "38",
+    "hits": 41,
+    "false runs": 109,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 3.8
+   },
+   "V2": {
+    "half-time candidates": "56",
+    "hits": 41,
+    "false runs": 127,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 5.6
+   },
+   "V3": {
+    "half-time candidates": "1",
+    "hits": 41,
+    "false runs": 73,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 0.1
+   }
+  }
+ },
+ "min_present 6": {
+  "frozen cell (in-sample)": {
+   "hits": "41 / 41",
+   "candidates per match": 11.2,
+   "false runs per match": 7.1,
+   "scorer right": "39 / 41",
+   "_hits": 41,
+   "_right": 39
+  },
+  "held out (formation only, LOMO)": {
+   "hits": 40,
+   "restartable": 41,
+   "false runs": 70,
+   "false runs per match": 7.0
+  },
+  "simulated recordings, true starts": {
+   "V0": {
+    "half-time candidates": "0",
+    "hits": 41,
+    "false runs": 71,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 0.0
+   },
+   "V1": {
+    "half-time candidates": "0",
+    "hits": 41,
+    "false runs": 71,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 0.0
+   },
+   "V2": {
+    "half-time candidates": "0",
+    "hits": 41,
+    "false runs": 71,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 0.0
+   },
+   "V3": {
+    "half-time candidates": "1",
+    "hits": 41,
+    "false runs": 72,
+    "scorer right": 39,
+    "restartable": 41,
+    "half-time candidates per match": 0.1
+   }
+  }
+ },
+ "bar": {
+  "frozen: hits 41/41 and scorer >= 39": true,
+  "held out: hits >= 40 and false per match <= 7.1": true,
+  "simulated: half-time candidates <= 0.5 per match, every variant": true
+ },
+ "adopt": true
+}

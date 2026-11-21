@@ -1,0 +1,6 @@
+{
+ "written": "2026-11-18, after evaluate.py crashed on its first run and before any score was computed or seen",
+ "why": "the team on the left in the 1st half rotates its players (in 2nd-half windows none of its 1st-half player ids may be on the pitch: e.g. 2nd half f000000, right side: 10 ids, 1 seen in the 1st half), so its side cannot be found from its own ids in every window",
+ "change": "both sides' 1st-half player ids are kept (T1 = left in the 1st half, T2 = right); per window, T1's side = the mode side of T1's players when any is on the pitch, else the side opposite to the mode side of T2's players; the windows where both are present and disagree (same side) are counted and reported",
+ "unchanged": "everything else in plan.json"
+}

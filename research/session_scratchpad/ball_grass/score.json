@@ -1,0 +1,140 @@
+{
+ "plan sha256": "9b39442196c2cbe3013b6054bbd9e1912b503e3f2afa42cc248b52eebfe68fec",
+ "seen matches": {
+  "units": 157,
+  "old": {
+   "all": {
+    "n": 1544,
+    "right": 878,
+    "share right": 0.569,
+    "wilson": [
+     0.544,
+     0.593
+    ],
+    "coverage": 0.837,
+    "precision": 0.68
+   },
+   "passes": {
+    "n": 755,
+    "right": 438,
+    "share right": 0.58,
+    "wilson": [
+     0.545,
+     0.615
+    ],
+    "coverage": 0.848,
+    "precision": 0.684
+   },
+   "per match": {
+    "117093": 0.646,
+    "118576": 0.611,
+    "118577": 0.469,
+    "118578": 0.547,
+    "128058": 0.57,
+    "132877": 0.584
+   }
+  },
+  "relinked": {
+   "all": {
+    "n": 1544,
+    "right": 881,
+    "share right": 0.571,
+    "wilson": [
+     0.546,
+     0.595
+    ],
+    "coverage": 0.839,
+    "precision": 0.68
+   },
+   "passes": {
+    "n": 755,
+    "right": 440,
+    "share right": 0.583,
+    "wilson": [
+     0.547,
+     0.617
+    ],
+    "coverage": 0.852,
+    "precision": 0.684
+   },
+   "per match": {
+    "117093": 0.646,
+    "118576": 0.611,
+    "118577": 0.469,
+    "118578": 0.547,
+    "128058": 0.57,
+    "132877": 0.594
+   }
+  }
+ },
+ "M7 / M9": {
+  "units": 27,
+  "old": {
+   "all": {
+    "n": 552,
+    "right": 192,
+    "share right": 0.348,
+    "wilson": [
+     0.309,
+     0.388
+    ],
+    "coverage": 0.861,
+    "precision": 0.404
+   },
+   "passes": {
+    "n": 285,
+    "right": 101,
+    "share right": 0.354,
+    "wilson": [
+     0.301,
+     0.412
+    ],
+    "coverage": 0.867,
+    "precision": 0.409
+   },
+   "per match": {
+    "128057": 0.532,
+    "132831": 0.253
+   }
+  },
+  "relinked": {
+   "all": {
+    "n": 552,
+    "right": 321,
+    "share right": 0.582,
+    "wilson": [
+     0.54,
+     0.622
+    ],
+    "coverage": 0.906,
+    "precision": 0.642
+   },
+   "passes": {
+    "n": 285,
+    "right": 172,
+    "share right": 0.604,
+    "wilson": [
+     0.546,
+     0.659
+    ],
+    "coverage": 0.916,
+    "precision": 0.659
+   },
+   "per match": {
+    "128057": 0.532,
+    "132831": 0.607
+   }
+  }
+ },
+ "M9 verified clip": {
+  "metric_v3s_link.parquet": {
+   "verified balls": 39,
+   "hit": 9
+  },
+  "metric_v3s_link_nograss.parquet": {
+   "verified balls": 39,
+   "hit": 38
+  }
+ },
+ "adopt": true
+}

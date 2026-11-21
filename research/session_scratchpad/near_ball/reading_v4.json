@@ -1,0 +1,109 @@
+{
+ "status": "exploratory, not registered; read after v4.json",
+ "per match, actor detected (original stages vs replay)": [
+  {
+   "match": "117093",
+   "S0 raw": 0.858,
+   "S1 tracker": 0.782,
+   "S4 roster cap": 0.775,
+   "A S1": 0.873,
+   "A S3": 0.873,
+   "A S4": 0.862,
+   "B2 S4": 0.887,
+   "actions": 275
+  },
+  {
+   "match": "118575",
+   "S0 raw": 0.849,
+   "S1 tracker": 0.734,
+   "S4 roster cap": 0.725,
+   "A S1": 0.862,
+   "A S3": 0.862,
+   "A S4": 0.848,
+   "B2 S4": 0.876,
+   "actions": 218
+  },
+  {
+   "match": "118576",
+   "S0 raw": 0.9,
+   "S1 tracker": 0.841,
+   "S4 roster cap": 0.838,
+   "A S1": 0.898,
+   "A S3": 0.893,
+   "A S4": 0.891,
+   "B2 S4": 0.919,
+   "actions": 421
+  },
+  {
+   "match": "118577",
+   "S0 raw": 0.844,
+   "S1 tracker": 0.743,
+   "S4 roster cap": 0.732,
+   "A S1": 0.813,
+   "A S3": 0.809,
+   "A S4": 0.798,
+   "B2 S4": 0.848,
+   "actions": 257
+  },
+  {
+   "match": "118578",
+   "S0 raw": 0.844,
+   "S1 tracker": 0.722,
+   "S4 roster cap": 0.688,
+   "A S1": 0.852,
+   "A S3": 0.848,
+   "A S4": 0.84,
+   "B2 S4": 0.867,
+   "actions": 263
+  },
+  {
+   "match": "128057",
+   "S0 raw": 0.814,
+   "S1 tracker": 0.663,
+   "S4 roster cap": 0.663,
+   "A S1": 0.791,
+   "A S3": 0.791,
+   "A S4": 0.767,
+   "B2 S4": 0.779,
+   "actions": 86
+  },
+  {
+   "match": "128058",
+   "S0 raw": 0.837,
+   "S1 tracker": 0.725,
+   "S4 roster cap": 0.721,
+   "A S1": 0.821,
+   "A S3": 0.821,
+   "A S4": 0.817,
+   "B2 S4": 0.849,
+   "actions": 251
+  },
+  {
+   "match": "132831",
+   "S0 raw": 0.875,
+   "S1 tracker": 0.864,
+   "S4 roster cap": 0.832,
+   "A S1": 0.848,
+   "A S3": 0.848,
+   "A S4": 0.821,
+   "B2 S4": 0.848,
+   "actions": 184
+  },
+  {
+   "match": "132877",
+   "S0 raw": 0.92,
+   "S1 tracker": 0.823,
+   "S4 roster cap": 0.813,
+   "A S1": 0.893,
+   "A S3": 0.887,
+   "A S4": 0.88,
+   "B2 S4": 0.92,
+   "actions": 300
+  }
+ ],
+ "reading": [
+  "The replay A does not reproduce the original on M7 / M9 (no grass test in either): M7 S1 0.791 vs 0.663, M9 0.848 vs 0.864. Not one shift, so not one cause; the original detections cannot be compared (caches deleted).",
+  "On the 7 other matches A is 5.3 to 15.2 points above the original at S4; part of that is the grass test, part the same unexplained replay gap.",
+  "B2's added rows are one-frame ids: same track over +-1 s 0.756 of detected actors vs 0.814 for A."
+ ]
+}

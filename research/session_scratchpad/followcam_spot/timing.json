@@ -1,0 +1,10 @@
+{
+ "what": "timing run (kernel version 32, Kaggle T4): speed only; its M2 scores were deleted unread, as the plan says",
+ "earlier attempts": "versions before 32 stopped before training (missing CLI, NameError, unpacked archive, CUDA out of memory at batch 4 / -ag 1 and -ag 2; version 31 stuck in the queue 2 h, never started)",
+ "settings": {"epochs": 2, "epoch_num_frames": 20000, "warm_up_epochs": 1, "batch": 4, "gradient accumulation": 4},
+ "seconds": {"frame extraction (6 halves)": 542, "store pass": 67, "load -ag 2 (out of memory)": 24, "training, 2 epochs": 423, "inference on M2 (2 halves)": 1735, "whole kernel": 2791},
+ "per epoch of 20000 frames": {"train s": [195.0, 185.1], "val loss s": [16.7, 17.5]},
+ "pilot set from this": {"epochs": 20, "epoch_num_frames": 100000, "warm_up_epochs": 2,
+                         "expected training s": 19340, "why": "about 950 s train + 17 s val loss per epoch of 100000 frames; 20 epochs = 5.4 h, under the plan's 6 h; warm-up 2 keeps T-DEED's 3/35 ratio",
+                         "against T-DEED's SoccerNet ball recipe": "2.0 M training frames vs 35 x 500000 = 17.5 M (11 %), and from ImageNet weights instead of its SoccerNet action pre-training"}
+}

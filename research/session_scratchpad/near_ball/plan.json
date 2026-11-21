@@ -1,0 +1,20 @@
+{
+ "question": "Option B (owner, 2026-11-02): where do we lose the player on the ball? Missed by the detector, merged with a neighbour, a broken or switched track, or only a position error (the '38% beyond 3 m' of team_passes/decision_v3.json is in pitch metres, against approximate truth positions)?",
+ "status": "diagnostic, CPU, registered before any number below is computed; GPU budget for what follows: 10 h (owner)",
+ "data": "the shots clips of 9 matches (M1 left out: its truth boxes are in another pixel frame; M7 / M9 through src/unseal.py), every labelled action with an actor within frames 350-1075; our player rows of .cache/gpu_shots3 (metric_v3s_link) at the even frame at or just before the action",
+ "matching": "image space, as eval_soccertrack_v2: our boxes (ev.boxes) to the truth's persons by feet, one to one within 43 px (ev.match_feet), on that frame",
+ "per action": {
+  "detected": "a detection is matched to the actor",
+  "taken": "not matched, but a detection's foot point lies within 43 px of the actor's (it went to a neighbour or is unmatched)",
+  "missed": "no detection's foot point within 43 px",
+  "merged": "the actor's detection (matched, or nearest within 43 px) contains the box-bottom centres of 2 or more truth persons",
+  "track over +-1 s": "for a detected actor: share of the even frames within 24 frames where the actor is matched to the same track; switch = that track matched to another person in the window",
+  "position": "for a detected actor: pitch distance between our detection and the truth's position (our metres from the corner)",
+  "control": "the same 'detected' share for all other outfield truth persons on that frame"
+ },
+ "readings": {
+  "positions": "detected >= 0.90 of actions: the 38% is mostly a position artefact; B's lever is not detection",
+  "detection in crowds": "missed + taken + merged >= 0.20 and the actor's detected share well below the control's: detection near the ball is the lever (GPU variants next)",
+  "tracking": "frequent breaks or switches around actions: the tracker is the lever"
+ }
+}

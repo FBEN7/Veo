@@ -1,0 +1,162 @@
+{
+ "plan_v4 sha256": "2f7242b64c17c11b1e9fe2e45967f76b90e2b7abef2551bd1a4c9e30ea583e3d",
+ "addendum1 sha256": "220382d0c9578494e7c50b82dc5612692ac2e3989b6c7ec5ca95c743402893a2",
+ "addendum2 sha256": "4543a504db8efa7ba8a1482f7b1e41c4ba9d026664b77f5e46145bb47022415a",
+ "units missing": [],
+ "per variant and stage": {
+  "A S1": {
+   "actions": 2254,
+   "detected": 0.8589,
+   "taken": 0.0825,
+   "missed": 0.0586,
+   "control": 0.9355,
+   "unmatched per action frame": 5.949
+  },
+  "A S3": {
+   "actions": 2254,
+   "detected": 0.8563,
+   "taken": 0.0847,
+   "missed": 0.059,
+   "control": 0.9348,
+   "unmatched per action frame": 5.907
+  },
+  "A S4": {
+   "actions": 2254,
+   "detected": 0.8465,
+   "taken": 0.0901,
+   "missed": 0.0634,
+   "control": 0.9278,
+   "unmatched per action frame": 5.597,
+   "same track +-1s (detected actors)": 0.8141
+  },
+  "A2 S3": {
+   "actions": 2254,
+   "detected": 0.8589,
+   "taken": 0.0825,
+   "missed": 0.0586,
+   "control": 0.9355,
+   "unmatched per action frame": 5.949
+  },
+  "A2 S4": {
+   "actions": 2254,
+   "detected": 0.8492,
+   "taken": 0.0878,
+   "missed": 0.063,
+   "control": 0.9284,
+   "unmatched per action frame": 5.626,
+   "same track +-1s (detected actors)": 0.8119
+  },
+  "B2 S1": {
+   "actions": 2254,
+   "detected": 0.8895,
+   "taken": 0.0586,
+   "missed": 0.0519,
+   "control": 0.9472,
+   "unmatched per action frame": 7.278
+  },
+  "B2 S3": {
+   "actions": 2254,
+   "detected": 0.8895,
+   "taken": 0.0586,
+   "missed": 0.0519,
+   "control": 0.9472,
+   "unmatched per action frame": 7.278
+  },
+  "B2 S4": {
+   "actions": 2254,
+   "detected": 0.878,
+   "taken": 0.0652,
+   "missed": 0.0568,
+   "control": 0.9387,
+   "unmatched per action frame": 6.563,
+   "same track +-1s (detected actors)": 0.7561
+  }
+ },
+ "reproduction (A vs the original)": {
+  "M7, M9 (no grass test in the original)": {
+   "S1": {
+    "original": 0.8,
+    "A": 0.8296,
+    "actions": 270
+   },
+   "S4": {
+    "original": 0.7778,
+    "A": 0.8037,
+    "actions": 270
+   },
+   "S4 gap above 0.02": true
+  },
+  "7 other matches (grass test in the original)": {
+   "S1": {
+    "original": 0.7752,
+    "A": 0.8629,
+    "actions": 1984
+   },
+   "S4": {
+    "original": 0.7646,
+    "A": 0.8523,
+    "actions": 1984
+   },
+   "S4 gap above 0.02": true
+  }
+ },
+ "primary: actor detected at S4, B2 - A": {
+  "gain": 0.0315,
+  "95% bootstrap over matches": [
+   0.0262,
+   0.0375
+  ],
+  "per match": {
+   "117093": 0.025,
+   "118575": 0.028,
+   "118576": 0.029,
+   "118577": 0.051,
+   "118578": 0.027,
+   "128057": 0.012,
+   "128058": 0.032,
+   "132831": 0.027,
+   "132877": 0.04
+  }
+ },
+ "decomposition: A2 - A": {
+  "gain": 0.0027,
+  "95% bootstrap over matches": [
+   0.0009,
+   0.0043
+  ],
+  "per match": {
+   "117093": 0.0,
+   "118575": 0.0,
+   "118576": 0.005,
+   "118577": 0.004,
+   "118578": 0.004,
+   "128057": 0.0,
+   "128058": 0.0,
+   "132831": 0.0,
+   "132877": 0.007
+  }
+ },
+ "decomposition: B2 - A2": {
+  "gain": 0.0288,
+  "95% bootstrap over matches": [
+   0.0243,
+   0.0345
+  ],
+  "per match": {
+   "117093": 0.025,
+   "118575": 0.028,
+   "118576": 0.024,
+   "118577": 0.047,
+   "118578": 0.023,
+   "128057": 0.012,
+   "128058": 0.032,
+   "132831": 0.027,
+   "132877": 0.033
+  }
+ },
+ "guards": {
+  "unmatched per action frame, B2 <= 1.2 x A": true,
+  "control, B2 >= A - 0.01": true
+ },
+ "bar met (gain >= 0.03, lower bound > 0, guards)": true
+}

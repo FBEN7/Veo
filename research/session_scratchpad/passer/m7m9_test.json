@@ -1,0 +1,155 @@
+{
+ "protocol sha256": "9905ac0a7af14e1e6bb6a77e1cadc03e2053c469e4de6deddd5a85de54a5fbb2",
+ "units": 27,
+ "all actions": {
+  "A": {
+   "n": 552,
+   "right": 153,
+   "share right": 0.277,
+   "wilson": [
+    0.241,
+    0.316
+   ],
+   "coverage": 0.683,
+   "precision": 0.406
+  },
+  "B": {
+   "n": 552,
+   "right": 183,
+   "share right": 0.332,
+   "wilson": [
+    0.294,
+    0.372
+   ],
+   "coverage": 0.826,
+   "precision": 0.401
+  },
+  "C [-0.4, +0.2] s": {
+   "n": 552,
+   "right": 192,
+   "share right": 0.348,
+   "wilson": [
+    0.309,
+    0.388
+   ],
+   "coverage": 0.862,
+   "precision": 0.403
+  }
+ },
+ "passes": {
+  "A": {
+   "n": 285,
+   "right": 84,
+   "share right": 0.295,
+   "wilson": [
+    0.245,
+    0.35
+   ],
+   "coverage": 0.719,
+   "precision": 0.41
+  },
+  "B": {
+   "n": 285,
+   "right": 99,
+   "share right": 0.347,
+   "wilson": [
+    0.294,
+    0.404
+   ],
+   "coverage": 0.832,
+   "precision": 0.418
+  },
+  "C [-0.4, +0.2] s": {
+   "n": 285,
+   "right": 101,
+   "share right": 0.354,
+   "wilson": [
+    0.301,
+    0.412
+   ],
+   "coverage": 0.87,
+   "precision": 0.407
+  }
+ },
+ "per match": {
+  "128057": {
+   "A": {
+    "n": 188,
+    "right": 72,
+    "share right": 0.383,
+    "wilson": [
+     0.316,
+     0.454
+    ],
+    "coverage": 0.665,
+    "precision": 0.576
+   },
+   "B": {
+    "n": 188,
+    "right": 98,
+    "share right": 0.521,
+    "wilson": [
+     0.45,
+     0.592
+    ],
+    "coverage": 0.84,
+    "precision": 0.62
+   },
+   "C [-0.4, +0.2] s": {
+    "n": 188,
+    "right": 100,
+    "share right": 0.532,
+    "wilson": [
+     0.461,
+     0.602
+    ],
+    "coverage": 0.872,
+    "precision": 0.61
+   }
+  },
+  "132831": {
+   "A": {
+    "n": 364,
+    "right": 81,
+    "share right": 0.223,
+    "wilson": [
+     0.183,
+     0.268
+    ],
+    "coverage": 0.692,
+    "precision": 0.321
+   },
+   "B": {
+    "n": 364,
+    "right": 85,
+    "share right": 0.234,
+    "wilson": [
+     0.193,
+     0.28
+    ],
+    "coverage": 0.819,
+    "precision": 0.285
+   },
+   "C [-0.4, +0.2] s": {
+    "n": 364,
+    "right": 92,
+    "share right": 0.253,
+    "wilson": [
+     0.211,
+     0.3
+    ],
+    "coverage": 0.857,
+    "precision": 0.295
+   }
+  }
+ },
+ "paired C vs B": {
+  "C right B wrong": 16,
+  "B right C wrong": 11
+ },
+ "holds": false,
+ "ceiling (labelled player matched to a detection), per match": {
+  "128057": 0.729,
+  "132831": 0.544
+ }
+}

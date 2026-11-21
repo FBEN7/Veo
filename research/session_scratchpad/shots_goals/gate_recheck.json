@@ -1,0 +1,7 @@
+{
+ "what": "re-check of the SHOT GATE after its reproducibility check failed (protocol: 're-checked before deciding')",
+ "written": "2026-10-20, before any of the 26 gate attempts is scored (M9 2nd detections still running)",
+ "finding": "M9 2nd f2296 (half 32296) comes out reachable, against the planning measurement (0/3). Its near and path frames are candidates at (946, 406) and (986, 409) px, conf 0.26-0.27, at +0.2 s and +0.4 s, that move 5 m towards the attacked goal (x -47.8 -> -42.7 m): a ball in flight. The planning measurement (read-only, by a planning agent, on candidate rows not recorded) was wrong; the registered definition is not at fault.",
+ "second reading": "candidates within 4 px of a point holding a candidate on >= 25% of the attempt's detected frames dropped (rest balls, fixed clutter: on M9 such points hold candidates on 16-36% of the window's frames). It agrees with the registered reading on all 3 reproducibility attempts (not, not, reachable).",
+ "decision rule (unchanged)": "the registered reading (marks dropped) decides; the second reading is reported beside it. The reproducibility condition becomes: the two readings agree on the 3 attempts, whose reference is now (not reachable, not reachable, reachable)."
+}

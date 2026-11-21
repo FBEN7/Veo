@@ -1,0 +1,11 @@
+{
+ "reading": "2026-11-11, after the registered stage 1 (probe.json): exploratory checks, not part of plan.json",
+ "probe (registered, probe.json)": "NO GO. Best arm Y2 (yolov8s x2) and H (v3b) find the ball within 2 m of the spot on 1 of 20 half-start kick-offs (go needs 15); live-play rate <= 0.5% at every conf. Stage 2 is not run.",
+ "why (one image looked at, 118578 2nd frame 0)": "the ball on the centre spot is a white blob of ~4-5 px on the white halfway line, ~35 m from the camera, with the kicker over it",
+ "wider radius (exploratory)": "H has something within 4 m on 13/20 kick-offs and within 6 m on 17/20, but at conf <= 0.03 on all but 3 (0.13-0.27, frames 15-25, after the kick); at 4 m and conf 0.05 the live rate is 2.7%: no usable signal",
+ "audio (exploratory, 4 restartable goals of 117093; the half videos carry AAC 48 kHz audio)": {
+  "method": "0.1-s bins, energy share in 2.5-4.5 kHz and its peak-to-median, from 10 s before the goal to 5 s after the kick-off action (first labelled action >= 10 s after the goal)",
+  "seen": "the strongest whistle-like bins sit within 2 s of the kick-off action in 4 of 4 (+0.3 to +1.1 s twice, -1.5 and -1.7 s); other whistle-like bins 15-30 s before it (around the goal) and once 4 s after",
+  "not yet known": "how often whistles occur in live play (fouls), so whether 'formation + whistle at its end' removes the false runs; the owner's camera must record audio"
+ }
+}

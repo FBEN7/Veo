@@ -1,0 +1,23 @@
+{
+ "plan": "near_ball plan_v6: a fixed confidence threshold of 0.20 against each clip's auto-tuned conf_player, at the tracker stage, on the 9 matches",
+ "date": "2026-11-03, after v5.json; before any computation below",
+ "known before": {
+  "v5": "M7 (128057): actor detected at S1, A (0.20) 0.791 vs A' (each clip's conf_player) 0.663, reproducing the original",
+  "v4": "A at S1 on all 2,254 actions: 0.859, unmatched per action frame 5.949, control 0.9355",
+  "settings": "conf_player over the 223 units: 0.08 to 0.5, median 0.4; the GPU pass kept boxes with conf >= 0.10"
+ },
+ "arms": {
+  "A": "plan_v4's A files (trk/<unit>_A.parquet: GPU pass, conf >= 0.20, track_kernel.track matched detections only, inside_pitch margin 10), all rows, frames <= 1124",
+  "A'": "the same code on the same boxes with conf >= the unit's conf_player (<run>/shots_v3s_link/profile.json), as diag_v5.py"
+ },
+ "units": "the 223 units minus those with conf_player below 0.10 (the GPU pass did not keep their boxes), in both arms; the excluded units are listed",
+ "scoring": "score_v4.unit, cell (A, S1), on stages.parquet's actions of the kept units",
+ "measures": {
+  "primary": "actor detected at S1, A - A'; 95% bootstrap over matches (score_v4.boot: 5,000, seed 0, paired); per match",
+  "guards (reported)": "unmatched detections per action frame, A <= 1.2 x A'; control (other players detected), A >= A' - 0.01",
+  "also": "the same per match; the share of units whose conf_player is 0.20 (A = A' there by construction)"
+ },
+ "bar": "gain >= 0.03 and lower bound > 0",
+ "what it decides": "S1 is not the output: no pipeline change from this plan alone. If the bar is met, the next step is the same comparison at S4 (teams, roster cap; Kaggle CPU), whatever the S1 false-detection guard says, since the roster cap removes boxes; the guards are reported either way. If the bar is not met, the threshold is not the lever.",
+ "caveats stated in advance": "M9 (132831) was detected at imgsz 3840 in the original, at 4096 here: A - A' on M9 is the threshold's effect at 4096, not the original's level"
+}

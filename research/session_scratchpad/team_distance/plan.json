@@ -1,0 +1,15 @@
+{
+ "question": "Team statistics only (owner, 2026-11-02): is our distance run per team right, per match, better than a constant?",
+ "status": "registered 2026-11-02 before any number below is computed; CPU",
+ "data": "the 249 shots clips of the 10 matches, frames 300-1125 (where the per-detection kit teams exist, team_passes/plan_v3.json); tracks of .cache/gpu_shots3 (metric_v3s_link, pitch metres); M7 / M9 clips opened through src/unseal.py",
+ "teams": "per-detection kit teams (team_passes/kit_v3.py kit_teams, det_smooth), mapped to the truth's sides per clip as team_passes/plan.json",
+ "ours": "per track, positions smoothed by a centred moving average of 1 s (13 rows at the even frames), a detection's speed = distance between its smoothed positions 12 frames before and after / 0.96 s (none at the track's ends); every 25th frame from 300, each team's distance for that second = 10 x the mean speed of its detections then (outfield players are 10; the team's clip mean when it has none that second); summed over the seconds",
+ "truth": "per side, each outfield player's positions (role player) smoothed the same way (1 s centred moving average) and sampled every 25th frame from 300: path length; summed over the side's players",
+ "per match (clips pooled)": {
+  "distance (primary)": "each side's distance (20 team-matches): relative error |ours - truth| / truth; constant: the truth's mean distance per team-second over the other 9 matches x the seconds",
+  "share": "the left side's share of the two teams' distance: absolute error; constant 0.5",
+  "descriptive": "the same with the truth's team for each detection (nearest truth person within 3 m), to separate the team labels' part"
+ },
+ "decision": "each of distance and share is shown better than its constant when the 95% bootstrap interval (over matches, 5,000 draws, seed 0, paired) of mean error ours - constant lies below 0; otherwise it is not reported as measured",
+ "caveat": "the truth's positions are approximate (footpoint/diag) and jitter on a 1.05 x 0.68 m grid: both sides are smoothed at 1 s, so this compares path lengths at that scale, not the distance actually run"
+}

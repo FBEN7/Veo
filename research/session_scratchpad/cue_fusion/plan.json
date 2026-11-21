@@ -1,0 +1,25 @@
+{
+ "title": "identity step 2b: can partial numbers + the lineup + look cues (height, colours) identify a player's pieces?",
+ "written": "2026-11-17, before any cue is computed",
+ "owner request": "2026-11-17: cross the cues (15 is close to 16; height, hair, shoe colour...) to recover a player's identity; the club enters the lineup (numbers on the pitch) before analysis; a quick CPU test first",
+ "facts before": "jersey_read: players median 49 px tall; a crop's number read correctly 0% < 40 px, 3% 40-60, 27% 60-80, 43% >= 80 (wrong among read 67%, 20%, 7%); earlier appearance re-ID: rank-1 among team-mates 0.18-0.39 per crop",
+ "data": "the local videos with truth (as jersey_read): 117093 1st f015000 (3 min), 132831 2nd shot clips (16 x 57 s, one half: pooled as one match; sealed match opened through src/unseal.py), 118576 1st f050779 (57 s)",
+ "segments": "truth outfield players matched to our team-labelled detections as jersey_read addendum 1 (Hungarian on pitch distance <= 2 m, no other truth player within 3 m), sampled every 2 s; a segment = a player in a 20-s slot (slot s = frames [500 s, 500 s + 500) of a video, only full slots), kept if matched on >= 4 of its 10 samples. Segments stand for a perfect tracker's pieces cut every 20 s (optimistic: real pieces mix players)",
+ "cues per segment": {
+  "relative height": "median over its crops of box height / the box height expected at that image position (least squares of log box height on a quadratic in foot x, y, fitted per video on all matched detections)",
+  "colours": "mean Lab of non-grass pixels (grass: OpenCV HSV H 35-90, S > 50, V > 40) in four slices of our box: hair (top 12%, middle half of the width), shorts (45-60%), socks (72-88%), shoes (88-100%); median over its crops",
+  "standardised": "z-scores per team and match; missing -> 0"
+ },
+ "lineup": "the team's outfield players in the truth over the match's videos (their numbers), as the club would enter it",
+ "measure (a), cues alone": "per segment, the team-mate whose other segments' mean cue vector is nearest (Euclidean on z-scores): rank-1 accuracy; for all cues, height only, colours only; chance ~ 1 / team-mates",
+ "measure (b), the fusion (primary)": {
+  "number reads (simulated from jersey_read)": "each of a segment's crops, by its box-height band: read correctly with jersey_read's rate, wrongly with its rate (a wrong read lands on another lineup number with probability 0.5, else on a number not in the lineup and is dropped), else not read; a segment's number = the most frequent lineup number read (ties: none)",
+  "assignment": "per team and slot, Hungarian between the slot's segments and the lineup: a segment with a number costs 0 to that player and 1e6 to the others; otherwise its cost to a player = distance to the mean cue vector of the segments numbered as that player in the whole match, or the median of such distances if he has none; each player at most once per slot",
+  "ablation": "the same with no cues (every unnumbered cost equal): numbers + lineup + exclusivity alone",
+  "repeats": "200 draws of the reads, seed 0; means reported"
+ },
+ "also reported": "share of segments numbered; per-player distance (truth positions, 1-s smoothing and 1-s sampling, over his segments vs over the segments assigned to him) within 5%",
+ "decision": "worth building (a trained number reader on GPU, real pieces) if the fusion identifies >= 80% of segments on each of 117093 and 132831; (a) is informative if rank-1 >= 0.5",
+ "what this cannot show": "real pieces (they mix players: this is a ceiling); the owner's camera; a trained number reader (simulated from Claude's reading); position continuity between pieces is not used",
+ "cost": "local CPU, ~1 h"
+}

@@ -1,0 +1,76 @@
+{
+ "protocol": "ball v4 (clicked balls)",
+ "fold": "B",
+ "train": {
+  "117093": [
+   1,
+   2
+  ],
+  "118575": [
+   1,
+   2
+  ],
+  "118576": [
+   1,
+   2
+  ],
+  "118577": [
+   1,
+   2
+  ],
+  "118578": [
+   1
+  ],
+  "128058": [
+   1,
+   2
+  ],
+  "132877": [
+   1,
+   2
+  ]
+ },
+ "init": "ball_v3b.1500.pt",
+ "steps": 600,
+ "step": 300,
+ "seed": 0,
+ "motion": true,
+ "sigma": {
+  "SIGMA_D": 0.0535,
+  "SIGMA_F": 0.0174
+ },
+ "mix": [
+  [
+   "verified",
+   null,
+   8
+  ],
+  [
+   "verified_neg",
+   null,
+   2
+  ],
+  [
+   "flight",
+   null,
+   2
+  ],
+  [
+   "action",
+   null,
+   1
+  ],
+  [
+   "free",
+   null,
+   3
+  ]
+ ],
+ "n_train": {
+  "action": 300,
+  "flight": 450,
+  "free": 450,
+  "verified": 528,
+  "verified_neg": 176
+ }
+}

@@ -1,0 +1,114 @@
+{
+ "plan sha256": "3b7c2aee6f32c20979be1df1bb30063e63355c4f491afdffae552601518cf291",
+ "windows": 47,
+ "skipped (no team mapping)": [],
+ "primary: per-window abs error of the left share, L - C": -0.0512,
+ "95% bootstrap over matches": [
+  -0.095,
+  -0.0104
+ ],
+ "adopt L (<= -0.03, interval below 0)": true,
+ "R - C": -0.032,
+ "R - C, 95%": [
+  -0.0796,
+  0.0109
+ ],
+ "mean per-window abs error": {
+  "C": 0.1526,
+  "R": 0.1205,
+  "L": 0.1013
+ },
+ "L per-second accuracy on live seconds (mean over windows)": 0.744,
+ "truth's left share: per window min / median / max": [
+  0.0,
+  0.475,
+  0.858
+ ],
+ "per match (windows pooled)": [
+  {
+   "match": "117092",
+   "truth_left": 0.39,
+   "minutes": 11.9,
+   "err C (points)": 11.0,
+   "err R (points)": 3.0,
+   "err L (points)": 5.7
+  },
+  {
+   "match": "117093",
+   "truth_left": 0.611,
+   "minutes": 12.5,
+   "err C (points)": 11.1,
+   "err R (points)": 5.6,
+   "err L (points)": 11.7
+  },
+  {
+   "match": "118575",
+   "truth_left": 0.432,
+   "minutes": 11.5,
+   "err C (points)": 6.8,
+   "err R (points)": 2.2,
+   "err L (points)": 0.0
+  },
+  {
+   "match": "118576",
+   "truth_left": 0.448,
+   "minutes": 5.2,
+   "err C (points)": 5.2,
+   "err R (points)": 0.1,
+   "err L (points)": 4.8
+  },
+  {
+   "match": "118577",
+   "truth_left": 0.507,
+   "minutes": 5.6,
+   "err C (points)": 0.7,
+   "err R (points)": 2.0,
+   "err L (points)": 10.2
+  },
+  {
+   "match": "118578",
+   "truth_left": 0.479,
+   "minutes": 12.2,
+   "err C (points)": 2.1,
+   "err R (points)": 3.4,
+   "err L (points)": 1.6
+  },
+  {
+   "match": "128057",
+   "truth_left": 0.588,
+   "minutes": 7.6,
+   "err C (points)": 8.8,
+   "err R (points)": 0.9,
+   "err L (points)": 6.7
+  },
+  {
+   "match": "128058",
+   "truth_left": 0.516,
+   "minutes": 9.9,
+   "err C (points)": 1.6,
+   "err R (points)": 2.8,
+   "err L (points)": 3.9
+  },
+  {
+   "match": "132831",
+   "truth_left": 0.518,
+   "minutes": 9.0,
+   "err C (points)": 1.8,
+   "err R (points)": 4.3,
+   "err L (points)": 1.6
+  },
+  {
+   "match": "132877",
+   "truth_left": 0.501,
+   "minutes": 9.8,
+   "err C (points)": 0.1,
+   "err R (points)": 3.7,
+   "err L (points)": 5.4
+  }
+ ],
+ "matches within 5 points": {
+  "C": 5,
+  "R": 9,
+  "L": 5
+ }
+}

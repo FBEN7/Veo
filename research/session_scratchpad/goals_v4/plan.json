@@ -1,0 +1,57 @@
+{
+ "title": "goals v4: the kick-off formation rule plus a ball at the centre spot",
+ "written": "2026-11-09, before any ball detection at the centre spot; hashed (plan.json.sha256) before the first probe",
+ "owner request": "2026-11-09: 'Oui, prépare le plan du ballon au point central' (after goals_v3 failed its bar and the false-run reading)",
+ "why": "goals_v3 (registered): held out 34/41 restartable goals, 8.5 false runs per match, team 0.79. reading_false_runs*.json (exploratory): the false runs fall in live play (labelled actions 1-2 s around), a goal is followed by >= 15 s of dead ball and a kick-off with the ball still on the centre spot; 1-fps people positions do not give a dead-ball cue. Here: is a ball on the centre spot that cue?",
+ "data": "the 20 halves of the 10 SoccerTrack v2 matches (M7 128057 and M9 132831 are development data since 2026-11-05; each opening goes through src/unseal.py with the reason 'development use, seal lifted 2026-11-05'); the 1-fps people scans of goals_v3 (.cache/formation_scan/, unchanged); BAS events for goals and actions; the half videos streamed from Hugging Face (st.open_video, st.read_frames). The truth has no ball, so the cue is judged only through the goals it keeps and the false runs it removes.",
+ "changes from goals_v3 fixed now (both motivated by the goals_v3 readings, so post hoc on these 20 halves; disclosed)": {
+  "defended ends": "the team with the lower mean x over the half's first 10 s (frames 0-250, team-labelled scan people) defends x < 0 (right on 20/20 halves in reading_false_runs_extra.json; the videos start at the kick-off: the first labelled action is at 0-2 s on all 20 halves)",
+  "matching window": "a run matches a GOAL if it starts 10-60 s after it (was 15-60 s; 3 goals_v3 misses started 11-14 s after their goal). Restartable goals stay as goals_v3 (a later action >= 15 s after the goal)."
+ },
+ "ball detector arms": {
+  "region": "the centre spot (0, 0) and a box of +-12 m (x) by +-8 m (y) around it, projected to pixels through the match's camera (formation_scan.camera: M1 the refit, others the release), padded by 32 px; a detection's pitch position is its box's bottom centre (Y arms) or its ground point (H arm) through st.image_to_pitch",
+  "Y1, Y2, Y3": "yolov8s (crop_check.MODEL, the pipeline's weights), COCO sports ball (crop_check.BALL_CLASS_ID) only, on the region crop upscaled x1, x2, x3 (imgsz = crop width x scale, rounded up to 32), conf floor 0.02",
+  "H": "ball_v3b.1500.pt through ball_heatmap.detect_v2 with its calibration (p_cal), motion from frames t-2 / t+2 and a background from motion_bg's samples (every 50th frame, +-15 s, within what was decoded), the region as the outline, tau 0.02, top_k 8. Note: v3b was trained on 3-min windows of 7 of the 10 matches (provenance), never on M1, M7, M9; per-match results are reported."
+ },
+ "stage 1: probe (choose one arm; decides go / no go)": {
+  "kick-off frames": "on each of the 20 halves, frames 0, 5, 10, ... up to the half's first labelled action f0 (at least frame 0): the ball is on the centre spot until the kick",
+  "live-play samples": "per half, 10 windows of 5 consecutive 1-s samples (frames multiple of 25) starting at 40, 70, ..., 310 s; a window is kept if it has >= 1 labelled action and no GOAL in the 90 s before it",
+  "measures per arm and conf c in {0.05, 0.1, 0.2, 0.3, 0.5}": "kick-off recall: share of halves with a ball >= c within 2 m of the spot on >= 1 kick-off frame; live rate: share of live-play samples with a ball >= c within 2 m of the spot",
+  "choice": "per arm, c* = the smallest c with live rate <= 0.03; the arm with the highest kick-off recall at its c*, ties: lower live rate, then the cheaper arm (Y1, Y2, Y3, H)",
+  "go": "the chosen arm's kick-off recall >= 0.75 (15 of 20 halves). Otherwise stop: no stage 2, report the probe.",
+  "outputs": "goals_v4/probe.json, .cache/ball_spot/probe_<match>_<half>.parquet"
+ },
+ "stage 2: the chosen arm on the candidate spans": {
+  "spans": "for every cell of the grid below, the formation runs of each half (kick-off ends, goals_v3's runs: 60-s start exclusion, 20-s merge), each extended to its end + 10 s; the union of these, on every 1-s sample (frames multiple of 25). The grid's loosest cell (T 0.75, no R, N 1) gave ~8,800 s over the 20 halves in a count made while writing this plan.",
+  "rows": "per sample, the chosen arm's ball detections in the region at conf >= its floor (frame, conf, u, v, x, y) -> .cache/ball_spot/<match>_<half>.parquet, written in resumable chunks",
+  "throughput": "the probe's measured seconds per sample sets the estimate before stage 2 starts; local CPU only, two lanes"
+ },
+ "rule": {
+  "formation run": "goals_v3's: >= N consecutive 1-s samples with own-half share >= T (and, when R is set, the nearest team-labelled person within R m of the spot), 60-s start exclusion, 20-s merge; kick-off ends",
+  "ball cue": "a run is kept if, among the samples from its start to its end + 10 s, >= K samples have a ball detection >= c within D m of the spot",
+  "alarm": "a kept run; matched to GOALs as goals_v3 with the 10-60 s window; hits on restartable goals; a kept run matched to no goal is a false run",
+  "scoring team (kick_ball, primary)": "at the cue's last sample with a ball >= c within D m, the team of the team-labelled scan person nearest that ball kicks off, so the other team scored",
+  "scoring team (kick_spot, reported)": "goals_v3's: the person nearest the spot at the run's last sample"
+ },
+ "grid": {
+  "T": [0.75, 0.775, 0.8, 0.825, 0.85, 0.875, 0.9],
+  "R": [1.0, 2.0, 3.0, 5.0, null],
+  "N": [1, 2, 3],
+  "c": "the probe's c grid from the chosen c* upward: c in {0.05, 0.1, 0.2, 0.3, 0.5} with c >= c*",
+  "D": [1.0, 2.0, 3.0],
+  "K": [1, 2, 3, 5]
+ },
+ "choice of the cell": "most hits on restartable goals, then fewest false runs, then larger T, smaller R (None last), larger c, smaller D, larger K, smaller N",
+ "held out": "leave one match out: the cell chosen on 9 matches' halves, scored on the 10th's; pooled over the 10 matches",
+ "bar (unchanged from goals_v3, the owner's product bar)": "restartable goals found >= 0.95 and <= 1 false run per match, held out; scoring team right (kick_ball) on >= 0.9 of hits",
+ "also reported": [
+  "the same held out without the ball cue (kick-off ends and the 10-60 s window only), to separate the effects",
+  "kick_spot on the hits",
+  "per match: hits, restartable goals, false runs, team right, chosen cell",
+  "the cell chosen on all 10 matches",
+  "random-time baseline as goals_v3 (same run counts per half, 1000 draws, seed 0)",
+  "kick-off frames of the restartable goals (the first labelled action >= 10 s after each goal): share with a ball >= c within D m in the 10 s before it, at the cells chosen (exploratory)"
+ ],
+ "cost": "local CPU only, no GPU, no Kaggle. Probe: ~20 x (frames up to f0, ~11 each) + 1,000 live samples, under an hour. Stage 2: ~8,800 samples (~2.5 h of video) decoded in spans, estimated 2-5 h on two lanes. Disk: tens of MB.",
+ "what this cannot show": "the bar is the owner's; these 20 halves have been looked at (goals_v3 and its readings), so a pass here is development evidence and the owner's own matches remain the test"
+}

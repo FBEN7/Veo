@@ -1,0 +1,15 @@
+{
+ "question": "Our passes carry the right team on 68% (decision.json). Which way of giving an event its team is right most often, and does the best one make passes per team pass their test?",
+ "status": "registered 2026-11-02 before any event of this run or any number below is computed; CPU; follows plan.json + addendum1.json (same clips, ball range, spotter, team mapping, truth, success rule, constants, bootstrap)",
+ "events": "the same spotter, re-run (nested leave one match out, rate thresholds), events kept with their frame and class",
+ "methods": {
+  "A": "the nearest team-labelled player at the event frame (learn.py, as in decision.json)",
+  "B": "the team of the actor track by the possession rule (src/passer.py, rule C: -0.4 / +0.2 s, nearest detection within 3 m of the ball, most votes); the track's team is its most frequent team_A / team_B label",
+  "C": "the same window and ball, every frame's nearest player within 3 m votes its team (team_A / team_B only); most votes, ties to the vote nearest the event"
+ },
+ "team accuracy (selection)": "our passes and carries matched one-to-one to truth events of their class within 1 s; right = the method's team (mapped per clip as in plan.json) is the truth's side; no team counts as not right; pooled over the 10 matches, and per match",
+ "ceiling (diagnostic)": "per truth pass and carry, our player detection nearest the truth actor's position (within 3 m, nearest players' frame): the share whose team label is the truth's side, and the share with a team label at all",
+ "selection": "the method with the most right teams pooled; A is kept on a tie",
+ "test": "plan.json's share and success tests re-run with the selected method's teams (same constants, bootstrap, decision rule)",
+ "caveat": "the method is selected and tested on the same matches, on a different measure (team accuracy) than the test (share, success)"
+}

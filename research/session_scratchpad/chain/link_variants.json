@@ -1,0 +1,248 @@
+{
+ "plan sha256": "ad2111230773d69672d48e03a9c11ec75f12d0c982898659519198cceedc3481",
+ "reproduction: base relinks the stored ball on every unit": false,
+ "reproduction: base end to end equals chain.parquet's": false,
+ "actions": 2257,
+ "clicks (status ball, M1 out)": 366,
+ "held out": {
+  "chosen per match": {
+   "117093": "all tau0.05 b1",
+   "118575": "all tau0.03 b1",
+   "118576": "all tau0.01 b1",
+   "118577": "all tau0.03 b1",
+   "118578": "all tau0.01 b2",
+   "128057": "all tau0.05 b1",
+   "128058": "all tau0.01 b1",
+   "132831": "all tau0.03 b0",
+   "132877": "all tau0.03 b0"
+  },
+  "end to end, chosen": 0.3518,
+  "end to end, pipeline": 0.3434,
+  "gain": 0.0084,
+  "95% over matches": [
+   0.0004,
+   0.0165
+  ],
+  "per match": [
+   {
+    "match": "117093",
+    "n": 275,
+    "chosen": "all tau0.05 b1",
+    "chosen e2e": 111,
+    "base e2e": 107,
+    "clicks": 63,
+    "chosen hits": 22,
+    "base hits": 21
+   },
+   {
+    "match": "118575",
+    "n": 219,
+    "chosen": "all tau0.03 b1",
+    "chosen e2e": 67,
+    "base e2e": 66,
+    "clicks": 31,
+    "chosen hits": 13,
+    "base hits": 10
+   },
+   {
+    "match": "118576",
+    "n": 421,
+    "chosen": "all tau0.01 b1",
+    "chosen e2e": 149,
+    "base e2e": 147,
+    "clicks": 56,
+    "chosen hits": 17,
+    "base hits": 12
+   },
+   {
+    "match": "118577",
+    "n": 257,
+    "chosen": "all tau0.03 b1",
+    "chosen e2e": 78,
+    "base e2e": 83,
+    "clicks": 57,
+    "chosen hits": 22,
+    "base hits": 19
+   },
+   {
+    "match": "118578",
+    "n": 263,
+    "chosen": "all tau0.01 b2",
+    "chosen e2e": 84,
+    "base e2e": 80,
+    "clicks": 39,
+    "chosen hits": 14,
+    "base hits": 8
+   },
+   {
+    "match": "128057",
+    "n": 86,
+    "chosen": "all tau0.05 b1",
+    "chosen e2e": 32,
+    "base e2e": 29,
+    "clicks": 0,
+    "chosen hits": 0,
+    "base hits": 0
+   },
+   {
+    "match": "128058",
+    "n": 251,
+    "chosen": "all tau0.01 b1",
+    "chosen e2e": 104,
+    "base e2e": 99,
+    "clicks": 55,
+    "chosen hits": 26,
+    "base hits": 23
+   },
+   {
+    "match": "132831",
+    "n": 184,
+    "chosen": "all tau0.03 b0",
+    "chosen e2e": 73,
+    "base e2e": 69,
+    "clicks": 0,
+    "chosen hits": 0,
+    "base hits": 0
+   },
+   {
+    "match": "132877",
+    "n": 301,
+    "chosen": "all tau0.03 b0",
+    "chosen e2e": 96,
+    "base e2e": 95,
+    "clicks": 65,
+    "chosen hits": 38,
+    "base hits": 30
+   }
+  ]
+ },
+ "guard (ball after the kick)": {
+  "hit, chosen": 0.4153,
+  "hit, pipeline": 0.3361,
+  "holds (chosen >= pipeline - 0.02)": true
+ },
+ "bar met": false,
+ "variant chosen on all 9 matches": "all tau0.03 b0",
+ "every variant (in sample)": {
+  "even tau0.10 b0": {
+   "e2e": 0.3434,
+   "ball within 3 m": 0.5055,
+   "guard hit": 0.3361
+  },
+  "even tau0.10 b1": {
+   "e2e": 0.3438,
+   "ball within 3 m": 0.506,
+   "guard hit": 0.3361
+  },
+  "even tau0.10 b2": {
+   "e2e": 0.3434,
+   "ball within 3 m": 0.5047,
+   "guard hit": 0.3333
+  },
+  "even tau0.05 b0": {
+   "e2e": 0.3465,
+   "ball within 3 m": 0.5175,
+   "guard hit": 0.3852
+  },
+  "even tau0.05 b1": {
+   "e2e": 0.3491,
+   "ball within 3 m": 0.5193,
+   "guard hit": 0.388
+  },
+  "even tau0.05 b2": {
+   "e2e": 0.3474,
+   "ball within 3 m": 0.5184,
+   "guard hit": 0.3852
+  },
+  "even tau0.03 b0": {
+   "e2e": 0.35,
+   "ball within 3 m": 0.5228,
+   "guard hit": 0.4126
+  },
+  "even tau0.03 b1": {
+   "e2e": 0.35,
+   "ball within 3 m": 0.5219,
+   "guard hit": 0.4098
+  },
+  "even tau0.03 b2": {
+   "e2e": 0.3478,
+   "ball within 3 m": 0.5188,
+   "guard hit": 0.3989
+  },
+  "even tau0.01 b0": {
+   "e2e": 0.3487,
+   "ball within 3 m": 0.5148,
+   "guard hit": 0.4317
+  },
+  "even tau0.01 b1": {
+   "e2e": 0.3474,
+   "ball within 3 m": 0.5148,
+   "guard hit": 0.418
+  },
+  "even tau0.01 b2": {
+   "e2e": 0.3456,
+   "ball within 3 m": 0.5117,
+   "guard hit": 0.3907
+  },
+  "all tau0.10 b0": {
+   "e2e": 0.3531,
+   "ball within 3 m": 0.5175,
+   "guard hit": 0.347
+  },
+  "all tau0.10 b1": {
+   "e2e": 0.3527,
+   "ball within 3 m": 0.5171,
+   "guard hit": 0.3443
+  },
+  "all tau0.10 b2": {
+   "e2e": 0.3527,
+   "ball within 3 m": 0.5157,
+   "guard hit": 0.3415
+  },
+  "all tau0.05 b0": {
+   "e2e": 0.3558,
+   "ball within 3 m": 0.5286,
+   "guard hit": 0.4071
+  },
+  "all tau0.05 b1": {
+   "e2e": 0.3562,
+   "ball within 3 m": 0.5272,
+   "guard hit": 0.3989
+  },
+  "all tau0.05 b2": {
+   "e2e": 0.3558,
+   "ball within 3 m": 0.525,
+   "guard hit": 0.3989
+  },
+  "all tau0.03 b0": {
+   "e2e": 0.3567,
+   "ball within 3 m": 0.5304,
+   "guard hit": 0.4344
+  },
+  "all tau0.03 b1": {
+   "e2e": 0.3567,
+   "ball within 3 m": 0.5308,
+   "guard hit": 0.4153
+  },
+  "all tau0.03 b2": {
+   "e2e": 0.354,
+   "ball within 3 m": 0.5246,
+   "guard hit": 0.3989
+  },
+  "all tau0.01 b0": {
+   "e2e": 0.3549,
+   "ball within 3 m": 0.5233,
+   "guard hit": 0.4262
+  },
+  "all tau0.01 b1": {
+   "e2e": 0.3567,
+   "ball within 3 m": 0.5224,
+   "guard hit": 0.4153
+  },
+  "all tau0.01 b2": {
+   "e2e": 0.3567,
+   "ball within 3 m": 0.5224,
+   "guard hit": 0.4098
+  }
+ }
+}

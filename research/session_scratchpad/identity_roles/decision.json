@@ -1,0 +1,23 @@
+{
+ "plan sha256": "d9c143977c65cd7abfdb2fcd5e24c21f8e0cb1ecc580fe8166df5eddb46811bc",
+ "primary (actions, W = one frame)": {
+  "role purity": 0.6253,
+  "actions right": "9349 / 15936",
+  "share": 0.5867
+ },
+ "with tracking": {
+  "10 s": {
+   "role purity": 0.6453,
+   "actions right": "10156 / 15936",
+   "share": 0.6373
+  },
+  "60 s": {
+   "role purity": 0.717,
+   "actions right": "12045 / 15936",
+   "share": 0.7558
+  }
+ },
+ "across halves, roles with the same holder": 0.3875,
+ "decision": "primary 0.587 < 0.70: identity by role is not viable for per-player statistics; stopped at stage 1 as registered. Even with each player followed for a minute (W = 60 s) 0.756. Second halves are looser than first halves (role purity mostly 0.52-0.65 against 0.62-0.77).",
+ "caveat": "the across-halves score assumes the 2nd half's shape is the 1st mirrored; it was not checked and does not bear on the decision"
+}

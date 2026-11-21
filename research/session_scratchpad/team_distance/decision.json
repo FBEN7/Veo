@@ -1,0 +1,25 @@
+{
+ "plan sha256": "2f672ef8bcf4e7d0dabed51747d14b741122910fb934e77dee26de39d71ee26d",
+ "distance per team": {
+  "ours": 0.0963,
+  "constant rate": 0.0503,
+  "ours - constant, 95% over matches": [
+   0.0069,
+   0.0856
+  ],
+  "shown": false,
+  "ours with the truth's teams (descriptive)": 0.1206
+ },
+ "share": {
+  "ours": 0.0067,
+  "constant 0.5": 0.0083,
+  "ours - constant, 95% over matches": [
+   -0.0085,
+   0.0043
+  ],
+  "shown": false,
+  "ours with the truth's teams (descriptive)": 0.0179
+ },
+ "decision": "neither is shown. Our distance per team is 9.6% off against 5.0% for a constant rate (the other matches' mean metres per team-second), [+0.007, +0.086]: worse. The share is about 0.5 in every match (constant error 0.008), so it says little either way.",
+ "reading": "ours is below the truth in all 20 team-matches (truth / ours 1.01-1.24): our 1-s speeds miss fast or unseen players; the truth's teams do not help (12.1%), so it is not the team labels. A constant rate already gets within 5%: distance per team over a period mostly measures the period's length here."
+}

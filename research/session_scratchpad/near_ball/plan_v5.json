@@ -1,0 +1,24 @@
+{
+ "plan": "near_ball plan_v5: why plan_v4's replay A does not reproduce the original on M7",
+ "date": "2026-11-03, after v4.json and reading_v4.json; before any computation below",
+ "known before": {
+  "v4": "M7 (128057, 10 units, 86 actions) actor detected at S1: original 0.663, A 0.791; at S4 0.663 vs 0.767",
+  "settings (metadata, not results)": "the original runs fed the tracker the player boxes above each clip's auto-tuned conf_player (score_soccernet.py -> profile.conf_player; M7: 0.5 on 5 units, 0.4 on 1, 0.2 on 2, 0.15, 0.1), at imgsz 4096 (M7), with MIN_DETECTION_HEIGHT_PX 16 and the tracker started at frame 0; plan_v4's replay used 0.20 on every unit and started the tracker at frame 300"
+ },
+ "hypothesis": "the gap is the confidence threshold",
+ "method": {
+  "units": "M7's 10 units (no grass test in the original, same imgsz as the GPU pass)",
+  "A'": "plan_v4's A (track_kernel.track, matched detections only) on the GPU pass's boxes with conf >= the unit's original conf_player, frames 300..1124, then inside_pitch with the run's pitch.json margin",
+  "O": "the original tracks.parquet of <run>/shots_v3s_link through the same inside_pitch (plan_v3's S1)",
+  "scoring": "score_v4.unit, cell (A, S1), on the 86 actions, for O (check: must give 0.663), A (0.791) and A'"
+ },
+ "measures": [
+  "actor detected at S1: O, A, A'; per unit with its conf_player",
+  "box agreement with O on frames 300..1124: share of O's boxes with a box of the same frame at IoU >= 0.9, and the reverse; for A and A'; also on frames >= 350 (tracker warm-up)"
+ ],
+ "reading rule": {
+  "reproduced": "A' within 0.02 of O on actor detected and box agreement >= 0.95 both ways on frames >= 350: the gap is the threshold",
+  "not reproduced": "report what remains (per unit, frames near 300, box agreement) without a new claim"
+ },
+ "consequence stated in advance": "if reproduced, the original's tracker-stage loss (plan_v3 S0 at conf 0.20 -> S1) includes the per-clip threshold, and plan_v4's A is the pipeline at a fixed 0.20, not the pipeline as run"
+}

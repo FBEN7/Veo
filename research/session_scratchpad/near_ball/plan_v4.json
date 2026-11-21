@@ -1,0 +1,21 @@
+{
+ "name": "near_ball plan_v4: the tracker writes every detection",
+ "date": "2026-11-03",
+ "owner request": "Lancer ~4,3 h (GPU detection pass, then the fix scored on CPU)",
+ "why": "plan_v3: the tracker loses 10.2 of the 11.4 points between the raw detector (0.867) and the output (0.766); sv.ByteTrack.update_with_detections writes only the detections matched to an activated track. The original runs' detection caches are deleted at run end.",
+ "step 1, GPU (Kaggle kernel veo-nearball-detall)": "The 223 units of actions.parquet; even frames 300 to 1125 (below the clip's length); yolov8s.pt, imgsz 4096, conf 0.10, NMS IoU 0.70, person class; every box saved (frame, x0, y0, x1, y1, conf). M7 / M9: opened clips only, through src/unseal.py.",
+ "step 2, CPU (Kaggle kernel veo-nearball-track, the videos are there)": {
+  "both variants": "detections with conf >= 0.20 (the pipeline's conf_player), fed frame by frame to sv.ByteTrack with the pipeline's settings (frame_rate 25 / 2, src/constants TRACK_ACTIVATION_THRESHOLD, LOST_TRACK_BUFFER, MINIMUM_MATCHING_THRESHOLD), the code and wheels of veo-code; rows below MIN_DETECTION_HEIGHT_PX dropped; then run_pipeline's fixed-view steps for players: the clip's outline with margin 10 px, track_kit_features, track_depth, assign_teams_v2 (hsv4, fit on tracks with depth >= 0.15); then player_filter.filter_players.",
+  "A (replay)": "the tracker's output as the pipeline writes it (matched detections only)",
+  "B (every detection)": "A's rows plus every detection the tracker did not write, each under a new track id of its own"
+ },
+ "stages scored (as stages.py)": "S1 tracker (after the outline), S3 team assigned, S4 roster cap (= the output's players, plan_v3 check)",
+ "actions": "the 2,254 actions of stages.parquet",
+ "measures": "actor detected / taken / missed (eval_soccertrack_v2.match_feet, 43 px); control (other outfield players on the same frames detected); detections not matched to a truth person per action frame; same track over +-1 s for detected actors (as near_ball.py).",
+ "reproduction check": "A's actor detected at S1 and S4 against stages.json (0.778, 0.766); reported, and a gap above 0.02 at S4 is flagged (the tracker here starts at frame 300, the original at 0). B is judged against A, under the same conditions.",
+ "primary": "actor detected at S4, B - A; 95% bootstrap over matches (5,000 draws, seed 0, paired); per match",
+ "bar (B goes to a full pipeline run, events and statistics, under a later plan)": "gain >= 0.03 with the interval's lower bound > 0, AND unmatched detections per action frame at S4 <= 1.2 x A's, AND the control at S4 not below A's by more than 0.01",
+ "also reported": "B's stages S1 / S3 / S4 (where B loses what it gains), A and B same-track +-1 s",
+ "kept": "the detections stay as the GPU kernel's output (and locally if disk allows) for later tracker variants, each under its own plan",
+ "unseal": "M7 / M9 opened clips through src/unseal.py, logged."
+}

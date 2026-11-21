@@ -1,0 +1,16 @@
+{
+ "question": "Team statistics only for now (owner, 2026-11-02). Are our passes per team right: each team's share of the passes and its pass success rate, per match, against a constant?",
+ "status": "registered before any feature, event or number below is computed; CPU",
+ "data": "the 249 shots clips of the 10 matches (about 24 min of play a match; the 3-min windows' ball rows are no longer on disk), tracks and ball of .cache/gpu_shots3 (metric_v3s_link, v3s_rows); M7 / M9 clips opened through src/unseal.py as training and scored data, as for the shots spotter",
+ "spotter": "events_learn/learn.py as it is (features, model, peaks, rate thresholds), with the clips' tracks and candidates; labels: PASS, HIGH PASS, CROSS = pass, DRIVE = carry; nested leave-one-match-out (thresholds by event rate on the training matches' inner out-of-fold predictions); an event's team is the nearest player's team at its frame (learn.py's events_of)",
+ "teams": "per clip, our team_A / team_B to the truth's left / right by majority over our players within 3 m (pitch metres) of a truth person, every 25th frame",
+ "truth": "per clip: passes (PASS, HIGH PASS, CROSS) with their side; a pass succeeds when the next labelled action within 10 s is by the same side and is not OUT; no next action in the clip within 10 s: left out",
+ "ours": "per clip: our passes with their team; a pass succeeds when our next event (pass or carry) within 10 s is by the same team; none: left out",
+ "per match (clips pooled)": {
+  "share": "the left side's share of the passes: ours against the truth's, absolute error; constant: 0.5",
+  "success": "each side's pass success rate (20 team-matches): absolute error; constant: the truth's pooled success rate of the other 9 matches",
+  "counts (descriptive)": "each side's pass count, relative error; against our total split 50 / 50"
+ },
+ "decision": "each of share and success is shown better than its constant when the 95% bootstrap interval (over matches, 5,000 draws, seed 0, paired) of mean error ours - constant lies below 0; otherwise that statistic is not reported as measured",
+ "note": "units around shots favour attacking play; the per-match share there varies more than over a whole match, which helps the constant less"
+}

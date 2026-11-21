@@ -1,0 +1,90 @@
+{
+ "status": "exploratory, not registered; after v7.json",
+ "action frames": 2230,
+ "A, all unmatched": {
+  "per action frame": 5.576,
+  "kind (share)": {
+   "far": 0.502,
+   "near": 0.396,
+   "duplicate": 0.102
+  },
+  "nearest truth role, duplicate or near (share)": {
+   "player": 0.909,
+   "goalkeeper": 0.091
+  },
+  "team label (share)": {
+   "other": 0.868,
+   "team_A": 0.067,
+   "team_B": 0.065
+  },
+  "foot inside the outline": 0.363,
+  "height px, median": 30.0,
+  "conf, quartiles": [
+   0.33,
+   0.475,
+   0.675
+  ],
+  "conf found": 1.0
+ },
+ "A', all unmatched": {
+  "per action frame": 3.609,
+  "kind (share)": {
+   "far": 0.468,
+   "near": 0.43,
+   "duplicate": 0.102
+  },
+  "nearest truth role, duplicate or near (share)": {
+   "player": 0.914,
+   "goalkeeper": 0.086
+  },
+  "team label (share)": {
+   "other": 0.835,
+   "team_A": 0.083,
+   "team_B": 0.081
+  },
+  "foot inside the outline": 0.5,
+  "height px, median": 31.4,
+  "conf, quartiles": [
+   0.469,
+   0.599,
+   0.765
+  ],
+  "conf found": 1.0
+ },
+ "A only (the extra boxes)": {
+  "per action frame": 2.008,
+  "kind (share)": {
+   "far": 0.58,
+   "near": 0.344,
+   "duplicate": 0.077
+  },
+  "nearest truth role, duplicate or near (share)": {
+   "player": 0.892,
+   "goalkeeper": 0.108
+  },
+  "team label (share)": {
+   "other": 0.963,
+   "team_A": 0.021,
+   "team_B": 0.016
+  },
+  "foot inside the outline": 0.104,
+  "height px, median": 27.7,
+  "conf, quartiles": [
+   0.258,
+   0.316,
+   0.379
+  ],
+  "conf found": 1.0
+ },
+ "extra per action frame, per match": {
+  "117093": 1.38,
+  "118575": 1.73,
+  "118576": 2.2,
+  "118577": 1.29,
+  "118578": 2.22,
+  "128057": 3.14,
+  "128058": 1.9,
+  "132831": 0.77,
+  "132877": 3.59
+ }
+}

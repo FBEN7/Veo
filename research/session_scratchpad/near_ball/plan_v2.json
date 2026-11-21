@@ -1,0 +1,16 @@
+{
+ "question": "Which player-detector setting finds the player on the ball most often (near_ball/reading.json: detected 0.767, others 0.884), without many more false detections?",
+ "status": "registered 2026-11-02 before any detection below is computed; GPU (Kaggle T4 x2), budget about 1 h of the owner's 10 h",
+ "frames": "the 2,257 actions of actions.parquet (9 matches, M1 left out), each at its even frame (label frame minus its parity); clips' videos from the shot-clip datasets (M7 / M9: the opened clips)",
+ "variants": {
+  "V0 (pipeline)": "yolov8s, imgsz 4096, conf 0.20, NMS IoU 0.70",
+  "V1": "yolov8s, imgsz 4096, conf 0.20, NMS IoU 0.85 (overlapping boxes kept)",
+  "V2": "yolov8s, imgsz 4096, conf 0.10, NMS IoU 0.70",
+  "V3": "yolov8m, imgsz 4096, conf 0.20, NMS IoU 0.70",
+  "V4": "yolov8x, imgsz 4096, conf 0.20, NMS IoU 0.70",
+  "V5": "yolov8s, imgsz 4096, conf 0.20, NMS IoU 0.70, test-time augmentation"
+ },
+ "runs": "person class only; V0 and V2 from one pass at conf 0.10 (boxes at 0.20 and above are never suppressed by lower ones, so filtering gives V0 exactly); one pass each for V1, V3, V4, V5; ultralytics 8.4.183, weights: yolov8s as the pipeline's, yolov8m / yolov8x from the ultralytics v8.3.0 release (sha256 in the stage)",
+ "scoring (CPU)": "raw detections (no tracking), feet inside the clip's pitch outline (the pipeline's margin 0); per action as plan.json (detected / taken / missed, merged), the control (other outfield players on the frame), and unmatched detections per frame (inside the outline; referees and staff count, alike for all variants)",
+ "selection": "the variant with the highest actor-detected share among those with unmatched detections per frame at most 1.2 x V0's; it goes to a full-pipeline run (tracking, separate plan) only if it beats V0 by 3 points or more of actor-detected share, with a bootstrap over matches (5,000, seed 0) reported; otherwise detection settings are not the lever"
+}

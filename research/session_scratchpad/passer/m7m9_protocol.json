@@ -1,0 +1,12 @@
+{
+ "test": "who made the action on the matches the ball detector never saw: M7 (128057) and M9 (132831)",
+ "registered": "2026-10-26, before their v3s_link pitch tracks exist (made on a Kaggle CPU kernel, metric_step.py, unchanged)",
+ "units": "the 27 M7 / M9 shots clips with a GPU run (.cache/gpu)",
+ "actions": "labelled player actions (not OUT / GOAL) inside each clip's ball range (the v3 sidecar's frames), deduplicated on (match, abs frame, label)",
+ "rules": "C = src/passer.py (possession, -0.4 / +0.2 s), the default; A and B as possession.py, for comparison",
+ "truth": "feet matching (eval_soccertrack_v2.match_feet) to the label's player_id, as possession.py",
+ "primary": "C's share right of all actions, Wilson 95%; also passes, precision, coverage, per match",
+ "holds if": "C's lower 95% bound >= 0.45 and C >= B on the same actions",
+ "reference (in-sample, seen matches)": "C 0.568 [0.546, 0.590], B 0.540",
+ "sealed": "M7 / M9 labels and truth read through src/unseal.py; the key never goes to Kaggle (the kernel needs no labels)"
+}
