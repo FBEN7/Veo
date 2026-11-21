@@ -63,14 +63,19 @@ cfg.update(frame_dir=FR, save_dir=CK, store_dir=STORE, store_mode="store", num_e
            epoch_num_frames=P["epoch_frames"], warm_up_epochs=P["warmup"], start_val_epoch=10 ** 6,
            criterion="loss", only_test=False, num_workers=4)
 cpath = os.path.join(REPO, "config", "SoccerNetBall", "SoccerNetBall_followcam.json")
-for mode in ("store", "load"):
+# store pass (exits 1 by design), then training; the batch of 4 is accumulated over
+# 2 or 4 steps to fit a 16 GB T4 (same effective batch)
+for mode, ag in (("store", 1), ("load", 2), ("load", 4)):
     cfg["store_mode"] = mode
     json.dump(cfg, open(cpath, "w"), indent=1)
     t = time.time()
-    r = subprocess.run([sys.executable, "train_tdeed.py", "--model", "SoccerNetBall_followcam"], cwd=REPO,
-                       stdout=open(f"{W}/train_{mode}.txt", "w"), stderr=subprocess.STDOUT,
-                       env={**os.environ, "WANDB_MODE": "disabled", "CUDA_VISIBLE_DEVICES": "0"})
-    say(mode, "exit", r.returncode, f"{time.time() - t:.0f} s")
+    r = subprocess.run([sys.executable, "train_tdeed.py", "--model", "SoccerNetBall_followcam", "-ag", str(ag)], cwd=REPO,
+                       stdout=open(f"{W}/train_{mode}_ag{ag}.txt", "w"), stderr=subprocess.STDOUT,
+                       env={**os.environ, "WANDB_MODE": "disabled", "CUDA_VISIBLE_DEVICES": "0",
+                            "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"})
+    say(mode, "ag", ag, "exit", r.returncode, f"{time.time() - t:.0f} s")
+    if mode == "load" and r.returncode == 0:
+        break
 ck = os.path.join(CK, "SoccerNetBall_followcam", "checkpoint_last.pt")
 if os.path.exists(ck):
     t = time.time()

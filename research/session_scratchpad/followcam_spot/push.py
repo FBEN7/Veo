@@ -85,7 +85,7 @@ def collect(name):
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir()
     kaggle("kernels", "output", f"{OWNER}/{SLUG}", "-p", str(tmp), check=False)
-    for f in ("record.json", "kernel_log.txt", "train_store.txt", "train_load.txt", "infer.txt"):
+    for f in ("record.json", "kernel_log.txt", "infer.txt", *[x.name for x in tmp.glob("train_*.txt")]):
         if (tmp / f).exists():
             shutil.copy(tmp / f, out / f)
     if (tmp / "result.tar.gz").exists():
