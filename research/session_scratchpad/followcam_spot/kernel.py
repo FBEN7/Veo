@@ -40,8 +40,11 @@ def extract(name):
 
 
 subprocess.run(["nvidia-smi", "-L"])
-with tarfile.open(os.path.join(stage, "tdeed.tar.gz")) as t:
-    t.extractall(W)
+if os.path.exists(os.path.join(stage, "tdeed.tar.gz")):
+    with tarfile.open(os.path.join(stage, "tdeed.tar.gz")) as t:
+        t.extractall(W)
+else:   # Kaggle unpacks archives on upload: tdeed/T-DEED
+    shutil.copytree(os.path.join(stage, "tdeed", "T-DEED"), REPO)
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "SoccerNet", "tabulate"], check=False)
 videos = P["train"] + P["val"]
 with Pool(4) as pool:
