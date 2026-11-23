@@ -1451,3 +1451,24 @@ What the PDF says, against what is in the clip:
 - Reading: the chain runs on real Veo files, but on a Veo export every
   number it prints is wrong today. The blocker is the moving camera, not
   the image.
+
+### The same clip annotated by eye, and detection at 1280 px (2026-11-23)
+
+`research/session_scratchpad/veo_clip/annotation.json`. Black scores
+attacking the left goal: black #19 carries from about 10.9 s, shoots at
+about 13.2 s, the ball is in the net at 14.0 s. Before that: a likely
+black pass #8 -> #19 (0.3-1.6 s), a likely black long ball (2.7-2.9 s), a
+contested ball (3-6 s); 6.4-10.9 s could not be read (see below).
+
+| `--camera moving` | ball found | events |
+|---|---|---|
+| 640 px (default) | 17% of frames | 2 carries |
+| **1280 px** | **68%** | 3 passes, 8 carries, 2 recoveries, ~70 pressure / dribble rows |
+
+1280 px is the first lever: the ball is ~10 px in a 1080p export and ~3 px
+once scaled to 640. It sees #19's run but not the shot or the goal (the
+moving path has no goal position, by design), and it repeats one action
+frame after frame (~70 rows for a few seconds of dribbling). Part of the
+68% is boots: the detector fires on light boots and on the Veo watermark,
+which is also why the ball crops could not be read over 6.4-10.9 s.
+Detection at 1280 px costs ~4x the CPU time of 640 (11 min for 25 s here).
