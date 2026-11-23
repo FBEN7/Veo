@@ -1472,3 +1472,47 @@ frame after frame (~70 rows for a few seconds of dribbling). Part of the
 68% is boots: the detector fires on light boots and on the Veo watermark,
 which is also why the ball crops could not be read over 6.4-10.9 s.
 Detection at 1280 px costs ~4x the CPU time of 640 (11 min for 25 s here).
+
+## Distance, top speed and sprints on a moving camera: not measurable yet (2026-11-23)
+
+Owner request: adapt the chain to the moving camera; SoccerTrack for
+measurement only; distances and speeds first; partial coverage shown with
+its rate. `main.py --camera moving` now compensates camera motion, takes
+one scale from player height and works in relative metres
+(`src/moving_camera.py`); the PDF leaves out heatmaps, territory and
+possible goals on that path.
+
+Measured as registered (`research/session_scratchpad/moving_cam/plan.json`,
+addendum 1, `results.json`): SoccerTrack v2 panorama cropped to a
+follow-cam (0.35 of the width, the crop following the players, 1080p, Veo's
+bit rate), six 3-min test windows from four matches, 63 player tracks
+matched to the truth.
+
+| figure | chain | constant | bar | shown |
+|---|---|---|---|---|
+| distance per track, median relative error | 0.378 (chain / truth 0.63) | 0.236 | <= 0.15, beat the constant in >= 4/6 windows (1/6) | no |
+| top speed, median absolute error | 3.4 km/h | 3.8 | <= 3.0, >= 4/6 (2/6) | no |
+| sprints per tracked minute, chain / truth | 0.47 | | within [0.67, 1.5] | no |
+
+Camera motion was compensated and validated on every window; the scale
+came from player height everywhere (37-40 px/m). The chain detects 60-79%
+of the 22 players' time, but only 16-38% of the truth's player time falls
+inside scored tracks. The single homography (the old path) is worse: top
+speed 28.6 km/h against 15.3, sprints x2.5.
+
+The PDF therefore prints "not measurable on a moving camera" for all
+three, with the coverage rate (`moving_camera.SHOWN`).
+
+Post hoc, not a result: the distance shortfall follows the gaps inside a
+track (correlation 0.70 between the share of a track's span with a
+detection and chain / truth). Tracks detected on 90% or more of their span
+measure distance at 1.06 of the truth (5 tracks). A figure defined on the
+time a player is seen (metres per minute seen), not over a span with gaps,
+is the next thing to register, with TeamTrack as its unseen test.
+
+TeamTrack (Kaggle atomscott/teamtrack, MIT, same Tsukuba group and kind of
+pitch as SoccerTrack) is downloaded and rendered into seven windows under
+`plan_teamtrack.json` and its addendum (annotation ids change at some
+30-s clip joins, 13 of 22 at one; persons relinked by position before any
+run). Its chain runs were not started: under that plan TeamTrack cannot
+show a figure that failed on SoccerTrack.

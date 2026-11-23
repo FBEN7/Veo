@@ -1,0 +1,265 @@
+{
+ "plan sha256": "2eaf89bac678d5d22b0a8ed34197308998467c51c8052bfbee11a42d01a6ed3a",
+ "windows": [
+  "117093_1",
+  "117093_2",
+  "132877_1",
+  "132877_2",
+  "118577_1",
+  "118578_1"
+ ],
+ "moving (deciding)": {
+  "scored tracks": 63,
+  "tracked minutes": 102.9,
+  "distance": {
+   "median rel error": 0.378,
+   "constant": 0.236,
+   "pooled chain / truth": 0.631,
+   "windows beating the constant": "1 / 6"
+  },
+  "top speed": {
+   "median abs error km/h": 3.4,
+   "constant": 3.8,
+   "median chain km/h": 14.4,
+   "median truth km/h": 15.3,
+   "windows beating the constant": "2 / 6"
+  },
+  "sprints per tracked minute": {
+   "chain": 0.194,
+   "truth": 0.418,
+   "chain / truth": 0.465,
+   "constant": 0.42
+  },
+  "per window": [
+   {
+    "window": "117093_1",
+    "n": 9,
+    "e_dist": 0.364,
+    "e_dist_const": 0.308,
+    "e_top": 2.9,
+    "e_top_const": 3.8,
+    "bias_dist": 1218.1,
+    "truth_dist": 2108.6,
+    "dist ratio": 0.578
+   },
+   {
+    "window": "117093_2",
+    "n": 10,
+    "e_dist": 0.304,
+    "e_dist_const": 0.242,
+    "e_top": 5.0,
+    "e_top_const": 3.95,
+    "bias_dist": 1596.0,
+    "truth_dist": 2434.1,
+    "dist ratio": 0.656
+   },
+   {
+    "window": "118577_1",
+    "n": 16,
+    "e_dist": 0.307,
+    "e_dist_const": 0.459,
+    "e_top": 3.45,
+    "e_top_const": 4.7,
+    "bias_dist": 1287.2,
+    "truth_dist": 1806.4,
+    "dist ratio": 0.713
+   },
+   {
+    "window": "118578_1",
+    "n": 7,
+    "e_dist": 0.562,
+    "e_dist_const": 0.058,
+    "e_top": 2.6,
+    "e_top_const": 2.5,
+    "bias_dist": 683.7,
+    "truth_dist": 1181.9,
+    "dist ratio": 0.578
+   },
+   {
+    "window": "132877_1",
+    "n": 12,
+    "e_dist": 0.435,
+    "e_dist_const": 0.143,
+    "e_top": 2.3,
+    "e_top_const": 1.35,
+    "bias_dist": 1299.2,
+    "truth_dist": 2170.8,
+    "dist ratio": 0.598
+   },
+   {
+    "window": "132877_2",
+    "n": 9,
+    "e_dist": 0.372,
+    "e_dist_const": 0.13,
+    "e_top": 5.8,
+    "e_top_const": 3.8,
+    "bias_dist": 967.7,
+    "truth_dist": 1466.8,
+    "dist ratio": 0.66
+   }
+  ],
+  "decision": {
+   "distance shown": false,
+   "top speed shown": false,
+   "sprints shown": false
+  }
+ },
+ "fixed, one homography (reported)": {
+  "scored tracks": 51,
+  "tracked minutes": 83.1,
+  "distance": {
+   "median rel error": 0.394,
+   "constant": 0.296,
+   "pooled chain / truth": 0.931,
+   "windows beating the constant": "2 / 6"
+  },
+  "top speed": {
+   "median abs error km/h": 11.6,
+   "constant": 3.85,
+   "median chain km/h": 28.6,
+   "median truth km/h": 15.3,
+   "windows beating the constant": "1 / 6"
+  },
+  "sprints per tracked minute": {
+   "chain": 1.035,
+   "truth": 0.409,
+   "chain / truth": 2.529,
+   "constant": 0.41
+  },
+  "per window": [
+   {
+    "window": "117093_1",
+    "n": 9,
+    "e_dist": 0.274,
+    "e_dist_const": 0.298,
+    "e_top": 9.5,
+    "e_top_const": 3.85,
+    "bias_dist": 1819.2,
+    "truth_dist": 2108.5,
+    "dist ratio": 0.863
+   },
+   {
+    "window": "117093_2",
+    "n": 9,
+    "e_dist": 0.085,
+    "e_dist_const": 0.278,
+    "e_top": 13.1,
+    "e_top_const": 4.45,
+    "bias_dist": 2584.7,
+    "truth_dist": 2245.3,
+    "dist ratio": 1.151
+   },
+   {
+    "window": "118577_1",
+    "n": 14,
+    "e_dist": 0.691,
+    "e_dist_const": 0.499,
+    "e_top": 13.25,
+    "e_top_const": 4.3,
+    "bias_dist": 2373.6,
+    "truth_dist": 1622.3,
+    "dist ratio": 1.463
+   },
+   {
+    "window": "118578_1",
+    "n": 6,
+    "e_dist": 0.208,
+    "e_dist_const": 0.068,
+    "e_top": 13.95,
+    "e_top_const": 2.0,
+    "bias_dist": 974.2,
+    "truth_dist": 921.2,
+    "dist ratio": 1.058
+   },
+   {
+    "window": "132877_1",
+    "n": 7,
+    "e_dist": 0.705,
+    "e_dist_const": 0.278,
+    "e_top": 2.5,
+    "e_top_const": 2.8,
+    "bias_dist": 352.9,
+    "truth_dist": 1123.5,
+    "dist ratio": 0.314
+   },
+   {
+    "window": "132877_2",
+    "n": 6,
+    "e_dist": 0.747,
+    "e_dist_const": 0.141,
+    "e_top": 8.1,
+    "e_top_const": 1.75,
+    "bias_dist": 550.9,
+    "truth_dist": 1276.5,
+    "dist ratio": 0.432
+   }
+  ],
+  "decision": {
+   "distance shown": false,
+   "top speed shown": false,
+   "sprints shown": false
+  }
+ },
+ "coverage and camera per window": {
+  "117093_1": {
+   "truth player-s": 3960,
+   "in crop": 0.89,
+   "in scored tracks (moving)": 0.216,
+   "compensated": true,
+   "motion check": "consistent: direct 1451 px vs accumulated 1440 px over 12 intervals of 38 frames, residual 17 px (0.01 of direct)",
+   "px_per_m": 38.65,
+   "scale from": "player height",
+   "coverage (production)": 0.787
+  },
+  "117093_2": {
+   "truth player-s": 3960,
+   "in crop": 0.883,
+   "in scored tracks (moving)": 0.249,
+   "compensated": true,
+   "motion check": "consistent: direct 2051 px vs accumulated 2027 px over 12 intervals of 60 frames, residual 27 px (0.01 of direct)",
+   "px_per_m": 40.11,
+   "scale from": "player height",
+   "coverage (production)": 0.776
+  },
+  "132877_1": {
+   "truth player-s": 3960,
+   "in crop": 0.869,
+   "in scored tracks (moving)": 0.359,
+   "compensated": true,
+   "motion check": "consistent: direct 766 px vs accumulated 736 px over 12 intervals of 60 frames, residual 35 px (0.05 of direct)",
+   "px_per_m": 38.54,
+   "scale from": "player height",
+   "coverage (production)": 0.75
+  },
+  "132877_2": {
+   "truth player-s": 3960,
+   "in crop": 0.86,
+   "in scored tracks (moving)": 0.2,
+   "compensated": true,
+   "motion check": "consistent: direct 1794 px vs accumulated 1760 px over 12 intervals of 60 frames, residual 37 px (0.02 of direct)",
+   "px_per_m": 36.97,
+   "scale from": "player height",
+   "coverage (production)": 0.602
+  },
+  "118577_1": {
+   "truth player-s": 3907,
+   "in crop": 0.901,
+   "in scored tracks (moving)": 0.381,
+   "compensated": true,
+   "motion check": "consistent: direct 842 px vs accumulated 829 px over 12 intervals of 60 frames, residual 21 px (0.03 of direct)",
+   "px_per_m": 39.93,
+   "scale from": "player height",
+   "coverage (production)": 0.719
+  },
+  "118578_1": {
+   "truth player-s": 3960,
+   "in crop": 0.879,
+   "in scored tracks (moving)": 0.159,
+   "compensated": true,
+   "motion check": "consistent: direct 1321 px vs accumulated 1291 px over 12 intervals of 60 frames, residual 36 px (0.03 of direct)",
+   "px_per_m": 38.23,
+   "scale from": "player height",
+   "coverage (production)": 0.68
+  }
+ }
+}

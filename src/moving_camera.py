@@ -32,8 +32,9 @@ PLAYERS_ON_PITCH = 22
 
 # Which per-player figures the report shows on this path: the registered
 # decision of research/session_scratchpad/moving_cam/plan.json on its test
-# windows (results.json). A figure that failed is printed as "not measurable
-# on a moving camera".
+# windows (results.json, 2026-11-23: distance error 0.378 vs constant 0.236,
+# top speed 3.4 km/h vs bar 3.0, sprints chain / truth 0.47: none passed).
+# A figure that failed is printed as "not measurable on a moving camera".
 SHOWN = {"distance": False, "top_speed": False, "sprints": False}
 
 
