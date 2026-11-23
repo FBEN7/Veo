@@ -18,6 +18,8 @@ sys.path.insert(0, str(ROOT))
 
 WIN = Path("/tmp/claude-0/-home-user-veo/b69e5b60-e0fe-5920-8f15-285768d7ea57/scratchpad/mcam/windows")
 RUNS = WIN.parent / "runs"
+# the repo's yolov8m.pt is an LFS pointer here; this copy has the same sha256 as its LFS oid (5d4a90cd...)
+WEIGHTS = WIN.parent / "yolov8m.pt"
 FPS = 25
 DEV = ["118575_1", "118576_1"]
 TEST = ["117093_1", "117093_2", "132877_1", "132877_2", "118577_1", "118578_1"]
@@ -42,7 +44,7 @@ def run(name):
     if raw.exists():
         tracks = pd.read_parquet(raw)
     else:
-        tracks = detect_track.run(clip, stride=1, model_name=str(ROOT / "yolov8m.pt"), conf_player=0.25,
+        tracks = detect_track.run(clip, stride=1, model_name=str(WEIGHTS), conf_player=0.25,
                                   conf_ball=0.08, max_seconds=0, imgsz=640)
         tracks = assign_teams(clip, tracks)
         tracks = detect_track.reidentify_tracks(clip, tracks)
