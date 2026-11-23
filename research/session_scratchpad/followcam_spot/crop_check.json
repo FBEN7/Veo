@@ -1,0 +1,176 @@
+{
+ "what": "plan2.json crop check (before training, no score): 12 frames evenly spaced in each new half's crops.mp4 on a contact sheet, looked at; keep a half if players are in view on >= 10 of 12",
+ "plan2 sha256": "10c7859fbf7e10bd9abbcc16f7d3c868f6c1fe3664b259a0cfba2bcae08443b7",
+ "halves": {
+  "118577_1": {
+   "frames in crops.mp4": 36213,
+   "sampled frame indices": [
+    1508,
+    4526,
+    7544,
+    10562,
+    13579,
+    16597,
+    19615,
+    22633,
+    25650,
+    28668,
+    31686,
+    34704
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "frames 8 and 12 aim at the far end, players small but in view"
+  },
+  "118577_2": {
+   "frames in crops.mp4": 36238,
+   "sampled frame indices": [
+    1509,
+    4529,
+    7549,
+    10569,
+    13589,
+    16609,
+    19628,
+    22648,
+    25668,
+    28688,
+    31708,
+    34728
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "frame 8 at the far goal area, players small but in view"
+  },
+  "118578_1": {
+   "frames in crops.mp4": 35175,
+   "sampled frame indices": [
+    1465,
+    4396,
+    7328,
+    10259,
+    13190,
+    16121,
+    19053,
+    21984,
+    24915,
+    27846,
+    30778,
+    33709
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "night match, floodlit; all frames show play"
+  },
+  "118578_2": {
+   "frames in crops.mp4": 35488,
+   "sampled frame indices": [
+    1478,
+    4436,
+    7393,
+    10350,
+    13308,
+    16265,
+    19222,
+    22180,
+    25137,
+    28094,
+    31052,
+    34009
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "night match; frames 6, 7, 10, 11 near a goal, players in view"
+  },
+  "128058_1": {
+   "frames in crops.mp4": 34488,
+   "sampled frame indices": [
+    1437,
+    4311,
+    7185,
+    10059,
+    12933,
+    15807,
+    18681,
+    21555,
+    24429,
+    27303,
+    30177,
+    33051
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "frames 2 and 6 at the far goal, players in view"
+  },
+  "128058_2": {
+   "frames in crops.mp4": 33875,
+   "sampled frame indices": [
+    1411,
+    4234,
+    7057,
+    9880,
+    12703,
+    15526,
+    18348,
+    21171,
+    23994,
+    26817,
+    29640,
+    32463
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "frames 2, 3, 6, 7, 9 near a goal, players in view"
+  },
+  "132877_1": {
+   "frames in crops.mp4": 33850,
+   "sampled frame indices": [
+    1410,
+    4231,
+    7052,
+    9872,
+    12693,
+    15514,
+    18335,
+    21156,
+    23977,
+    26797,
+    29618,
+    32439
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "all frames show play"
+  },
+  "132877_2": {
+   "frames in crops.mp4": 34675,
+   "sampled frame indices": [
+    1444,
+    4334,
+    7223,
+    10113,
+    13003,
+    15892,
+    18782,
+    21671,
+    24561,
+    27451,
+    30340,
+    33230
+   ],
+   "players in view": "12 / 12",
+   "kept": true,
+   "note": "frame 7: a stoppage, players gathered on the far touchline (in view, small); frames 2-5 near the far goal"
+  }
+ },
+ "dropped": [],
+ "reused from the pilot (not re-checked, as plan2 says)": [
+  "117093_1",
+  "117093_2",
+  "118575_1",
+  "118575_2",
+  "118576_1",
+  "118576_2"
+ ],
+ "contact sheets": "scratchpad only (crop_check/<half>.jpg), not committed (LFS budget)"
+}
