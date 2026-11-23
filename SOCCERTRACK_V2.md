@@ -3053,3 +3053,8 @@ without its SoccerNet pre-training.
   matches, no SoccerNet pre-training and a camera wider than Veo's are
   each enough to explain it. Kaggle GPU quota is 6 h a week here (next
   reset 2026-11-28).
+- **Plan 2 (`plan2.json`, 5 training matches) cancelled 2026-11-23,
+  before training** (`plan2_cancelled.json`): the owner stopped work on
+  SoccerTrack after seeing a real Veo export. Crops checked (8 / 8 kept)
+  and dataset staged, but nothing was trained or scored: its question
+  stays open.
