@@ -1,0 +1,133 @@
+{
+ "plan sha256": "2eaf89bac678d5d22b0a8ed34197308998467c51c8052bfbee11a42d01a6ed3a",
+ "windows": [
+  "118575_1",
+  "118576_1"
+ ],
+ "moving (deciding)": {
+  "scored tracks": 27,
+  "tracked minutes": 49.3,
+  "distance": {
+   "median rel error": 0.356,
+   "constant": 0.196,
+   "pooled chain / truth": 0.702,
+   "windows beating the constant": "0 / 2"
+  },
+  "top speed": {
+   "median abs error km/h": 2.9,
+   "constant": 3.4,
+   "median chain km/h": 14.7,
+   "median truth km/h": 15.9,
+   "windows beating the constant": "2 / 2"
+  },
+  "sprints per tracked minute": {
+   "chain": 0.466,
+   "truth": 0.324,
+   "chain / truth": 1.438,
+   "constant": 0.335
+  },
+  "per window": [
+   {
+    "window": "118575_1",
+    "n": 13,
+    "e_dist": 0.27,
+    "e_dist_const": 0.119,
+    "e_top": 2.0,
+    "e_top_const": 3.0,
+    "bias_dist": 2435.3,
+    "truth_dist": 3330.9,
+    "dist ratio": 0.731
+   },
+   {
+    "window": "118576_1",
+    "n": 14,
+    "e_dist": 0.383,
+    "e_dist_const": 0.236,
+    "e_top": 3.2,
+    "e_top_const": 3.8,
+    "bias_dist": 1966.8,
+    "truth_dist": 2938.9,
+    "dist ratio": 0.669
+   }
+  ],
+  "decision": {
+   "distance shown": false,
+   "top speed shown": false,
+   "sprints shown": false
+  }
+ },
+ "fixed, one homography (reported)": {
+  "scored tracks": 18,
+  "tracked minutes": 34.5,
+  "distance": {
+   "median rel error": 0.538,
+   "constant": 0.135,
+   "pooled chain / truth": 0.462,
+   "windows beating the constant": "0 / 2"
+  },
+  "top speed": {
+   "median abs error km/h": 6.05,
+   "constant": 2.2,
+   "median chain km/h": 19.5,
+   "median truth km/h": 15.6,
+   "windows beating the constant": "0 / 2"
+  },
+  "sprints per tracked minute": {
+   "chain": 0.261,
+   "truth": 0.261,
+   "chain / truth": 1.0,
+   "constant": 0.271
+  },
+  "per window": [
+   {
+    "window": "118575_1",
+    "n": 13,
+    "e_dist": 0.56,
+    "e_dist_const": 0.1,
+    "e_top": 5.0,
+    "e_top_const": 2.2,
+    "bias_dist": 1380.0,
+    "truth_dist": 3312.0,
+    "dist ratio": 0.417
+   },
+   {
+    "window": "118576_1",
+    "n": 5,
+    "e_dist": 0.268,
+    "e_dist_const": 0.192,
+    "e_top": 6.6,
+    "e_top_const": 2.2,
+    "bias_dist": 581.5,
+    "truth_dist": 930.9,
+    "dist ratio": 0.625
+   }
+  ],
+  "decision": {
+   "distance shown": false,
+   "top speed shown": false,
+   "sprints shown": true
+  }
+ },
+ "coverage and camera per window": {
+  "118575_1": {
+   "truth player-s": 3960,
+   "in crop": 0.903,
+   "in scored tracks (moving)": 0.42,
+   "compensated": true,
+   "motion check": "consistent: direct 1311 px vs accumulated 1278 px over 12 intervals of 60 frames, residual 37 px (0.03 of direct)",
+   "px_per_m": 39.19,
+   "scale from": "player height",
+   "coverage (production)": 0.638
+  },
+  "118576_1": {
+   "truth player-s": 3960,
+   "in crop": 0.895,
+   "in scored tracks (moving)": 0.327,
+   "compensated": true,
+   "motion check": "consistent: direct 1501 px vs accumulated 1464 px over 12 intervals of 60 frames, residual 40 px (0.03 of direct)",
+   "px_per_m": 39.6,
+   "scale from": "player height",
+   "coverage (production)": 0.753
+  }
+ }
+}
