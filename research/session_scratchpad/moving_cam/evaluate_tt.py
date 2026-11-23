@@ -15,9 +15,10 @@ TEST = ["tt_0000", "tt_0360", "tt_0720", "tt_1080", "tt_1440", "tt_1800"]
 
 if __name__ == "__main__":
     ev.check()
-    want = (HERE / "plan_teamtrack.json.sha256").read_text().split()[0]
-    if hashlib.sha256((HERE / "plan_teamtrack.json").read_bytes()).hexdigest() != want:
-        raise SystemExit("plan_teamtrack.json does not match its sha256")
+    for f in ("plan_teamtrack.json", "addendum_tt1.json"):
+        want = (HERE / f"{f}.sha256").read_text().split()[0]
+        if hashlib.sha256((HERE / f).read_bytes()).hexdigest() != want:
+            raise SystemExit(f"{f} does not match its sha256")
     ev.WIN, ev.RUNS = OUT, OUT.parent / "tt_runs"
     if sys.argv[1] == "run":
         ev.run(sys.argv[2])

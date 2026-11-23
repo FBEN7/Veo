@@ -31,11 +31,12 @@ PW, PH = 6500, 1000
 CW, CH = round(PH * 16 / 9), PH
 OW, OH, BITRATE = 1920, 1080, "4400k"
 MIN_ID_SCORE = 1.0
+LINK_PX = 30          # addendum_tt1.json
 TRAJ_FILES = ((0, 0), (20, 240), (40, 480), (42, 504))   # file suffix, first frame
 
 
 def check():
-    for f in ("plan.json", "addendum1.json", "plan_teamtrack.json"):
+    for f in ("plan.json", "addendum1.json", "plan_teamtrack.json", "addendum_tt1.json"):
         want = (HERE / f"{f}.sha256").read_text().split()[0]
         if hashlib.sha256((HERE / f).read_bytes()).hexdigest() != want:
             raise SystemExit(f"{f} does not match its sha256")
@@ -100,10 +101,33 @@ def main():
         return
     od.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
-    parts, ids = [], []
+    parts, ids, links = [], [], []
+    next_id = 1000
     for k in range(N_CLIPS):
         g, info = clip_truth(start + 30 * k)
         g["frame"] = g.clip_frame + k * CLIP_F
+        if parts:
+            # addendum_tt1.json: annotation ids are not stable across joins; link by position
+            a = parts[-1][parts[-1].clip_frame == CLIP_F - 1].sort_values("track_id")
+            z = g[g.clip_frame == 0].sort_values("track_id")
+            A = np.c_[a.bx + a.bw / 2, a.by + a.bh / 2]
+            Z = np.c_[z.bx + z.bw / 2, z.by + z.bh / 2]
+            D = np.hypot(*(A[:, None, :] - Z[None, :, :]).transpose(2, 0, 1))
+            r, c = linear_sum_assignment(np.nan_to_num(D, nan=1e9))
+            new = {}
+            for i, j in zip(r, c):
+                if D[i, j] <= LINK_PX:
+                    new[int(z.track_id.iloc[j])] = int(a.track_id.iloc[i])
+            for tid in z.track_id:
+                if int(tid) not in new:
+                    new[int(tid)] = next_id
+                    next_id += 1
+            links.append({"join s": start + 30 * k,
+                          "relabelled": int(sum(new[int(t)] != int(t) for t in z.track_id if new[int(t)] < 1000)),
+                          "split": int(sum(v >= 1000 for v in new.values()))})
+            g["track_id"] = g.track_id.map(new)
+        else:
+            g["track_id"] = g.track_id.astype(int)
         parts.append(g)
         ids.append(info)
     g = pd.concat(parts, ignore_index=True).sort_values(["track_id", "frame"])
@@ -151,7 +175,8 @@ def main():
     g.to_parquet(od / "truth.parquet")
     np.save(od / "crop_boxes.npy", boxes)
     (od / "done.json").write_text(json.dumps({"start s": start, "frames": f, "crop": [CW, CH], "scale": scale,
-                                              "identity per clip": ids, "median box jump at clip joins (px)": jumps,
+                                              "identity per clip": ids, "links at clip joins": links,
+                                              "median box jump at clip joins after linking (px)": jumps,
                                               "seconds": round(time.time() - t0)}, indent=1))
     print(od.name, "done", round(time.time() - t0), "s", [i["min id score"] for i in ids], "joins", jumps)
 
