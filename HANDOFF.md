@@ -36,7 +36,7 @@ The 15 target statistics are listed in the status doc.
 
 **Status doc (French, update it after each result):** Claude Docs at
 https://claude.ai/code/artifact/0abccf0d-8aa5-4159-b47f-7431c2771eaa.
-- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 105.
+- Body node `46cfe67c-2f48`, block prefix `mwy08bzh1q7`, last seen rev 106.
 - Tables:
   - module table `.1860`;
   - stats table `.11947` (status enum `c07b100f-0db3`: 0 Abouti, 1 Partiel,
@@ -93,6 +93,7 @@ statistic; options: semi-automatic product, players near the ball, new data).
 | Follow-cam ceiling (`followcam_sim/`, 2026-11-19; owner: try the report on Veo's follow-cam, approximate simulation) | No real follow-cam file: YouTube refuses this server, nothing elsewhere, Veo links view-only; candidate for a personal download: YouTube `CqL3iTdRUlg` (CC BY). Plan hashed. Pinhole camera at the halfway line following an action-based ball proxy, 15 halves. Possession / passes ~100% but circular (the camera aims at the actors). Players in view 8-15 of 22; a player's path in view 39-69%, **no player >= 95%**: distances out of reach. Player height in 1080p 64-128 px (upper bound). |
 | Per-player counts by shirt numbers, follow-cam (`actor_id/`, 2026-11-19; owner: shots / successful passes / tackles per player within +/- 1, automatic, follow-cam) | Plan hashed. Ceiling (perfect detection and tracking, jersey_read rates, followcam_sim camera), 8 matches. Best view 30 deg, +/- 6 s: players within +/- 1: shots 0.93, tackles 0.99 (bar 0.90 met), passes 0.30 (not met). Post hoc 'zero for everyone': 0.79 / 0.78 / 0.03. Right player: 0.63 / 0.83 / 0.81. Optimistic: detection perfect (shots F1 0.05 today), independent looks, upscaled crops. |
 | Action spotting, simulated follow-cam (`followcam_spot/`, 2026-11-23; owner: run detection on the simulated follow-cam, pilot first) | Plan hashed. Camera on the truth players' median, 0.35 of the panorama, 796x448. T-DEED from ImageNet, train M3+M4, 5.4 h T4, last epoch, scored on M2: SHOT AP 0.030 (1.6 x random), TACKLE 0.005 (0.3 x), PASS 0.34 (below random 0.41), shots precision 0.017 at recall 0.6. **Gate (5 x random) not met, no full run.** Post hoc: val loss flat from epoch 2, no time offset. Not a verdict on follow-cams: 2 training matches, no SoccerNet pre-training. Kaggle GPU 6 h/week (reset 2026-11-28). |
+| Real Veo export through the product chain (`VEO_FOOTAGE.md`, 2026-11-23; owner: stop SoccerTrack, test the whole chain on a Veo file) | One 25-s goal highlight (1080p, 30 fps), kept off the repo and off free platforms. Image fine (far players 60-80 px, ball ~10 px). `main.py` ran to a 7-page PDF after two fixes (supervision pinned <=0.26.1 for ByteTrack; None possession in player_rating). **Every number wrong**: goal missed, ball 17%, top speeds 33-39 km/h, heatmaps on one touchline: auto-calibration takes the visible half-pitch for the pitch and one homography is applied to a panning camera. Plan 2 (5 SoccerTrack matches) cancelled before training (`followcam_spot/plan2_cancelled.json`). |
 | Shots (`protocol_shots.json`) | **Dev fails**: frozen 40 km/h / 35 m / mouth 3 m, F1 0.053 (1/32). Diagnostic: the rule is too strict for the v3 ball, the team filter halves what is left. **M1 test not run** (owner decision B, `shots_decision.json`). |
 
 ## Registered protocols: follow them exactly

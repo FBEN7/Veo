@@ -1408,3 +1408,46 @@ should be read as "something was seen here", not as two balls out of play.
 Cost: 1 minute 50 seconds for the reporting pass over a three-minute clip
 with detection and tracking already cached, of which the 240 circle fits are
 most of it.
+
+## A real Veo export through the whole chain (2026-11-23)
+
+Owner request: stop SoccerTrack work, test the product chain (`main.py`,
+video to PDF) on a real Veo file. The file is a highlight the owner
+downloaded from Veo (a club's adult match, 2024): one 25-s goal clip,
+1920x1080, 29.97 fps, 4.4 Mbit/s, the follow-cam view with Veo's
+watermark. It stays on the analysis machine: not committed, not sent to
+any free platform. One clip with one goal: nothing here is accuracy.
+
+Image quality is not the limit: far players 60-80 px tall, near ones ~130
+px, the ball ~10 px (blurred when struck), the goal in frame at the shot.
+
+The chain ran end to end only after two fixes: `supervision` 0.32 has no
+`sv.ByteTrack` (requirements now pin `<=0.26.1`, which has it), and
+`player_rating.compute` crashed on the `None` possession that
+`stats.possession_proxy` returns when the ball track is too thin (now read
+as 0). Then it produced a 7-page PDF in 3.5 min on 4 CPU cores
+(`--auto-calibrate`, YOLOv8m at 640).
+
+What the PDF says, against what is in the clip:
+
+| | PDF | clip |
+|---|---|---|
+| goal | none ("no possible goal to confirm") | one goal |
+| events | 1 out of play, 0 shots, 0 passes | a build-up, a shot, a goal |
+| ball found | 17% of frames | in view most of the time |
+| top speed | 33-39 km/h for 15 of 16 tracks, 21 sprints in 25 s | ordinary running |
+| pitch | heatmaps squeezed on one touchline | play across a half |
+
+- The pitch calibration cannot work on this view: Hough found no lines,
+  the green-area fallback took the visible part of the pitch (about a
+  half) for the whole pitch, and one homography is applied to a camera
+  that pans. Pan reads as player motion, hence the speeds. The PDF's own
+  methodology page says "Requires fixed-camera video", and the only view
+  Veo lets a viewer download is the moving one (the panorama cannot be
+  downloaded, see above).
+- Presentation bugs seen on the way: executive-summary distances printed
+  unrounded (0.675800000000001, overlapping), duration "-0.0 minutes",
+  first and second half identical on a one-half clip.
+- Reading: the chain runs on real Veo files, but on a Veo export every
+  number it prints is wrong today. The blocker is the moving camera, not
+  the image.
