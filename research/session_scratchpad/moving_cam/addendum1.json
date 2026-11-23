@@ -1,0 +1,7 @@
+{
+ "addendum to plan.json (sha256 2eaf89ba...)": "written 2026-11-23 after scoring the two dev windows only; no test window scored yet",
+ "finding on dev (scorer, not chain)": "SoccerTrack's truth boxes sit ~26-30 px above the detected players' box centres in the 1920 x 1080 crop (118575_1: median offset (-3.8, +25.5) px, 118576_1: (+2.6, +29.7)); only 70% of detections fall within 0.75 box heights of a truth centre, so tracks failed the 60% rule for the scorer's sake (8 and 4 tracks of ~33 scored)",
+ "change": "before matching, each window's median (dx, dy) between every player detection and its nearest in-view truth centre (same frame, no identity used, no outcome used) is subtracted from the detections; the gate (0.75 x box height), the 60% rule, the 10-s minimum and everything else in plan.json stay as they are",
+ "effect on dev": "90% of detections within the gate after the shift; scored tracks 8 -> 14 and 4 -> 14 of ~33; the rest fail because a re-identified track holds several truth persons (a chain property, kept)",
+ "dev numbers before the change (reported, recorded in dev_results.json at that time)": "11 tracks: distance median error 0.41 (constant 0.17), pooled chain / truth 0.61; top speed 3.0 km/h (constant 3.5); sprints chain / truth 1.0"
+}

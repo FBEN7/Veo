@@ -27,9 +27,10 @@ MIN_TRACK_S, MATCH_FRAC, GATE = 10.0, 0.60, 0.75
 
 
 def check():
-    want = (HERE / "plan.json.sha256").read_text().split()[0]
-    if hashlib.sha256((HERE / "plan.json").read_bytes()).hexdigest() != want:
-        raise SystemExit("plan.json does not match its sha256")
+    for f in ("plan.json", "addendum1.json"):
+        want = (HERE / f"{f}.sha256").read_text().split()[0]
+        if hashlib.sha256((HERE / f).read_bytes()).hexdigest() != want:
+            raise SystemExit(f"{f} does not match its sha256")
 
 
 def run(name):
@@ -66,6 +67,16 @@ def match_tracks(tracks, truth):
     p = tracks[(tracks.cls == "player") & tracks.team.isin(["team_A", "team_B"])]
     tv = truth[truth.in_view & truth.role.isin(["player", "goalkeeper"])]
     by_frame = {f: g for f, g in tv.groupby("out_frame")}
+    # addendum1.json: remove the truth boxes' systematic offset (median over all detections, nearest truth)
+    dd = []
+    for r in p.itertuples():
+        g = by_frame.get(int(r.frame))
+        if g is not None:
+            dx, dy = r.px - g.u.to_numpy(), r.py - g.v.to_numpy()
+            i = int(np.argmin(np.hypot(dx, dy)))
+            dd.append((dx[i], dy[i]))
+    off = np.median(np.array(dd), axis=0) if dd else np.zeros(2)
+    p = p.assign(px=p.px - off[0], py=p.py - off[1])
     votes = []
     for r in p.itertuples():
         g = by_frame.get(int(r.frame))
@@ -102,10 +113,11 @@ def score_window(name):
     from src import stats
     truth = pd.read_parquet(WIN / name / "truth.parquet")
     rows = []
+    # matched on the raw detections (pixels); the moving / fixed tables hold metres in px / py
+    m = match_tracks(pd.read_parquet(RUNS / name / "tracks.parquet"), truth)
     for path in ("moving", "fixed"):
         tr = pd.read_parquet(RUNS / name / f"{path}.parquet")
         ph = stats.physical_stats(tr).set_index("track_id")
-        m = match_tracks(tr, truth)
         p = tr[tr.cls == "player"]
         span = p.groupby("track_id").frame.agg(["min", "max"])
         for tid, person in m.items():
