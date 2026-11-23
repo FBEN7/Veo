@@ -3025,3 +3025,31 @@ draws. Best view (30 deg, +/- 6 s):
   at F1 0.05 today), looks 2 s apart taken as independent, panorama read
   rates applied to an upscaled crop, and the simulated camera aims at the
   actor by construction.
+
+### Action spotting on a simulated follow-cam (`followcam_spot/plan.json`, `pilot_eval.json`)
+
+Owner request 2026-11-20: run detection on the simulated follow-cam, pilot
+first. A virtual camera follows the truth players' median (0.35 of the
+panorama wide, 796x448, 12.5 fps); T-DEED (rny002_gsf + ed_sgp_mixer, 12
+BAS classes) trained from ImageNet weights on M3 + M4 (4 halves), scored on
+M2's two whole halves; model = last epoch. Training 5.4 h on a Kaggle T4
+(20 epochs x 100,000 frames): ~11% of T-DEED's SoccerNet-ball schedule and
+without its SoccerNet pre-training.
+
+| class (M2 labels) | AP | random AP | x random |
+|---|---|---|---|
+| SHOT (23) | 0.030 | 0.019 | 1.6 |
+| PLAYER SUCCESSFUL TACKLE (20) | 0.005 | 0.016 | 0.3 |
+| PASS (951) | 0.344 | 0.411 | 0.8 |
+| CROSS (45) | 0.101 | 0.027 | 3.8 |
+| shots (SHOT + GOAL, 28) | 0.034; precision 0.017 at recall 0.6 (v4 trajectory spotter 0.21, other unit) | | |
+
+- **Gate (SHOT and TACKLE AP >= 5 x random) not met: no full run.** Mean
+  AP over the 12 classes 0.088.
+- Post hoc (`pilot_diag.json`): validation loss flat from epoch 2 (the
+  network learnt the class prior); no time offset between scores and
+  labels; below-random PASS AP comes from random scores' dense peaks.
+- What it does not show: that a follow-cam cannot work. Two training
+  matches, no SoccerNet pre-training and a camera wider than Veo's are
+  each enough to explain it. Kaggle GPU quota is 6 h a week here (next
+  reset 2026-11-28).
