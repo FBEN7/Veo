@@ -1516,3 +1516,10 @@ pitch as SoccerTrack) is downloaded and rendered into seven windows under
 30-s clip joins, 13 of 22 at one; persons relinked by position before any
 run). Its chain runs were not started: under that plan TeamTrack cannot
 show a figure that failed on SoccerTrack.
+
+TeamTrack's truth is weaker than expected. In 9 of the 36 clips rendered,
+no assignment of trajectory columns follows the boxes (lowest score below
+the registered 1.0, down to -0.6), so those clips carry no truth; and six
+clips (720-900 s) have trajectories for only 684-720 of their 750 frames,
+which `render_tt.py` does not handle yet (window 720-900 s not rendered).
+Any later TeamTrack test has to deal with both first.
