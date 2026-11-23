@@ -189,8 +189,12 @@ def main():
 
     # Buts possibles à confirmer par le club (formation de coup d'envoi)
     half_starts = goal_candidates.parse_times(args.half_starts)
-    goal_cands = goal_candidates.find(tracks, fps=video_fps, half_starts_s=half_starts)
-    print(f"  Buts possibles à confirmer : {len(goal_cands)}")
+    if moving_info is None:
+        goal_cands = goal_candidates.find(tracks, fps=video_fps, half_starts_s=half_starts)
+        print(f"  Buts possibles à confirmer : {len(goal_cands)}")
+    else:
+        goal_cands = None   # the kick-off formation needs each half of the pitch
+        print("  Buts possibles : non disponibles sur caméra mobile")
 
     quality_report = quality.compute_quality(
         tracks_pitch=tracks,
@@ -253,6 +257,7 @@ def main():
         goal_candidates=goal_cands,
         goal_kickoffs_s=half_starts,
         video_duration_s=duration_s,
+        camera=moving_info,
     )
 
     print(f"\nTerminé !")

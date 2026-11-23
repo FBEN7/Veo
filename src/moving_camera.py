@@ -30,6 +30,12 @@ from . import camera_motion, ground_plane, pixel_scale
 
 PLAYERS_ON_PITCH = 22
 
+# Which per-player figures the report shows on this path: the registered
+# decision of research/session_scratchpad/moving_cam/plan.json on its test
+# windows (results.json). A figure that failed is printed as "not measurable
+# on a moving camera".
+SHOWN = {"distance": False, "top_speed": False, "sprints": False}
+
 
 def coverage(tracks: pd.DataFrame, n_frames: int) -> float:
     """Share of the 22 players' frames in which a team-assigned player is
@@ -72,7 +78,8 @@ def to_metric(video_path: str, tracks: pd.DataFrame, work_dir: str | Path,
         source = "player height"
     metric = pixel_scale.to_metric_coords(comp, scale)
     info = {"compensated": bool(usable), "motion check": why,
-            "px_per_m": round(float(scale), 2), "scale from": source}
+            "px_per_m": round(float(scale), 2), "scale from": source,
+            "coverage": round(coverage(metric, len(motion)), 3), "shown": dict(SHOWN)}
     if verbose:
         print(f"  [moving] camera motion {'compensated' if usable else 'NOT compensated'} "
               f"({why}); scale {scale:.1f} px/m from {source}")
