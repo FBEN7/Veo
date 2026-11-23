@@ -1,0 +1,17 @@
+{
+ "title": "moving_cam replication on TeamTrack: the same chain, matching, figures and criteria as plan.json, on a second dataset",
+ "written": "2026-11-23, before any TeamTrack window is rendered or run through the chain, and before plan.json's SoccerTrack test windows are scored",
+ "owner request": "2026-11-23: 'Oui, telecharge TeamTrack', then 'Oui, fais la simulation de recadrage sur TeamTrack'",
+ "data": "TeamTrack (Kaggle atomscott/teamtrack, MIT licence), soccer_side: one 33-min recording as 66 consecutive 30-s clips (F_..._1_0000_0030 to _1950_1980), panorama 6500 x 1000, 25 fps, 750 frames each; per-frame boxes for 22 players (annotations/*.csv); pitch metres from teamtrack-trajectory/Soccer (240-frame windows at a 12-frame stride, so files _0, _20, _40, _42 give frames 0-743 of a clip; frames 744-749 are linearly interpolated). Used for measurement only: nothing is trained or tuned on it",
+ "independence (stated now)": "TeamTrack comes from the same group as SoccerTrack (University of Tsukuba, same kind of artificial pitch and panorama rig); it is a second recording, not a second venue type",
+ "truth identity": "trajectory columns are not in annotation order. Per clip, each annotated player takes the trajectory column that maximises corr(box bottom-centre x, traj x) + corr(box bottom y, traj y) over the clip's 744 frames (Hungarian assignment). A clip whose lowest assigned score is below 1.0 is dropped from truth (its frames count as no truth) and reported",
+ "simulated camera": "as render.py, except the crop size: the panorama is 1000 px high, so the crop is the full height at 16:9 (1778 x 1000, 0.274 of the width; about a third of the visible pitch length, as plan.json's 0.35 of 4096 was), the crop centre x following the truth players' median box centre (2-s rolling median then 1-s mean), y0 = 0; scaled to 1920 x 1080 (x1.08), H.264 4.4 Mbit/s, 25 fps. Players are smaller than in the SoccerTrack simulation (~30-80 px boxes x 1.08)",
+ "windows (3 min = 6 consecutive clips)": {
+  "dev (bugs only)": ["180-360 s"],
+  "test": ["0-180 s", "360-540 s", "720-900 s", "1080-1260 s", "1440-1620 s", "1800-1980 s"]
+ },
+ "chain, matching, truth figures, constants": "exactly as plan.json and addendum1.json (evaluate.py functions unchanged): main.py --camera moving's path, nearest truth box centre within 0.75 x height after the window's median offset is removed, tracks >= 10 s with >= 60% of frames on one person, truth smoothed by a 1-s centred moving average, constants leave one test window out (within TeamTrack)",
+ "criteria on TeamTrack": "plan.json's decision rules unchanged, on these 6 test windows",
+ "decision (combined, conservative)": "a figure is shown in the PDF only if it passes plan.json's criteria on the SoccerTrack test windows AND these criteria on the TeamTrack test windows. A figure that fails either is printed as not measurable on a moving camera. If TeamTrack cannot be scored (fewer than 3 test windows with scored tracks), the decision rests on SoccerTrack alone and the PDF wording says so in the repo docs",
+ "caveats (stated now)": "TeamTrack's trajectories are noisy frame to frame (per-frame steps up to 1.5 m before smoothing), so the 1-s smoothing matters more than on SoccerTrack; same caveats as plan.json on translation-only camera motion and small players; 18 min of test play from one match"
+}
