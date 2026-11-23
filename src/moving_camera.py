@@ -31,16 +31,16 @@ from . import camera_motion, ground_plane, pixel_scale
 PLAYERS_ON_PITCH = 22
 
 
-def coverage(tracks: pd.DataFrame, duration_s: float) -> float:
-    """Share of the 22 players' time spent inside a team-assigned track:
-    what any per-player figure from this footage is computed on."""
-    if duration_s <= 0 or tracks is None or tracks.empty:
+def coverage(tracks: pd.DataFrame, n_frames: int) -> float:
+    """Share of the 22 players' frames in which a team-assigned player is
+    detected: what any per-player figure from this footage is computed on.
+    Counted in detections, not track spans: a re-identified track spans the
+    gaps where its player was out of view."""
+    if n_frames <= 0 or tracks is None or tracks.empty:
         return 0.0
     p = tracks[(tracks.cls == "player") & tracks.team.isin(["team_A", "team_B"])]
-    if p.empty:
-        return 0.0
-    seconds = p.groupby("track_id").time_s.agg(lambda t: t.max() - t.min()).sum()
-    return float(min(1.0, seconds / (PLAYERS_ON_PITCH * duration_s)))
+    return float(min(1.0, p.groupby("frame").size().clip(upper=PLAYERS_ON_PITCH).sum()
+                     / (PLAYERS_ON_PITCH * n_frames)))
 
 
 def to_metric(video_path: str, tracks: pd.DataFrame, work_dir: str | Path,

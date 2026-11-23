@@ -56,7 +56,7 @@ def run(name):
         auto_calibrate(clip, str(h_path), debug=False)
     fixed = stats.to_pitch_coords(tracks, np.load(h_path))
     fixed.to_parquet(wd / "fixed.parquet")
-    info["coverage (production)"] = round(moving_camera.coverage(moving, len(np.load(wd / "camera_motion.npy")) / FPS), 3)
+    info["coverage (production)"] = round(moving_camera.coverage(moving, len(np.load(wd / "camera_motion.npy"))), 3)
     (wd / "info.json").write_text(json.dumps(info, indent=1))
     print(name, info)
 
@@ -181,6 +181,9 @@ def score(windows, out):
     for w in windows:
         d, c = score_window(w)
         info = json.loads((RUNS / w / "info.json").read_text())
+        from src import moving_camera   # recomputed: runs before 2026-11-23 15:15 used track spans
+        info["coverage (production)"] = round(moving_camera.coverage(
+            pd.read_parquet(RUNS / w / "moving.parquet"), len(np.load(RUNS / w / "camera_motion.npy"))), 3)
         c.update({"in scored tracks (moving)": round(float(d[d.path == "moving"].seconds.sum()) / c["truth player-s"], 3),
                   **info})
         cov[w] = c
