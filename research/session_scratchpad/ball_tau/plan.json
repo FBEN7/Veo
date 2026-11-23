@@ -1,0 +1,18 @@
+{
+ "question": "Does a lower confidence cut for the ball (before and in the link) recover the shooter's ball near the goals without picking false balls? (owner, 2026-10-27)",
+ "status": "exploratory, CPU, written before any relink",
+ "variants": {
+  "t10": "current: cut and link tau 0.10",
+  "t05": "0.05 everywhere",
+  "t02": "0.02 everywhere",
+  "zone03": "0.10 elsewhere, 0.03 for candidates whose ground point is within 16.5 m of a goal line (their confidence rescaled so that 0.03 there acts as 0.10)"
+ },
+ "pipeline otherwise": "as now: no grass test, players' frames, top 4, outline, ball_link.link (c_null 1, c_static 2)",
+ "stage 1 (all variants)": {
+  "verified balls": "4 windows (M6 2nd f015000 / f037500, M7 1st f030000, M9 2nd f030000): on 'ball' frames, linked ball within 12 px (hit) and linked ball elsewhere (wrong pick)",
+  "shots": "ball_goal measure 2 (linked ball at the shooter's feet within +-0.4 s), near a goal and elsewhere, all shots clips but M1"
+ },
+ "choice": "the variant with the highest share of shots near a goal with the linked ball at the feet, among those whose wrong-pick rate on verified balls is at most the current one + 0.02; none if no variant beats t10 by 5 points",
+ "stage 2 (the chosen variant only)": "the v3 shot spotter's nested leave-one-match-out on the same units (shots_learn/v3), against its no-grass result (150 hits, 126 false, 119 missed); and rule C (who made the action) on the seen matches and M7 / M9 against ball_grass/score.json",
+ "adopt if": "stage 2: shot hits up and rule C not down by more than 1 point on either set"
+}

@@ -1,0 +1,6 @@
+{
+ "written": "after a first run, before any rule change",
+ "bug": "players are tracked on every 2nd frame (stride 2); labels on odd frames found no players, so they were scored as not detected / no actor. Fix: the label frame is moved to the nearest tracked frame. Rules, radius and windows unchanged.",
+ "M7 / M9": "their units have no v3s_link ball track (metric_v3s_link.parquet was never made for them: the metric step needs the video, and their clips are not here). Unseen results are therefore M1 (117092) only.",
+ "M1 camera": "second run: the labelled player was matched to a detection on 23% of M1's actions vs about 80% elsewhere. Cause, known (SOCCERTRACK_V2.md, M1's camera refitted): M1's release camera and truth boxes are off. Fix: pitch positions recomputed from the image through each match's camera (M1: .cache/calib_fix/117092.npz), and detections matched to the truth in pitch metres within 3 m (stats_fix.match_pitch) on M1 only (elsewhere feet matching, as before: pitch matching there loses ~15 points of the ceiling to camera noise). Rules, radius and windows unchanged."
+}

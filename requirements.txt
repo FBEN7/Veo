@@ -1,5 +1,5 @@
 ultralytics>=8.2.0
-supervision>=0.21.0
+supervision>=0.21.0,<=0.26.1  # 0.32 has no sv.ByteTrack (src/detect_track.py)
 opencv-python>=4.9.0
 numpy>=1.26
 pandas>=2.1

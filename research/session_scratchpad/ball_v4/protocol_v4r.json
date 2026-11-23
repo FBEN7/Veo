@@ -1,0 +1,18 @@
+{
+ "name": "ball detector v4r: v4 with less forgetting",
+ "registered": "2026-10-28, after v4's result (results/decision.json), before v4r is trained",
+ "why": "v4 found more shot balls (+0.114 hit@4) but failed the M6 guard: other objects ranked first on ordinary play (hit@1 0.955 -> 0.865)",
+ "same as protocol.json": "clicks, folds A/B, strips (stage/targets.parquet unchanged), stream subset, test frames of folds A/B and M6 clicked frames, metrics, 12 px, top_k 8, tau 0.05",
+ "changes": {
+  "recipe v4r (train_v4.py --recipe v4r)": "batches of 16: 6 verified, 2 verified_neg, 2 flight, 2 action, 4 free; learning rates x 0.5; distillation on the stream strips: 5 x the mean squared difference of logits floored at -6 to v3b's (frozen, eval mode), per strip, summed over the batch's stream strips / 16",
+  "weight 5": "set from v4's drift on 180 stream strips (0.10 per strip, no augmentation), not from any test frame",
+  "guard": "the M6 window st2_118578_2nd_f037500 (187 verified balls, ball_verified/A), never used to decide v4; st2_118578_2nd_f015000 is spent (reported only)"
+ },
+ "primary endpoint": "as protocol.json for v4r.600: hit@4 after the kick (k >= 1) of folds A and B, each frame by the other fold's v4r, minus v3b's; 95% bootstrap interval over shots. A second use of these 317 frames (v4 was scored on them): weaker evidence",
+ "decision": {
+  "v4r is better": "difference >= +0.05 and the interval's lower end > 0; and on the guard window st2_118578_2nd_f037500 neither v4rA.600 nor v4rB.600 loses more than 0.03 of hit@4 nor more than 0.05 of hit@1 against v3b; and on the 73 none frames (each by the other fold's model) the share with a candidate in the crop rises by at most 0.05",
+  "then (not part of this test)": "train v4r on both folds' clicks, refit its calibration, and measure the shot spotter again before any adoption",
+  "otherwise": "reported; nothing adopted"
+ },
+ "known limits": ["one rater", "v3 was selected on M6 and v1 trained on its first half: the guard favours v3b slightly", "the primary frames are used a second time", "the 300-step checkpoint is reported, never chosen"]
+}

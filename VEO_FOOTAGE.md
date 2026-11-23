@@ -1408,3 +1408,118 @@ should be read as "something was seen here", not as two balls out of play.
 Cost: 1 minute 50 seconds for the reporting pass over a three-minute clip
 with detection and tracking already cached, of which the 240 circle fits are
 most of it.
+
+## A real Veo export through the whole chain (2026-11-23)
+
+Owner request: stop SoccerTrack work, test the product chain (`main.py`,
+video to PDF) on a real Veo file. The file is a highlight the owner
+downloaded from Veo (a club's adult match, 2024): one 25-s goal clip,
+1920x1080, 29.97 fps, 4.4 Mbit/s, the follow-cam view with Veo's
+watermark. It stays on the analysis machine: not committed, not sent to
+any free platform. One clip with one goal: nothing here is accuracy.
+
+Image quality is not the limit: far players 60-80 px tall, near ones ~130
+px, the ball ~10 px (blurred when struck), the goal in frame at the shot.
+
+The chain ran end to end only after two fixes: `supervision` 0.32 has no
+`sv.ByteTrack` (requirements now pin `<=0.26.1`, which has it), and
+`player_rating.compute` crashed on the `None` possession that
+`stats.possession_proxy` returns when the ball track is too thin (now read
+as 0). Then it produced a 7-page PDF in 3.5 min on 4 CPU cores
+(`--auto-calibrate`, YOLOv8m at 640).
+
+What the PDF says, against what is in the clip:
+
+| | PDF | clip |
+|---|---|---|
+| goal | none ("no possible goal to confirm") | one goal |
+| events | 1 out of play, 0 shots, 0 passes | a build-up, a shot, a goal |
+| ball found | 17% of frames | in view most of the time |
+| top speed | 33-39 km/h for 15 of 16 tracks, 21 sprints in 25 s | ordinary running |
+| pitch | heatmaps squeezed on one touchline | play across a half |
+
+- The pitch calibration cannot work on this view: Hough found no lines,
+  the green-area fallback took the visible part of the pitch (about a
+  half) for the whole pitch, and one homography is applied to a camera
+  that pans. Pan reads as player motion, hence the speeds. The PDF's own
+  methodology page says "Requires fixed-camera video", and the only view
+  Veo lets a viewer download is the moving one (the panorama cannot be
+  downloaded, see above).
+- Presentation bugs seen on the way: executive-summary distances printed
+  unrounded (0.675800000000001, overlapping), duration "-0.0 minutes",
+  first and second half identical on a one-half clip.
+- Reading: the chain runs on real Veo files, but on a Veo export every
+  number it prints is wrong today. The blocker is the moving camera, not
+  the image.
+
+### The same clip annotated by eye, and detection at 1280 px (2026-11-23)
+
+`research/session_scratchpad/veo_clip/annotation.json`. Black scores
+attacking the left goal: black #19 carries from about 10.9 s, shoots at
+about 13.2 s, the ball is in the net at 14.0 s. Before that: a likely
+black pass #8 -> #19 (0.3-1.6 s), a likely black long ball (2.7-2.9 s), a
+contested ball (3-6 s); 6.4-10.9 s could not be read (see below).
+
+| `--camera moving` | ball found | events |
+|---|---|---|
+| 640 px (default) | 17% of frames | 2 carries |
+| **1280 px** | **68%** | 3 passes, 8 carries, 2 recoveries, ~70 pressure / dribble rows |
+
+1280 px is the first lever: the ball is ~10 px in a 1080p export and ~3 px
+once scaled to 640. It sees #19's run but not the shot or the goal (the
+moving path has no goal position, by design), and it repeats one action
+frame after frame (~70 rows for a few seconds of dribbling). Part of the
+68% is boots: the detector fires on light boots and on the Veo watermark,
+which is also why the ball crops could not be read over 6.4-10.9 s.
+Detection at 1280 px costs ~4x the CPU time of 640 (11 min for 25 s here).
+
+## Distance, top speed and sprints on a moving camera: not measurable yet (2026-11-23)
+
+Owner request: adapt the chain to the moving camera; SoccerTrack for
+measurement only; distances and speeds first; partial coverage shown with
+its rate. `main.py --camera moving` now compensates camera motion, takes
+one scale from player height and works in relative metres
+(`src/moving_camera.py`); the PDF leaves out heatmaps, territory and
+possible goals on that path.
+
+Measured as registered (`research/session_scratchpad/moving_cam/plan.json`,
+addendum 1, `results.json`): SoccerTrack v2 panorama cropped to a
+follow-cam (0.35 of the width, the crop following the players, 1080p, Veo's
+bit rate), six 3-min test windows from four matches, 63 player tracks
+matched to the truth.
+
+| figure | chain | constant | bar | shown |
+|---|---|---|---|---|
+| distance per track, median relative error | 0.378 (chain / truth 0.63) | 0.236 | <= 0.15, beat the constant in >= 4/6 windows (1/6) | no |
+| top speed, median absolute error | 3.4 km/h | 3.8 | <= 3.0, >= 4/6 (2/6) | no |
+| sprints per tracked minute, chain / truth | 0.47 | | within [0.67, 1.5] | no |
+
+Camera motion was compensated and validated on every window; the scale
+came from player height everywhere (37-40 px/m). The chain detects 60-79%
+of the 22 players' time, but only 16-38% of the truth's player time falls
+inside scored tracks. The single homography (the old path) is worse: top
+speed 28.6 km/h against 15.3, sprints x2.5.
+
+The PDF therefore prints "not measurable on a moving camera" for all
+three, with the coverage rate (`moving_camera.SHOWN`).
+
+Post hoc, not a result: the distance shortfall follows the gaps inside a
+track (correlation 0.70 between the share of a track's span with a
+detection and chain / truth). Tracks detected on 90% or more of their span
+measure distance at 1.06 of the truth (5 tracks). A figure defined on the
+time a player is seen (metres per minute seen), not over a span with gaps,
+is the next thing to register, with TeamTrack as its unseen test.
+
+TeamTrack (Kaggle atomscott/teamtrack, MIT, same Tsukuba group and kind of
+pitch as SoccerTrack) is downloaded and rendered into seven windows under
+`plan_teamtrack.json` and its addendum (annotation ids change at some
+30-s clip joins, 13 of 22 at one; persons relinked by position before any
+run). Its chain runs were not started: under that plan TeamTrack cannot
+show a figure that failed on SoccerTrack.
+
+TeamTrack's truth is weaker than expected. In 9 of the 36 clips rendered,
+no assignment of trajectory columns follows the boxes (lowest score below
+the registered 1.0, down to -0.6), so those clips carry no truth; and six
+clips (720-900 s) have trajectories for only 684-720 of their 750 frames,
+which `render_tt.py` does not handle yet (window 720-900 s not rendered).
+Any later TeamTrack test has to deal with both first.

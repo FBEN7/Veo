@@ -1,0 +1,18 @@
+{
+ "3.0": {
+  "U continuity median": 0.342,
+  "U swaps median": 0.192,
+  "oracle within 5%": 0.546,
+  "oracle ours/truth median": 0.973,
+  "oracle bias-corrected (LOMO) within 5%": 0.496,
+  "oracle bias-corrected median err": 0.049
+ },
+ "4.0": {
+  "U continuity median": 0.368,
+  "U swaps median": 0.198,
+  "oracle within 5%": 0.58,
+  "oracle ours/truth median": 0.996,
+  "oracle bias-corrected (LOMO) within 5%": 0.569,
+  "oracle bias-corrected median err": 0.04
+ }
+}

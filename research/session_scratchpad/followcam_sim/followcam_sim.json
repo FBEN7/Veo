@@ -1,0 +1,74 @@
+{
+ "plan sha256": "f43fc55005e9393534334c55587170eaeca1bc7ed83afbf1123c82beafd9c03f",
+ "halves": 15,
+ "scored share of frames per half": {
+  "117092 1": 0.658,
+  "117093 1": 0.677,
+  "117093 2": 0.707,
+  "118575 1": 0.647,
+  "118575 2": 0.628,
+  "118576 1": 0.622,
+  "118576 2": 0.541,
+  "118577 1": 0.521,
+  "118577 2": 0.562,
+  "118578 1": 0.69,
+  "118578 2": 0.588,
+  "128058 1": 0.687,
+  "128058 2": 0.606,
+  "132877 1": 0.711,
+  "132877 2": 0.668
+ },
+ "scored frames (sampled)": 133750,
+ "frames with no one within 4 m of the proxy": 21896,
+ "passes scored": 7297,
+ "passes by length": {
+  "< 15 m": 3736,
+  "15-30 m": 2783,
+  ">= 30 m": 778
+ },
+ "players scored (player-halves)": 393,
+ "results": {
+  "30 deg": {
+   "possession: players within 4 m all in view": 0.99,
+   "players in view per frame (of 22)": 8.4,
+   "passes: passer and next actor in view": 0.996,
+   "passes by length": {
+    "< 15 m": 0.998,
+    "15-30 m": 0.995,
+    ">= 30 m": 0.994
+   },
+   "player distance: median share of path in view": 0.39,
+   "player distance: players with >= 95% in view": 0.0,
+   "team distance: median share of path in view": 0.381,
+   "player height in a 1080-px output, median px (upper bound)": 128.0
+  },
+  "45 deg": {
+   "possession: players within 4 m all in view": 0.998,
+   "players in view per frame (of 22)": 12.0,
+   "passes: passer and next actor in view": 1.0,
+   "passes by length": {
+    "< 15 m": 1.0,
+    "15-30 m": 1.0,
+    ">= 30 m": 0.996
+   },
+   "player distance: median share of path in view": 0.559,
+   "player distance: players with >= 95% in view": 0.0,
+   "team distance: median share of path in view": 0.546,
+   "player height in a 1080-px output, median px (upper bound)": 86.0
+  },
+  "60 deg": {
+   "possession: players within 4 m all in view": 1.0,
+   "players in view per frame (of 22)": 14.8,
+   "passes: passer and next actor in view": 1.0,
+   "passes by length": {
+    "< 15 m": 1.0,
+    "15-30 m": 1.0,
+    ">= 30 m": 0.999
+   },
+   "player distance: median share of path in view": 0.692,
+   "player distance: players with >= 95% in view": 0.0,
+   "team distance: median share of path in view": 0.679,
+   "player height in a 1080-px output, median px (upper bound)": 64.0
+  }
+ }
+}

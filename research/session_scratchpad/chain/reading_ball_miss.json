@@ -1,0 +1,17 @@
+{
+ "status": "exploratory, not registered; after chain.json",
+ "actions": 2257,
+ "ball row within +-4 frames and <= 3 m": 0.5645,
+ "ball row within +-4 frames but > 3 m": 0.3119,
+ "no ball row within +-4 frames": 0.1236,
+ "when > 3 m, distance quartiles m": [
+  4.0,
+  5.9,
+  10.6
+ ],
+ "when no row, gap to the nearest ball row, quartiles s": [
+  0.24,
+  0.32,
+  0.48
+ ]
+}

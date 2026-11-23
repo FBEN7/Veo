@@ -83,9 +83,11 @@ def compute(
     # ---- Possession per player (proportional share within team) ------------
     # We only have team-level possession from the proxy, so we distribute it
     # equally among tracked players of that team as a starting approximation.
+    # stats.possession_proxy returns None per team when the ball track is too
+    # thin to measure possession; that reads as no share (0), as a NaN did.
     team_sizes = df.groupby("team")["track_id"].transform("count")
     df["possession_pct"] = df.apply(
-        lambda row: possession_proxy.get(row["team"], 0.0) / max(team_sizes[row.name], 1),
+        lambda row: (possession_proxy.get(row["team"]) or 0.0) / max(team_sizes[row.name], 1),
         axis=1,
     ).fillna(0.0)
 

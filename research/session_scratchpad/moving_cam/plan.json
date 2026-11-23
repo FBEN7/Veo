@@ -1,0 +1,35 @@
+{
+ "title": "physical figures (distance, top speed, sprints) on a moving camera: the product chain against truth and against a constant",
+ "written": "2026-11-23, before the moving-camera path is wired into main.py and before any simulated window is rendered or scored",
+ "owner request": "2026-11-23: 'Oui, adapte la chaine a la camera mobile'; answers: SoccerTrack for measurement only (nothing trained on it), distances / speeds first, show with a coverage rate when partial",
+ "why": "on a real Veo export (VEO_FOOTAGE.md, 2026-11-23) main.py applies one homography to a panning camera: top speeds 33-39 km/h, 21 sprints in 25 s. Prior results to beat: distance per team did not beat a constant on the fixed panorama (team_distance/decision.json); top speed had no split-half signal on a 640x360 follow-cam",
+ "chain under test (main.py --camera moving, one function shared with this evaluation)": "detect_track.run with main.py's defaults (yolov8m, imgsz 640, conf 0.25 / 0.08), team assignment, re-identification, camera_motion.estimate_camera_motion + validate_motion + compensate (if the validator refuses, positions stay uncompensated and the run says so), scale = ground_plane.effective_px_per_m (fallback pixel_scale.estimate_px_per_m from player height), pixel_scale.to_metric_coords, stats.physical_stats unchanged (distance, 95th-percentile top speed, sprints >= 1 s above 20 km/h)",
+ "simulated camera": "SoccerTrack v2 panorama (fixed camera, 4096 x 1080, 25 fps) cropped to 0.35 of its width at 16:9, the crop centre following the truth players' median as gen_crops.py does (2-s rolling median then 1-s mean), scaled to 1920 x 1080, H.264 at 4.4 Mbit/s (the Veo export's rate), 25 fps. The panorama's fisheye calibration is not physical (fy from 520 to 80,778 px across matches), so no perspective virtual camera is rendered",
+ "windows (3 min each, frames 15000-19499 of the half, i.e. from 10:00)": {
+  "dev (bugs only: no threshold or parameter is set on them)": [
+   "118575 half 1",
+   "118576 half 1"
+  ],
+  "test": [
+   "117093 half 1",
+   "117093 half 2",
+   "132877 half 1",
+   "132877 half 2",
+   "118577 half 1",
+   "118578 half 1 (night)"
+  ],
+  "not used": "M7 128057 / M9 132831 (sealed), M1 117092 (truth boxes do not fit its video)"
+ },
+ "matching": "per frame, a chain player detection takes the truth person whose box centre (mapped into the crop) is nearest, if within 0.75 x that box's height there; a chain track of >= 10 s with a team is scored if >= 60% of its frames take one truth person, against that person over the track's first to last frame",
+ "truth figures": "the person's GSR pitch positions (25 fps, on a 1.05 x 0.68 m grid) smoothed by a 1-s centred moving average, then stats.physical_stats on them over the same frames: the same definitions on both sides",
+ "constants (leave one window out)": "distance = track duration x the mean truth speed of scored tracks in the other test windows; top speed = the median truth top speed of scored tracks in the other test windows; sprints = the truth sprint rate per tracked minute pooled over the other test windows",
+ "decision (on the 6 test windows, pooled over scored tracks)": {
+  "distance per player-track": "shown in the PDF if median |chain - truth| / truth <= 0.15 AND the chain's median relative error is below the constant's, pooled and in >= 4 of 6 windows",
+  "top speed per player-track": "shown if median |chain - truth| <= 3 km/h AND below the constant's, pooled and in >= 4 of 6 windows",
+  "sprints per tracked minute (pooled)": "shown if chain / truth is within [0.67, 1.5] AND |log(chain / truth)| is below the constant's",
+  "otherwise": "the PDF says the figure is not measurable on a moving camera and prints no number for it"
+ },
+ "coverage (reported, and printed in the PDF beside any figure shown)": "production: tracked player-seconds / (22 x duration); here also the truth side: share of truth player-seconds inside scored tracks, and inside the crop at all",
+ "reported, not deciding": "the same figures from the current path (auto-calibration + one homography) on the same detections; per-window tables; the camera-motion validator's verdict per window; the scale used vs the truth's median px per m",
+ "caveats (stated now)": "the simulated camera only translates (no perspective change, no zoom), which makes compensation easier than on a Veo export; players are smaller than in a Veo export (~43 px panorama boxes x 1.34, vs 60-130 px measured); truth is quantised and smoothed at 1 s, so path lengths compare at that scale; one venue and one camera model; 18 min of test play"
+}

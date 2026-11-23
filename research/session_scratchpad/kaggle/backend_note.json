@@ -1,0 +1,19 @@
+{
+ "for": "research/session_scratchpad/shots_goals/protocol_shots.json (run dev and test on the same backend; record which in a hashed note before starting)",
+ "protocol_shots sha256": "63ca6258c6bb603a8c95c6187d01c659293f38e80c828d422859c3381b7c545a",
+ "recorded": "2026-10-20, before any shot clip or window is processed for the shots phase",
+ "owner decision": "all on GPU T4, fp32 (2026-10-20)",
+ "backend": {
+  "where": "private Kaggle kernels driven by the Kaggle API from this repo (research/session_scratchpad/kaggle/), no internet in the kernel",
+  "gpu": "Tesla T4 (accelerator NvidiaTeslaT4)",
+  "image": "Kaggle latest container image; torch 2.11.0+cu128 as measured in bench_v6.json",
+  "ultralytics": "8.4.183 (wheel shipped in the private dataset)",
+  "precision": "fp32 everywhere (no half / quantize); cudnn and matmul TF32 off",
+  "players": "the pipeline's player detection (yolov8s, imgsz 4096, the pipeline's own stride and thresholds) on cuda",
+  "ball": "detect_ball_heatmap.py --v2 with ball_v3b.1500.pt on cuda (load_v2 wrapped to move the model; repo code unchanged)",
+  "after detection": "static-point drop, linking, events and scoring run here on CPU from the returned files (cheap, deterministic)"
+ },
+ "scope": "every dev clip and window and every M1 test clip and window is (re)processed on this backend; no CPU-produced player or ball file is reused in the shots phase",
+ "evidence the ball detector agrees with CPU": "bench_v6.json: 320 / 320 candidates on 40 frames, max logit diff 5e-6, max position diff 0.0006 px",
+ "sealed matches": "M7 / M9 clips are cut and unsealed here (VEO_UNSEAL never leaves this machine) and uploaded as clips to a private Kaggle dataset"
+}

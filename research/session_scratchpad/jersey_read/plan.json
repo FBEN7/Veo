@@ -1,0 +1,21 @@
+{
+ "title": "identity step 2a: are shirt numbers readable on this footage?",
+ "written": "2026-11-17, before any crop is cut or looked at and before the box-height distribution is computed",
+ "owner request": "2026-11-17: option A, measure number readability first (identity step 1 failed: positions alone keep identity share at 0.54; products such as Veo identify players by shirt number)",
+ "facts before": "earlier appearance re-ID here: crops 31-95 px tall (median 49), rank-1 among team-mates 0.18-0.39 (SOCCERTRACK_V2.md, re-identification); the truth gives each player's box (bx, by, bw, bh) and shirt number",
+ "part 1 (no video)": "truth outfield-player boxes (role player) on the 47 ordinary-play windows: box height bh in native pixels; median, p10, p90 per match; share of player-frames with bh >= 40, 60, 80 px",
+ "part 2 (single crops)": {
+  "videos": "the local videos with truth: 117093 1st f015000 (4096x1080, 3 min), 118576 1st f050779 (4096x1080, 57 s), 132831 2nd shot clips (3840x1504, 16 x 57 s; sealed match, opened through src/unseal.py)",
+  "sample": "outfield players' truth boxes, bands of bh < 40, 40-60, 60-80, >= 80 px; up to 30 crops per band (fewer if the band holds fewer distinct player-seconds), seed 0, drawn evenly over the three matches where possible, one crop per player per 2 s at most",
+  "crop": "the truth box padded 15% each side, upscaled x4 (bicubic), tiled 6 x 4 per sheet with an index only; the number and the match are kept in a key file not looked at before the readings are written",
+  "reading": "Claude reads each crop: a number, or '?' if no number can be read; readings written to readings.json and its sha256 committed before scoring"
+ },
+ "part 3 (20-s segments)": {
+  "sample": "12 segments (4 per match): an outfield player and a 20-s span where he is in the truth all along, seed 0; 10 crops 2 s apart, one sheet row per segment",
+  "reading": "as part 2, each crop read on its own; then per segment: correct if at least one crop is read as the true number, wrong if any crop is read as another number"
+ },
+ "measures": "per band: share of crops read (a number given), share read correctly, share of given numbers that are wrong; per segment: share with a correct read, share with a wrong read",
+ "decision": "numbers are worth a GPU step (a jersey-number model on tracklets) if, in part 3, at least 6 of 12 segments get a correct read and at most 1 gets a wrong read; otherwise shirt numbers are not readable enough on this footage",
+ "what this cannot show": "the owner's camera (resolution, height, kit contrast may differ: Veo's own panorama is larger); a trained number reader (Claude's reading of upscaled crops is the proxy); the local videos are re-encoded cuts of the dataset",
+ "cost": "local CPU, < 1 h, ~8 sheets read by Claude"
+}

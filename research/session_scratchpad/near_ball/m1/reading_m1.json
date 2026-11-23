@@ -1,0 +1,17 @@
+{
+ "status": "exploratory gate before a planned out-of-sample test on M1 (117092); not met, so no plan registered and no GPU used",
+ "date": "2026-11-05",
+ "question": "can M1's truth (another pixel frame, left out since plan.json) be brought into our video's pixels, to test the fixed 0.20 threshold on a match never used?",
+ "calibration": "the release's M1 camera model fits the truth's frame (truth box feet to their pitch positions: median 0.28-0.41 m on 3 units) but not our video (our detections, matched within 5 m: median 2.9-3.8 m; M2 1.05 m)",
+ "image-space mappings (fit on frames 0-298, checked on frames 1126-1424; truth players with one of the original run's detections within 43 px, median residual px)": {
+  "identity": [0.434, 18.7],
+  "scale 1.02 + offset (-37.5, -22.5), found by offset voting, same on both halves": [0.444, 14.3],
+  "polynomial degree 1": [0.478, 13.1],
+  "polynomial degree 2": [0.508, 11.5],
+  "polynomial degree 3": [0.521, 9.5],
+  "the other 9 matches, original S1 control (for reference)": 0.893
+ },
+ "where it fails (degree 3)": "matched 0.88-0.97 at the top right of the image, 0.00 below y = 1000 px and 0.02-0.36 between 850 and 1000 px: the video's lower part (near the camera) is rendered with another projection than the truth's",
+ "per-axis rescale judged in pitch metres through the calibration": "no scale beats identity (7.8% of truth players within 1.5 m)",
+ "conclusion": "M1 would need a non-linear registration (e.g. matching trajectories over time), partly circular to check, for one match from another camera: not done. The question is closed (owner, 2026-11-05)."
+}

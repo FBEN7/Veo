@@ -1,0 +1,30 @@
+{
+ "reading": "exploratory, after goals_v3.json (registered) and reading_false_runs.json; scripts in extra/",
+ "time alignment (extra/lag.py)": "scan and ground truth are aligned in all 20 halves (best lag 0 s; median nearest distance 0.8-2.1 m)",
+ "defended ends (extra/ends.py)": "the ends from the half's mean x are inverted on 118577 1st (scan teams' means -0.5 / -6.5 m against the truth's -3.8 / +9.7 m; share correlation with the truth -0.67): its 13 false runs and both of its misses. The other 19 halves are consistent (correlation 0.37-0.83).",
+ "ends from the first 10 s of the half (extra/kickoff_ends.py)": "the team with the lower mean x over the first 10 s defends x < 0: right on 20/20 halves (30 s gives the same). The truth's share is only ~0.7 in those 10 s, so the video does not start exactly at the kick-off, but the order holds.",
+ "held out with those ends (extra/rescore_ko.py; same LOMO choice)": {
+  "restartable goals found": "32 / 41",
+  "false runs": 69,
+  "per match": 6.9,
+  "team right": "29 / 32"
+ },
+ "run lengths (extra/lengths.py)": "longest stretch inside a run: hits median 5 s, false runs median 2 s; requiring >= 4 s keeps 24/34 hits and 24/85 false runs: no clean cut",
+ "crowd speed at 1 fps (extra/speed.py; median displacement of people matched between consecutive samples)": "hits median 1.18 m/s, false runs 1.57, any time 1.6-1.7; speed <= 2.0 keeps 32/34 hits and 59/85 false runs: a weak cue",
+ "context (reading_false_runs.json)": "false runs fall in live play: median 1.7 s after the last labelled action and 1.4 s before the next (after a goal there are >= 15 s without an action); 9 of 85 fall within 120 s after a goal",
+ "split of the 85 false runs (reading_false_runs.json)": {
+  "the truth fires there too (formation-like moment at the chosen T, mostly 0.75)": 14,
+  "detections only": 71,
+  "of which the inverted half": 13,
+  "of which true teams bring the share below T": 34,
+  "of which the people we see are in formation in the truth (the unseen are not)": 40,
+  "people per sample during false runs: detected / truth / matched": [
+   13.4,
+   22,
+   12
+  ]
+ },
+ "misses (7)": "118577 1st x2: inverted ends; 3 runs start 11-14 s after their goal, just before the 15 s window (118578 2nd x2, 132877 1st at 36.9 min); 117093 1st: best share 0.77 < T 0.80 (truth 0.91); 132877 1st at 21.7 min: no run in the window (share 1.0 on one sample only)",
+ "wrong scoring team (7)": "in all 7 the detection nearest the centre spot is matched and right-teamed, 3-5 m away; the truth's nearest person is also 2-6 m away: the run's last sample is before the kick-off is set, so the nearest person is not the kicker",
+ "no ball in the ground truth": "a ball-at-the-centre-spot cue cannot be checked on the truth"
+}

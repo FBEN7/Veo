@@ -1,0 +1,58 @@
+{
+ "plan sha256": "c65905e82b8afda879408ef580550221f3a3eb696e475548793b0cdc62db570e",
+ "shots": 239,
+ "hit": {
+  "linked share": 0.308,
+  "flight tracked": 0.884,
+  "toward the goal": 0.701,
+  "candidates toward the goal": 0.601,
+  "shooter to goal line m": 13.736,
+  "n": 147
+ },
+ "missed": {
+  "linked share": 0.249,
+  "flight tracked": 0.815,
+  "toward the goal": 0.446,
+  "candidates toward the goal": 0.383,
+  "shooter to goal line m": 11.824,
+  "n": 92
+ },
+ "per match (missed: flight tracked)": {
+  "117093": {
+   "size": 10,
+   "mean": 0.8
+  },
+  "118575": {
+   "size": 9,
+   "mean": 0.89
+  },
+  "118576": {
+   "size": 16,
+   "mean": 0.69
+  },
+  "118577": {
+   "size": 14,
+   "mean": 0.93
+  },
+  "118578": {
+   "size": 19,
+   "mean": 0.68
+  },
+  "128057": {
+   "size": 1,
+   "mean": 1.0
+  },
+  "128058": {
+   "size": 5,
+   "mean": 0.6
+  },
+  "132831": {
+   "size": 9,
+   "mean": 1.0
+  },
+  "132877": {
+   "size": 9,
+   "mean": 1.0
+  }
+ }
+}

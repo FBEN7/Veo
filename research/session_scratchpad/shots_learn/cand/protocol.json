@@ -1,0 +1,19 @@
+{
+ "name": "shots spotter with ball-candidate cues: v4r's candidates against v3b's",
+ "registered": "2026-10-29, after the hybrid ball failed (shots_learn/hybrid/decision.json), before any cue is computed",
+ "idea": "keep the v3b linked ball (the spotter's v4 features unchanged) and add cues read from raw ball candidates near the goals, letting the spotter weigh them; the same cues from v3b's candidates are the control, so the difference is v4r's information",
+ "data": "the 249 shots units and labels of cv_v4.json; candidates only at the hybrid's window frames (shots_learn/hybrid/frames.parquet, 48,508 even frames), elsewhere the cues are missing (NaN) in both arms: arm B = v3b's kept rows (v3s_rows) at those frames, arm C = v4r's rows there (Kaggle veo-hybrid-ball), marks and static points dropped over the frames they ran on as in the hybrid",
+ "cues (cand.py), per spotter frame t, on the candidates' ground points (centre origin)": {
+  "next 1.5 s (t, t + 38]": ["max confidence of a candidate in a penalty area (|x| >= 36, |y| <= 20.16)", "max confidence of a candidate near a goal mouth (|x| >= 47, |y| <= 6)", "share of frames with a candidate >= 0.10 in a penalty area", "min distance to the nearer goal centre of a candidate >= 0.10"],
+  "previous 0.5 s [t - 12, t]": ["min distance to the nearer goal centre of a candidate >= 0.10"],
+  "derived": ["approach: previous min distance minus next min distance", "share of the next 1.5 s's frames that have candidates (the window cover, equal in both arms)"]
+ },
+ "spotter": "learn_v4.py's model, nested leave-one-match-out, thresholds by rate; features = features_v4 (v3b tracks, gpu_shots3) + the cues",
+ "primary": "hits of arm C minus arm B, summed over the 10 matches, 95% bootstrap over matches (5,000 draws, seed 0)",
+ "decision": {
+  "v4r's cues help": "the interval's lower end > 0 and false alarms rise by no more than hits do (C against B)",
+  "reported": "each arm against cv_v4.json (165 / 113 / 104)",
+  "otherwise": "nothing adopted"
+ },
+ "known limits": ["the hybrid's control showed single matches moving by up to 5 hits from small track changes: only a large effect can show", "the windows come from out-of-fold spotter probabilities; a training unit's window may depend on the outer test match's labels (second order, the same in both arms)", "v4r's confidences use v3b's calibration"]
+}

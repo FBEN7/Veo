@@ -1,0 +1,12 @@
+{
+ "protocol": "protocol.json (sha256 b192cfb6e77c735e867cdf3316c247475ae799af41efd33a214844f6ad6de2a1)",
+ "kernel": "francoisbernard/veo-ball-v4 v1, 2 x T4, 3,034 s (cut 712 s, train 516 s, eval 1,742 s)",
+ "primary": {"v4.600": "hit@4 after the kick 0.338 -> 0.451 on 317 frames (81 shots), difference +0.114, 95% interval [+0.080, +0.150]: passes (>= +0.05, lower end > 0)",
+             "v4.300 (reported, not chosen)": "+0.104 [+0.072, +0.137]"},
+ "guard window (M6 st2_118578_2nd_f015000, 133 verified balls)": {"v3b": "hit@4 1.000, hit@1 0.955", "v4A.600": "hit@4 0.955 (-0.045), hit@1 0.865", "v4B.600": "hit@4 0.970 (-0.030), hit@1 0.865",
+   "verdict": "fails: v4A.600 loses more than 0.03 of hit@4. The losses are wrong objects ranked first (top-1 within 25 px no better than within 12 px), not offsets"},
+ "none frames (73, each by the other fold's v4)": {"candidate in crop": "0.863 -> 0.890 (+0.027): passes", "at confidence >= 0.10 (indicative, v3b's calibration)": "0.288 -> 0.534"},
+ "decision": "v4 is NOT better under the registered rule (the M6 guard fails); nothing adopted. ball_v3b.1500 stays the pipeline's detector.",
+ "reading": "v4 finds clearly more balls around shots (+11 points of hit@4, every frame offset k = 0..5 up) but ranks other objects above the ball more often on ordinary play (M6 hit@1 -9 points) and is more confident on empty crops: the 1,200 stream strips did not stop it forgetting. A new attempt needs its own protocol and a fresh guard (M6's window is now spent for v4 selection).",
+ "checkpoints": ".cache/ball_v4/ (not in git; also in the kernel's output)"
+}

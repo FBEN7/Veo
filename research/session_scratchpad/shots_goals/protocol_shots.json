@@ -1,0 +1,51 @@
+{
+ "name": "Shots on the panorama (task #4, after the gate's GO)",
+ "registered": "2026-10-20, after the gate's GO and before any shot clip is processed or any M1 shot output exists",
+ "owner decision": "shots after the goals test (2026-10-20)",
+ "parent protocol sha256": "1d4a3188f76102baff651128960461b7bcc2ff2efe6d495e2d49223d0751debd",
+ "gate": {
+  "decision": "GO",
+  "reachable": "19/26",
+  "per half": {
+   "128057_1st": "3/10",
+   "132831_2nd": "16/16"
+  },
+  "placebo (mismatched geometry)": "0.07 (M7 1st), 0.15 (M9 2nd)",
+  "consequence": "expected recall is capped at the reachable share in every report: 0.73 overall, 0.30 on a camera like M7's"
+ },
+ "rule": "the events.py shot rule (ball speed, ray on the goal mouth, distance to goal) on the pipeline's pitch tracks (v3, static points dropped, linked: tune_rules ball 'v3s_link'), plus a filter keeping only shots toward the goal the possessor's team attacks (team mean x over the clip's half from the clip's own players).",
+ "free parameters (grid)": {
+  "SHOT_MIN_KMH": [
+   30,
+   40,
+   50,
+   60,
+   70
+  ],
+  "SHOT_MAX_DIST_FROM_GOAL_M": [
+   20,
+   25,
+   30,
+   35
+  ],
+  "SHOT_MOUTH_MARGIN_M": [
+   1,
+   2,
+   3,
+   5
+  ]
+ },
+ "all other rule parameters": "frozen as in research/session_scratchpad/ball/events_v3.json",
+ "dev data": "the 26 gate attempts (M7 1st, M9 2nd) as clips -15 s / +10 s, merged where they overlap, plus the 8 processed non-M1 windows not in a test half (their attempts and their minutes as negatives)",
+ "dev choice": "the cell maximising F1 at 2 s (one to one, SHOT and GOAL labels), pooled over dev; ties: fewer events, then the higher SHOT_MIN_KMH",
+ "test data": "M1 (117092): clips -15 s / +10 s around all 29 BAS SHOT/GOAL of both halves, merged; negatives: the 4 processed M1 windows (12 min, 0 attempts). Camera: the M1 refit (a warp fitted to player feet; not validated for the ball; disclosed)",
+ "primary": "recall at 2 s, one to one against SHOT and GOAL, on the 29 M1 attempts, with a Wilson interval",
+ "secondary": [
+  "false shots per minute on the 4 M1 windows, and the predicted half precision R*n / (R*n + F*T_final_third), T_final_third from the BAS actor positions' share in the final thirds",
+  "team right on matched shots",
+  "xG (models/xg_xghub.json) of the matched shots at the possessor's feet, against the GSR shooter's"
+ ],
+ "success": "recall >= 16/29 AND predicted half precision >= 0.5 AND team right on >= 80% of matched shots",
+ "order": "dev processing starts once the goals test is scored; the M1 clips are processed only after the dev choice is frozen in frozen_shots.json (hashed)",
+ "power": "29 attempts: recall known to about +-0.17 at best"
+}

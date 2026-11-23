@@ -1,0 +1,11 @@
+{
+ "what": "post hoc (not in the plan), after pilot_eval.json: checks that the failed gate is not a pipeline bug",
+ "run": "Kaggle kernel version 33 (T4), 20 epochs x 100000 frames, warm-up 2, -ag 4; training 19588 s (5.4 h, plan <= 6 h), M2 inference 1767 s, whole kernel 22014 s; model = last epoch",
+ "losses": {"train epoch 0 / 1 / 19": [6.736, 4.691, 4.111], "val (M2) epoch 0 / 2 / 19": [3.617, 3.385, 3.550], "reading": "val loss flat from epoch 2 on: the network learnt the class prior, not where actions are"},
+ "time alignment (event score 1 - background, mean at label frames, label shifted -4 s .. +4 s)": {
+  "117093_1": {"overall mean": 0.712, "at labels": 0.729, "best shift (0.08-s steps)": -44, "at best shift": 0.731},
+  "117093_2": {"overall mean": 0.715, "at labels": 0.728, "best shift (0.08-s steps)": -12, "at best shift": 0.728},
+  "reading": "no offset stands out (a frame shift would show one sharp peak); the score barely rises at actions anywhere: weak signal, not a misalignment"},
+ "below-random AP for PASS / DRIVE (0.34 / 0.34 vs 0.41 / 0.42)": "random scores give a peak every ~1 s after the 1-s NMS, which catches most of ~950 passes within 2 s; the model's smoother scores give fewer useful peaks. A ranking with no information can sit under that baseline",
+ "quota": "Kaggle GPU quota is 6 h a week on this account; the stuck queued timing copy (version 31) also ran, ~47 min lost; week used 7.9 h (Kaggle let the last run finish), next reset 2026-11-28"
+}

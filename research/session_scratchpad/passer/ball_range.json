@@ -1,0 +1,10 @@
+{
+ "finding (2026-10-26)": "the shots clips' ball was detected only on local frames 350-1075 (ball_gpu.py --range, the per-clip cost cut); the rest of each clip (its tracking margins) has no ball by design. passer.py scored every labelled action of the clip, so half of them could never get an actor.",
+ "rule A, matches v3 was trained on": {
+  "inside the ball range": {"n": 1893, "right": 0.487, "actor given": 0.679, "precision": 0.717, "passes n": 927, "passes right": 0.502, "ceiling": 0.777},
+  "outside": {"n": 1706, "right": 0.003}
+ },
+ "M1 inside the range": {"n": 210, "right": 0.114, "precision": 0.17, "ceiling": 0.224, "reading": "still not measurable (truth matching)"},
+ "the 2-3x gap": "explained: the pipeline links the ball on the players' frames only (every 2nd frame: x2) and cuts candidates below p 0.10 first (x1.25 on two clips: 173 vs 137, 232 vs 190 frames). Every later stage (grass, roster, outline, merge, metres) loses nothing.",
+ "so": "the real numbers for who passed are ~50% end to end and 72% precision inside the ball range; the 25% in passer.json counted the margins"
+}

@@ -1,0 +1,35 @@
+{
+ "shots": 239,
+ "v3b": {
+  "hit (v3 spotter)": {
+   "linked share": 0.308,
+   "flight tracked": 0.884,
+   "toward the goal": 0.701,
+   "candidates toward the goal": 0.601
+  },
+  "missed (v3 spotter)": {
+   "linked share": 0.249,
+   "flight tracked": 0.815,
+   "toward the goal": 0.446,
+   "candidates toward the goal": 0.383
+  }
+ },
+ "hybrid": {
+  "hit (v3 spotter)": {
+   "linked share": 0.368,
+   "flight tracked": 0.946,
+   "toward the goal": 0.762,
+   "candidates toward the goal": 0.661
+  },
+  "missed (v3 spotter)": {
+   "linked share": 0.292,
+   "flight tracked": 0.913,
+   "toward the goal": 0.533,
+   "candidates toward the goal": 0.452
+  }
+ },
+ "toward the goal: v3b no -> hybrid yes / v3b yes -> hybrid no": [
+  22,
+  5
+ ]
+}

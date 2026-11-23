@@ -1,0 +1,93 @@
+{
+ "plan sha256": "838c94761436777053e4109be93a12861c93bd08f49ef65a5f18eb0c5cdd0945",
+ "frames": {
+  "117093_1": 33813,
+  "117093_2": 35238
+ },
+ "per class": {
+  "PASS": {
+   "labels": 951,
+   "AP": 0.344,
+   "random AP": 0.4107,
+   "x random": 0.8
+  },
+  "DRIVE": {
+   "labels": 889,
+   "AP": 0.337,
+   "random AP": 0.4216,
+   "x random": 0.8
+  },
+  "HEADER": {
+   "labels": 3,
+   "AP": 0.043,
+   "random AP": 0.0076,
+   "x random": 5.7
+  },
+  "HIGH PASS": {
+   "labels": 150,
+   "AP": 0.108,
+   "random AP": 0.0829,
+   "x random": 1.3
+  },
+  "OUT": {
+   "labels": 80,
+   "AP": 0.03,
+   "random AP": 0.0491,
+   "x random": 0.6
+  },
+  "CROSS": {
+   "labels": 45,
+   "AP": 0.101,
+   "random AP": 0.0267,
+   "x random": 3.8
+  },
+  "THROW IN": {
+   "labels": 39,
+   "AP": 0.01,
+   "random AP": 0.0276,
+   "x random": 0.4
+  },
+  "SHOT": {
+   "labels": 23,
+   "AP": 0.03,
+   "random AP": 0.0193,
+   "x random": 1.6
+  },
+  "BALL PLAYER BLOCK": {
+   "labels": 30,
+   "AP": 0.032,
+   "random AP": 0.0233,
+   "x random": 1.4
+  },
+  "PLAYER SUCCESSFUL TACKLE": {
+   "labels": 20,
+   "AP": 0.005,
+   "random AP": 0.0158,
+   "x random": 0.3
+  },
+  "FREE KICK": {
+   "labels": 17,
+   "AP": 0.004,
+   "random AP": 0.0119,
+   "x random": 0.3
+  },
+  "GOAL": {
+   "labels": 5,
+   "AP": 0.008,
+   "random AP": 0.0072,
+   "x random": 1.0
+  }
+ },
+ "shots (SHOT + GOAL)": {
+  "labels": 28,
+  "AP": 0.034,
+  "precision at recall 0.60": 0.017,
+  "precision at recall 0.80": 0.016,
+  "v4 trajectory spotter, whole match (other unit)": {
+   "0.6": 0.212,
+   "0.8": 0.095
+  }
+ },
+ "gate (SHOT and TACKLE AP >= 5 x random)": false,
+ "mean AP over the 12 classes": 0.088
+}

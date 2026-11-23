@@ -1,0 +1,113 @@
+{
+ "plan sha256": "62bf44948beeaf97d61e8c56fa18956e2f8753cc1657a4c0a4a01a088a0640e2",
+ "units": 27,
+ "128057": {
+  "before": {
+   "coverage": 0.49,
+   "fills": 0,
+   "fill precision": null,
+   "identity continuity (weighted)": 0.763
+  },
+  "after": {
+   "coverage": 0.491,
+   "fills": 268,
+   "fill precision": 0.261,
+   "identity continuity (weighted)": 0.763
+  }
+ },
+ "132831": {
+  "before": {
+   "coverage": 0.51,
+   "fills": 0,
+   "fill precision": null,
+   "identity continuity (weighted)": 0.849
+  },
+  "after": {
+   "coverage": 0.512,
+   "fills": 326,
+   "fill precision": 0.38,
+   "identity continuity (weighted)": 0.853
+  }
+ },
+ "who made the action (rule C, metres)": {
+  "all": {
+   "before": {
+    "n": 533,
+    "right": 159,
+    "share": 0.298,
+    "wilson": [
+     0.261,
+     0.338
+    ],
+    "given": 0.865
+   },
+   "after": {
+    "n": 533,
+    "right": 141,
+    "share": 0.265,
+    "wilson": [
+     0.229,
+     0.304
+    ],
+    "given": 0.734
+   }
+  },
+  "128057": {
+   "before": {
+    "n": 178,
+    "right": 65,
+    "share": 0.365,
+    "wilson": [
+     0.298,
+     0.438
+    ],
+    "given": 0.882
+   },
+   "after": {
+    "n": 178,
+    "right": 57,
+    "share": 0.32,
+    "wilson": [
+     0.256,
+     0.392
+    ],
+    "given": 0.809
+   }
+  },
+  "132831": {
+   "before": {
+    "n": 355,
+    "right": 94,
+    "share": 0.265,
+    "wilson": [
+     0.222,
+     0.313
+    ],
+    "given": 0.856
+   },
+   "after": {
+    "n": 355,
+    "right": 84,
+    "share": 0.237,
+    "wilson": [
+     0.195,
+     0.284
+    ],
+    "given": 0.696
+   }
+  }
+ },
+ "miss runs (feet matching, every 10th frame)": {
+  "132831": {
+   "missed time in runs <= 1 s": 0.213,
+   "<= 5 s": 0.766,
+   "> 20 s": 0.013
+  },
+  "128057": {
+   "missed time in runs <= 1 s": 0.32,
+   "<= 5 s": 0.783,
+   "> 20 s": 0.0
+  }
+ },
+ "reading": "v1 fails: few links (268 / 326 fills on 27 clips), fill precision 0.26 / 0.38, coverage unchanged, rule C worse (0.298 -> 0.265; 'after' also drops team 'other' tracks, so the comparison is not clean). But the misses are mostly short (77% of missed time in runs <= 5 s), so the idea stands; v1 fills only between linked tracklets, not the gaps inside a track, and its team labels are noisy."
+}

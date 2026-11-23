@@ -1,0 +1,112 @@
+{
+ "plan sha256": "3af1fbd9284b9118ec4f2c715ee937616e5cc9b3e8c4fe28081ee53f0e971744",
+ "variant": "t02",
+ "tau": 0.02,
+ "tau near a goal": 0.02,
+ "verified balls": {
+  "st2_118578_2nd_f015000": {
+   "ball frames": 133,
+   "hit": 122,
+   "wrong": 7
+  },
+  "st2_118578_2nd_f037500": {
+   "ball frames": 187,
+   "hit": 161,
+   "wrong": 21
+  },
+  "st2_128057_1st_f030000": {
+   "ball frames": 76,
+   "hit": 64,
+   "wrong": 8
+  },
+  "st2_132831_2nd_f030000": {
+   "ball frames": 112,
+   "hit": 102,
+   "wrong": 7
+  },
+  "all": {
+   "ball frames": 508,
+   "hit": 0.884,
+   "wrong": 0.085
+  }
+ },
+ "shots": {
+  "pass": {
+   "n": 1201,
+   "candidate at feet": 0.934,
+   "linked at feet": 0.826
+  },
+  "shot": {
+   "n": 242,
+   "candidate at feet": 0.979,
+   "linked at feet": 0.86
+  },
+  "pass, elsewhere": {
+   "n": 824,
+   "candidate at feet": 0.949,
+   "linked at feet": 0.847
+  },
+  "pass, near a goal": {
+   "n": 377,
+   "candidate at feet": 0.902,
+   "linked at feet": 0.78
+  },
+  "shot, elsewhere": {
+   "n": 82,
+   "candidate at feet": 0.988,
+   "linked at feet": 0.963
+  },
+  "shot, near a goal": {
+   "n": 159,
+   "candidate at feet": 0.981,
+   "linked at feet": 0.811
+  },
+  "shots per match": {
+   "117093": {
+    "n": 28,
+    "candidate": 1.0,
+    "linked": 0.93
+   },
+   "118575": {
+    "n": 24,
+    "candidate": 1.0,
+    "linked": 0.92
+   },
+   "118576": {
+    "n": 43,
+    "candidate": 0.98,
+    "linked": 0.88
+   },
+   "118577": {
+    "n": 33,
+    "candidate": 0.94,
+    "linked": 0.79
+   },
+   "118578": {
+    "n": 29,
+    "candidate": 1.0,
+    "linked": 0.72
+   },
+   "128057": {
+    "n": 12,
+    "candidate": 1.0,
+    "linked": 0.75
+   },
+   "128058": {
+    "n": 29,
+    "candidate": 0.97,
+    "linked": 0.83
+   },
+   "132831": {
+    "n": 16,
+    "candidate": 1.0,
+    "linked": 0.94
+   },
+   "132877": {
+    "n": 28,
+    "candidate": 0.96,
+    "linked": 0.96
+   }
+  }
+ }
+}

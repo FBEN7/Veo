@@ -1,0 +1,15 @@
+{
+ "title": "identity step 2b, what-if: a finer camera (players at 60-80 px or >= 80 px everywhere)",
+ "written": "2026-11-17, after fusion.json (observed sizes: 0.58 / 0.62, target 0.80 not met), before any what-if run",
+ "owner request": "2026-11-17: run the simulation (no public fixed full-pitch footage is finer than SoccerTrack v2: SoccerTrack v1 and TeamTrack are released at 6500 x 1000, players ~38 px)",
+ "method": "fusion.py unchanged (same segments, cues, lineup, assignment, 200 draws, seed 0), except the number reads: every crop of every segment drawn at one band's rates from jersey_read, whatever its real size",
+ "variants": {
+  "observed": "as fusion.py (reference)",
+  "all 60-80 px": "60-80 band: correct 0.267, wrong 0.067",
+  "all >= 80 px": ">= 80 band: correct 0.433, wrong 0.033",
+  ">= 80 px, low / high": "correct at the 95% Wilson bounds of 13 / 30, wrong 0.033"
+ },
+ "measures": "segments identified per match (117093, 132831), players' distance within 5%, numbered share",
+ "reading": "the camera need: the smallest band where the fusion identifies >= 80% of segments on both matches; if none, a finer camera alone is not enough on this evidence",
+ "what this cannot show": "cues at a finer resolution (kept at today's sizes: pessimistic); real pieces (ceiling); the >= 80 band rests on 30 crops read by Claude"
+}

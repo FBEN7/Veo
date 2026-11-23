@@ -1,0 +1,80 @@
+{
+ "plan sha256": "40db5fd67030ec31473402bcb3c2945386681044aa93b0a6e31e53d8cbb60dde",
+ "units": 223,
+ "actions": 2257,
+ "actor (share of actions)": {
+  "detected": 0.7665,
+  "missed": 0.1205,
+  "taken": 0.113
+ },
+ "merged (share of actions with a detection near the actor)": 0.0967,
+ "control: other outfield players detected on the same frames": 0.8841,
+ "detected actors: same track over +-1 s (mean share of frames)": 0.7997,
+ "detected actors: their track carries another person within +-1 s": 0.3168,
+ "detected actors: pitch distance (m)": {
+  "median": 1.59,
+  "p75": 3.3,
+  "beyond 3 m": 0.2786
+ },
+ "per match: detected / taken / missed": {
+  "117093": {
+   "detected": 0.775,
+   "taken": 0.127,
+   "missed": 0.098
+  },
+  "118575": {
+   "detected": 0.726,
+   "taken": 0.146,
+   "missed": 0.128
+  },
+  "118576": {
+   "detected": 0.838,
+   "taken": 0.097,
+   "missed": 0.064
+  },
+  "118577": {
+   "detected": 0.732,
+   "missed": 0.171,
+   "taken": 0.097
+  },
+  "118578": {
+   "detected": 0.688,
+   "missed": 0.194,
+   "taken": 0.118
+  },
+  "128057": {
+   "detected": 0.663,
+   "missed": 0.209,
+   "taken": 0.128
+  },
+  "128058": {
+   "detected": 0.721,
+   "taken": 0.147,
+   "missed": 0.131
+  },
+  "132831": {
+   "detected": 0.832,
+   "missed": 0.114,
+   "taken": 0.054
+  },
+  "132877": {
+   "detected": 0.814,
+   "taken": 0.11,
+   "missed": 0.076
+  }
+ },
+ "by label: detected": {
+  "BALL PLAYER BLOCK": 0.684,
+  "CROSS": 0.541,
+  "DRIVE": 0.811,
+  "FREE KICK": 1.0,
+  "GOAL": 0.688,
+  "HEADER": 0.143,
+  "HIGH PASS": 0.867,
+  "OUT": 0.589,
+  "PASS": 0.794,
+  "PLAYER SUCCESSFUL TACKLE": 0.759,
+  "SHOT": 0.739,
+  "THROW IN": 0.435
+ }
+}

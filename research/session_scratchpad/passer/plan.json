@@ -1,0 +1,13 @@
+{
+ "question": "Who made the pass? The passer of each labelled BAS action, from detections only, scored apart from event detection.",
+ "status": "exploratory (owner decision 2026-10-22, CPU only); written before any scoring",
+ "units": "every shots clip with a GPU run (.cache/gpu/<w>) and its labels; actions deduplicated on (match, half, absolute frame, label)",
+ "inputs": "metric_v3s_link.parquet: v3s_link ball and player tracks in pitch metres; no ground truth used to choose",
+ "rule A (primary)": "at the label frame f: the ball row nearest f within +-5 frames; actor = the player detection at f nearest the ball in metres, if within 3 m; else no actor",
+ "rule B": "the (player, frame) pair nearest the ball over frames f-10 .. f+5 (ball rows at those frames), within 3 m",
+ "truth": "actor detection -> ground-truth person by eval_soccertrack_v2.match_feet at its frame -> player_id; right if equal to the label's player_id",
+ "ceiling": "the labelled player matched to some player detection at f (detected at all)",
+ "primary metric": "passes (PASS, HIGH PASS, CROSS) on matches v3 never saw (117092, 128057, 132831): share right of all labelled passes, Wilson 95%; also precision (right / actor given) and coverage",
+ "also reported": "every player action label; matches v3 was trained on, separately (ball optimistic)",
+ "sealed": "128057 / 132831 opened through src/unseal.py"
+}

@@ -1,0 +1,15 @@
+{
+ "name": "shots hybrid ball: v3b everywhere, v4r around likely shots",
+ "registered": "2026-10-29, before any v4r row of the shots units exists",
+ "why": "v4 / v4r find more shot balls but fail their guards on ordinary play (ball_v4/results*/decision.json); a specialist used only near likely shots keeps v3b elsewhere and is judged on the shot spotter itself",
+ "windows (windows.py)": "per shots unit (249, 10 matches), the even frames 350..1074 (the ball range) within 2 s of a frame where the v4 spotter's out-of-fold probability (oof.py, nested leave-one-match-out, reproduces cv_v4.json: 165 / 113 / 104) is >= 0.10: 48,508 frames, 62% of the ball range. The threshold was picked after seeing that it puts 99 of the 104 missed shots and all 165 found ones in windows (0.05: 101/104, 72%; 0.2: 93/104, 52%)",
+ "ball rows": "v4r.600 of the fold that did not train on the unit's match (fold A matches -> v4rB, fold B -> v4rA, M6 / M7 / M9 -> v4rA), detect_ball_heatmap.dense_v2 (tau 0.05, top_k 8, v3b's Platt calibration carried by v4r) at the window frames; marks and static points dropped from them over the frames they ran on (metric_step.py's steps); v3b's kept rows (v3s_rows) outside the windows; relinked without grass tests (top_k 4, tau 0.10, tune_rules.LINK), as ball_grass/relink.py",
+ "spotter": "learn_v4.py unchanged: features_v4 on the hybrid tracks, nested leave-one-match-out, thresholds by rate",
+ "primary": "hits (one-to-one within 2 s) hybrid minus v3b (cv_v4.json), summed over the 10 matches, 95% bootstrap over matches (5,000 draws, seed 0)",
+ "decision": {
+  "hybrid is better": "the hits interval's lower end > 0 and false alarms rise by no more than hits do",
+  "then (not part of this test)": "the shots spotter's registered M5 test with the hybrid ball, and the cost of v4r near every candidate in a full match",
+  "otherwise": "reported; nothing adopted"
+ },
+ "known limits": ["the window threshold was chosen with the labels' coverage in view", "v4r's confidences use v3b's calibration (not refit)", "the clicked shots are among these units' shots: each unit's v4r never saw its match's clicks, but the spotter's own cross-validation sees all matches", "M7 / M9 clips are opened as training data, as in cv_v4 (src/unseal.py log)"]
+}

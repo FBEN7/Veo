@@ -1,0 +1,63 @@
+{
+ "window": "st2_132877_1st_f015000",
+ "tracks.parquet": {
+  "rows_gpu": 78767,
+  "rows_cpu": 78767,
+  "matched": 78767,
+  "share_of_gpu": 1.0,
+  "share_of_cpu": 1.0,
+  "median_px": 0.0,
+  "p99_px": 0.0001220703125,
+  "tracks_gpu": 216,
+  "tracks_cpu": 216
+ },
+ "events_v1/tracks_teams.parquet": {
+  "rows_gpu": 59140,
+  "rows_cpu": 59140,
+  "matched": 59140,
+  "share_of_gpu": 1.0,
+  "share_of_cpu": 1.0,
+  "median_px": 0.0,
+  "p99_px": 0.0001220703125,
+  "tracks_gpu": 131,
+  "tracks_cpu": 131,
+  "team_counts_gpu": {
+   "team_B": 20578,
+   "team_A": 20421,
+   "other": 18061
+  },
+  "team_counts_cpu": {
+   "team_B": 20578,
+   "team_A": 20421,
+   "other": 18061
+  }
+ },
+ "events_v1": {
+  "carry": {
+   "gpu": 26,
+   "cpu": 26,
+   "matched_0.5s": 26
+  },
+  "pass": {
+   "gpu": 29,
+   "cpu": 29,
+   "matched_0.5s": 29
+  },
+  "recovery": {
+   "gpu": 5,
+   "cpu": 5,
+   "matched_0.5s": 5
+  },
+  "shot": {
+   "gpu": 29,
+   "cpu": 29,
+   "matched_0.5s": 29
+  },
+  "tackle": {
+   "gpu": 2,
+   "cpu": 2,
+   "matched_0.5s": 2
+  }
+ },
+ "v3_balls": "no CPU run to compare"
+}

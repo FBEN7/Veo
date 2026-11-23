@@ -68,14 +68,21 @@ def setup_chart_style():
     })
 
 
-def generate_insights(payload: dict) -> list[str]:
-    """Generate 3 deterministic insights from data."""
+ALL_SHOWN = {"distance": True, "top_speed": True, "sprints": True}
+
+
+def generate_insights(payload: dict, shown: dict | None = None) -> list[str]:
+    """Generate up to 3 deterministic insights from data; `shown` leaves out
+    the ones built on a figure the camera does not support."""
+    shown = shown or ALL_SHOWN
     insights = []
     kpis = payload["kpis"]
     distance = kpis["distance_km"]
-    
+
     # Territorial dominance
-    if distance["team_A"] > distance["team_B"] * 1.1:
+    if not shown["distance"]:
+        pass
+    elif distance["team_A"] > distance["team_B"] * 1.1:
         insights.append(
             f"Team A dominated territorially ({distance['team_A']:.1f} vs {distance['team_B']:.1f} km)."
         )
@@ -91,7 +98,9 @@ def generate_insights(payload: dict) -> list[str]:
     # Sprint intensity
     sprints = kpis["sprints"]
     total = sum(sprints.values())
-    if total > 100:
+    if not shown["sprints"]:
+        pass
+    elif total > 100:
         insights.append(f"High intensity match with {total} sprints detected.")
     elif total > 50:
         insights.append(f"Moderate sprint activity with {total} sprints.")
@@ -101,7 +110,9 @@ def generate_insights(payload: dict) -> list[str]:
     # Fatigue
     h1_a = payload["halves"]["first"]["distance_km"].get("team_A", 0)
     h2_a = payload["halves"]["second"]["distance_km"].get("team_A", 0)
-    if h1_a > 0 and h2_a < h1_a * 0.85:
+    if not shown["distance"]:
+        pass
+    elif h1_a > 0 and h2_a < h1_a * 0.85:
         insights.append("Team A showed fatigue in the second half.")
     else:
         insights.append("Consistent intensity throughout the match.")
@@ -284,22 +295,88 @@ def build_payload(tracks: pd.DataFrame, phys: pd.DataFrame, tilt: dict,
     }
 
 
+def _goal_candidates_page(story: list, styles: dict, cands: list[dict],
+                          kickoffs_s: list[float] | None = None,
+                          video_s: float | None = None) -> None:
+    """Possible goals for the club to confirm (src/goal_candidates.py)."""
+    from src.goal_candidates import mmss
+    story.append(Paragraph("Possible Goals — to confirm", styles["h1"]))
+    story.append(Spacer(1, 0.3*cm))
+    if kickoffs_s:
+        story.append(Paragraph("Kick-off times used (video time): " + ", ".join(
+            f"{mmss(t)} (half {i})" for i, t in enumerate(kickoffs_s, 1)), styles["body"]))
+        story.append(Spacer(1, 0.2*cm))
+    if kickoffs_s is not None and len(kickoffs_s) < 2 and (video_s or 0) > 65 * 60:
+        story.append(Paragraph(
+            f"<b>Check the kick-off times:</b> only one was given for a {video_s / 60:.0f}-min "
+            "video. If it holds both halves, enter the second half's kick-off too "
+            "(--half-starts, e.g. 0:00,52:30): the teams change ends at half-time and "
+            "this list is unreliable without it.", ParagraphStyle(
+                "KickoffWarn", parent=getSampleStyleSheet()["Normal"], fontSize=9,
+                backColor=colors.HexColor("#f8d7da"), borderPadding=8, borderColor="#B02A37")))
+        story.append(Spacer(1, 0.3*cm))
+    if not cands:
+        story.append(Paragraph("No kick-off formation was found after the start of "
+                               "each half: no possible goal to confirm.", styles["body"]))
+        return
+    data = [["#", "Half", "Kick-off formation at", "Goal to look for between",
+             "Proposed scorer", "Goal?"]]
+    for i, c in enumerate(cands, 1):
+        team = c["proposed_scorer"]
+        data.append([str(i), str(c["half"]), mmss(c["formation_from_s"]),
+                     f'{mmss(c["goal_between_s"][0])} – {mmss(c["goal_between_s"][1])}',
+                     team.replace("team_", "Team ") if team else "?", "yes / no"])
+    t = Table(data, colWidths=[0.8*cm, 1.2*cm, 3.6*cm, 4.4*cm, 3*cm, 2*cm], repeatRows=1)
+    t.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
+        ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("GRID", (0, 0), (-1, -1), 0.5, GREY_LIGHT),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT_BG]),
+    ]))
+    story.append(t)
+    story.append(Spacer(1, 0.4*cm))
+    story.append(Paragraph(
+        "<b>How to read this page:</b> after a goal, both teams walk back to their own "
+        "halves for the kick-off. Each row is such a formation; the goal, if there was "
+        "one, lies 10-60 s before it (times are video times, and each half must be "
+        "given its kick-off time). Most rows are not goals "
+        "(other stoppages look the same): watch each window, keep the goals and "
+        "correct the scorer if needed. On ten test matches the list held 40 of 41 "
+        "goals with about 11 rows per match, and the proposed scorer was right on 39 "
+        "of 41.", ParagraphStyle(
+            "GoalNote", parent=getSampleStyleSheet()["Normal"], fontSize=9,
+            backColor=colors.HexColor("#fff3cd"), borderPadding=8, borderColor="#D4A017")))
+
+
 def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, Any]],
              best_worst: dict, tilt: dict, possession: dict, ball_rate: float,
              quality_report: dict[str, Any] | None = None,
              match_label: str = "Match", team_event_totals: dict | None = None,
-             out_path: str = "output/report.pdf") -> str:
-    """Generate spec-compliant PDF report."""
-    
-    # Get duration
-    import cv2
-    try:
+             out_path: str = "output/report.pdf",
+             goal_candidates: list[dict] | None = None,
+             goal_kickoffs_s: list[float] | None = None,
+             video_duration_s: float | None = None,
+             camera: dict | None = None) -> str:
+    """Generate spec-compliant PDF report.
+
+    goal_candidates: src.goal_candidates.find's list; when given, a page
+    lists them for the club to confirm (None leaves the page out).
+    camera: src.moving_camera.to_metric's info for a camera that pans
+    (None: fixed camera). Its "shown" flags keep only the figures the
+    moving-camera measurement passed, its "coverage" is printed beside
+    them, and the pages that need absolute pitch positions are left out."""
+    moving = camera is not None
+    shown = camera["shown"] if moving else ALL_SHOWN
+
+    duration_s = video_duration_s
+    if not duration_s:
+        import cv2
         cap = cv2.VideoCapture("data/match.mp4")
-        duration_s = cap.get(cv2.CAP_PROP_FRAME_COUNT) / max(cap.get(cv2.CAP_PROP_FPS), 1)
+        duration_s = cap.get(cv2.CAP_PROP_FRAME_COUNT) / max(cap.get(cv2.CAP_PROP_FPS), 1) or 3600
         cap.release()
-    except:
-        duration_s = 3600  # fallback
-    
+
     payload = build_payload(
         tracks,
         phys,
@@ -310,7 +387,7 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
         duration_s,
         quality_report=quality_report,
     )
-    insights = generate_insights(payload)
+    insights = generate_insights(payload, shown)
     
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(out_path, pagesize=A4, topMargin=MARGIN, bottomMargin=MARGIN,
@@ -346,13 +423,14 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
     kpis = payload["kpis"]
     
     # KPI Cards
-    kpi_items = [
-        ("Distance (km)", [("Team A", str(kpis["distance_km"]["team_A"])),
-                          ("Team B", str(kpis["distance_km"]["team_B"]))]),
-        ("Sprints", [("Team A", str(kpis["sprints"]["team_A"])),
-                    ("Team B", str(kpis["sprints"]["team_B"]))]),
-    ]
-    
+    kpi_items = []
+    if shown["distance"]:
+        kpi_items.append(("Distance (km)", [("Team A", str(kpis["distance_km"]["team_A"])),
+                                            ("Team B", str(kpis["distance_km"]["team_B"]))]))
+    if shown["sprints"]:
+        kpi_items.append(("Sprints", [("Team A", str(kpis["sprints"]["team_A"])),
+                                      ("Team B", str(kpis["sprints"]["team_B"]))]))
+
     if kpis["possession"]["team_A"] is not None:
         kpi_items.append(("Possession*", [
             ("Team A", f"{kpis['possession']['team_A']*100:.0f}%"),
@@ -389,29 +467,52 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
             styles["small"]))
     
     story.append(PageBreak())
-    
-    # PAGE 3: FIELD OCCUPATION
-    story.append(Paragraph("Field Occupation & Territorial Balance", styles["h1"]))
-    story.append(Spacer(1, 0.3*cm))
-    
-    hm_a = render_heatmap(payload["heatmap_points"]["team_A"], "Team A")
-    hm_b = render_heatmap(payload["heatmap_points"]["team_B"], "Team B")
-    story.append(Table([[hm_a, hm_b]], style=TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")])))
-    story.append(Spacer(1, 0.5*cm))
-    story.append(render_tilt(payload))
-    story.append(PageBreak())
-    
+
+    if goal_candidates is not None:
+        _goal_candidates_page(story, styles, goal_candidates, goal_kickoffs_s,
+                              video_duration_s)
+        story.append(PageBreak())
+
+    # PAGE 3: FIELD OCCUPATION (needs positions on the pitch: fixed camera only)
+    if not moving:
+        story.append(Paragraph("Field Occupation & Territorial Balance", styles["h1"]))
+        story.append(Spacer(1, 0.3*cm))
+
+        hm_a = render_heatmap(payload["heatmap_points"]["team_A"], "Team A")
+        hm_b = render_heatmap(payload["heatmap_points"]["team_B"], "Team B")
+        story.append(Table([[hm_a, hm_b]], style=TableStyle([("ALIGN", (0, 0), (-1, -1), "CENTER")])))
+        story.append(Spacer(1, 0.5*cm))
+        story.append(render_tilt(payload))
+        story.append(PageBreak())
+
     # PAGE 4: PHYSICAL DATA
     story.append(Paragraph("Physical Performance", styles["h1"]))
     story.append(Spacer(1, 0.3*cm))
-    
-    phys_data = [["Track", "Team", "Time (min)", "Distance (m)", "Max Speed", "Sprints"]]
+    if moving:
+        story.append(Paragraph(
+            f"Moving camera: figures computed on {camera['coverage']*100:.0f}% of the "
+            "22 players' playing time (the rest was out of the camera's view). "
+            + ("" if all(shown.values()) else
+               "Not measurable on a moving camera: "
+               + ", ".join(n for k, n in (("distance", "distance"), ("top_speed", "top speed"),
+                                          ("sprints", "sprints")) if not shown[k]) + "."),
+            styles["body"]))
+        story.append(Spacer(1, 0.3*cm))
+
+    cols = [("Track", lambda p: str(p["track_id"]), 1),
+            ("Team", lambda p: p["team"].replace("team_", ""), 1.5),
+            ("Time (min)", lambda p: f'{p["minutes_tracked"]:.1f}', 1.5)]
+    if shown["distance"]:
+        cols.append(("Distance (m)", lambda p: f'{p["distance_m"]:.0f}', 1.8))
+    if shown["top_speed"]:
+        cols.append(("Max Speed", lambda p: f'{p["top_speed_kmh"]:.1f}', 1.5))
+    if shown["sprints"]:
+        cols.append(("Sprints", lambda p: str(p["n_sprints"]), 1))
+    phys_data = [[c[0] for c in cols]]
     for p in payload["physical"][:15]:
-        phys_data.append([str(p["track_id"]), p["team"].replace("team_", ""),
-                         f'{p["minutes_tracked"]:.1f}', f'{p["distance_m"]:.0f}',
-                         f'{p["top_speed_kmh"]:.1f}', str(p["n_sprints"])])
-    
-    phys_table = Table(phys_data, colWidths=[1*cm, 1.5*cm, 1.5*cm, 1.8*cm, 1.5*cm, 1*cm])
+        phys_data.append([c[1](p) for c in cols])
+
+    phys_table = Table(phys_data, colWidths=[c[2]*cm for c in cols])
     phys_table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
         ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
@@ -431,36 +532,36 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
         fontSize=9, backColor=colors.HexColor("#fff3cd"),
         borderPadding=8, borderColor="#D4A017")))
     
-    story.append(Spacer(1, 0.4*cm))
-    story.append(render_histogram(payload))
+    if shown["top_speed"]:
+        story.append(Spacer(1, 0.4*cm))
+        story.append(render_histogram(payload))
     story.append(PageBreak())
-    
+
     # PAGE 5: HALVES COMPARISON
-    story.append(Paragraph("Physiology by Period", styles["h1"]))
-    story.append(Spacer(1, 0.3*cm))
-    
     halves = payload["halves"]
-    halves_data = [
-        ["Metric", "First Half", "Second Half"],
-        ["Distance (km)",
+    halves_data = [["Metric", "First Half", "Second Half"]]
+    if shown["distance"]:
+        halves_data.append(["Distance (km)",
          f'{halves["first"]["distance_km"]["team_A"]:.1f} | {halves["first"]["distance_km"]["team_B"]:.1f}',
-         f'{halves["second"]["distance_km"]["team_A"]:.1f} | {halves["second"]["distance_km"]["team_B"]:.1f}'],
-        ["Sprints",
+         f'{halves["second"]["distance_km"]["team_A"]:.1f} | {halves["second"]["distance_km"]["team_B"]:.1f}'])
+    if shown["sprints"]:
+        halves_data.append(["Sprints",
          f'{halves["first"]["sprints"]["team_A"]} | {halves["first"]["sprints"]["team_B"]}',
-         f'{halves["second"]["sprints"]["team_A"]} | {halves["second"]["sprints"]["team_B"]}'],
-    ]
-    
-    halves_table = Table(halves_data, colWidths=[3*cm, 4*cm, 4*cm])
-    halves_table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
-        ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("GRID", (0, 0), (-1, -1), 0.5, GREY_LIGHT),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT_BG]),
-    ]))
-    story.append(halves_table)
-    story.append(PageBreak())
+         f'{halves["second"]["sprints"]["team_A"]} | {halves["second"]["sprints"]["team_B"]}'])
+    if len(halves_data) > 1:
+        story.append(Paragraph("Physiology by Period", styles["h1"]))
+        story.append(Spacer(1, 0.3*cm))
+        halves_table = Table(halves_data, colWidths=[3*cm, 4*cm, 4*cm])
+        halves_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
+            ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("GRID", (0, 0), (-1, -1), 0.5, GREY_LIGHT),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [WHITE, LIGHT_BG]),
+        ]))
+        story.append(halves_table)
+        story.append(PageBreak())
     
     # PAGE 6: METHODOLOGY
     story.append(Paragraph("Methodology & Data Quality", styles["h1"]))
@@ -471,6 +572,14 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
     
     players_cov = quality.get("players_per_frame", {})
     warns = quality.get("warnings", [])
+    if moving:
+        camera_line = (
+            f"• Moving camera: camera motion {'compensated' if camera['compensated'] else 'NOT compensated'} "
+            f"({camera['motion check'].split(':')[0]}); scale {camera['px_per_m']:.0f} px/m from "
+            f"{camera['scale from']}. Positions are relative, so pitch maps, territory and "
+            "possible goals are not available<br/>")
+    else:
+        camera_line = "• Requires fixed-camera video<br/>"
     methodology = f"""
     <b>Data Quality Metrics</b><br/>
     • Ball detection rate: {quality['ball_detection_rate']*100:.0f}%<br/>
@@ -486,7 +595,7 @@ def build_pdf(tracks: pd.DataFrame, phys: pd.DataFrame, events: list[dict[str, A
     Field occupation derived from player position distributions over time.<br/>
     <br/>
     <b>Limitations</b><br/>
-    • Requires fixed-camera video<br/>
+    {camera_line}
     • Events are probabilistic and depend on ball visibility<br/>
     • Track IDs ≠ individual players<br/>
     • Ball detection depends on visibility<br/>

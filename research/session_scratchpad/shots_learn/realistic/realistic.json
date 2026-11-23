@@ -1,0 +1,480 @@
+{
+ "plan sha256": "cf60d64d92630ecd1dce2848bb91a7f0693dcce18564bc4bbf4406c0d920e2bc",
+ "clip labels": 269,
+ "clip minutes per match": {
+  "117092": 11.0,
+  "117093": 11.6,
+  "118575": 9.6,
+  "118576": 17.0,
+  "118578": 11.7,
+  "128058": 11.2,
+  "132877": 11.1,
+  "118577": 12.9,
+  "128057": 4.2,
+  "132831": 6.7
+ },
+ "window minutes": 18.0,
+ "window labels": 6,
+ "(a) rate threshold": {
+  "threshold": 0.7622,
+  "clips: recall": 0.602,
+  "clips: precision": 0.602,
+  "windows: false alarms": 16,
+  "windows: labels found": "6 / 6",
+  "windows: false alarms per minute": 0.889,
+  "95% interval per minute": [
+   0.508,
+   1.444
+  ],
+  "whole match (extrapolated): shots found per match": 16.2,
+  "whole match: false alarms per match": 83.0,
+  "whole match: false alarms per match, 95%": [
+   52.0,
+   128.2
+  ],
+  "whole match: precision": 0.163,
+  "whole match: precision, 95%": [
+   0.112,
+   0.237
+  ]
+ },
+ "(b) recall 0.80 on the clips": {
+  "threshold": 0.5251,
+  "clips: recall": 0.803,
+  "clips: precision": 0.327,
+  "windows: false alarms": 34,
+  "windows: labels found": "6 / 6",
+  "windows: false alarms per minute": 1.89,
+  "95% interval per minute": [
+   1.309,
+   2.641
+  ],
+  "whole match (extrapolated): shots found per match": 21.6,
+  "whole match: false alarms per match": 198.1,
+  "whole match: false alarms per match, 95%": [
+   150.8,
+   259.2
+  ],
+  "whole match: precision": 0.098,
+  "whole match: precision, 95%": [
+   0.077,
+   0.125
+  ]
+ },
+ "curve": [
+  {
+   "threshold": 0.001,
+   "clips: recall": 1.0,
+   "clips: precision": 0.059,
+   "windows: false alarms": 708,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 39.354,
+   "95% interval per minute": [
+    36.508,
+    42.362
+   ],
+   "whole match (extrapolated): shots found per match": 26.9,
+   "whole match: false alarms per match": 3632.2,
+   "whole match: false alarms per match, 95%": [
+    3400.7,
+    3876.8
+   ],
+   "whole match: precision": 0.007,
+   "whole match: precision, 95%": [
+    0.007,
+    0.008
+   ]
+  },
+  {
+   "threshold": 0.002,
+   "clips: recall": 1.0,
+   "clips: precision": 0.063,
+   "windows: false alarms": 629,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 34.963,
+   "95% interval per minute": [
+    32.283,
+    37.805
+   ],
+   "whole match (extrapolated): shots found per match": 26.9,
+   "whole match: false alarms per match": 3240.9,
+   "whole match: false alarms per match, 95%": [
+    3023.0,
+    3472.0
+   ],
+   "whole match: precision": 0.008,
+   "whole match: precision, 95%": [
+    0.008,
+    0.009
+   ]
+  },
+  {
+   "threshold": 0.003,
+   "clips: recall": 1.0,
+   "clips: precision": 0.067,
+   "windows: false alarms": 572,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 31.794,
+   "95% interval per minute": [
+    29.242,
+    34.51
+   ],
+   "whole match (extrapolated): shots found per match": 26.9,
+   "whole match: false alarms per match": 2960.1,
+   "whole match: false alarms per match, 95%": [
+    2752.5,
+    3181.0
+   ],
+   "whole match: precision": 0.009,
+   "whole match: precision, 95%": [
+    0.008,
+    0.01
+   ]
+  },
+  {
+   "threshold": 0.005,
+   "clips: recall": 1.0,
+   "clips: precision": 0.072,
+   "windows: false alarms": 511,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 28.404,
+   "95% interval per minute": [
+    25.994,
+    30.977
+   ],
+   "whole match (extrapolated): shots found per match": 26.9,
+   "whole match: false alarms per match": 2655.0,
+   "whole match: false alarms per match, 95%": [
+    2459.0,
+    2864.2
+   ],
+   "whole match: precision": 0.01,
+   "whole match: precision, 95%": [
+    0.009,
+    0.011
+   ]
+  },
+  {
+   "threshold": 0.007,
+   "clips: recall": 1.0,
+   "clips: precision": 0.077,
+   "windows: false alarms": 470,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 26.125,
+   "95% interval per minute": [
+    23.816,
+    28.597
+   ],
+   "whole match (extrapolated): shots found per match": 26.9,
+   "whole match: false alarms per match": 2446.5,
+   "whole match: false alarms per match, 95%": [
+    2258.8,
+    2647.6
+   ],
+   "whole match: precision": 0.011,
+   "whole match: precision, 95%": [
+    0.01,
+    0.012
+   ]
+  },
+  {
+   "threshold": 0.01,
+   "clips: recall": 1.0,
+   "clips: precision": 0.082,
+   "windows: false alarms": 428,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 23.79,
+   "95% interval per minute": [
+    21.589,
+    26.154
+   ],
+   "whole match (extrapolated): shots found per match": 26.9,
+   "whole match: false alarms per match": 2234.1,
+   "whole match: false alarms per match, 95%": [
+    2055.1,
+    2426.4
+   ],
+   "whole match: precision": 0.012,
+   "whole match: precision, 95%": [
+    0.011,
+    0.013
+   ]
+  },
+  {
+   "threshold": 0.015,
+   "clips: recall": 0.996,
+   "clips: precision": 0.09,
+   "windows: false alarms": 373,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 20.733,
+   "95% interval per minute": [
+    18.682,
+    22.948
+   ],
+   "whole match (extrapolated): shots found per match": 26.8,
+   "whole match: false alarms per match": 1958.7,
+   "whole match: false alarms per match, 95%": [
+    1791.9,
+    2138.8
+   ],
+   "whole match: precision": 0.013,
+   "whole match: precision, 95%": [
+    0.012,
+    0.015
+   ]
+  },
+  {
+   "threshold": 0.021,
+   "clips: recall": 0.996,
+   "clips: precision": 0.097,
+   "windows: false alarms": 324,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 18.009,
+   "95% interval per minute": [
+    16.102,
+    20.081
+   ],
+   "whole match (extrapolated): shots found per match": 26.8,
+   "whole match: false alarms per match": 1713.0,
+   "whole match: false alarms per match, 95%": [
+    1557.8,
+    1881.5
+   ],
+   "whole match: precision": 0.015,
+   "whole match: precision, 95%": [
+    0.014,
+    0.017
+   ]
+  },
+  {
+   "threshold": 0.03,
+   "clips: recall": 0.993,
+   "clips: precision": 0.106,
+   "windows: false alarms": 275,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 15.286,
+   "95% interval per minute": [
+    13.532,
+    17.203
+   ],
+   "whole match (extrapolated): shots found per match": 26.7,
+   "whole match: false alarms per match": 1467.2,
+   "whole match: false alarms per match, 95%": [
+    1324.6,
+    1623.1
+   ],
+   "whole match: precision": 0.018,
+   "whole match: precision, 95%": [
+    0.016,
+    0.02
+   ]
+  },
+  {
+   "threshold": 0.043,
+   "clips: recall": 0.985,
+   "clips: precision": 0.117,
+   "windows: false alarms": 222,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 12.34,
+   "95% interval per minute": [
+    10.77,
+    14.074
+   ],
+   "whole match (extrapolated): shots found per match": 26.5,
+   "whole match: false alarms per match": 1202.9,
+   "whole match: false alarms per match, 95%": [
+    1075.2,
+    1344.0
+   ],
+   "whole match: precision": 0.022,
+   "whole match: precision, 95%": [
+    0.019,
+    0.024
+   ]
+  },
+  {
+   "threshold": 0.063,
+   "clips: recall": 0.97,
+   "clips: precision": 0.131,
+   "windows: false alarms": 187,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 10.394,
+   "95% interval per minute": [
+    8.958,
+    11.996
+   ],
+   "whole match (extrapolated): shots found per match": 26.1,
+   "whole match: false alarms per match": 1019.0,
+   "whole match: false alarms per match, 95%": [
+    902.2,
+    1149.2
+   ],
+   "whole match: precision": 0.025,
+   "whole match: precision, 95%": [
+    0.022,
+    0.028
+   ]
+  },
+  {
+   "threshold": 0.092,
+   "clips: recall": 0.97,
+   "clips: precision": 0.149,
+   "windows: false alarms": 155,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 8.616,
+   "95% interval per minute": [
+    7.313,
+    10.084
+   ],
+   "whole match (extrapolated): shots found per match": 26.1,
+   "whole match: false alarms per match": 849.6,
+   "whole match: false alarms per match, 95%": [
+    743.7,
+    969.0
+   ],
+   "whole match: precision": 0.03,
+   "whole match: precision, 95%": [
+    0.026,
+    0.034
+   ]
+  },
+  {
+   "threshold": 0.141,
+   "clips: recall": 0.944,
+   "clips: precision": 0.17,
+   "windows: false alarms": 122,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 6.781,
+   "95% interval per minute": [
+    5.631,
+    8.097
+   ],
+   "whole match (extrapolated): shots found per match": 25.4,
+   "whole match: false alarms per match": 675.9,
+   "whole match: false alarms per match, 95%": [
+    582.4,
+    782.9
+   ],
+   "whole match: precision": 0.036,
+   "whole match: precision, 95%": [
+    0.031,
+    0.042
+   ]
+  },
+  {
+   "threshold": 0.214,
+   "clips: recall": 0.918,
+   "clips: precision": 0.197,
+   "windows: false alarms": 92,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 5.114,
+   "95% interval per minute": [
+    4.122,
+    6.272
+   ],
+   "whole match (extrapolated): shots found per match": 24.7,
+   "whole match: false alarms per match": 516.6,
+   "whole match: false alarms per match, 95%": [
+    435.9,
+    610.7
+   ],
+   "whole match: precision": 0.046,
+   "whole match: precision, 95%": [
+    0.039,
+    0.054
+   ]
+  },
+  {
+   "threshold": 0.328,
+   "clips: recall": 0.881,
+   "clips: precision": 0.237,
+   "windows: false alarms": 67,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 3.724,
+   "95% interval per minute": [
+    2.886,
+    4.73
+   ],
+   "whole match (extrapolated): shots found per match": 23.7,
+   "whole match: false alarms per match": 379.3,
+   "whole match: false alarms per match, 95%": [
+    311.1,
+    461.0
+   ],
+   "whole match: precision": 0.059,
+   "whole match: precision, 95%": [
+    0.049,
+    0.071
+   ]
+  },
+  {
+   "threshold": 0.478,
+   "clips: recall": 0.825,
+   "clips: precision": 0.295,
+   "windows: false alarms": 40,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 2.223,
+   "95% interval per minute": [
+    1.588,
+    3.028
+   ],
+   "whole match (extrapolated): shots found per match": 22.2,
+   "whole match: false alarms per match": 233.9,
+   "whole match: false alarms per match, 95%": [
+    182.3,
+    299.3
+   ],
+   "whole match: precision": 0.087,
+   "whole match: precision, 95%": [
+    0.069,
+    0.109
+   ]
+  },
+  {
+   "threshold": 0.632,
+   "clips: recall": 0.758,
+   "clips: precision": 0.41,
+   "windows: false alarms": 25,
+   "windows: labels found": "6 / 6",
+   "windows: false alarms per minute": 1.39,
+   "95% interval per minute": [
+    0.899,
+    2.051
+   ],
+   "whole match (extrapolated): shots found per match": 20.4,
+   "whole match: false alarms per match": 142.3,
+   "whole match: false alarms per match, 95%": [
+    102.4,
+    196.1
+   ],
+   "whole match: precision": 0.125,
+   "whole match: precision, 95%": [
+    0.094,
+    0.166
+   ]
+  },
+  {
+   "threshold": 0.774,
+   "clips: recall": 0.584,
+   "clips: precision": 0.621,
+   "windows: false alarms": 16,
+   "windows: labels found": "5 / 6",
+   "windows: false alarms per minute": 0.889,
+   "95% interval per minute": [
+    0.508,
+    1.444
+   ],
+   "whole match (extrapolated): shots found per match": 15.7,
+   "whole match: false alarms per match": 81.9,
+   "whole match: false alarms per match, 95%": [
+    50.9,
+    127.1
+   ],
+   "whole match: precision": 0.161,
+   "whole match: precision, 95%": [
+    0.11,
+    0.236
+   ]
+  }
+ ]
+}

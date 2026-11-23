@@ -1,0 +1,8 @@
+{
+ "what": "plan2.json (5 training matches) cancelled before any training; no result exists",
+ "when": "2026-11-23",
+ "owner decision": "after seeing a real Veo export (a 25-s goal clip, 1920x1080, 30 fps): 'Abandonner SoccerTrack' -- stop work on SoccerTrack and work on Veo footage only",
+ "done before the cancellation": "crops for the 8 new halves generated and checked (crop_check.json, 8 / 8 kept); Kaggle dataset veo-followcam-5m staged (14 halves); evaluation code ready (evaluate.py --plan2)",
+ "not done": "kernel 1 (training) and kernel 2 (scoring M2 + M10) never ran; M2 / M10 not scored; the scheduled launch for 2026-11-28 is disabled",
+ "reading": "plan 2's question (does 5 matches instead of 2 give a signal?) stays open; nothing may be read into the pilot beyond pilot_eval.json"
+}

@@ -1,0 +1,121 @@
+{
+ "plan sha256": "7c19361769b05ea37429a540119e2091224f9c496924149c4812424d3b1eae8b",
+ "actions": 2257,
+ "actions with the actor matched (trained on)": 1730,
+ "end to end (held out for the model)": {
+  "B1": 0.5383,
+  "B2": 0.5946,
+  "B3": 0.549,
+  "model": 0.6012,
+  "model actor": 0.5711
+ },
+ "best rule": "B2",
+ "gain: model - best rule": {
+  "value": 0.0066,
+  "95% over matches": [
+   -0.0028,
+   0.0168
+  ]
+ },
+ "bar met (gain >= 0.03, lower bound > 0)": false,
+ "per kind": {
+  "carry": {
+   "B1": 0.6157,
+   "B2": 0.6622,
+   "B3": 0.6184,
+   "model": 0.6676,
+   "model actor": 0.6809,
+   "actions": 752
+  },
+  "other": {
+   "B1": 0.3537,
+   "B2": 0.4535,
+   "B3": 0.4399,
+   "model": 0.4943,
+   "model actor": 0.3333,
+   "actions": 441
+  },
+  "pass": {
+   "B1": 0.5602,
+   "B2": 0.6053,
+   "B3": 0.5451,
+   "model": 0.5987,
+   "model actor": 0.5921,
+   "actions": 1064
+  }
+ },
+ "per match": {
+  "117093": {
+   "B1": 0.5855,
+   "B2": 0.6255,
+   "B3": 0.5855,
+   "model": 0.6218,
+   "model actor": 0.6,
+   "actions": 275
+  },
+  "118575": {
+   "B1": 0.4749,
+   "B2": 0.5023,
+   "B3": 0.484,
+   "model": 0.4886,
+   "model actor": 0.4932,
+   "actions": 219
+  },
+  "118576": {
+   "B1": 0.5249,
+   "B2": 0.5867,
+   "B3": 0.5463,
+   "model": 0.5986,
+   "model actor": 0.62,
+   "actions": 421
+  },
+  "118577": {
+   "B1": 0.5292,
+   "B2": 0.6226,
+   "B3": 0.5409,
+   "model": 0.6265,
+   "model actor": 0.537,
+   "actions": 257
+  },
+  "118578": {
+   "B1": 0.5095,
+   "B2": 0.5894,
+   "B3": 0.5361,
+   "model": 0.616,
+   "model actor": 0.4981,
+   "actions": 263
+  },
+  "128057": {
+   "B1": 0.5,
+   "B2": 0.5581,
+   "B3": 0.4884,
+   "model": 0.593,
+   "model actor": 0.5,
+   "actions": 86
+  },
+  "128058": {
+   "B1": 0.5777,
+   "B2": 0.6255,
+   "B3": 0.5618,
+   "model": 0.6414,
+   "model actor": 0.5896,
+   "actions": 251
+  },
+  "132831": {
+   "B1": 0.5,
+   "B2": 0.5217,
+   "B3": 0.5435,
+   "model": 0.5435,
+   "model actor": 0.5815,
+   "actions": 184
+  },
+  "132877": {
+   "B1": 0.5947,
+   "B2": 0.6545,
+   "B3": 0.5947,
+   "model": 0.6379,
+   "model actor": 0.6246,
+   "actions": 301
+  }
+ }
+}

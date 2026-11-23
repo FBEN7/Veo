@@ -1,0 +1,151 @@
+{
+ "plan sha256": "63c05394befa498d5bdbd7eed87f437a7c7f192c97fb5f2f11efd13b2358ac1e",
+ "halves": 20,
+ "held out": {
+  "restartable goals found": "34 / 41",
+  "share": 0.8293,
+  "false runs": 85,
+  "false runs per match": 8.5,
+  "scoring team right on hits (kick_spot)": 0.7941,
+  "goals in all (incl. not restartable)": 44,
+  "per match": {
+   "117092": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 5,
+    "team right": 2,
+    "goals": 4,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "117093": {
+    "hits": 3,
+    "restartable": 4,
+    "false runs": 2,
+    "team right": 3,
+    "goals": 5,
+    "cell": {
+     "T": 0.8,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "118575": {
+    "hits": 3,
+    "restartable": 3,
+    "false runs": 26,
+    "team right": 2,
+    "goals": 3,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "118576": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 1,
+    "team right": 5,
+    "goals": 5,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "118577": {
+    "hits": 2,
+    "restartable": 4,
+    "false runs": 14,
+    "team right": 2,
+    "goals": 5,
+    "cell": {
+     "T": 0.8,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "118578": {
+    "hits": 2,
+    "restartable": 4,
+    "false runs": 3,
+    "team right": 0,
+    "goals": 4,
+    "cell": {
+     "T": 0.8,
+     "R": null,
+     "N": 2
+    }
+   },
+   "128057": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 4,
+    "team right": 3,
+    "goals": 5,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "128058": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 7,
+    "team right": 5,
+    "goals": 5,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "132831": {
+    "hits": 5,
+    "restartable": 5,
+    "false runs": 16,
+    "team right": 4,
+    "goals": 5,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   },
+   "132877": {
+    "hits": 1,
+    "restartable": 3,
+    "false runs": 7,
+    "team right": 1,
+    "goals": 3,
+    "cell": {
+     "T": 0.75,
+     "R": 5.0,
+     "N": 2
+    }
+   }
+  }
+ },
+ "random-time baseline (same run counts), hits": {
+  "mean": 4.29,
+  "95th percentile": 7.0
+ },
+ "registered cell (T 0.85, N 2) on all 20 halves": {
+  "hits": 30,
+  "restartable": 41,
+  "false runs": 37,
+  "team right": 20
+ },
+ "cell chosen on all 10 matches": {
+  "T": 0.75,
+  "R": 5.0,
+  "N": 2
+ },
+ "bar met (found >= 0.95, false runs <= 1 per match)": false,
+ "team bar met (right on >= 0.9 of hits)": false
+}

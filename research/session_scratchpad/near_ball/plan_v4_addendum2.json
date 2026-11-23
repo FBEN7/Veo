@@ -1,0 +1,17 @@
+{
+ "amends": "plan_v4.json (2f7242b6...) and addendum 1 (sha256 in plan_v4_addendum1.json.sha256)",
+ "date": "2026-11-03, while step 1 (GPU detection) runs, before any of its output was seen",
+ "finding": "A smoke test of step 2's code on one opened M9 clip (detections synthesised from the original tracks, not the GPU pass) showed that B's added rows all get no team: team_assignment_v2._sample_frames skips tracks shorter than MIN_TRACK_FRAMES (10), so track_kit_features gives them no kit and filter_players' rule 1 drops them. B as registered equals A at S4 by construction.",
+ "change": {
+  "variants": {
+   "A": "unchanged (the pipeline now)",
+   "A2": "A, plus a team for tracks shorter than MIN_TRACK_FRAMES from their own crops",
+   "B2": "every detection (B's rows), plus the same team rule for short tracks"
+  },
+  "team rule for short tracks": "the kit feature of each short track = the median of _torso_feature over all its rows (one video pass); the kit clusters are those cluster_teams fits on the long tracks (same inputs, same order, KMeans random_state 0, so the same clusters and labels); a short track with track_depth below FIXED_VIEW_CORE_DEPTH is 'other' (as cluster_teams does for tracks outside the core); otherwise its nearest cluster's label, and 'other' if its distance to the nearer team centre is above RESIDUAL_CUT times the long tracks' median; no feature -> no team (as now).",
+  "primary": "actor detected at S4, B2 - A; 95% bootstrap over matches (5,000, seed 0, paired); per match",
+  "decomposition reported": "A2 - A (teams for short tracks alone), B2 - A2 (every detection, given those teams)",
+  "B": "its S1 is reported (B2's rows before teams); it is not scored at S3 / S4"
+ },
+ "unchanged": "step 1, the stages, the measures, the reproduction checks (on A), the bar and guards (now on B2 against A)"
+}

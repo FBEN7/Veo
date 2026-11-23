@@ -1,0 +1,73 @@
+{
+ "named (rule A, in range, seen matches)": 1293,
+ "right": 926,
+ "wrong": 367,
+ "wrong: who was named": {
+  "opponent": 223,
+  "teammate": 80,
+  "none": 64
+ },
+ "wrong: labelled player detected at the frame": 0.556,
+ "wrong and detected: labelled player's distance to the ball (m), quartiles": [
+  1.97,
+  3.3,
+  7.03
+ ],
+ "wrong and detected: named player's distance (m), quartiles": [
+  0.96,
+  1.45,
+  2.12
+ ],
+ "wrong and detected: labelled within 1 m of the named": 0.412,
+ "wrong: when the labelled player is the nearest in +-1 s": {
+  "never in +-1 s": 130,
+  "around": 101,
+  "before": 75,
+  "after": 61
+ },
+ "wrong, by label": {
+  "PASS": 142,
+  "DRIVE": 99,
+  "SHOT": 48,
+  "CROSS": 27,
+  "BALL PLAYER BLOCK": 26,
+  "HIGH PASS": 11,
+  "THROW IN": 7,
+  "PLAYER SUCCESSFUL TACKLE": 5,
+  "HEADER": 1,
+  "FREE KICK": 1
+ },
+ "right: named player's distance (m), quartiles": [
+  1.08,
+  1.48,
+  1.94
+ ],
+ "wrong: offsets (frames) where the labelled player is nearest, histogram": {
+  "-26": 59,
+  "-24": 62,
+  "-22": 59,
+  "-20": 67,
+  "-18": 69,
+  "-16": 72,
+  "-14": 73,
+  "-12": 69,
+  "-10": 79,
+  "-8": 84,
+  "-6": 89,
+  "-4": 81,
+  "-2": 61,
+  "2": 59,
+  "4": 59,
+  "6": 58,
+  "8": 56,
+  "10": 45,
+  "12": 42,
+  "14": 47,
+  "16": 48,
+  "18": 42,
+  "20": 40,
+  "22": 42,
+  "24": 42,
+  "26": 43
+ }
+}

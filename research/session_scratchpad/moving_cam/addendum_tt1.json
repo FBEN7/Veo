@@ -1,0 +1,7 @@
+{
+ "title": "plan_teamtrack.json addendum 1: link annotated identities across clip joins",
+ "written": "2026-11-23, after rendering test window tt_1800 (truth only) and before any TeamTrack window is run through the chain or scored",
+ "found": "TeamTrack's annotation player ids are not stable across 30-s clip joins: at the join 1890 s of tt_1800, 13 of 22 ids change (median same-id box jump 198.6 px between the last frame of one clip and the first of the next; after optimal matching the median jump is 2.9 px, max 6.5 px, so the video is continuous and only the labels change). Other joins of that window: 0 ids changed, jumps <= 8.6 px",
+ "change": "at each clip join, the 22 boxes of the clip's last frame are matched to the 22 of the next clip's first frame by Hungarian assignment on box-centre distance (all players, teams ignored); a matched pair within 30 px carries the earlier clip's person id forward; a pair beyond 30 px starts a new person id (that person is then two truth persons). The per-clip trajectory column mapping is unchanged (done within each clip). Number of relabelled and of split ids per join is written to done.json",
+ "unchanged": "everything else in plan_teamtrack.json, plan.json and addendum1.json"
+}

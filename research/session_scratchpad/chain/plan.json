@@ -1,0 +1,22 @@
+{
+ "plan": "chain plan v1: where the chain ball -> player on the ball -> team breaks, on the labelled actions of the existing shot clips",
+ "date": "2026-11-05, before any computation below",
+ "owner decisions": "M7 / M9 used for development (seal lifted by the owner on 2026-11-05; openings still logged through src/unseal.py); the final test will be on the owner's own matches",
+ "data": "the 223 shot clips of 9 matches in .cache/gpu_shots3 (M1 117092 left out: its truth boxes are in another pixel frame); our rows of metric_v3s_link.parquet (players and ball in pitch metres, player team labels); labelled actions of <unit>_events.csv with a player_id, frames 350-1075, at the even frame at or just before; truth players of <unit>_gt.parquet (x, y in metres, side)",
+ "per action, at its frame f": {
+  "truth matching": "our players to truth players at f by pitch distance, Hungarian, limit 2 m",
+  "team map": "per unit, team_A / team_B to left / right by the majority side among matched detections over the clip; 'other' or no label = no team",
+  "S1 ball found": "our ball row at the nearest even frame within f +- 4 frames, within 3 m of the action's position (x, y of the events file)",
+  "S2 nearest player is the actor": "given S1, our player nearest our ball is the detection matched to the actor",
+  "S3 team given": "given S2, that detection has team_A or team_B",
+  "S4 team right": "given S3, its mapped side is the action's side",
+  "end to end": "the mapped side of our player nearest our ball equals the action's side (the possession proxy; a teammate counts)"
+ },
+ "oracle swaps (each replaces one link by the truth, the others ours; end-to-end share)": {
+  "ball": "the action's position instead of our ball",
+  "player": "the detection matched to the actor instead of the one nearest our ball (fails if the actor is not detected)",
+  "team": "the truth side of the chosen detection (via matching) instead of its label (fails if unmatched)"
+ },
+ "reported": "shares overall, per action kind (pass, carry, other), per match; bootstrap over matches (5,000, seed 0) for the end-to-end share and each swap's gain",
+ "reading rule": "the swap with the largest end-to-end gain is the link to work on first; no other claim"
+}

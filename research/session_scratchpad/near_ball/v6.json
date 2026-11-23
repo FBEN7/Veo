@@ -1,0 +1,147 @@
+{
+ "plan_v6 sha256": "404e53c59fa9637c86d5415cb367953a8c3e89aa930b3e7060dab2cda5703e93",
+ "units": 221,
+ "excluded (conf_player < 0.10)": [
+  "st2_132877_2nd_f002350",
+  "st2_132877_2nd_f005698"
+ ],
+ "share of kept units at conf_player 0.20": 0.081,
+ "per arm (S1)": {
+  "A": {
+   "actions": 2230,
+   "detected": 0.8592,
+   "control": 0.935,
+   "unmatched per action frame": 5.93
+  },
+  "A'": {
+   "actions": 2230,
+   "detected": 0.7785,
+   "control": 0.8979,
+   "unmatched per action frame": 3.801
+  }
+ },
+ "primary: actor detected at S1, A - A'": {
+  "gain": 0.0807,
+  "95% bootstrap over matches": [
+   0.0628,
+   0.1017
+  ],
+  "per match": {
+   "117093": 0.091,
+   "118575": 0.106,
+   "118576": 0.057,
+   "118577": 0.066,
+   "118578": 0.129,
+   "128057": 0.128,
+   "128058": 0.096,
+   "132831": 0.016,
+   "132877": 0.069
+  }
+ },
+ "guards": {
+  "unmatched per action frame, A <= 1.2 x A'": false,
+  "control, A >= A' - 0.01": true
+ },
+ "bar met (gain >= 0.03, lower bound > 0)": true,
+ "per match": {
+  "117093": {
+   "A": {
+    "detected": 0.873,
+    "unmatched per action frame": 7.26
+   },
+   "A'": {
+    "detected": 0.782,
+    "unmatched per action frame": 5.73
+   },
+   "median conf_player": 0.4
+  },
+  "118575": {
+   "A": {
+    "detected": 0.862,
+    "unmatched per action frame": 4.32
+   },
+   "A'": {
+    "detected": 0.756,
+    "unmatched per action frame": 2.52
+   },
+   "median conf_player": 0.4
+  },
+  "118576": {
+   "A": {
+    "detected": 0.898,
+    "unmatched per action frame": 4.74
+   },
+   "A'": {
+    "detected": 0.841,
+    "unmatched per action frame": 2.42
+   },
+   "median conf_player": 0.4
+  },
+  "118577": {
+   "A": {
+    "detected": 0.813,
+    "unmatched per action frame": 3.93
+   },
+   "A'": {
+    "detected": 0.747,
+    "unmatched per action frame": 2.48
+   },
+   "median conf_player": 0.4
+  },
+  "118578": {
+   "A": {
+    "detected": 0.852,
+    "unmatched per action frame": 5.15
+   },
+   "A'": {
+    "detected": 0.722,
+    "unmatched per action frame": 2.81
+   },
+   "median conf_player": 0.4
+  },
+  "128057": {
+   "A": {
+    "detected": 0.791,
+    "unmatched per action frame": 10.2
+   },
+   "A'": {
+    "detected": 0.663,
+    "unmatched per action frame": 6.81
+   },
+   "median conf_player": 0.45
+  },
+  "128058": {
+   "A": {
+    "detected": 0.821,
+    "unmatched per action frame": 5.11
+   },
+   "A'": {
+    "detected": 0.725,
+    "unmatched per action frame": 3.12
+   },
+   "median conf_player": 0.4
+  },
+  "132831": {
+   "A": {
+    "detected": 0.848,
+    "unmatched per action frame": 8.54
+   },
+   "A'": {
+    "detected": 0.832,
+    "unmatched per action frame": 8.23
+   },
+   "median conf_player": 0.2
+  },
+  "132877": {
+   "A": {
+    "detected": 0.899,
+    "unmatched per action frame": 7.97
+   },
+   "A'": {
+    "detected": 0.83,
+    "unmatched per action frame": 3.91
+   },
+   "median conf_player": 0.5
+  }
+ }
+}

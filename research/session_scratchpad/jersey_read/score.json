@@ -1,0 +1,194 @@
+{
+ "sha256": {
+  "plan.json": "86c07b5085ced9a09f5a48af603c8263344871e0a0a3d6b239b5a109f9fcb19c",
+  "addendum1.json": "8cce1778eee78648e63c5e43c88b6190a0fa89dbb2c36178c63a1c15b4caa2ad",
+  "readings.json": "7e1b7e50d3b2ceb641e9a4a987f1ee538e83446c93d187b45aaa66cc7eded4c3"
+ },
+ "part 2 per band (our box height)": {
+  "<40": {
+   "crops": 30,
+   "read": 0.0,
+   "correct": 0.0,
+   "wrong among read": 0.0,
+   "box height median (px)": 35.7
+  },
+  "40-60": {
+   "crops": 30,
+   "read": 0.1,
+   "correct": 0.033,
+   "wrong among read": 0.667,
+   "box height median (px)": 51.1
+  },
+  "60-80": {
+   "crops": 30,
+   "read": 0.333,
+   "correct": 0.267,
+   "wrong among read": 0.2,
+   "box height median (px)": 68.2
+  },
+  ">=80": {
+   "crops": 30,
+   "read": 0.467,
+   "correct": 0.433,
+   "wrong among read": 0.071,
+   "box height median (px)": 91.1
+  }
+ },
+ "part 2 all": {
+  "crops": 120,
+  "read": 27,
+  "correct": 22,
+  "wrong": 5
+ },
+ "part 3 segments": [
+  {
+   "seg": "S00",
+   "match": "117093",
+   "bh": 40.0,
+   "crops_read": 0,
+   "correct": false,
+   "wrong": false
+  },
+  {
+   "seg": "S01",
+   "match": "118576",
+   "bh": 41.0,
+   "crops_read": 0,
+   "correct": false,
+   "wrong": false
+  },
+  {
+   "seg": "S02",
+   "match": "117093",
+   "bh": 58.6,
+   "crops_read": 4,
+   "correct": true,
+   "wrong": true
+  },
+  {
+   "seg": "S03",
+   "match": "118576",
+   "bh": 74.7,
+   "crops_read": 5,
+   "correct": true,
+   "wrong": false
+  },
+  {
+   "seg": "S04",
+   "match": "132831",
+   "bh": 39.8,
+   "crops_read": 0,
+   "correct": false,
+   "wrong": false
+  },
+  {
+   "seg": "S05",
+   "match": "118576",
+   "bh": 81.1,
+   "crops_read": 5,
+   "correct": true,
+   "wrong": false
+  },
+  {
+   "seg": "S06",
+   "match": "118576",
+   "bh": 80.8,
+   "crops_read": 3,
+   "correct": true,
+   "wrong": false
+  },
+  {
+   "seg": "S07",
+   "match": "117093",
+   "bh": 69.4,
+   "crops_read": 2,
+   "correct": true,
+   "wrong": true
+  },
+  {
+   "seg": "S08",
+   "match": "117093",
+   "bh": 51.4,
+   "crops_read": 0,
+   "correct": false,
+   "wrong": false
+  },
+  {
+   "seg": "S09",
+   "match": "132831",
+   "bh": 63.7,
+   "crops_read": 1,
+   "correct": true,
+   "wrong": false
+  },
+  {
+   "seg": "S10",
+   "match": "132831",
+   "bh": 63.1,
+   "crops_read": 1,
+   "correct": true,
+   "wrong": false
+  },
+  {
+   "seg": "S11",
+   "match": "132831",
+   "bh": 53.4,
+   "crops_read": 4,
+   "correct": true,
+   "wrong": false
+  }
+ ],
+ "part 3: segments with a correct read / with a wrong read (of 12)": [
+  8,
+  2
+ ],
+ "part 3: crops read correctly / wrongly (of 120)": [
+  23,
+  2
+ ],
+ "decision (>= 6 correct and <= 1 wrong)": "numbers not readable enough on this footage",
+ "wrong reads": [
+  {
+   "id": "A027",
+   "read": "13",
+   "truth": "18",
+   "bh": 90.9769287109375
+  },
+  {
+   "id": "A041",
+   "read": "22",
+   "truth": "23",
+   "bh": 61.4141845703125
+  },
+  {
+   "id": "A073",
+   "read": "19",
+   "truth": "39",
+   "bh": 55.89964294433594
+  },
+  {
+   "id": "A103",
+   "read": "17",
+   "truth": "47",
+   "bh": 51.162353515625
+  },
+  {
+   "id": "A115",
+   "read": "6",
+   "truth": "5",
+   "bh": 78.5126953125
+  },
+  {
+   "id": "S02-4",
+   "read": "35",
+   "truth": "36",
+   "bh": 53.6
+  },
+  {
+   "id": "S07-8",
+   "read": "16",
+   "truth": "6",
+   "bh": 79.6
+  }
+ ]
+}

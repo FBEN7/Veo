@@ -1,0 +1,105 @@
+{
+ "plan sha256": "c4b770a2d91eab567fcb3cea5d837332b136632f375118b38265615f48404da9",
+ "actions": 2257,
+ "categories (share of all actions)": {
+  "linked ok": 0.5055,
+  "selection, top-1": 0.1502,
+  "selection, lower rank": 0.0868,
+  "detection": 0.2574
+ },
+ "selection minus detection": {
+  "value": -0.0204,
+  "95% over matches": [
+   -0.0688,
+   0.0318
+  ]
+ },
+ "per kind": {
+  "carry": {
+   "linked ok": 0.5691,
+   "selection, top-1": 0.1436,
+   "selection, lower rank": 0.0705,
+   "detection": 0.2168,
+   "actions": 752
+  },
+  "other": {
+   "linked ok": 0.3107,
+   "selection, top-1": 0.2313,
+   "selection, lower rank": 0.1315,
+   "detection": 0.3265,
+   "actions": 441
+  },
+  "pass": {
+   "linked ok": 0.5414,
+   "selection, top-1": 0.1212,
+   "selection, lower rank": 0.0799,
+   "detection": 0.2575,
+   "actions": 1064
+  }
+ },
+ "per match": {
+  "117093": {
+   "linked ok": 0.5418,
+   "selection, top-1": 0.1891,
+   "selection, lower rank": 0.1018,
+   "detection": 0.1673,
+   "actions": 275
+  },
+  "118575": {
+   "linked ok": 0.5342,
+   "selection, top-1": 0.137,
+   "selection, lower rank": 0.1005,
+   "detection": 0.2283,
+   "actions": 219
+  },
+  "118576": {
+   "linked ok": 0.5154,
+   "selection, top-1": 0.1591,
+   "selection, lower rank": 0.0926,
+   "detection": 0.2328,
+   "actions": 421
+  },
+  "118577": {
+   "linked ok": 0.4436,
+   "selection, top-1": 0.179,
+   "selection, lower rank": 0.0623,
+   "detection": 0.3152,
+   "actions": 257
+  },
+  "118578": {
+   "linked ok": 0.4905,
+   "selection, top-1": 0.1369,
+   "selection, lower rank": 0.076,
+   "detection": 0.2966,
+   "actions": 263
+  },
+  "128057": {
+   "linked ok": 0.5233,
+   "selection, top-1": 0.186,
+   "selection, lower rank": 0.1047,
+   "detection": 0.186,
+   "actions": 86
+  },
+  "128058": {
+   "linked ok": 0.6056,
+   "selection, top-1": 0.1155,
+   "selection, lower rank": 0.0717,
+   "detection": 0.2072,
+   "actions": 251
+  },
+  "132831": {
+   "linked ok": 0.5109,
+   "selection, top-1": 0.1196,
+   "selection, lower rank": 0.0543,
+   "detection": 0.3152,
+   "actions": 184
+  },
+  "132877": {
+   "linked ok": 0.412,
+   "selection, top-1": 0.1362,
+   "selection, lower rank": 0.113,
+   "detection": 0.3389,
+   "actions": 301
+  }
+ }
+}

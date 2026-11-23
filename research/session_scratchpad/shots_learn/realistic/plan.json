@@ -1,0 +1,17 @@
+{
+ "title": "shots: the v4 spotter's false alarms in ordinary play (a reality check)",
+ "written": "2026-11-12, before any spotter output on these windows",
+ "owner request": "2026-11-12: 'Oui' to going back to shots (bar 80% found, 80% of alerts right)",
+ "why": "every shots measure so far (v2-v4, eval_ap) ran on clips cut -15 s / +10 s around each labelled SHOT / GOAL: about 2 s of shot per 25 s of play, far denser than a match. The v4 precision (0.59 at the rate threshold) says nothing about the false alarms in the rest of a match.",
+ "data": "the 7 dev windows of 3 min (shots_learn TRAIN_WINDOWS: 117093 1st f015000, 118575 1st f015000, 118576 1st f030000, 118578 1st f030000, 118578 2nd f015000, 128058 1st f030000, 132877 1st f015000; 21 min of ordinary play), with their relinked ball (metric_v3s_link_nograss, as v4's clips) and their BAS labels. Not in v4's units (eval_ap): never used to fit or choose the v4 spotter. Two other cached windows lack labels (117093 1st f000000, 128057 1st f030000): left out.",
+ "spotter": "v4 features (learn_v4.features_v4) on a tree built like learn_v3.new_tree; for a window of match m, HistGradientBoosting fitted on all v4 clip units of the other matches (eval_ap's settings), seeds 0, 1, 2, probabilities averaged; peaks as eval_ap.detections",
+ "thresholds": "from the clips' seed-averaged leave-one-match-out detections (.cache/shots_eval/v4_s*.parquet): (a) the rate threshold (as many detections as labels); (b) the lowest score giving recall >= 0.80 on the clips; and the curve over all thresholds",
+ "measures": [
+  "per threshold: false alarms in the windows (detections not within 2 s of a label), per minute of play; window labels found",
+  "extrapolated to a 92-min match: false alarms = the clips' false alarms per match + the windows' rate x (92 min - the match's clip minutes); found = the clips' recall x labels per match; precision = found / (found + false alarms)",
+  "95% interval of the windows' rate (Poisson, exact)"
+ ],
+ "no bar": "descriptive: it sets what the shots work has to beat, it decides nothing by itself",
+ "cost": "local CPU, minutes",
+ "caveat": "21 min from 7 matches is a small sample; the windows were dev windows of earlier spotters (v1, v2), not of v4"
+}

@@ -1,0 +1,850 @@
+{
+ "plan sha256": "d9c143977c65cd7abfdb2fcd5e24c21f8e0cb1ecc580fe8166df5eddb46811bc",
+ "matches": [
+  "117092",
+  "117093",
+  "118575",
+  "118576",
+  "118577",
+  "118578",
+  "128058",
+  "132877"
+ ],
+ "goalkeepers' share of actions (left out)": 0.0607,
+ "pooled": {
+  "1 frame": {
+   "role purity": 0.6253,
+   "actions right": "9349 / 15936",
+   "share": 0.5867
+  },
+  "10 s": {
+   "role purity": 0.6453,
+   "actions right": "10156 / 15936",
+   "share": 0.6373
+  },
+  "60 s": {
+   "role purity": 0.717,
+   "actions right": "12045 / 15936",
+   "share": 0.7558
+  }
+ },
+ "across halves, share of roles with the same holder": 0.3875,
+ "per match": {
+  "117092": {
+   "half 1 left": {
+    "seconds": 2693,
+    "1 frame": {
+     "purity": 0.5451,
+     "actions": 428,
+     "actions placed": 426,
+     "actions right": 198,
+     "player-seconds": 26930
+    },
+    "10 s": {
+     "purity": 0.5581,
+     "actions": 428,
+     "actions placed": 427,
+     "actions right": 211,
+     "player-seconds": 26906
+    },
+    "60 s": {
+     "purity": 0.6177,
+     "actions": 428,
+     "actions placed": 428,
+     "actions right": 285,
+     "player-seconds": 26751
+    }
+   },
+   "half 1 right": {
+    "seconds": 2694,
+    "1 frame": {
+     "purity": 0.6569,
+     "actions": 476,
+     "actions placed": 476,
+     "actions right": 245,
+     "player-seconds": 26940
+    },
+    "10 s": {
+     "purity": 0.6925,
+     "actions": 476,
+     "actions placed": 476,
+     "actions right": 276,
+     "player-seconds": 26940
+    },
+    "60 s": {
+     "purity": 0.7866,
+     "actions": 476,
+     "actions placed": 476,
+     "actions right": 377,
+     "player-seconds": 26940
+    }
+   },
+   "half 2 left": {
+    "seconds": 2697,
+    "1 frame": {
+     "purity": 0.5912,
+     "actions": 477,
+     "actions placed": 476,
+     "actions right": 262,
+     "player-seconds": 26970
+    },
+    "10 s": {
+     "purity": 0.6157,
+     "actions": 477,
+     "actions placed": 476,
+     "actions right": 276,
+     "player-seconds": 26952
+    },
+    "60 s": {
+     "purity": 0.6793,
+     "actions": 477,
+     "actions placed": 475,
+     "actions right": 348,
+     "player-seconds": 26751
+    }
+   },
+   "half 2 right": {
+    "seconds": 2688,
+    "1 frame": {
+     "purity": 0.5197,
+     "actions": 479,
+     "actions placed": 478,
+     "actions right": 241,
+     "player-seconds": 26880
+    },
+    "10 s": {
+     "purity": 0.537,
+     "actions": 479,
+     "actions placed": 478,
+     "actions right": 276,
+     "player-seconds": 26880
+    },
+    "60 s": {
+     "purity": 0.6003,
+     "actions": 479,
+     "actions placed": 479,
+     "actions right": 302,
+     "player-seconds": 26880
+    }
+   },
+   "across halves (same holder)": [
+    0.0,
+    0.1
+   ]
+  },
+  "117093": {
+   "half 1 left": {
+    "seconds": 2705,
+    "1 frame": {
+     "purity": 0.6973,
+     "actions": 665,
+     "actions placed": 665,
+     "actions right": 375,
+     "player-seconds": 27050
+    },
+    "10 s": {
+     "purity": 0.7183,
+     "actions": 665,
+     "actions placed": 665,
+     "actions right": 412,
+     "player-seconds": 27050
+    },
+    "60 s": {
+     "purity": 0.8288,
+     "actions": 665,
+     "actions placed": 665,
+     "actions right": 538,
+     "player-seconds": 27050
+    }
+   },
+   "half 1 right": {
+    "seconds": 2704,
+    "1 frame": {
+     "purity": 0.638,
+     "actions": 396,
+     "actions placed": 396,
+     "actions right": 244,
+     "player-seconds": 27040
+    },
+    "10 s": {
+     "purity": 0.6636,
+     "actions": 396,
+     "actions placed": 396,
+     "actions right": 270,
+     "player-seconds": 27040
+    },
+    "60 s": {
+     "purity": 0.7933,
+     "actions": 396,
+     "actions placed": 395,
+     "actions right": 332,
+     "player-seconds": 26981
+    }
+   },
+   "half 2 left": {
+    "seconds": 2819,
+    "1 frame": {
+     "purity": 0.5976,
+     "actions": 528,
+     "actions placed": 527,
+     "actions right": 274,
+     "player-seconds": 28190
+    },
+    "10 s": {
+     "purity": 0.6145,
+     "actions": 528,
+     "actions placed": 528,
+     "actions right": 294,
+     "player-seconds": 28170
+    },
+    "60 s": {
+     "purity": 0.6928,
+     "actions": 528,
+     "actions placed": 527,
+     "actions right": 379,
+     "player-seconds": 28070
+    }
+   },
+   "half 2 right": {
+    "seconds": 2817,
+    "1 frame": {
+     "purity": 0.6159,
+     "actions": 510,
+     "actions placed": 509,
+     "actions right": 287,
+     "player-seconds": 28170
+    },
+    "10 s": {
+     "purity": 0.6322,
+     "actions": 510,
+     "actions placed": 509,
+     "actions right": 309,
+     "player-seconds": 28164
+    },
+    "60 s": {
+     "purity": 0.7369,
+     "actions": 510,
+     "actions placed": 509,
+     "actions right": 420,
+     "player-seconds": 27993
+    }
+   },
+   "across halves (same holder)": [
+    0.1,
+    0.0
+   ]
+  },
+  "118575": {
+   "half 1 left": {
+    "seconds": 2874,
+    "1 frame": {
+     "purity": 0.7224,
+     "actions": 339,
+     "actions placed": 339,
+     "actions right": 207,
+     "player-seconds": 28740
+    },
+    "10 s": {
+     "purity": 0.737,
+     "actions": 339,
+     "actions placed": 339,
+     "actions right": 233,
+     "player-seconds": 28740
+    },
+    "60 s": {
+     "purity": 0.7977,
+     "actions": 339,
+     "actions placed": 339,
+     "actions right": 260,
+     "player-seconds": 28740
+    }
+   },
+   "half 1 right": {
+    "seconds": 2874,
+    "1 frame": {
+     "purity": 0.696,
+     "actions": 646,
+     "actions placed": 646,
+     "actions right": 445,
+     "player-seconds": 28740
+    },
+    "10 s": {
+     "purity": 0.7113,
+     "actions": 646,
+     "actions placed": 646,
+     "actions right": 471,
+     "player-seconds": 28740
+    },
+    "60 s": {
+     "purity": 0.8067,
+     "actions": 646,
+     "actions placed": 646,
+     "actions right": 554,
+     "player-seconds": 28740
+    }
+   },
+   "half 2 left": {
+    "seconds": 2920,
+    "1 frame": {
+     "purity": 0.5775,
+     "actions": 655,
+     "actions placed": 654,
+     "actions right": 419,
+     "player-seconds": 29200
+    },
+    "10 s": {
+     "purity": 0.5953,
+     "actions": 655,
+     "actions placed": 655,
+     "actions right": 452,
+     "player-seconds": 29186
+    },
+    "60 s": {
+     "purity": 0.631,
+     "actions": 655,
+     "actions placed": 653,
+     "actions right": 489,
+     "player-seconds": 28997
+    }
+   },
+   "half 2 right": {
+    "seconds": 2613,
+    "1 frame": {
+     "purity": 0.6671,
+     "actions": 335,
+     "actions placed": 334,
+     "actions right": 204,
+     "player-seconds": 26130
+    },
+    "10 s": {
+     "purity": 0.6808,
+     "actions": 335,
+     "actions placed": 322,
+     "actions right": 207,
+     "player-seconds": 26121
+    },
+    "60 s": {
+     "purity": 0.7329,
+     "actions": 335,
+     "actions placed": 321,
+     "actions right": 239,
+     "player-seconds": 25963
+    }
+   },
+   "across halves (same holder)": [
+    0.2,
+    0.5
+   ]
+  },
+  "118576": {
+   "half 1 left": {
+    "seconds": 2793,
+    "1 frame": {
+     "purity": 0.7424,
+     "actions": 223,
+     "actions placed": 222,
+     "actions right": 157,
+     "player-seconds": 27930
+    },
+    "10 s": {
+     "purity": 0.7653,
+     "actions": 223,
+     "actions placed": 216,
+     "actions right": 166,
+     "player-seconds": 27930
+    },
+    "60 s": {
+     "purity": 0.8201,
+     "actions": 223,
+     "actions placed": 220,
+     "actions right": 193,
+     "player-seconds": 27930
+    }
+   },
+   "half 1 right": {
+    "seconds": 2913,
+    "1 frame": {
+     "purity": 0.6928,
+     "actions": 852,
+     "actions placed": 852,
+     "actions right": 607,
+     "player-seconds": 29130
+    },
+    "10 s": {
+     "purity": 0.7135,
+     "actions": 852,
+     "actions placed": 852,
+     "actions right": 634,
+     "player-seconds": 29130
+    },
+    "60 s": {
+     "purity": 0.7813,
+     "actions": 852,
+     "actions placed": 852,
+     "actions right": 725,
+     "player-seconds": 29130
+    }
+   },
+   "half 2 left": {
+    "seconds": 2911,
+    "1 frame": {
+     "purity": 0.548,
+     "actions": 743,
+     "actions placed": 743,
+     "actions right": 474,
+     "player-seconds": 29110
+    },
+    "10 s": {
+     "purity": 0.5614,
+     "actions": 743,
+     "actions placed": 743,
+     "actions right": 491,
+     "player-seconds": 29094
+    },
+    "60 s": {
+     "purity": 0.6344,
+     "actions": 743,
+     "actions placed": 740,
+     "actions right": 542,
+     "player-seconds": 28990
+    }
+   },
+   "half 2 right": {
+    "seconds": 2911,
+    "1 frame": {
+     "purity": 0.5579,
+     "actions": 211,
+     "actions placed": 209,
+     "actions right": 106,
+     "player-seconds": 29110
+    },
+    "10 s": {
+     "purity": 0.5813,
+     "actions": 211,
+     "actions placed": 210,
+     "actions right": 130,
+     "player-seconds": 29075
+    },
+    "60 s": {
+     "purity": 0.6299,
+     "actions": 211,
+     "actions placed": 208,
+     "actions right": 139,
+     "player-seconds": 28883
+    }
+   },
+   "across halves (same holder)": [
+    0.5,
+    0.6
+   ]
+  },
+  "118577": {
+   "half 1 left": {
+    "seconds": 2833,
+    "1 frame": {
+     "purity": 0.6656,
+     "actions": 566,
+     "actions placed": 566,
+     "actions right": 358,
+     "player-seconds": 28330
+    },
+    "10 s": {
+     "purity": 0.6854,
+     "actions": 566,
+     "actions placed": 566,
+     "actions right": 418,
+     "player-seconds": 28330
+    },
+    "60 s": {
+     "purity": 0.7561,
+     "actions": 566,
+     "actions placed": 566,
+     "actions right": 461,
+     "player-seconds": 28330
+    }
+   },
+   "half 1 right": {
+    "seconds": 2776,
+    "1 frame": {
+     "purity": 0.7131,
+     "actions": 313,
+     "actions placed": 312,
+     "actions right": 199,
+     "player-seconds": 27760
+    },
+    "10 s": {
+     "purity": 0.7301,
+     "actions": 313,
+     "actions placed": 301,
+     "actions right": 209,
+     "player-seconds": 27760
+    },
+    "60 s": {
+     "purity": 0.8037,
+     "actions": 313,
+     "actions placed": 305,
+     "actions right": 240,
+     "player-seconds": 27760
+    }
+   },
+   "half 2 left": {
+    "seconds": 2889,
+    "1 frame": {
+     "purity": 0.6093,
+     "actions": 359,
+     "actions placed": 358,
+     "actions right": 205,
+     "player-seconds": 28890
+    },
+    "10 s": {
+     "purity": 0.6253,
+     "actions": 359,
+     "actions placed": 358,
+     "actions right": 228,
+     "player-seconds": 28874
+    },
+    "60 s": {
+     "purity": 0.6973,
+     "actions": 359,
+     "actions placed": 359,
+     "actions right": 277,
+     "player-seconds": 28708
+    }
+   },
+   "half 2 right": {
+    "seconds": 2888,
+    "1 frame": {
+     "purity": 0.5309,
+     "actions": 578,
+     "actions placed": 576,
+     "actions right": 304,
+     "player-seconds": 28880
+    },
+    "10 s": {
+     "purity": 0.545,
+     "actions": 578,
+     "actions placed": 576,
+     "actions right": 330,
+     "player-seconds": 28869
+    },
+    "60 s": {
+     "purity": 0.6102,
+     "actions": 578,
+     "actions placed": 572,
+     "actions right": 382,
+     "player-seconds": 28657
+    }
+   },
+   "across halves (same holder)": [
+    0.7,
+    0.7
+   ]
+  },
+  "118578": {
+   "half 1 left": {
+    "seconds": 2814,
+    "1 frame": {
+     "purity": 0.6453,
+     "actions": 439,
+     "actions placed": 439,
+     "actions right": 243,
+     "player-seconds": 28140
+    },
+    "10 s": {
+     "purity": 0.672,
+     "actions": 439,
+     "actions placed": 439,
+     "actions right": 272,
+     "player-seconds": 28140
+    },
+    "60 s": {
+     "purity": 0.7463,
+     "actions": 439,
+     "actions placed": 439,
+     "actions right": 344,
+     "player-seconds": 28140
+    }
+   },
+   "half 1 right": {
+    "seconds": 2814,
+    "1 frame": {
+     "purity": 0.6188,
+     "actions": 602,
+     "actions placed": 602,
+     "actions right": 340,
+     "player-seconds": 28140
+    },
+    "10 s": {
+     "purity": 0.6308,
+     "actions": 602,
+     "actions placed": 602,
+     "actions right": 352,
+     "player-seconds": 28140
+    },
+    "60 s": {
+     "purity": 0.7318,
+     "actions": 602,
+     "actions placed": 602,
+     "actions right": 446,
+     "player-seconds": 28140
+    }
+   },
+   "half 2 left": {
+    "seconds": 2839,
+    "1 frame": {
+     "purity": 0.5942,
+     "actions": 581,
+     "actions placed": 581,
+     "actions right": 339,
+     "player-seconds": 28390
+    },
+    "10 s": {
+     "purity": 0.6136,
+     "actions": 581,
+     "actions placed": 581,
+     "actions right": 370,
+     "player-seconds": 28380
+    },
+    "60 s": {
+     "purity": 0.6965,
+     "actions": 581,
+     "actions placed": 581,
+     "actions right": 437,
+     "player-seconds": 28279
+    }
+   },
+   "half 2 right": {
+    "seconds": 2839,
+    "1 frame": {
+     "purity": 0.516,
+     "actions": 312,
+     "actions placed": 312,
+     "actions right": 140,
+     "player-seconds": 28390
+    },
+    "10 s": {
+     "purity": 0.5357,
+     "actions": 312,
+     "actions placed": 310,
+     "actions right": 164,
+     "player-seconds": 28350
+    },
+    "60 s": {
+     "purity": 0.5746,
+     "actions": 312,
+     "actions placed": 312,
+     "actions right": 180,
+     "player-seconds": 28120
+    }
+   },
+   "across halves (same holder)": [
+    0.6,
+    0.6
+   ]
+  },
+  "128058": {
+   "half 1 left": {
+    "seconds": 2759,
+    "1 frame": {
+     "purity": 0.7663,
+     "actions": 449,
+     "actions placed": 449,
+     "actions right": 296,
+     "player-seconds": 27590
+    },
+    "10 s": {
+     "purity": 0.7928,
+     "actions": 449,
+     "actions placed": 449,
+     "actions right": 336,
+     "player-seconds": 27590
+    },
+    "60 s": {
+     "purity": 0.8434,
+     "actions": 449,
+     "actions placed": 449,
+     "actions right": 393,
+     "player-seconds": 27590
+    }
+   },
+   "half 1 right": {
+    "seconds": 2759,
+    "1 frame": {
+     "purity": 0.7335,
+     "actions": 624,
+     "actions placed": 624,
+     "actions right": 442,
+     "player-seconds": 27590
+    },
+    "10 s": {
+     "purity": 0.7597,
+     "actions": 624,
+     "actions placed": 624,
+     "actions right": 478,
+     "player-seconds": 27585
+    },
+    "60 s": {
+     "purity": 0.8083,
+     "actions": 624,
+     "actions placed": 624,
+     "actions right": 526,
+     "player-seconds": 27545
+    }
+   },
+   "half 2 left": {
+    "seconds": 2699,
+    "1 frame": {
+     "purity": 0.4621,
+     "actions": 488,
+     "actions placed": 488,
+     "actions right": 233,
+     "player-seconds": 26990
+    },
+    "10 s": {
+     "purity": 0.4708,
+     "actions": 488,
+     "actions placed": 487,
+     "actions right": 245,
+     "player-seconds": 26972
+    },
+    "60 s": {
+     "purity": 0.534,
+     "actions": 488,
+     "actions placed": 479,
+     "actions right": 304,
+     "player-seconds": 26568
+    }
+   },
+   "half 2 right": {
+    "seconds": 2706,
+    "1 frame": {
+     "purity": 0.6487,
+     "actions": 464,
+     "actions placed": 464,
+     "actions right": 322,
+     "player-seconds": 27060
+    },
+    "10 s": {
+     "purity": 0.6804,
+     "actions": 464,
+     "actions placed": 463,
+     "actions right": 351,
+     "player-seconds": 27053
+    },
+    "60 s": {
+     "purity": 0.7671,
+     "actions": 464,
+     "actions placed": 463,
+     "actions right": 386,
+     "player-seconds": 27005
+    }
+   },
+   "across halves (same holder)": [
+    1.0,
+    0.1
+   ]
+  },
+  "132877": {
+   "half 1 left": {
+    "seconds": 2707,
+    "1 frame": {
+     "purity": 0.6343,
+     "actions": 463,
+     "actions placed": 463,
+     "actions right": 250,
+     "player-seconds": 27070
+    },
+    "10 s": {
+     "purity": 0.6537,
+     "actions": 463,
+     "actions placed": 463,
+     "actions right": 275,
+     "player-seconds": 27070
+    },
+    "60 s": {
+     "purity": 0.7066,
+     "actions": 463,
+     "actions placed": 463,
+     "actions right": 321,
+     "player-seconds": 27070
+    }
+   },
+   "half 1 right": {
+    "seconds": 2707,
+    "1 frame": {
+     "purity": 0.7193,
+     "actions": 676,
+     "actions placed": 676,
+     "actions right": 472,
+     "player-seconds": 27070
+    },
+    "10 s": {
+     "purity": 0.7501,
+     "actions": 676,
+     "actions placed": 676,
+     "actions right": 499,
+     "player-seconds": 27070
+    },
+    "60 s": {
+     "purity": 0.8332,
+     "actions": 676,
+     "actions placed": 676,
+     "actions right": 579,
+     "player-seconds": 27070
+    }
+   },
+   "half 2 left": {
+    "seconds": 2773,
+    "1 frame": {
+     "purity": 0.518,
+     "actions": 630,
+     "actions placed": 630,
+     "actions right": 257,
+     "player-seconds": 27730
+    },
+    "10 s": {
+     "purity": 0.5449,
+     "actions": 630,
+     "actions placed": 630,
+     "actions right": 289,
+     "player-seconds": 27688
+    },
+    "60 s": {
+     "purity": 0.6346,
+     "actions": 630,
+     "actions placed": 617,
+     "actions right": 382,
+     "player-seconds": 27392
+    }
+   },
+   "half 2 right": {
+    "seconds": 2770,
+    "1 frame": {
+     "purity": 0.5725,
+     "actions": 429,
+     "actions placed": 426,
+     "actions right": 204,
+     "player-seconds": 27700
+    },
+    "10 s": {
+     "purity": 0.5873,
+     "actions": 429,
+     "actions placed": 429,
+     "actions right": 232,
+     "player-seconds": 27691
+    },
+    "60 s": {
+     "purity": 0.6307,
+     "actions": 429,
+     "actions placed": 428,
+     "actions right": 265,
+     "player-seconds": 27492
+    }
+   },
+   "across halves (same holder)": [
+    0.3,
+    0.2
+   ]
+  }
+ }
+}
