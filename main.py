@@ -27,6 +27,7 @@ from src import player_rating
 from src import advanced_events
 from src import advanced_metrics
 from src import goal_candidates
+from src import moving_camera
 from src.database import MatchDatabase
 from src.auto_calibrate import auto_calibrate
 
@@ -59,6 +60,10 @@ def main():
                    help="heure du coup d'envoi de chaque mi-temps dans la vidéo, "
                         "séparées par des virgules (ex. 0:00,52:30 ; défaut 0:00 : "
                         "la vidéo commence au coup d'envoi et ne contient qu'une mi-temps)")
+    p.add_argument("--camera", choices=["fixed", "moving"], default="fixed",
+                   help="fixed : une homographie pour toute la vidéo (caméra fixe) ; "
+                        "moving : caméra qui suit le jeu (export Veo) -- mouvement compensé, "
+                        "mètres relatifs, rien qui dépende des lignes du terrain")
     p.add_argument("--debug", action="store_true",
                    help="affiche les statistiques détaillées de détection")
     args = p.parse_args()
@@ -66,7 +71,10 @@ def main():
     # ------------------------------------------------------------------ #
     # 1. Homographie (auto ou manuelle)                                    #
     # ------------------------------------------------------------------ #
-    if args.homography:
+    H = None
+    if args.camera == "moving":
+        print("Caméra mobile : pas d'homographie (mouvement compensé, échelle par la taille des joueurs)")
+    elif args.homography:
         h_path = Path(args.homography)
         if not h_path.exists():
             raise FileNotFoundError(f"Homography file not found: {h_path}")
@@ -76,8 +84,9 @@ def main():
             print("Calibration automatique du terrain...")
             auto_calibrate(args.video, str(h_path), debug=True)
 
-    print(f"Homographie utilisée: {h_path}")
-    H = np.load(h_path)
+    if args.camera == "fixed":
+        print(f"Homographie utilisée: {h_path}")
+        H = np.load(h_path)
 
     # ------------------------------------------------------------------ #
     # 2. Détection + tracking                                              #
@@ -118,7 +127,11 @@ def main():
     # 4. Projection terrain + statistiques physiques                       #
     # ------------------------------------------------------------------ #
     print("Projection terrain + stats physiques...")
-    tracks = stats.to_pitch_coords(tracks, H)
+    moving_info = None
+    if args.camera == "moving":
+        tracks, moving_info = moving_camera.to_metric(args.video, tracks, Path("output"))
+    else:
+        tracks = stats.to_pitch_coords(tracks, H)
 
     # Save tracks AFTER pitch transformation so coordinates are in meters
     tracks.to_parquet("output/tracks.parquet")
@@ -132,7 +145,7 @@ def main():
     # 5. Détection des événements (passes, tirs, buts, hors-jeu)          #
     # ------------------------------------------------------------------ #
     print("Détection des événements...")
-    events = ev_module.detect_events(tracks)
+    events = ev_module.detect_events(tracks, absolute_pitch=args.camera == "fixed")
     epp = ev_module.events_per_player(events)
     tet = ev_module.team_event_totals(events)
 
